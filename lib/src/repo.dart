@@ -132,7 +132,6 @@ class Repo {
           );
           break;
         case DataMessage.action_auth_revoked:
-          print("action auth revoke");
           _onAuth.add(null);
           break;
         // TODO: listen revoke/security debug
