@@ -343,6 +343,20 @@ void main() {
         "text1": {"order":"c"}
       });
 
+
+      ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+      await ref.set({
+        "text2": {"order":2},
+        "text1": {"order":3},
+        "text3": {"order":1},
+        "text4": {"order":5},
+        "text5": {"order":4},
+        "text6": {"order":2}
+      });
+      ref = ref.orderByChild("order");
+
+      expect((await ref.equalTo(2).get()).keys, ["text2","text6"]);
+
     });
 
     test('Ordering', () async {

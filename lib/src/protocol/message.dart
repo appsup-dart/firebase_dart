@@ -92,9 +92,9 @@ class Query {
   final int limit;
   final bool isViewFromRight;
   final String index;
-  final String endValue;
+  final dynamic endValue;
   final String endName;
-  final String startValue;
+  final dynamic startValue;
   final String startName;
 
   Query({this.limit, this.isViewFromRight: false, this.index, this.endName,
