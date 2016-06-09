@@ -312,6 +312,54 @@ void main() {
 
 
     });
+    test('Start/End at', () async {
+      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+      await ref.set({
+        "text2": {"order":"b"},
+        "text1": {"order":"c"},
+        "text3": {"order":"a"},
+        "text4": {"order":"e"},
+        "text5": {"order":"d"},
+        "text6": {"order":"b"}
+      });
+
+      ref = ref.orderByChild("order");
+
+      expect(await ref.startAt(value: "b").endAt(value: "c").get(), {
+        "text2": {"order":"b"},
+        "text6": {"order":"b"},
+        "text1": {"order":"c"}
+      });
+
+      expect(await ref.startAt(value: "b", key: "text6").endAt(value: "c").get(), {
+        "text6": {"order":"b"},
+        "text1": {"order":"c"}
+      });
+
+    });
+
+    test('Ordering', () async {
+      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+      await ref.set({
+        "b": {"order":true},
+        "c": {"x":1},
+        "a": {"order":4},
+        "e": {"order":-2.3},
+        "i": {"order": "def"},
+        "g": {"order":5},
+        "j": {"order": {"x": 1}},
+        "d": {"order":7.1},
+        "23a": {"order":5},
+        "h": {"order": "abc"},
+        "f": {"order":5},
+        "25": {"order":5},
+        "k": {"order":false},
+      });
+      ref = ref.orderByChild("order");
+      expect((await ref.get()).keys, ["c","k","b","e","a","25","23a","f","g","d","h","i","j"]);
+
+
+    });
   });
 
 }

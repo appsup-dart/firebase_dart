@@ -18,8 +18,8 @@ final _logger = new Logger("firebase-repo");
 class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
 
   final String orderBy;
-  final List<dynamic> startAt;
-  final List<dynamic> endAt;
+  final Pair<Name,TreeStructuredData> startAt;
+  final Pair<Name,TreeStructuredData> endAt;
 
 
   const QueryFilter({this.orderBy, this.startAt, this.endAt, int limit, bool reverse}) :
@@ -28,63 +28,73 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
           reverse: reverse
           );
 
+  static _toNameValue(String key, dynamic value) =>
+      key==null&&value==null ? null : new Pair(new Name(key), new TreeStructuredData(value: new Value(value)));
 
-
-  QueryFilter copyWith({String orderBy, List<dynamic> startAt, List<dynamic> endAt, int limit, bool reverse}) =>
+  QueryFilter copyWith({String orderBy, String startAtKey, dynamic startAtValue,
+  String endAtKey, dynamic endAtValue, int limit, bool reverse}) =>
       new QueryFilter(
           orderBy: orderBy ?? this.orderBy,
-          startAt: startAt ?? this.startAt,
-          endAt: endAt ?? this.endAt,
+          startAt: _toNameValue(startAtKey, startAtValue) ?? this.startAt,
+          endAt: _toNameValue(endAtKey, endAtValue) ?? this.endAt,
           limit: limit ?? this.limit,
           reverse: reverse ?? this.reverse
       );
 
-  Query toQuery() => new Query(limit: limit, isViewFromRight: this.reverse, index: orderBy);
+  Query toQuery() => new Query(limit: limit, isViewFromRight: this.reverse,
+      index: orderBy,
+      endName: endAt?.key?.asString(), endValue: endAt?.value?.value?.value?.toString(),
+      startName: startAt?.key?.asString(), startValue: startAt?.value?.value?.value?.toString()
+      );
 
-  // TODO: isValid -> startAt/endAt
-
-  @override
-  Comparator<Pair<Name,TreeStructuredData>> get compare {
-    // TODO: check ordering
-    switch(orderBy) {
+  Pair<Name,Comparable> _extract(Pair<Name,TreeStructuredData> p) {
+    switch (orderBy ?? ".priority") {
       case ".value":
-        return (Pair a, Pair b) {
-          int cmp = Comparable.compare(a.value, b.value);
-          if (cmp!=0) return cmp;
-          return Comparable.compare(a.key, b.key);
-        };
+        return new Pair(p.key, p.value);
       case ".key":
-        return (Pair a, Pair b) => Comparable.compare(a.key, b.key);
+        return new Pair(p.key, p.key);
       case ".priority":
-        return (Pair<Name,TreeStructuredData> a, Pair<Name,TreeStructuredData> b) {
-          int cmp = Comparable.compare(a.value.priority, b.value.priority);
-          if (cmp!=0) return cmp;
-          return Comparable.compare(a.key, b.key);
-        };
+        return new Pair(p.key, p.value.priority);
       default:
-        return (Pair<Name,TreeStructuredData> a, Pair<Name,TreeStructuredData> b) {
-          var c1 = a.value.children[new Name(orderBy)];
-          var c2 = b.value.children[new Name(orderBy)];
-          if (c1==null) return c2==null ? Comparable.compare(a.key, b.key) : -1;
-          if (c2==null) return 1;
-          int cmp = Comparable.compare(c1.value,c2.value);
-          if (cmp!=0) return cmp;
-          return Comparable.compare(a.key, b.key);
-        };
+        return new Pair(p.key, p.value.children[new Name(orderBy)]);
     }
   }
+
+  int _compareValue(Comparable a, Comparable b) {
+    if (a==null) return b==null ? 0 : -1;
+    if (b==null) return 1;
+    return Comparable.compare(a,b);
+  }
+  int _compareKey(Name a, Name b) {
+    if (a.asString()==null||b.asString()==null) return 0;
+    return Comparable.compare(a,b);
+  }
+  int _comparePair(Pair<Name,Comparable> a, Pair<Name,Comparable> b) {
+    int cmp = _compareValue(a.value, b.value);
+    if (cmp!=0) return cmp;
+    return _compareKey(a.key, b.key);
+  }
+
+  @override
+  get isValid => (p) {
+    p = _extract(p);
+    if (startAt!=null&&_comparePair(startAt,p)>0) return false;
+    if (endAt!=null&&_comparePair(p,endAt)>0) return false;
+    return true;
+  };
+
+  @override
+  Comparator<Pair<Name,TreeStructuredData>> get compare => (a,b) =>
+      _comparePair(_extract(a),_extract(b));
 
   toString() => "QueryFilter[${toQuery().toJson()}";
 
 
-  int get hashCode => quiver.hash4(orderBy,
-      startAt!=null ? quiver.hashObjects(startAt) : null,
-      endAt!=null ? quiver.hashObjects(endAt) : null,
+  int get hashCode => quiver.hash4(orderBy,startAt,endAt,
       quiver.hash2(limit, reverse));
 
   bool operator==(other) => other is QueryFilter&&
-    other.orderBy==orderBy&&const ListEquality().equals(other.startAt,startAt)&&
-      const ListEquality().equals(other.endAt,endAt)&&
+    other.orderBy==orderBy&&other.startAt==startAt&&other.endAt==endAt&&
       other.limit==limit&&other.reverse==reverse;
 
 }

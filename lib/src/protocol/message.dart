@@ -92,18 +92,32 @@ class Query {
   final int limit;
   final bool isViewFromRight;
   final String index;
+  final String endValue;
+  final String endName;
+  final String startValue;
+  final String startName;
 
-  Query({this.limit, this.isViewFromRight: false, this.index});
+  Query({this.limit, this.isViewFromRight: false, this.index, this.endName,
+  this.endValue, this.startName, this.startValue});
 
   factory Query.fromJson(Map<String,dynamic> json) {
     return new Query(
         limit: json[LIMIT],
-        isViewFromRight: json[VIEW_FROM]==VIEW_FROM_RIGHT
+        isViewFromRight: json[VIEW_FROM]==VIEW_FROM_RIGHT,
+        index: json[INDEX],
+        endName: json[INDEX_END_NAME],
+        endValue: json[INDEX_END_VALUE],
+        startName: json[INDEX_START_NAME],
+        startValue: json[INDEX_START_VALUE]
     );
   }
 
-  int get hashCode => quiver.hash2(limit, isViewFromRight);
-  bool operator==(other) => other is Query&&other.limit==limit&&other.isViewFromRight==isViewFromRight;
+  int get hashCode => quiver.hash4(limit, isViewFromRight, index,
+      quiver.hash4(endName,endValue,startName,startValue));
+  bool operator==(other) => other is Query&&other.limit==limit&&
+      other.isViewFromRight==isViewFromRight&&other.index==index&&
+      other.endName==endName&&other.endValue==endValue&&
+      other.startName==startName&&other.startValue==startValue;
 
   toJson() {
     var json = {};
@@ -114,6 +128,10 @@ class Query {
     if (index!=null) {
       json[INDEX] = index;
     }
+    if (endName!=null) json[INDEX_END_NAME] = endName;
+    if (endValue!=null) json[INDEX_END_VALUE] = endValue;
+    if (startName!=null) json[INDEX_START_NAME] = startName;
+    if (startValue!=null) json[INDEX_START_VALUE] = startValue;
     return json;
   }
 }
