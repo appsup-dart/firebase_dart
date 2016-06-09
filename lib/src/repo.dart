@@ -131,7 +131,11 @@ class Repo {
               new TreeStructuredData.fromJson(r.message.body.data).children
           );
           break;
-        // TODO: auth revoke/listen revoke/security debug
+        case DataMessage.action_auth_revoked:
+          print("action auth revoke");
+          _onAuth.add(null);
+          break;
+        // TODO: listen revoke/security debug
         default:
           throw new UnimplementedError("Cannot handle message with action ${r.message.action}");
       }
