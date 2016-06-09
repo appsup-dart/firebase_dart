@@ -37,7 +37,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   final Map<int, Request> _pendingRequests = {};
   final List<Completer<PongMessage>> _pings = [];
 
-  final StreamController<Message> _output = new StreamController();
+  final StreamController _output = new StreamController();
   final StreamController<Response> _input = new StreamController();
 
   Future _connect([String host]);
@@ -138,6 +138,10 @@ class WebSocketTransport extends Transport {
       _logger.fine("send $v");
       return v;
     }));
+    new Stream.periodic(new Duration(seconds: 45))
+    .forEach((_) {
+      _output.add(0);
+    });
   }
 
   WebSocket _socket;
@@ -157,7 +161,6 @@ class WebSocketTransport extends Transport {
     );
     _logger.fine("connecting to $url");
     WebSocket socket = _socket = await WebSocket.connect(url.toString());
-    socket.pingInterval = new Duration(seconds: 5); // TODO: ping
     socket
         .map((v) {
       _logger.fine("received $v");
