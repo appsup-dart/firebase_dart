@@ -7,6 +7,7 @@ import 'package:logging/logging.dart';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import 'dart:io';
 
 void main() {
   Logger.root.level = Level.ALL;
@@ -35,10 +36,16 @@ void main() {
     });
   });
   group('Authenticate', () {
-    var host = "REPLACE WITH FIREBASE HOST";
-    var secret = "REPLACE WITH SECRET";
+    var f = new File("test/secrets.json");
+    if (!f.existsSync()) {
+      fail("Cannot test Authenticate: no secrets.json file");
+      return;
+    }
+    var options = JSON.decode(f.readAsStringSync());
+    var host = options["host"];
+    var secret = options["secret"];
 
-    if (host=="REPLACE WITH FIREBASE HOST") {
+    if (host==null||secret==null) {
       print("Cannot test Authenticate: set a host and secret.");
       return;
     }

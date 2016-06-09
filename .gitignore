@@ -20,3 +20,5 @@ doc/api/
 *.iml
 *.ipr
 *.iws
+
+test/secrets.json
