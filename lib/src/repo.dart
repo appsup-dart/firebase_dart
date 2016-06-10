@@ -28,6 +28,17 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
           reverse: reverse
           );
 
+  factory QueryFilter.fromQuery(Query query) {
+    if (query==null) return new QueryFilter();
+    return new QueryFilter(
+        limit: query.limit,
+        reverse: query.isViewFromRight,
+        orderBy: query.index,
+        startAt: _toNameValue(query.startName, query.startValue),
+        endAt: _toNameValue(query.endName, query.endValue)
+    );
+  }
+
   static _toNameValue(String key, dynamic value) =>
       key==null&&value==null ? null : new Pair(new Name(key), new TreeStructuredData(value: new Value(value)));
 
@@ -43,8 +54,8 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
 
   Query toQuery() => new Query(limit: limit, isViewFromRight: this.reverse,
       index: orderBy,
-      endName: endAt?.key?.asString(), endValue: endAt?.value?.value?.value?.toString(),
-      startName: startAt?.key?.asString(), startValue: startAt?.value?.value?.value?.toString()
+      endName: endAt?.key?.asString(), endValue: endAt?.value?.value?.value,
+      startName: startAt?.key?.asString(), startValue: startAt?.value?.value?.value
       );
 
   Pair<Name,Comparable> _extract(Pair<Name,TreeStructuredData> p) {
@@ -134,7 +145,13 @@ class Repo {
         case DataMessage.action_auth_revoked:
           _onAuth.add(null);
           break;
-        // TODO: listen revoke/security debug
+        case DataMessage.action_listen_revoked:
+          var filter = new QueryFilter.fromQuery(r.message.body.query); //TODO test query revoke
+          _syncTree.applyListenRevoked(
+              Name.parsePath(r.message.body.path), filter
+          );
+          break;
+        // TODO: security debug
         default:
           throw new UnimplementedError("Cannot handle message with action ${r.message.action}");
       }
@@ -295,28 +312,7 @@ class Repo {
    * Helper function to create a new stream for a particular event type.
    */
   Stream<firebase.Event> createStream(firebase.Firebase ref, QueryFilter filter, String type) {
-
-    StreamController<firebase.Event> controller;
-
-    void addEvent(value) {
-
-      if (value is ValueEvent) {
-        new Future.microtask(()=>
-            controller
-                .add(new firebase.Event(new firebase.DataSnapshot(ref, value.value), null))
-        );
-      }
-    }
-
-    void startListen() {
-      listen(ref.url.path, filter, type, addEvent);
-    }
-    void stopListen() {
-      unlisten(ref.url.path, filter, type, addEvent);
-    }
-    controller = new StreamController<firebase.Event>(
-        onListen: startListen, onCancel: stopListen, sync: true);
-    return controller.stream;//.asBroadcastStream();
+    return new StreamFactory(this, ref, filter, type)();
   }
 
 
@@ -337,6 +333,50 @@ class Repo {
   Future onDisconnectCancel(String path) {
     throw new UnimplementedError("onDisconnect not implemented"); //TODO: implement onDisconnect
   }
+}
+
+
+class StreamFactory {
+
+  final Repo repo;
+  final firebase.Firebase ref;
+  final QueryFilter filter;
+  final String type;
+
+  StreamFactory(this.repo, this.ref, this.filter, this.type);
+
+  StreamController<firebase.Event> controller;
+
+  void addEvent(value) {
+
+    if (value is ValueEvent) {
+      new Future.microtask(()=>
+          controller
+              .add(new firebase.Event(new firebase.DataSnapshot(ref, value.value), null))
+      );
+    }
+  }
+  void addError(error) {
+    stopListen();
+    controller.addError(error);
+    controller.close();
+  }
+
+  void startListen() {
+    repo.listen(ref.url.path, filter, type, addEvent);
+    repo.listen(ref.url.path, filter, "cancel", addError);
+  }
+  void stopListen() {
+    repo.unlisten(ref.url.path, filter, type, addEvent);
+    repo.unlisten(ref.url.path, filter, "cancel", addError);
+  }
+
+  call() {
+    controller = new StreamController<firebase.Event>(
+        onListen: startListen, onCancel: stopListen, sync: true);
+    return controller.stream;
+  }
+
 }
 
 class PushIdGenerator {

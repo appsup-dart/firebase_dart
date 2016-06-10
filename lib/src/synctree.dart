@@ -121,6 +121,10 @@ class SyncTree {
     _applyOperationToSyncPoints(root, filter, operation, ViewOperationSource.server);
   }
 
+  applyListenRevoked(Path<Name> path, Filter filter) {
+    root.subtree(path).value.views[filter].dispatchEvent(new Event("cancel"));
+  }
+
   /**
    * Applies a user merge at [path] with [changedChildren]
    */
