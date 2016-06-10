@@ -43,6 +43,7 @@ class Name implements Pattern, Comparable<Name> {
   int compareTo(Name other) => compare(this, other);
 
 
+  asString() => _value;
   asInt() => int.parse(_value, onError: (_)=> null);
 
   int get length => _value.length;

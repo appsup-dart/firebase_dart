@@ -27,6 +27,7 @@ class Value implements Comparable<Value> {
   Value.server(String type) : this._(ServerValue.values[type]);
 
   factory Value(dynamic value) {
+    if (value==null) return null;
     if (value is bool) return new Value.bool(value);
     if (value is num) return new Value.num(value);
     if (value is String) return new Value.string(value);
@@ -48,6 +49,11 @@ class Value implements Comparable<Value> {
 
     if (otherIndex == thisIndex) {
       if (isServerValue) return 0;
+      if (isBool) {
+        if (!other.isBool) return -1;
+        if (value==other.value) return 0;
+        return !value ? -1 : 1;
+      }
       return Comparable.compare(value, other.value);
     }
     return thisIndex - otherIndex;

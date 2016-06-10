@@ -7,6 +7,7 @@ import 'package:logging/logging.dart';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import 'dart:io';
 
 void main() {
   Logger.root.level = Level.ALL;
@@ -35,10 +36,16 @@ void main() {
     });
   });
   group('Authenticate', () {
-    var host = "REPLACE WITH FIREBASE HOST";
-    var secret = "REPLACE WITH SECRET";
+    var f = new File("test/secrets.json");
+    if (!f.existsSync()) {
+      fail("Cannot test Authenticate: no secrets.json file");
+      return;
+    }
+    var options = JSON.decode(f.readAsStringSync());
+    var host = options["host"];
+    var secret = options["secret"];
 
-    if (host=="REPLACE WITH FIREBASE HOST") {
+    if (host==null||secret==null) {
       print("Cannot test Authenticate: set a host and secret.");
       return;
     }
@@ -65,6 +72,18 @@ void main() {
       await ref.unauth();
       expect(ref.auth, isNull);
       expect((await fromStream), isNull);
+    });
+
+    test('permission denied', () async {
+      ref = ref.child('test');
+      ref.onValue.forEach((e)=>print(e.snapshot.val));
+      await ref.authWithCustomToken(token);
+      await ref.set('hello world');
+      expect(await ref.get(),'hello world');
+      await ref.unauth();
+      await ref.set('hello all').catchError(print);
+      expect(await ref.get(),'hello world');
+
     });
   });
   group('Listen', () {
@@ -104,6 +123,16 @@ void main() {
       });
 
       expect(await ref.child("object/hello").get(), "all");
+
+    });
+
+    test('Multiple listeners on on*-stream', () async {
+      await(ref.set("hello world"));
+
+      var onValue = ref.onValue;
+
+      expect((await onValue.first).snapshot.val, "hello world");
+      expect((await onValue.first).snapshot.val, "hello world");
 
     });
 
@@ -309,6 +338,68 @@ void main() {
         "text2": {"order":"b"},
         "text1": {"order":"c"}
       });
+
+
+    });
+    test('Start/End at', () async {
+      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+      await ref.set({
+        "text2": {"order":"b"},
+        "text1": {"order":"c"},
+        "text3": {"order":"a"},
+        "text4": {"order":"e"},
+        "text5": {"order":"d"},
+        "text6": {"order":"b"}
+      });
+
+      ref = ref.orderByChild("order");
+
+      expect(await ref.startAt(value: "b").endAt(value: "c").get(), {
+        "text2": {"order":"b"},
+        "text6": {"order":"b"},
+        "text1": {"order":"c"}
+      });
+
+      expect(await ref.startAt(value: "b", key: "text6").endAt(value: "c").get(), {
+        "text6": {"order":"b"},
+        "text1": {"order":"c"}
+      });
+
+
+      ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+      await ref.set({
+        "text2": {"order":2},
+        "text1": {"order":3},
+        "text3": {"order":1},
+        "text4": {"order":5},
+        "text5": {"order":4},
+        "text6": {"order":2}
+      });
+      ref = ref.orderByChild("order");
+
+      expect((await ref.equalTo(2).get()).keys, ["text2","text6"]);
+
+    });
+
+    test('Ordering', () async {
+      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+      await ref.set({
+        "b": {"order":true},
+        "c": {"x":1},
+        "a": {"order":4},
+        "e": {"order":-2.3},
+        "i": {"order": "def"},
+        "g": {"order":5},
+        "j": {"order": {"x": 1}},
+        "d": {"order":7.1},
+        "23a": {"order":5},
+        "h": {"order": "abc"},
+        "f": {"order":5},
+        "25": {"order":5},
+        "k": {"order":false},
+      });
+      ref = ref.orderByChild("order");
+      expect((await ref.get()).keys, ["c","k","b","e","a","25","23a","f","g","d","h","i","j"]);
 
 
     });
