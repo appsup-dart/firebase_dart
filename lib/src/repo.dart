@@ -150,7 +150,10 @@ class Repo {
               Name.parsePath(r.message.body.path), filter
           );
           break;
-        // TODO: security debug
+        case DataMessage.action_security_debug:
+          var msg = r.message.body.message;
+          _logger.fine("security debug: $msg");
+          break;
         default:
           throw new UnimplementedError("Cannot handle message with action ${r.message.action}");
       }
