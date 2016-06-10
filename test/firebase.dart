@@ -73,6 +73,18 @@ void main() {
       expect(ref.auth, isNull);
       expect((await fromStream), isNull);
     });
+
+    test('permission denied', () async {
+      ref = ref.child('test');
+      ref.onValue.forEach((e)=>print(e.snapshot.val));
+      await ref.authWithCustomToken(token);
+      await ref.set('hello world');
+      expect(await ref.get(),'hello world');
+      await ref.unauth();
+      await ref.set('hello all').catchError(print);
+      expect(await ref.get(),'hello world');
+
+    });
   });
   group('Listen', () {
 

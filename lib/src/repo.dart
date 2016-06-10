@@ -123,6 +123,7 @@ class Repo {
   final Map<QueryFilter, int> _queryToTag = {};
   final Map<int, QueryFilter> _tagToQuery = {};
   int _nextTag = 0;
+  int _nextWriteId = 0;
 
   Repo._(String host) : _connection = new Connection(host) {
     _connection.output.listen((r) {
@@ -221,9 +222,14 @@ class Repo {
    */
   Future setWithPriority(String path, value, priority) {
     var newValue = new TreeStructuredData.fromJson(value, priority, serverValues);
-    _syncTree.applyUserOverwrite(Name.parsePath(path), newValue);
-    return _connection.put(path, newValue.toJson(true));
-    // TODO: ack operation
+    var writeId = _nextWriteId++;
+    _syncTree.applyUserOverwrite(Name.parsePath(path), newValue, writeId);
+    return _connection.put(path, newValue.toJson(true))
+        ..then((_) {
+          _syncTree.applyAck(Name.parsePath(path), writeId, true);
+        }, onError: (e) {
+          _syncTree.applyAck(Name.parsePath(path), writeId, false);
+        });
   }
 
   /**
@@ -238,9 +244,14 @@ class Repo {
         value.values.map((v)=>new TreeStructuredData.fromJson(v, null, serverValues))
     );
     if (value.isNotEmpty) {
-      _syncTree.applyUserMerge(Name.parsePath(path), changedChildren);
-      return _connection.merge(path, value);
-      // TODO: ack operation
+      int writeId = _nextWriteId++;
+      _syncTree.applyUserMerge(Name.parsePath(path), changedChildren, writeId);
+      return _connection.merge(path, value)
+        ..then((_) {
+          _syncTree.applyAck(Name.parsePath(path), writeId, true);
+        }, onError: (e) {
+          _syncTree.applyAck(Name.parsePath(path), writeId, false);
+        });
     }
     return new Future.value();
   }

@@ -56,11 +56,12 @@ class SyncPoint {
    * Applies an operation to the view for [filter] at this [SyncPoint] or all
    * views when [filter] is [null].
    */
-  void applyOperation(Operation operation, Filter filter, ViewOperationSource source) {
+  void applyOperation(Operation operation, Filter filter, ViewOperationSource source, int writeId) {
+    var op = new ViewOperation(source, operation, writeId);
     if (filter==null) {
-      views.forEach((k,v) => v.applyOperation(new ViewOperation(source, operation)));
+      views.forEach((k,v) => v.applyOperation(op));
     } else {
-      views[filter]?.applyOperation(new ViewOperation(source, operation));
+      views[filter]?.applyOperation(op);
     }
   }
 
@@ -100,9 +101,9 @@ class SyncTree {
   /**
    * Applies a user overwrite at [path] with [newData]
    */
-  applyUserOverwrite(Path<Name> path, TreeStructuredData newData) {
+  applyUserOverwrite(Path<Name> path, TreeStructuredData newData, int writeId) {
     var operation = new _Operation.overwrite(path, newData);
-    _applyOperationToSyncPoints(root, null, operation, ViewOperationSource.user);
+    _applyOperationToSyncPoints(root, null, operation, ViewOperationSource.user, writeId);
   }
 
   /**
@@ -110,7 +111,7 @@ class SyncTree {
    */
   applyServerOverwrite(Path<Name> path, Filter filter, TreeStructuredData newData) {
     var operation = new _Operation.overwrite(path, newData);
-    _applyOperationToSyncPoints(root, filter, operation, ViewOperationSource.server);
+    _applyOperationToSyncPoints(root, filter, operation, ViewOperationSource.server, null);
   }
 
   /**
@@ -118,7 +119,7 @@ class SyncTree {
    */
   applyServerMerge(Path<Name> path, Filter filter, Map<Name,TreeStructuredData> changedChildren) {
     var operation = new _Operation.merge(path, changedChildren);
-    _applyOperationToSyncPoints(root, filter, operation, ViewOperationSource.server);
+    _applyOperationToSyncPoints(root, filter, operation, ViewOperationSource.server, null);
   }
 
   applyListenRevoked(Path<Name> path, Filter filter) {
@@ -128,9 +129,9 @@ class SyncTree {
   /**
    * Applies a user merge at [path] with [changedChildren]
    */
-  applyUserMerge(Path<Name> path, Map<Name,TreeStructuredData> changedChildren) {
+  applyUserMerge(Path<Name> path, Map<Name,TreeStructuredData> changedChildren, int writeId) {
     var operation = new _Operation.merge(path, changedChildren);
-    _applyOperationToSyncPoints(root, null, operation, ViewOperationSource.user);
+    _applyOperationToSyncPoints(root, null, operation, ViewOperationSource.user, writeId);
   }
 
   /**
@@ -138,15 +139,20 @@ class SyncTree {
    * sync tree and all the relevant descendants.
    */
   static _applyOperationToSyncPoints(TreeNode<Name,SyncPoint> tree, Filter filter,
-      TreeOperation<Name,Value> operation, ViewOperationSource type) {
+      TreeOperation<Name,Value> operation, ViewOperationSource type, int writeId) {
     if (tree==null) return;
-    tree.value.applyOperation(operation,filter,type);
+    tree.value.applyOperation(operation,filter,type, writeId);
     if (operation.path.isEmpty) return; // TODO: apply to descendants
     var child = operation.path.first;
-    _applyOperationToSyncPoints(tree.children[child], filter, operation.operationForChild(child), type);
+    _applyOperationToSyncPoints(tree.children[child], filter, operation.operationForChild(child), type, writeId);
   }
 
 
+
+  applyAck(Path<Name> path, int writeId, bool success) {
+    var operation = new _Operation.ack(path, success);
+    _applyOperationToSyncPoints(root, null, operation, ViewOperationSource.ack, writeId);
+  }
 }
 
 class _Operation extends TreeOperation<Name, Value> {
@@ -159,5 +165,26 @@ class _Operation extends TreeOperation<Name, Value> {
   _Operation.merge(Path<Name> path, Map<Name,TreeStructuredData> children) :
       this(path, new Merge(children));
 
-  // TODO: ack operation
+  factory _Operation.ack(Path<Name> path, bool success) => new _Ack(path, success);
+
+}
+
+class _NoneOperation extends Operation {
+
+  @override
+  apply(value) {
+    throw new UnsupportedError("Should not be called");
+  }
+
+  @override
+  Iterable<Path> get completesPaths => [];
+}
+
+class _Ack extends _Operation implements Ack {
+  final bool success;
+
+  _Ack(Path<Name> path, this.success) : super(path, new _NoneOperation());
+
+  @override
+  operationForChild(Name key) => this;
 }

@@ -4,33 +4,43 @@
 import 'data_observer.dart';
 import 'event.dart';
 import 'tree.dart';
+import 'package:sortedmap/sortedmap.dart';
 
 class ViewCache<T> {
 
   T localVersion;
   T serverVersion;
 
-  Iterable<Operation<T>> pendingOperations;
+  SortedMap<int, Operation<T>> pendingOperations;
 
-  ViewCache(this.localVersion, this.serverVersion, this.pendingOperations);
+  ViewCache(this.localVersion, this.serverVersion, [this.pendingOperations]) {
+    pendingOperations ??= new SortedMap();
+  }
 
   void recalcLocalVersion() {
-    localVersion = pendingOperations.fold(serverVersion, (v, o)=>o.apply(v));
+    localVersion = pendingOperations.values.fold(serverVersion, (v, o)=>o.apply(v));
   }
   ViewCache<T> updateServerVersion(T newValue) {
     return new ViewCache(localVersion, newValue, pendingOperations)..recalcLocalVersion();
   }
-  ViewCache<T> addOperation(Operation<T> op) {
+  ViewCache<T> addOperation(int writeId, Operation<T> op) {
     return new ViewCache(
-        op.apply(localVersion), serverVersion, new List.from(pendingOperations)..add(op)
+        op.apply(localVersion), serverVersion, pendingOperations.clone()..[writeId] = op
     );
+  }
+
+  ViewCache removeOperation(int writeId, bool recalc) {
+    var viewCache = new ViewCache(localVersion, serverVersion,
+        pendingOperations.clone()..remove(writeId));
+    if (recalc) viewCache.recalcLocalVersion();
+    return viewCache;
   }
 }
 
 class View<T> extends DataObserver<ViewCache<T>> {
 
   View(T initialVersion, EventGenerator<ViewCache<T>> eventGenerator) :
-        super(new ViewCache(initialVersion, initialVersion, []), eventGenerator);
+        super(new ViewCache(initialVersion, initialVersion), eventGenerator);
 
 
   toString() => "View[$hashCode]";
@@ -56,22 +66,28 @@ class ViewEventGenerator<T> extends EventGenerator<ViewCache<T>> {
   }
 }
 
-enum ViewOperationSource {user, server}
+enum ViewOperationSource {user, server, ack}
 
+abstract class Ack {
+  bool get success;
+}
 
 class ViewOperation<T> extends Operation<ViewCache<T>> {
 
   final Operation<T> dataOperation;
   final ViewOperationSource source;
+  final int writeId;
 
 
-  ViewOperation(this.source, this.dataOperation);
+  ViewOperation(this.source, this.dataOperation, this.writeId);
 
   @override
   ViewCache<T> apply(ViewCache<T> value) {
     switch (source) {
       case ViewOperationSource.user:
-        return value.addOperation(dataOperation);
+        return value.addOperation(writeId, dataOperation);
+      case ViewOperationSource.ack:
+        return value.removeOperation(writeId, !(dataOperation as Ack).success);
       case ViewOperationSource.server:
         var result = dataOperation.apply(value.serverVersion);
         return value.updateServerVersion(result);
