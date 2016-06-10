@@ -10,7 +10,6 @@ import 'events/value.dart';
 import 'dart:math';
 import 'package:logging/logging.dart';
 import 'package:quiver/core.dart' as quiver;
-import 'package:collection/collection.dart' show ListEquality;
 import 'package:sortedmap/sortedmap.dart';
 
 final _logger = new Logger("firebase-repo");
