@@ -311,7 +311,7 @@ class Repo {
    * Helper function to create a new stream for a particular event type.
    */
   Stream<firebase.Event> createStream(firebase.Firebase ref, QueryFilter filter, String type) {
-    return new StreamFactory(this, ref, filter, type)();
+    return new _Stream(()=>new StreamFactory(this, ref, filter, type)());
   }
 
 
@@ -334,6 +334,18 @@ class Repo {
   }
 }
 
+class _Stream<T> extends Stream<T> {
+
+  final Function factory;
+
+  _Stream(this.factory);
+
+  @override
+  StreamSubscription<T> listen(void onData(T event), {Function onError, void onDone(), bool cancelOnError}) {
+    Stream<T> stream = factory();
+    return stream.listen(onData, onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+  }
+}
 
 class StreamFactory {
 

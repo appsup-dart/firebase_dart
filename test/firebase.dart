@@ -114,6 +114,16 @@ void main() {
 
     });
 
+    test('Multiple listeners on on*-stream', () async {
+      await(ref.set("hello world"));
+
+      var onValue = ref.onValue;
+
+      expect((await onValue.first).snapshot.val, "hello world");
+      expect((await onValue.first).snapshot.val, "hello world");
+
+    });
+
   });
 
   group('Push/Merge/Remove', () {
