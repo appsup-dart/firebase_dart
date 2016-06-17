@@ -46,7 +46,7 @@ class IncompleteData<T> {
   TreeNode<dynamic, bool> _completePath(TreeNode<dynamic, bool> states, Path path) {
     if (path.isEmpty) return new TreeNode(true);
     var c = path.first;
-    return states.clone()..children[c] = _completePath(states.children[c], path.skip(1));
+    return states.clone()..children[c] = _completePath(states.children[c] ?? new TreeNode(), path.skip(1));
   }
 
 
