@@ -133,7 +133,7 @@ class WebSocketTransport extends Transport {
   WebSocketTransport(String host, String namespace, [String sessionId]) : super(host, namespace, sessionId);
 
   _start() {
-    _socket.sink.addStream(_output.stream.map(JSON.encode)
+    _socket.addStream(_output.stream.map(JSON.encode)
         .map((v){
       _logger.fine("send $v");
       return v;
@@ -144,7 +144,7 @@ class WebSocketTransport extends Transport {
     });
   }
 
-  WebSocketChannel _socket;
+  WebSocket _socket;
 
 
   @override
@@ -160,8 +160,8 @@ class WebSocketTransport extends Transport {
         path: ".ws"
     );
     _logger.fine("connecting to $url");
-    WebSocketChannel socket = _socket = connect(url.toString());
-    socket.stream
+    WebSocket socket = _socket = await WebSocket.connect(url.toString());
+    socket
         .map((v) {
       _logger.fine("received $v");
       return v;
@@ -172,7 +172,7 @@ class WebSocketTransport extends Transport {
 
   @override
   Future _reset() async {
-    _socket.sink.close();
+    _socket.close();
     _socket = null;
   }
 
