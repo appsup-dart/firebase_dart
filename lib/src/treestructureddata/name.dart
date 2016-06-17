@@ -78,6 +78,6 @@ class Name implements Pattern, Comparable<Name> {
   }
 
   static Path<Name> parsePath(String path) {
-    return new Path.from(path.split("/").where((v)=>v.isNotEmpty).map((v)=>new Name(v)));
+    return new Path<Name>.from(path.split("/").where((v)=>v.isNotEmpty).map/*<Name>*/((v)=>new Name(v)));
   }
 }

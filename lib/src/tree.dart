@@ -9,21 +9,28 @@ class Path<K> extends UnmodifiableListView<K> {
 
   Path.from(Iterable<K> source) : super(source);
 
-  Path skip(int count) => new Path.from(super.skip(count));
+  Path<K> skip(int count) => new Path.from(super.skip(count));
 
-  Path child(K child) => new Path.from(new List.from(this)..add(child));
+  Path<K> child(K child) => new Path.from(new List.from(this)..add(child));
 }
 
 class TreeNode<K,V> implements Comparable<TreeNode<K,V>> {
 
   V value;
 
-  final Map<K,TreeNode<K,V>> children;
+  final Map<K,TreeNode<K,V>> _children;
+
+  Map<K,TreeNode<K,V>> get children => _children;
 
   TreeNode([this.value, Map<K,TreeNode<K,V>> children]) :
-        children = (_cloneMap(children ?? {}));
+        _children = (_cloneMap/*<K,TreeNode<K,V>>*/(children ?? {}));
 
-  static _cloneMap(Map map) => map is SortedMap ? map.clone() : new Map.from(map);
+  static Map/*<K,V>*/ _cloneMap/*<K,V>*/(Map/*<K,V>*/ map) {
+    if (map is SortedMap) {
+      return (map as SortedMap/*<K,V>*/).clone();
+    }
+    return new Map/*<K,V>*/.from(map);
+  }
 
   TreeNode<K,V> subtree(Path<K> path, [TreeNode<K,V> newInstance()]) {
     if (path.isEmpty) return this;
@@ -79,7 +86,7 @@ class TreeNode<K,V> implements Comparable<TreeNode<K,V>> {
 
   forEachNode(void f(Path<K> key, V value)) {
 
-    _forEach(TreeNode node, Path p) {
+    _forEach(TreeNode<K,V> node, Path<K> p) {
       node.children.forEach((c,v) {
         f(p.child(c), v.value);
       });

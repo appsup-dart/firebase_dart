@@ -12,7 +12,7 @@ class TreeOperation<K,V> extends Operation<TreeNode<K,V>> {
 
   final Path<K> path;
   final Operation<TreeNode<K,V>> nodeOperation;
-  final NodeFactory factory;
+  final NodeFactory<K,V> factory;
 
 
   TreeOperation(this.path, this.nodeOperation, this.factory);
@@ -33,7 +33,7 @@ class TreeOperation<K,V> extends Operation<TreeNode<K,V>> {
 
   @override
   Iterable<Path> get completesPaths =>
-      nodeOperation.completesPaths.map((p)=>new Path.from(new List.from(this.path)..addAll(p)));
+      nodeOperation.completesPaths.map/*<Path>*/((p)=>new Path.from(new List.from(this.path)..addAll(p)));
 
 
   TreeNode<K,V> _applyOnPath(Path<K> path, TreeNode<K,V> value) {
@@ -41,7 +41,7 @@ class TreeOperation<K,V> extends Operation<TreeNode<K,V>> {
       return nodeOperation.apply(value);
     } else {
       var k = path.first;
-      var child = value.children[k] ?? factory();
+      TreeNode<K,V> child = value.children[k] ?? factory();
       var newChild = _applyOnPath(path.skip(1), child);
       var newValue = value.clone();
       if (newValue.isLeaf&&!newChild.isNil) newValue.value = null;
@@ -66,7 +66,7 @@ class Merge<K,V> extends Operation<TreeNode<K,V>> {
 
 
   @override
-  Iterable<Path> get completesPaths => children.keys.map((c)=>new Path.from([c]));
+  Iterable<Path> get completesPaths => children.keys.map/*<Path>*/((c)=>new Path.from([c]));
 }
 
 class Overwrite<K,V> extends Operation<TreeNode<K,V>> {
@@ -93,7 +93,7 @@ class TreeEventGenerator<K,V> extends EventGenerator<TreeNode<K,V>> {
       IncompleteData<TreeNode<K,V>> oldValue,
       IncompleteData<TreeNode<K,V>> newValue) sync* {
     var newChildren = newValue.value.children;
-    var oldChildren = oldValue.value?.children ?? const {};
+    Map oldChildren = oldValue.value?.children ?? const {};
     switch (eventType) {
       case "child_added":
         var newPrevKey = null;

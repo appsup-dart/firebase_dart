@@ -5,12 +5,16 @@
 library firebase.protocol;
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:logging/logging.dart';
 import 'dart:typed_data';
+import 'package:web_socket_channel/web_socket_channel.dart';
+
+import 'protocol/websocket.dart'
+  if (dart.library.html) 'protocol/websocket_html.dart'
+  if (dart.library.io) 'protocol/websocket_io.dart';
 
 part 'protocol/request.dart';
 part 'protocol/response.dart';

@@ -23,7 +23,7 @@ class SyncPoint {
    * and therefore we should also listen for remote changes.
    *
    */
-  bool addEventListener(String type, Filter filter, EventListener listener) {
+  bool addEventListener(String type, Filter<Pair<Name,TreeStructuredData>> filter, EventListener listener) {
     var view = views.putIfAbsent(filter,
         ()=>new View(new TreeStructuredData(filter: filter), _eventGenerator));
     //TODO: create view from parents
@@ -72,7 +72,7 @@ class SyncTree {
 
   final TreeNode<Name,SyncPoint> root = _createNode();
 
-  static _createNode() => new TreeNode(new SyncPoint());
+  static TreeNode<Name,SyncPoint> _createNode() => new TreeNode(new SyncPoint());
 
   /**
    * Adds an event listener for events of [type] and for data at [path] and
@@ -82,7 +82,8 @@ class SyncTree {
    * registered before and therefore we should also listen for remote changes.
    *
    */
-  bool addEventListener(String type, Path<Name> path, Filter filter, EventListener listener) {
+  bool addEventListener(String type, Path<Name> path,
+      Filter<Pair<Name,TreeStructuredData>> filter, EventListener listener) {
     return root.subtree(path, _createNode).value.addEventListener(type, filter, listener);
   }
 
@@ -160,16 +161,16 @@ class _Operation extends TreeOperation<Name, Value> {
         super(path, nodeOperation, ()=>new TreeStructuredData());
 
   _Operation.overwrite(Path<Name> path, TreeStructuredData value) :
-      this(path, new Overwrite(value));
+      this(path, new Overwrite<Name,Value>(value));
 
   _Operation.merge(Path<Name> path, Map<Name,TreeStructuredData> children) :
-      this(path, new Merge(children));
+      this(path, new Merge<Name,Value>(children));
 
   factory _Operation.ack(Path<Name> path, bool success) => new _Ack(path, success);
 
 }
 
-class _NoneOperation extends Operation {
+class _NoneOperation<T> extends Operation<T> {
 
   @override
   apply(value) {

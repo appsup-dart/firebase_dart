@@ -63,7 +63,7 @@ class Query {
    * listening.
    */
   Future<DataSnapshot> once(String eventType) =>
-      on(eventType).first.then((e)=>e.snapshot);
+      on(eventType).first.then/*<DataSnapshot>*/((e)=>e.snapshot);
 
   Future<DataSnapshot> get onceValue => once('value');
 
