@@ -566,7 +566,7 @@ class Transaction implements Comparable<Transaction> {
         break;
       default:
         throw new StateError(
-            "Unable to abort transaction in state ${status}");
+            "Unable to abort transaction in state $status");
     }
   }
 

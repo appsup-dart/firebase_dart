@@ -553,7 +553,7 @@ String jwt(Map data, String secret) {
 
 String _jwt(List<int> payload, {Map header, String secret}) {
   final msg = '${BASE64URL.encode(JSON.encode(header).codeUnits)}.${BASE64URL.encode(payload)}';
-  return "${msg}.${_signMessage(msg, secret)}";
+  return "$msg.${_signMessage(msg, secret)}";
 }
 
 String _signMessage(String msg, String secret) {
