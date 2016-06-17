@@ -25,7 +25,7 @@ class Name implements Pattern, Comparable<Name> {
 
   const Name(this._value);
 
-  toString() => _value;
+  String toString() => _value;
 
   @override
   Iterable<Match> allMatches(String string, [int start = 0]) =>
@@ -43,8 +43,8 @@ class Name implements Pattern, Comparable<Name> {
   int compareTo(Name other) => compare(this, other);
 
 
-  asString() => _value;
-  asInt() => int.parse(_value, onError: (_)=> null);
+  String asString() => _value;
+  int asInt() => int.parse(_value, onError: (_)=> null);
 
   int get length => _value.length;
 

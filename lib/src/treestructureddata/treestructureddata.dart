@@ -71,5 +71,5 @@ class TreeStructuredData extends TreeNode<Name,Value> {
       !other.isLeaf&&const MapEquality().equals(children, other.children));
 
 
-  toString() => "TreeStructuredData[${toJson()}]";
+  String toString() => "TreeStructuredData[${toJson()}]";
 }

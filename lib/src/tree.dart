@@ -82,11 +82,11 @@ class TreeNode<K,V> implements Comparable<TreeNode<K,V>> {
     yield* children[c].nodesOnPath(path.skip(1));
   }
 
-  toString() => "TreeNode[$value]$children";
+  String toString() => "TreeNode[$value]$children";
 
-  forEachNode(void f(Path<K> key, V value)) {
+  void forEachNode(void f(Path<K> key, V value)) {
 
-    _forEach(TreeNode<K,V> node, Path<K> p) {
+    void _forEach(TreeNode<K,V> node, Path<K> p) {
       node.children.forEach((c,v) {
         f(p.child(c), v.value);
       });

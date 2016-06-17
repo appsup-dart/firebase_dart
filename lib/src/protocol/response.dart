@@ -13,6 +13,6 @@ class Response {
 
   Response(this.message, this._request);
 
-  toString() => "Response[${JSON.encode(message)}]";
+  String toString() => "Response[${JSON.encode(message)}]";
 
 }

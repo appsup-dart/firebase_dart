@@ -65,7 +65,7 @@ class SyncPoint {
     }
   }
 
-  toString() => "SyncPoint[$views]";
+  String toString() => "SyncPoint[$views]";
 }
 
 class SyncTree {
@@ -102,7 +102,7 @@ class SyncTree {
   /**
    * Applies a user overwrite at [path] with [newData]
    */
-  applyUserOverwrite(Path<Name> path, TreeStructuredData newData, int writeId) {
+  void applyUserOverwrite(Path<Name> path, TreeStructuredData newData, int writeId) {
     var operation = new _Operation.overwrite(path, newData);
     _applyOperationToSyncPoints(root, null, operation, ViewOperationSource.user, writeId);
   }
@@ -110,7 +110,7 @@ class SyncTree {
   /**
    * Applies a server overwrite at [path] with [newData]
    */
-  applyServerOverwrite(Path<Name> path, Filter filter, TreeStructuredData newData) {
+  void applyServerOverwrite(Path<Name> path, Filter filter, TreeStructuredData newData) {
     var operation = new _Operation.overwrite(path, newData);
     _applyOperationToSyncPoints(root, filter, operation, ViewOperationSource.server, null);
   }
@@ -118,19 +118,19 @@ class SyncTree {
   /**
    * Applies a server merge at [path] with [changedChildren]
    */
-  applyServerMerge(Path<Name> path, Filter filter, Map<Name,TreeStructuredData> changedChildren) {
+  void applyServerMerge(Path<Name> path, Filter filter, Map<Name,TreeStructuredData> changedChildren) {
     var operation = new _Operation.merge(path, changedChildren);
     _applyOperationToSyncPoints(root, filter, operation, ViewOperationSource.server, null);
   }
 
-  applyListenRevoked(Path<Name> path, Filter filter) {
+  void applyListenRevoked(Path<Name> path, Filter filter) {
     root.subtree(path).value.views[filter].dispatchEvent(new Event("cancel"));
   }
 
   /**
    * Applies a user merge at [path] with [changedChildren]
    */
-  applyUserMerge(Path<Name> path, Map<Name,TreeStructuredData> changedChildren, int writeId) {
+  void applyUserMerge(Path<Name> path, Map<Name,TreeStructuredData> changedChildren, int writeId) {
     var operation = new _Operation.merge(path, changedChildren);
     _applyOperationToSyncPoints(root, null, operation, ViewOperationSource.user, writeId);
   }
@@ -139,7 +139,7 @@ class SyncTree {
    * Helper function to recursively apply an operation to a node in the
    * sync tree and all the relevant descendants.
    */
-  static _applyOperationToSyncPoints(TreeNode<Name,SyncPoint> tree, Filter filter,
+  static void _applyOperationToSyncPoints(TreeNode<Name,SyncPoint> tree, Filter filter,
       TreeOperation<Name,Value> operation, ViewOperationSource type, int writeId) {
     if (tree==null) return;
     tree.value.applyOperation(operation,filter,type, writeId);
@@ -150,7 +150,7 @@ class SyncTree {
 
 
 
-  applyAck(Path<Name> path, int writeId, bool success) {
+  void applyAck(Path<Name> path, int writeId, bool success) {
     var operation = new _Operation.ack(path, success);
     _applyOperationToSyncPoints(root, null, operation, ViewOperationSource.ack, writeId);
   }
@@ -173,7 +173,7 @@ class _Operation extends TreeOperation<Name, Value> {
 class _NoneOperation<T> extends Operation<T> {
 
   @override
-  apply(value) {
+  T apply(value) {
     throw new UnsupportedError("Should not be called");
   }
 
@@ -187,7 +187,7 @@ class _Ack extends _Operation implements Ack {
   _Ack(Path<Name> path, this.success) : super(path, new _NoneOperation());
 
   @override
-  operationForChild(Name key) {
+  _Ack operationForChild(Name key) {
     if (path.isEmpty) return null;
     if (path.first!=key) return null;
     return new _Ack(path.skip(1), success);

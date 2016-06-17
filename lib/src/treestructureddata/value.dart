@@ -13,7 +13,7 @@ class ServerValue {
     "TIMESTAMP": timestamp
   };
 
-  toJson() => {".sv": type};
+  Map<String,String> toJson() => {".sv": type};
 }
 
 class Value implements Comparable<Value> {
@@ -62,8 +62,8 @@ class Value implements Comparable<Value> {
   int get hashCode => value.hashCode;
   bool operator==(other) => other is Value&&value==other.value;
 
-  toJson() => value;
+  dynamic toJson() => value;
 
-  toString() => "Value[$value]";
+  String toString() => "Value[$value]";
 }
 

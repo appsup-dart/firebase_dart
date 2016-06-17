@@ -88,7 +88,7 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
   }
 
   @override
-  isValid(p) {
+  bool isValid(p) {
     p = _extract(p);
     if (startAt!=null&&_comparePair(startAt,p)>0) return false;
     if (endAt!=null&&_comparePair(p,endAt)>0) return false;
@@ -99,7 +99,7 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
   int compare(a,b) =>
       _comparePair(_extract(a),_extract(b));
 
-  toString() => "QueryFilter[${toQuery().toJson()}]";
+  String toString() => "QueryFilter[${toQuery().toJson()}]";
 
 
   int get hashCode => quiver.hash4(orderBy,startAt,endAt,
@@ -195,7 +195,7 @@ class Repo {
   /**
    * The current authData
    */
-  get authData => _authData;
+  dynamic get authData => _authData;
 
   /**
    * Stream of auth data.
@@ -378,7 +378,7 @@ class Repo {
     });
   }
 
-  _runOnDisconnectEvents() {
+  void _runOnDisconnectEvents() {
     var sv = serverValues;
     _onDisconnect.forEachNode((path, snap) {
       if (snap==null) return;
@@ -517,13 +517,13 @@ class Transaction implements Comparable<Transaction> {
   bool get isComplete => status==TransactionStatus.completed;
   bool get isAborted => status==TransactionStatus.sent_needs_abort;
 
-  _onValue(Event _) {}
+  void _onValue(Event _) {}
 
-  _watch() {
+  void _watch() {
     repo.listen(path.join("/"), null, "value", _onValue);
   }
 
-  _unwatch() {
+  void _unwatch() {
     repo.unlisten(path.join("/"), null, "value", _onValue);
   }
 
@@ -550,7 +550,7 @@ class Transaction implements Comparable<Transaction> {
     }
   }
 
-  fail(e) {
+  void fail(e) {
     _unwatch();
     currentOutputSnapshot = null;
     if (applyLocally)
@@ -561,7 +561,7 @@ class Transaction implements Comparable<Transaction> {
         new firebase.DataSnapshot(repo.rootRef.child(path.join("/")), currentInputSnapshot)));
   }
 
-  stale() {
+  void stale() {
     status = null;
     if (applyLocally)
       repo._syncTree.applyAck(path, currentWriteId, false);
@@ -573,7 +573,7 @@ class Transaction implements Comparable<Transaction> {
     retryCount++;
   }
 
-  abort(String reason) {
+  void abort(String reason) {
     switch (status) {
       case TransactionStatus.sent_needs_abort:
         break;
@@ -590,7 +590,7 @@ class Transaction implements Comparable<Transaction> {
     }
   }
 
-  complete() {
+  void complete() {
     assert(status==TransactionStatus.sent);
     status = TransactionStatus.completed;
 
@@ -609,7 +609,7 @@ class Transaction implements Comparable<Transaction> {
 
 }
 
-updateChild(TreeStructuredData value, Path<Name> path, TreeStructuredData child) {
+TreeStructuredData updateChild(TreeStructuredData value, Path<Name> path, TreeStructuredData child) {
   if (path.isEmpty) {
     return child;
   } else {
@@ -654,7 +654,7 @@ class TransactionsTree {
     if (!finished) send();
   }
 
-  abort(Path<Name> path) {
+  void abort(Path<Name> path) {
     root.nodesOnPath(path).forEach((n)=>n.abort());
   }
 
@@ -687,7 +687,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
   /**
    * Completes all sent transactions
    */
-  complete() {
+  void complete() {
     value.where((t)=>t.isSent).forEach((m)=>m.complete());
     value.where((t)=>!t.isComplete).forEach((m)=>m.status=null);
     value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
@@ -697,7 +697,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
   /**
    * Fails aborted transactions and resets other sent transactions
    */
-  stale() {
+  void stale() {
     value.where((t)=>t.isAborted).forEach((m)=>m.fail(new Exception(m.abortReason)));
     value.where((t)=>!t.isAborted).forEach((m)=>m.stale());
     value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
@@ -707,13 +707,13 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
   /**
    * Fails all sent transactions
    */
-  fail(e) {
+  void fail(e) {
     value.where((t)=>t.isSent).forEach((m)=>m.fail(e));
     value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
     children.values.forEach((n)=>n.fail(e));
   }
 
-  _send() {
+  void _send() {
     value.forEach((m)=>m.send());
     children.values.forEach((n)=>n._send());
   }
@@ -754,7 +754,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
     yield* children.values.expand/*<Transaction>*/((n)=>n._transactions);
   }
 
-  rerun(Path<Name> path, TreeStructuredData input) {
+  void rerun(Path<Name> path, TreeStructuredData input) {
     this.input = input;
 
     var v = input;
@@ -789,7 +789,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
     return v;
   }
 
-  addTransaction(Transaction transaction) {
+  void addTransaction(Transaction transaction) {
     if (transaction.status==TransactionStatus.run) {
       value.add(transaction);
     }
@@ -797,7 +797,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
 
 
 
-  abort() {
+  void abort() {
     for (var txn in value) {
       txn.abort("set");
     }

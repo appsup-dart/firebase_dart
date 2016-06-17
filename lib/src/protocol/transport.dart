@@ -51,7 +51,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
     return _pings.last.future;
   }
 
-  _onDataMessage(DataMessage v) {
+  void _onDataMessage(DataMessage v) {
     var request = _pendingRequests.remove(v.reqNum);
     var response = new Response(v, request);
     if (request!=null&&!request._completer.isCompleted) {
@@ -61,7 +61,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   }
 
 
-  _onControlMessage(ControlMessage v) async {
+  Future _onControlMessage(ControlMessage v) async {
     if (v is HandshakeMessage) {
       _info = v.info;
       _infoReceivedTime = new DateTime.now();
@@ -79,7 +79,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
       kill();
     }
   }
-  _onMessage(Message v) {
+  void _onMessage(Message v) {
     if (v is DataMessage) _onDataMessage(v);
     else _onControlMessage(v);
   }
@@ -132,7 +132,7 @@ class WebSocketTransport extends Transport {
 
   WebSocketTransport(String host, String namespace, [String sessionId]) : super(host, namespace, sessionId);
 
-  _start() {
+  Future _start() async {
     _socket.sink.addStream(_output.stream.map(JSON.encode)
         .map((v){
       _logger.fine("send $v");

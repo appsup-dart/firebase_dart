@@ -51,7 +51,7 @@ class IncompleteData<T> {
   }
 
 
-  toString() => "IncompleteData[$value,$_states]";
+  String toString() => "IncompleteData[$value,$_states]";
 }
 
 class DataObserver<T> extends EventTarget {
@@ -76,7 +76,7 @@ class DataObserver<T> extends EventTarget {
         .forEach(dispatchEvent);
   }
 
-  generateInitialEvents(String type) =>
+  Iterable<Event> generateInitialEvents(String type) =>
       eventGenerator.generateEvents(type, new IncompleteData(null), _data);
 
 }
@@ -86,7 +86,7 @@ class EventGenerator<T> {
 
   const EventGenerator();
 
-  static _equals(a,b) {
+  static bool _equals(a,b) {
     if (a is Map&&b is Map) return const MapEquality().equals(a,b);
     if (a is Iterable&&b is Iterable) return const IterableEquality().equals(a,b);
     return a==b;

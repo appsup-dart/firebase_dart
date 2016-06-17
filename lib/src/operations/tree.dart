@@ -28,7 +28,7 @@ class TreeOperation<K,V> extends Operation<TreeNode<K,V>> {
     return new TreeOperation(path.skip(1), nodeOperation, factory);
   }
 
-  toString() => "TreeOperation[$path,$nodeOperation]";
+  String toString() => "TreeOperation[$path,$nodeOperation]";
 
 
   @override
@@ -78,7 +78,7 @@ class Overwrite<K,V> extends Operation<TreeNode<K,V>> {
   TreeNode<K,V> apply(TreeNode<K,V> value) =>
       value.clone()..value = this.value.value..children.clear()..children.addAll(this.value.children);
 
-  toString() => "Overwrite[$value]";
+  String toString() => "Overwrite[$value]";
 
   @override
   Iterable<Path> get completesPaths => [new Path()];
@@ -93,7 +93,7 @@ class TreeEventGenerator<K,V> extends EventGenerator<TreeNode<K,V>> {
       IncompleteData<TreeNode<K,V>> oldValue,
       IncompleteData<TreeNode<K,V>> newValue) sync* {
     var newChildren = newValue.value.children;
-    Map oldChildren = oldValue.value?.children ?? const {};
+    Map<K,TreeNode<K,V>> oldChildren = oldValue.value?.children ?? const {};
     switch (eventType) {
       case "child_added":
         var newPrevKey = null;
@@ -131,7 +131,7 @@ class TreeEventGenerator<K,V> extends EventGenerator<TreeNode<K,V>> {
         }
         return;
       case "child_moved":
-        lastKeyBefore(List list, key) {
+        K lastKeyBefore(List<K> list, K key) {
           var index = list.indexOf(key);
           if (index<=0) return null;
           return list[index-1];

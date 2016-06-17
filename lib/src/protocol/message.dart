@@ -24,12 +24,12 @@ abstract class Message {
     }
   }
 
-  toJson() => {
+  Map<String, dynamic> toJson() => {
     messageType: this is ControlMessage ? typeControl : typeData,
     messageData: _payloadJson
   };
 
-  get _payloadJson;
+  Map<String,dynamic> get _payloadJson;
 
 }
 
@@ -68,8 +68,8 @@ class DataMessage extends Message {
     );
   }
 
-  get _payloadJson {
-    var json = {};
+  Map<String,dynamic> get _payloadJson {
+    var json = <String,dynamic>{};
     if (action!=null) json["a"] = action;
     if (body!=null) json["b"] = body;
     if (reqNum!=null) json["r"] = reqNum;
@@ -119,8 +119,8 @@ class Query {
       other.endName==endName&&other.endValue==endValue&&
       other.startName==startName&&other.startValue==startValue;
 
-  toJson() {
-    var json = {};
+  Map<String,dynamic> toJson() {
+    var json = <String,dynamic>{};
     if (limit!=null) {
       json[LIMIT] = limit;
       json[VIEW_FROM] = isViewFromRight ? VIEW_FROM_RIGHT : VIEW_FROM_LEFT;
@@ -165,8 +165,8 @@ class MessageBody {
 
   Iterable<String> get warnings => data is Map ? data["w"] as Iterable<String> : const[];
 
-  toJson() {
-    var json = {};
+  Map<String,dynamic> toJson() {
+    var json = <String,dynamic>{};
     if (cred!=null) json["cred"] = cred;
     if (path!=null) json["p"] = path;
     if (hash!=null) json["h"] = hash;
@@ -217,9 +217,9 @@ abstract class ControlMessage extends Message {
   }
 
   String get type;
-  get jsonData;
+  dynamic get jsonData;
 
-  get _payloadJson => {
+  Map<String,dynamic> get _payloadJson => {
     Message.messageType: type,
     Message.messageData: jsonData
   };
@@ -228,11 +228,11 @@ abstract class ControlMessage extends Message {
 
 class PingMessage extends ControlMessage {
   String get type => ControlMessage.typeControlPing;
-  get jsonData => {};
+  Map<String,dynamic> get jsonData => {};
 }
 class PongMessage extends ControlMessage {
   String get type => ControlMessage.typeControlPong;
-  get jsonData => {};
+  Map<String,dynamic> get jsonData => {};
 }
 
 class ResetMessage extends ControlMessage {
@@ -247,7 +247,7 @@ class ResetMessage extends ControlMessage {
   }
 
   String get type => ControlMessage.typeControlReset;
-  get jsonData => host;
+  String get jsonData => host;
 }
 
 class ShutdownMessage extends ControlMessage {
@@ -255,7 +255,7 @@ class ShutdownMessage extends ControlMessage {
 
   ShutdownMessage(this.reason);
 
-  get jsonData => reason;
+  String get jsonData => reason;
 
   @override
   String get type => ControlMessage.typeControlShutdown;
@@ -273,7 +273,7 @@ class HandshakeMessage extends ControlMessage {
   }
 
   String get type => ControlMessage.typeHandshake;
-  get jsonData => info;
+  HandshakeInfo get jsonData => info;
 }
 
 class HandshakeInfo {
@@ -291,7 +291,7 @@ class HandshakeInfo {
           json["v"], json["h"], json["s"]
       );
 
-  toJson() => {
+  Map<String,dynamic> toJson() => {
     "ts": timestamp.millisecondsSinceEpoch,
     "v": version,
     "h": host,

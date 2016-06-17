@@ -3,7 +3,7 @@
 
 part of firebase.protocol;
 
-calculateHash(obj) {
+String calculateHash(obj) {
   if (obj is Map) {
     String toHash = "";
     // TODO priority hash

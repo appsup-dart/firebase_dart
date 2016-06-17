@@ -36,5 +36,5 @@ class Request {
       : this(DataMessage.action_stats, new MessageBody(stats: stats));
 
 
-  toString() => "Request[${JSON.encode(message)}]";
+  String toString() => "Request[${JSON.encode(message)}]";
 }

@@ -16,7 +16,7 @@ class ServerError implements Exception {
     "unavailable": "The service is unavailable"
   }[code] ?? "Unknown Error";
 
-  toString() => "$code: $reason";
+  String toString() => "$code: $reason";
 }
 
 class Connection {
@@ -104,7 +104,7 @@ class Connection {
   Future disconnect() => _transport._close(null);
 
 
-  _restoreState() async {
+  Future _restoreState() async {
     // auth
     if (_authToken!=null) {
       await auth(_authToken);
@@ -132,7 +132,7 @@ class Connection {
     return b.data;
   });
 
-  unauth() {
+  Future unauth() {
     _authToken = null;
     return _request(new Request.unauth()).then((b)=>b.data);
   }

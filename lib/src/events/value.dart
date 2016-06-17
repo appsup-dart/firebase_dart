@@ -8,5 +8,5 @@ class ValueEvent<T> extends Event {
 
   ValueEvent(this.value) : super("value");
 
-  toString() => "ValueEvent[$value]";
+  String toString() => "ValueEvent[$value]";
 }
