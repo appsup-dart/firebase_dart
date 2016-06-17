@@ -88,42 +88,24 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   String toString() => "TreeStructuredData[${toJson()}]";
 
   String get hash {
-    if (isLeaf) {
-      var obj = value.value;
-      var toHash = "";
-/*
-    if (!this.priorityNode_.isEmpty()) {
-      toHash += "priority:" + fb.core.snap.priorityHashText((this.priorityNode_.val())) + ":";
-    }
-*/
-      if (obj is num) {
-        toHash += "number:${doubleToIEEE754String(obj)}";
-      } else if (obj is bool) {
-        toHash += "boolean:$obj";
-      } else if (obj is String) {
-        toHash += "string:$obj";
-      }
-      return BASE64.encode(sha1.convert(toHash.codeUnits).bytes);
-    }
-    if (isNil) return "";
+    var toHash = "";
 
-    String toHash = "";
-    // TODO priority hash
-/*
-    if (!this.getPriority().isEmpty()) {
-      toHash += "priority:" + fb.core.snap.priorityHashText((this.getPriority().val())) + ":";
+    if (priority!=null) {
+      toHash += "priority:${priority._hashText}";
     }
-*/
+
+    if (isLeaf) {
+      toHash += value._hashText;
+    }
     children.forEach((key, child) {
       toHash += ":${key.asString()}:${child.hash}";
     });
     return BASE64.encode(sha1.convert(toHash.codeUnits).bytes);
-
   }
 }
 
 
-String doubleToIEEE754String(num v) {
+String _doubleToIEEE754String(num v) {
   var l = new Float64List.fromList([v.toDouble()]);
   var hex = "";
   for (int i = 0; i < 8; i++) {

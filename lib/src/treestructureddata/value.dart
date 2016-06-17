@@ -68,4 +68,15 @@ class Value implements Comparable<Value> {
 
   @override
   String toString() => "Value[$value]";
+
+  String get _hashText {
+    if (value is num) {
+      return "number:${_doubleToIEEE754String(value)}";
+    } else if (value is bool) {
+      return "boolean:$value";
+    } else if (value is String) {
+      return "string:$value";
+    }
+    throw new StateError("Invalid value to hash $value");
+  }
 }
