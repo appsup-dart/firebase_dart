@@ -97,7 +97,7 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
   Comparator<Pair<Name,TreeStructuredData>> get compare => (a,b) =>
       _comparePair(_extract(a),_extract(b));
 
-  toString() => "QueryFilter[${toQuery().toJson()}";
+  toString() => "QueryFilter[${toQuery().toJson()}]";
 
 
   int get hashCode => quiver.hash4(orderBy,startAt,endAt,
