@@ -98,12 +98,18 @@ class Connection {
     _transport.done.then((_) {
       _onConnect.add(false);
       _transport = null;
-      _scheduleConnect(1000);
+      if (!_output.isClosed)
+        _scheduleConnect(1000);
     });
   }
 
   Future disconnect() => _transport._close(null);
 
+  Future close() async {
+    await _output.close();
+    await _onConnect.close();
+    await disconnect();
+  }
 
   Future _restoreState() async {
     // auth

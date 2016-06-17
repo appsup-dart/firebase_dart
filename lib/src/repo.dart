@@ -187,6 +187,10 @@ class Repo {
 
   Future triggerDisconnect() => _connection.disconnect();
 
+  Future close() async {
+    await _onAuth.close();
+    await _connection.close();
+  }
 
   /**
    * Generates the special server values

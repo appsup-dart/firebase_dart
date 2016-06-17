@@ -10,3 +10,4 @@ linter:
     - await_only_futures
     - camel_case_types
     - cancel_subscriptions
+    - close_sinks
