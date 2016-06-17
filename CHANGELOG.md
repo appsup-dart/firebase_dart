@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- browser support
+- strong mode
+
 ## 0.3.0
 
 - implement transactions
