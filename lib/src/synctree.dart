@@ -58,7 +58,7 @@ class SyncPoint {
    */
   void applyOperation(Operation operation, Filter filter, ViewOperationSource source, int writeId) {
     var op = new ViewOperation(source, operation, writeId);
-    if (filter==null) { //TODO empty query filter
+    if (filter==null) {
       views.forEach((k,v) => v.applyOperation(op));
     } else {
       views[filter]?.applyOperation(op);

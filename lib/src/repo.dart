@@ -484,11 +484,11 @@ class Transaction implements Comparable<Transaction> {
   _onValue(_) {}
 
   _watch() {
-    repo.listen(path.join("/"), new QueryFilter(), "value", _onValue);
+    repo.listen(path.join("/"), null, "value", _onValue);
   }
 
   _unwatch() {
-    repo.unlisten(path.join("/"), new QueryFilter(), "value", _onValue);
+    repo.unlisten(path.join("/"), null, "value", _onValue);
   }
 
   void run(TreeStructuredData currentState) {
@@ -627,7 +627,7 @@ class TransactionsTree {
 TreeStructuredData getLatestValue(Repo repo, Path<Name> path) {
   var node = repo._syncTree.root.subtree(path);
   if (node==null) return new TreeStructuredData();
-  return node.value.views[new QueryFilter()].currentValue.localVersion;
+  return node.value.views[null].currentValue.localVersion;
 }
 
 
