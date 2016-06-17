@@ -106,7 +106,8 @@ class Firebase extends Query {
   ///
   /// Returns a Future which will complete when the data has been synchronized
   /// with Firebase.
-  Future setWithPriority(value, priority) => _repo.setWithPriority(_url.path, value, priority);
+  Future setWithPriority(dynamic value, dynamic priority) =>
+      _repo.setWithPriority(_url.path, value, priority);
 
   /// Set a priority for the data at this Firebase location. A priority can
   /// be either a number or a string and is used to provide a custom ordering
@@ -119,7 +120,8 @@ class Firebase extends Query {
   /// setWithPriority() should be used when setting initial data with a
   /// specific priority, and this function should be used when updating the
   /// priority of existing data.
-  Future setPriority(priority) => _repo.setWithPriority(_childUri(".priority").path, priority, null);
+  Future setPriority(dynamic priority) =>
+      _repo.setWithPriority(_childUri(".priority").path, priority, null);
 
   /// Atomically modify the data at this location. Unlike a normal set(), which
   /// just overwrites the data regardless of its previous value, transaction()
@@ -137,7 +139,7 @@ class Firebase extends Query {
   ///
   /// The returned [Future] will be completed after the transaction has
   /// finished.
-  Future<TransactionResult> transaction(update(currentVal),
+  Future<TransactionResult> transaction(dynamic update(dynamic currentVal),
       {bool applyLocally: true}) => _repo.transaction(_url.path, update, applyLocally)
       .then/*<TransactionResult>*/((v)=>new TransactionResult(null, true, new DataSnapshot(this, v)))
       .catchError((e)=>new TransactionResult(e, false, null));

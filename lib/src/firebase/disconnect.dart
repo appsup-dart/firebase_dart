@@ -26,12 +26,12 @@ class Disconnect {
   /// Ensure the data at this location is set to the specified value when the
   /// client is disconnected (due to closing the browser, navigating to a new
   /// page, or network issues).
-  Future set(value) => setWithPriority(value, null);
+  Future set(dynamic value) => setWithPriority(value, null);
 
   /// Ensure the data at this location is set to the specified value and
   /// priority when the client is disconnected (due to closing the browser,
   /// navigating to a new page, or network issues).
-  Future setWithPriority(value, priority) =>
+  Future setWithPriority(dynamic value, dynamic priority) =>
       _ref._repo.onDisconnectSetWithPriority(_ref._url.path, value, priority);
 
   /// Write the enumerated children at this Firebase location when the client is

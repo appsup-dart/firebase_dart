@@ -19,8 +19,8 @@ class _SpecialName extends Name {
 
 class Name implements Pattern, Comparable<Name> {
 
-  static const min = const _SpecialName("[MIN_NAME]");
-  static const max = const _SpecialName("[MAX_NAME]");
+  static const Name min = const _SpecialName("[MIN_NAME]");
+  static const Name max = const _SpecialName("[MAX_NAME]");
 
   final String _value;
 
@@ -41,7 +41,7 @@ class Name implements Pattern, Comparable<Name> {
   int get hashCode => hash2(this is _SpecialName, _value.hashCode);
 
   @override
-  bool operator==(other) => other is Name
+  bool operator==(dynamic other) => other is Name
       &&(this is _SpecialName==other is _SpecialName)&&other._value==_value;
 
   @override

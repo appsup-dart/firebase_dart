@@ -5,10 +5,10 @@ part of firebase.protocol;
 
 abstract class Message {
 
-  static const typeData = "d";
-  static const typeControl = "c";
-  static const messageType = "t";
-  static const messageData = "d";
+  static const String typeData = "d";
+  static const String typeControl = "c";
+  static const String messageType = "t";
+  static const String messageData = "d";
 
   Message();
 
@@ -35,21 +35,21 @@ abstract class Message {
 
 
 class DataMessage extends Message {
-  static const actionListen = "q";
-  static const actionUnlisten = "n";
-  static const actionOnDisconnectPut = "o";
-  static const actionOnDisconnectMerge = "om";
-  static const actionOnDisconnectCancel = "oc";
-  static const actionPut = "p";
-  static const actionMerge = "m";
-  static const actionStats = "s";
-  static const actionAuth = "auth";
-  static const actionUnauth = "unauth";
+  static const String actionListen = "q";
+  static const String actionUnlisten = "n";
+  static const String actionOnDisconnectPut = "o";
+  static const String actionOnDisconnectMerge = "om";
+  static const String actionOnDisconnectCancel = "oc";
+  static const String actionPut = "p";
+  static const String actionMerge = "m";
+  static const String actionStats = "s";
+  static const String actionAuth = "auth";
+  static const String actionUnauth = "unauth";
 
-  static const actionSet = "d";
-  static const actionListenRevoked = "c";
-  static const actionAuthRevoked = "ac";
-  static const actionSecurityDebug = "sd";
+  static const String actionSet = "d";
+  static const String actionListenRevoked = "c";
+  static const String actionAuthRevoked = "ac";
+  static const String actionSecurityDebug = "sd";
 
   final String action;
   final int reqNum;
@@ -80,15 +80,15 @@ class DataMessage extends Message {
 }
 
 class Query {
-  static const indexStartValue = "sp";
-  static const indexStartName = "sn";
-  static const indexEndValue = "ep";
-  static const indexEndName = "en";
-  static const limitTo = "l";
-  static const viewFrom = "vf";
-  static const viewFromLeft = "l";
-  static const viewFromRight = "r";
-  static const indexOn = "i";
+  static const String indexStartValue = "sp";
+  static const String indexStartName = "sn";
+  static const String indexEndValue = "ep";
+  static const String indexEndName = "en";
+  static const String limitTo = "l";
+  static const String viewFrom = "vf";
+  static const String viewFromLeft = "l";
+  static const String viewFromRight = "r";
+  static const String indexOn = "i";
 
   final int limit;
   final bool isViewFromRight;
@@ -118,7 +118,7 @@ class Query {
       quiver.hash4(endName,endValue,startName,startValue));
 
   @override
-  bool operator==(other) => other is Query&&other.limit==limit&&
+  bool operator==(dynamic other) => other is Query&&other.limit==limit&&
       other.isViewFromRight==isViewFromRight&&other.index==index&&
       other.endName==endName&&other.endValue==endValue&&
       other.startName==startName&&other.startValue==startValue;
@@ -141,15 +141,15 @@ class Query {
 }
 
 class MessageBody {
-  static const statusOk = "ok";
+  static const String statusOk = "ok";
 
 
   final int tag;
   final Query query;
   final String path;
   final String hash;
-  final data;
-  final stats;
+  final dynamic data;
+  final dynamic stats;
   final String cred;
   final String message;
   final String status;
@@ -186,13 +186,13 @@ class MessageBody {
 }
 
 abstract class ControlMessage extends Message {
-  static const typeHandshake = "h";
-  static const typeEndTransmission = "n";
-  static const typeControlShutdown = "s";
-  static const typeControlReset = "r";
-  static const typeControlError = "e";
-  static const typeControlPong = "o";
-  static const typeControlPing = "p";
+  static const String typeHandshake = "h";
+  static const String typeEndTransmission = "n";
+  static const String typeControlShutdown = "s";
+  static const String typeControlReset = "r";
+  static const String typeControlError = "e";
+  static const String typeControlPong = "o";
+  static const String typeControlPing = "p";
 
   ControlMessage();
 

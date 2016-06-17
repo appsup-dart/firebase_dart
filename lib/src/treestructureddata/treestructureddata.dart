@@ -69,7 +69,7 @@ class TreeStructuredData extends TreeNode<Name,Value> {
   }
 
   @override
-  bool operator==(other) => other is TreeStructuredData&&(
+  bool operator==(dynamic other) => other is TreeStructuredData&&(
       isLeaf ? other.isLeaf&&value==other.value :
       !other.isLeaf&&const MapEquality().equals(children, other.children));
 

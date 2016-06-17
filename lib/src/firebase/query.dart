@@ -100,7 +100,7 @@ class Query {
       _withFilter(_filter.copyWith(endAtKey: key, endAtValue: value));
 
   /// Creates a [Query] which includes children which match the specified value.
-  Query equalTo(value, [String key]) =>
+  Query equalTo(dynamic value, [String key]) =>
       endAt(value: value, key: key).startAt(value: value, key: key);
 
   /// Generates a new [Query] object limited to the first certain number of

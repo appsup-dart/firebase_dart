@@ -5,10 +5,10 @@ part of firebase.protocol;
 
 abstract class Transport extends Stream<Response> with StreamSink<Request> {
 
-  static const connecting = 0;
-  static const connected = 1;
-  static const disconnected = 2;
-  static const killed = 2;
+  static const int connecting = 0;
+  static const int connected = 1;
+  static const int disconnected = 2;
+  static const int killed = 2;
 
   final String host;
   final String namespace;
@@ -94,7 +94,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   void add(Request event) => _output.add(_prepareRequest(event).message);
 
   @override
-  void addError(errorEvent, [StackTrace stackTrace]) =>
+  void addError(dynamic errorEvent, [StackTrace stackTrace]) =>
       _output.addError(errorEvent, stackTrace);
 
   @override
@@ -127,10 +127,10 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
 
 // TODO browser websocket
 class WebSocketTransport extends Transport {
-  static const protocolVersion = "5";
-  static const versionParam = "v";
-  static const lastSessionParam = "ls";
-  static const transportSessionParam = "s";
+  static const String protocolVersion = "5";
+  static const String versionParam = "v";
+  static const String lastSessionParam = "ls";
+  static const String transportSessionParam = "s";
 
   WebSocketTransport(String host, String namespace, [String sessionId]) : super(host, namespace, sessionId);
 

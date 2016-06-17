@@ -49,9 +49,11 @@ class Connection {
 
   final List<Request> _outstandingRequests = [];
 
-  Future put(String path, value, [String hash]) => _request(new Request.put(path, value, hash));
+  Future put(String path, dynamic value, [String hash]) =>
+      _request(new Request.put(path, value, hash));
 
-  Future merge(String path, value, [String hash]) => _request(new Request.merge(path, value, hash));
+  Future merge(String path, dynamic value, [String hash]) =>
+      _request(new Request.merge(path, value, hash));
 
   void _addListen(Request request) {
     var path = request.message.body.path;
@@ -169,7 +171,7 @@ class Connection {
 
 
 
-  Future<MessageBody> onDisconnectPut(String path, value) =>
+  Future<MessageBody> onDisconnectPut(String path, dynamic value) =>
       _request(new Request.onDisconnectPut(path, value));
 
 

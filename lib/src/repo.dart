@@ -88,7 +88,7 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
   }
 
   @override
-  bool isValid(p) {
+  bool isValid(Pair<Name,TreeStructuredData> p) {
     p = _extract(p);
     if (startAt!=null&&_comparePair(startAt,p)>0) return false;
     if (endAt!=null&&_comparePair(p,endAt)>0) return false;
@@ -96,7 +96,7 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
   }
 
   @override
-  int compare(a,b) =>
+  int compare(Pair<Name,TreeStructuredData> a,Pair<Name,TreeStructuredData> b) =>
       _comparePair(_extract(a),_extract(b));
 
   @override
@@ -108,7 +108,7 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
       quiver.hash2(limit, reverse));
 
   @override
-  bool operator==(other) => other is QueryFilter&&
+  bool operator==(dynamic other) => other is QueryFilter&&
     other.orderBy==orderBy&&other.startAt==startAt&&other.endAt==endAt&&
       other.limit==limit&&other.reverse==reverse;
 
@@ -124,7 +124,7 @@ class Repo {
 
   final SyncTree _syncTree = new SyncTree();
 
-  final pushIds = new PushIdGenerator();
+  final PushIdGenerator pushIds = new PushIdGenerator();
 
   final Map<QueryFilter, int> _queryToTag = {};
   final Map<int, QueryFilter> _tagToQuery = {};
@@ -229,7 +229,7 @@ class Repo {
   ///
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
-  Future setWithPriority(String path, value, priority) {
+  Future setWithPriority(String path, dynamic value, dynamic priority) {
     var newValue = new TreeStructuredData.fromJson(value, priority, serverValues);
     var writeId = _nextWriteId++;
     _syncTree.applyUserOverwrite(Name.parsePath(path), newValue, writeId);
@@ -331,7 +331,7 @@ class Repo {
       _transactions.startTransaction(Name.parsePath(path), update, applyLocally);
 
 
-  Future onDisconnectSetWithPriority(String path, value, priority) {
+  Future onDisconnectSetWithPriority(String path, dynamic value, dynamic priority) {
     var newNode = new TreeStructuredData.fromJson(value, priority);
     return _connection.onDisconnectPut(path, newNode.toJson(true))
         .then((m) {
@@ -429,9 +429,9 @@ class StreamFactory {
 }
 
 class PushIdGenerator {
-  static const pushChars = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
-  var lastPushTime = 0;
-  final lastRandChars = new List(64);
+  static const String pushChars = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+  int lastPushTime = 0;
+  final List lastRandChars = new List(64);
   final Random random = new Random();
 
   String next(DateTime timestamp) {
@@ -479,7 +479,7 @@ class Transaction implements Comparable<Transaction> {
 
   static int _order = 0;
 
-  static const maxRetries = 25;
+  static const int maxRetries = 25;
 
   int retryCount = 0;
   String abortReason;
@@ -530,7 +530,7 @@ class Transaction implements Comparable<Transaction> {
     }
   }
 
-  void fail(e) {
+  void fail(dynamic e) {
     _unwatch();
     currentOutputSnapshot = null;
     if (applyLocally)
@@ -684,7 +684,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
   }
 
   /// Fails all sent transactions
-  void fail(e) {
+  void fail(dynamic e) {
     value.where((t)=>t.isSent).forEach((m)=>m.fail(e));
     value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
     children.values.forEach((n)=>n.fail(e));

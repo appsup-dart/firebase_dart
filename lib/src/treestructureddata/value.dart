@@ -7,9 +7,9 @@ class ServerValue {
   final String type;
   const ServerValue._(this.type);
 
-  static const timestamp = const ServerValue._("TIMESTAMP");
+  static const ServerValue timestamp = const ServerValue._("TIMESTAMP");
 
-  static const values = const {
+  static const Map<String,ServerValue> values = const {
     "TIMESTAMP": timestamp
   };
 
@@ -63,7 +63,7 @@ class Value implements Comparable<Value> {
   int get hashCode => value.hashCode;
 
   @override
-  bool operator==(other) => other is Value&&value==other.value;
+  bool operator==(dynamic other) => other is Value&&value==other.value;
 
   dynamic toJson() => value;
 

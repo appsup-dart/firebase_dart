@@ -150,7 +150,7 @@ class _Operation extends TreeOperation<Name, Value> {
 class _NoneOperation<T> extends Operation<T> {
 
   @override
-  T apply(value) {
+  T apply(T value) {
     throw new UnsupportedError("Should not be called");
   }
 
