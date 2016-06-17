@@ -87,7 +87,7 @@ class Connection {
   Stream<Response> get output => _output.stream;
   Stream<bool> get onConnect => _onConnect.stream;
 
-  Future _establishConnection() async {
+  void _establishConnection() {
     _transport = new WebSocketTransport(host, host.split(".").first, _lastSessionId);
     _transport.ready.then((_) {
       _onConnect.add(true);

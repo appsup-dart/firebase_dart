@@ -629,9 +629,11 @@ class TransactionsTree {
   }
 
 
-  Future send() async {
-    var finished = await root.send(repo, new Path());
-    if (!finished) send();
+  void send() {
+    root.send(repo, new Path())
+    .then((finished) {
+      if (!finished) send();
+    });
   }
 
   void abort(Path<Name> path) {

@@ -44,7 +44,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
 
   Future _connect([String host]);
   Future _reset();
-  Future _start();
+  void _start();
 
 
   Future<PongMessage> ping() {
@@ -78,7 +78,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
     } else if (v is PingMessage) {
       _output.add(new PongMessage());
     } else if (v is ShutdownMessage) {
-      kill();
+      await kill();
     }
   }
   void _onMessage(Message v) {
@@ -107,18 +107,18 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
 
   @override
   Future close() async {
-    _close(disconnected);
+    await _close(disconnected);
     return done;
   }
 
   Future kill() async {
-    _close(killed);
+    await _close(killed);
     return done;
   }
 
   Future _close(int state) async {
     await _output.close();
-    _input.close();
+    await _input.close();
     await _reset();
     _readyState = disconnected;
     _done.complete();
@@ -135,7 +135,7 @@ class WebSocketTransport extends Transport {
   WebSocketTransport(String host, String namespace, [String sessionId]) : super(host, namespace, sessionId);
 
   @override
-  Future _start() async {
+  void _start() {
     _socket.sink.addStream(_output.stream.map(JSON.encode)
         .map((v){
       _logger.fine("send $v");
@@ -175,7 +175,7 @@ class WebSocketTransport extends Transport {
 
   @override
   Future _reset() async {
-    _socket.sink.close();
+    await _socket.sink.close();
     _socket = null;
   }
 

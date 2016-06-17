@@ -76,7 +76,7 @@ void main() {
 
     test('permission denied', () async {
       ref = ref.child('test');
-      ref.onValue.forEach((e)=>print(e.snapshot.val));
+      ref.onValue.listen((e)=>print(e.snapshot.val));
       await ref.authWithCustomToken(token);
       await ref.set('hello world');
       expect(await ref.get(),'hello world');
@@ -111,7 +111,7 @@ void main() {
           "hello": "world"
         }
       });
-      ref.onValue.forEach((_){});
+      ref.onValue.listen((_){});
 
       expect(await ref.child("object/hello").get(), "world");
 
@@ -255,7 +255,7 @@ void main() {
           return v;
         }));
       }
-      ref.child('object/test').set('hello');
+      futures.add(ref.child('object/test').set('hello'));
 
       await Future.wait(futures);
 
