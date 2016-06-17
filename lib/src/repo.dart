@@ -120,8 +120,6 @@ class Repo {
   final Connection _connection;
   final Uri url;
 
-  firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
-
   static final Map<Uri,Repo> _repos = {};
 
   final SyncTree _syncTree = new SyncTree();
@@ -181,6 +179,8 @@ class Repo {
   factory Repo(Uri url) {
     return _repos.putIfAbsent(url, ()=>new Repo._(url));
   }
+
+  firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
 
   var _authData;
   final StreamController _onAuth = new StreamController.broadcast();

@@ -9,9 +9,9 @@ class Response {
 
   final Request _request;
 
-  Request get request => _request;
-
   Response(this.message, this._request);
+
+  Request get request => _request;
 
   @override
   String toString() => "Response[${JSON.encode(message)}]";

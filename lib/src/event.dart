@@ -4,12 +4,12 @@
 class Event {
 
   EventTarget _target;
-  EventTarget get target => _target;
 
   final String type;
 
   Event(this.type);
 
+  EventTarget get target => _target;
 
 }
 

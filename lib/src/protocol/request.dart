@@ -11,7 +11,6 @@ class Request {
   final DataMessage message;
 
   final Completer<Response> _completer = new Completer();
-  Future<Response> get response => _completer.future;
 
   Request(String action, MessageBody body) :
       message = new DataMessage(action, body, reqNum: nextRequestNum++);
@@ -34,6 +33,8 @@ class Request {
       : this(DataMessage.actionMerge, new MessageBody(path: path, data: data, hash: hash));
   Request.stats(stats)
       : this(DataMessage.actionStats, new MessageBody(stats: stats));
+
+  Future<Response> get response => _completer.future;
 
 
   @override

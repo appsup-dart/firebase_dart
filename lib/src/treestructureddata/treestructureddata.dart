@@ -23,9 +23,6 @@ class TreeStructuredData extends TreeNode<Name,Value> {
   TreeStructuredData.nonLeaf(Map<Name,TreeStructuredData> children, [Value priority]) :
       this._(null, children, priority);
 
-  @override
-  TreeStructuredData clone() => new TreeStructuredData._(value, children, priority);
-
   factory TreeStructuredData.fromJson(json, [priority, Map<ServerValue, Value> serverValues]) {
     if (json == null) {
       return new TreeStructuredData();
@@ -52,6 +49,9 @@ class TreeStructuredData extends TreeNode<Name,Value> {
 
     return new TreeStructuredData.nonLeaf(children,priority);
   }
+
+  @override
+  TreeStructuredData clone() => new TreeStructuredData._(value, children, priority);
 
   @override
   Map<Name,TreeStructuredData> get children => super.children;

@@ -21,10 +21,10 @@ class TreeNode<K,V> implements Comparable<TreeNode<K,V>> {
 
   final Map<K,TreeNode<K,V>> _children;
 
-  Map<K,TreeNode<K,V>> get children => _children;
-
   TreeNode([this.value, Map<K,TreeNode<K,V>> children]) :
         _children = (_cloneMap/*<K,TreeNode<K,V>>*/(children ?? {}));
+
+  Map<K,TreeNode<K,V>> get children => _children;
 
   static Map/*<K,V>*/ _cloneMap/*<K,V>*/(Map/*<K,V>*/ map) {
     if (map is SortedMap) {
