@@ -8,8 +8,13 @@ import 'package:logging/logging.dart';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:async';
+
+import 'secrets.dart'
+  if (dart.library.html) 'secrets.dart'
+  if (dart.library.io) 'secrets_io.dart';
+
+
 void main() {
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen(print);
@@ -37,14 +42,8 @@ void main() {
     });
   });
   group('Authenticate', () {
-    var f = new File("test/secrets.json");
-    if (!f.existsSync()) {
-      fail("Cannot test Authenticate: no secrets.json file");
-      return;
-    }
-    var options = JSON.decode(f.readAsStringSync());
-    var host = options["host"];
-    var secret = options["secret"];
+    var host = secrets["host"];
+    var secret = secrets["secret"];
 
     if (host==null||secret==null) {
       print("Cannot test Authenticate: set a host and secret.");
