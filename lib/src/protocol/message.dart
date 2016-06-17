@@ -59,12 +59,12 @@ class DataMessage extends Message {
   DataMessage(this.action, this.body, {this.error, this.reqNum});
 
   factory DataMessage.fromJson(Map<String,dynamic> json) {
-    json = json[Message.messageData];
+    var data = json[Message.messageData];
     return new DataMessage(
-        json["a"],
-        new MessageBody.fromJson(json["b"]),
-        reqNum: json["r"],
-        error: json["error"]
+        data["a"],
+        new MessageBody.fromJson(data["b"] as Map<String, dynamic>),
+        reqNum: data["r"],
+        error: data["error"]
     );
   }
 
@@ -155,15 +155,15 @@ class MessageBody {
   factory MessageBody.fromJson(Map<String,dynamic> json) {
     return new MessageBody(
         tag: json["t"],
-        query: json["q"] is Map ? new Query.fromJson(json["q"]) :
-          json["q"] is List&&json["q"].isNotEmpty ? new Query.fromJson(json["q"].first) : null,
+        query: json["q"] is Map ? new Query.fromJson(json["q"] as Map<String,dynamic>) :
+          json["q"] is List&&json["q"].isNotEmpty ? new Query.fromJson(json["q"].first as Map<String,dynamic>) : null,
         path: json["p"], hash: json["h"],
         data: json["d"], stats: json["c"], cred: json["cred"], message: json["msg"],
         status: json["s"]
     );
   }
 
-  Iterable<String> get warnings => data is Map ? data["w"] : const[];
+  Iterable<String> get warnings => data is Map ? data["w"] as Iterable<String> : const[];
 
   toJson() {
     var json = {};
@@ -242,8 +242,8 @@ class ResetMessage extends ControlMessage {
   ResetMessage(this.host);
 
   factory ResetMessage.fromJson(Map<String,dynamic> json) {
-    json = json[Message.messageData];
-    return new ResetMessage(json[Message.messageData]);
+    var data = json[Message.messageData];
+    return new ResetMessage(data[Message.messageData]);
   }
 
   String get type => ControlMessage.typeControlReset;
@@ -269,7 +269,7 @@ class HandshakeMessage extends ControlMessage {
 
   factory HandshakeMessage.fromJson(Map<String,dynamic> json) {
     var handshake = json[Message.messageData][Message.messageData];
-    return new HandshakeMessage(new HandshakeInfo.fromJson(handshake));
+    return new HandshakeMessage(new HandshakeInfo.fromJson(handshake as Map<String,dynamic>));
   }
 
   String get type => ControlMessage.typeHandshake;

@@ -166,7 +166,7 @@ class WebSocketTransport extends Transport {
       _logger.fine("received $v");
       return v;
     })
-        .map((v)=>new Message.fromJson(JSON.decode(v))).listen(_onMessage);
+        .map((v)=>new Message.fromJson(JSON.decode(v) as Map<String,dynamic>)).listen(_onMessage);
   }
 
 
