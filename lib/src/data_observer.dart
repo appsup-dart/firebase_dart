@@ -63,6 +63,7 @@ class DataObserver<T> extends EventTarget {
       _data = new IncompleteData(initialValue);
 
   T get currentValue => _data.value;
+  IncompleteData<T> get incompleteData => _data;
 
   void applyOperation(Operation operation) {
     var oldData = _data;
