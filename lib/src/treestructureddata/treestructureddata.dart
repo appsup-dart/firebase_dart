@@ -58,7 +58,7 @@ class TreeStructuredData extends TreeNode<Name,Value> {
 
   dynamic toJson([bool exportFormat = false]) {
     if (isNil) return null;
-    var c = new Map<String,dynamic>.fromIterables(children.keys.map((k)=>k.toString()) as Iterable<String>,
+    var c = new Map<String,dynamic>.fromIterables(children.keys.map((k)=>k.toString()),
         children.values.map((v)=>v.toJson(exportFormat)));
 
     if (exportFormat&&priority!=null) {
