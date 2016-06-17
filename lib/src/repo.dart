@@ -129,9 +129,15 @@ class Repo {
   int _nextTag = 0;
   int _nextWriteId = 0;
   TransactionsTree _transactions;
+  SparseSnapshotTree _onDisconnect = new SparseSnapshotTree();
 
   Repo._(Uri url) : _connection = new Connection(url.host), url = url {
     _transactions = new TransactionsTree(this);
+    _connection.onConnect.listen((v) {
+      if (!v) {
+        _runOnDisconnectEvents();
+      }
+    });
     _connection.output.listen((r) {
       switch (r.message.action) {
         case DataMessage.action_set:
@@ -174,6 +180,8 @@ class Repo {
 
   var _authData;
   final StreamController _onAuth = new StreamController.broadcast();
+
+  Future triggerDisconnect() => _connection.disconnect();
 
 
   /**
@@ -343,15 +351,42 @@ class Repo {
 
 
   Future onDisconnectSetWithPriority(String path, value, priority) {
-    throw new UnimplementedError("onDisconnect not implemented"); //TODO: implement onDisconnect
+    var newNode = new TreeStructuredData.fromJson(value, priority);
+    return _connection.onDisconnectPut(path, newNode.toJson(true))
+        .then((m) {
+      _onDisconnect.remember(Name.parsePath(path), newNode);
+    });
   }
 
-  Future onDisconnectUpdate(String path, value) {
-    throw new UnimplementedError("onDisconnect not implemented"); //TODO: implement onDisconnect
+  Future onDisconnectUpdate(String path, Map<String,dynamic> childrenToMerge) {
+    if (childrenToMerge.isEmpty) return new Future.value();
+
+    return _connection.onDisconnectMerge(path, childrenToMerge)
+        .then((_) {
+      childrenToMerge.forEach((childName, child) {
+        _onDisconnect.remember(Name.parsePath(path).child(new Name(childName)),
+            new TreeStructuredData.fromJson(child));
+      });
+    });
   }
 
   Future onDisconnectCancel(String path) {
-    throw new UnimplementedError("onDisconnect not implemented"); //TODO: implement onDisconnect
+    return _connection.onDisconnectCancel(path)
+      .then((_) {
+      _onDisconnect.forget(Name.parsePath(path));
+    });
+  }
+
+  _runOnDisconnectEvents() {
+    var sv = serverValues;
+    _onDisconnect.forEachNode((path, snap) {
+      if (snap==null) return;
+      snap = new TreeStructuredData.fromJson(snap.toJson(true), null, sv);  // TODO: resolve server values without serializing
+      _syncTree.applyServerOverwrite(path, null, snap);
+      _transactions.abort(path);
+    });
+    _onDisconnect.children.clear();
+    _onDisconnect.value = null;
   }
 }
 
@@ -762,6 +797,66 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
       txn.abort("set");
     }
     value = value.where((t)=>!t.isComplete).toList();
+  }
+
+}
+
+
+class SparseSnapshotTree extends TreeNode<Name,TreeStructuredData> {
+
+  Map<Name,SparseSnapshotTree> get children => super.children;
+
+  void remember(Path<Name> path, TreeStructuredData data) {
+    if (path.isEmpty) {
+      value = data;
+      children.clear();
+    } else {
+      if (value != null) {
+        value = updateChild(value, path, data);
+      } else {
+        var childKey = path.first;
+        children.putIfAbsent(childKey, ()=>new SparseSnapshotTree());
+        var child = children[childKey];
+        path = path.skip(1);
+        child.remember(path, data);
+      }
+    }
+  }
+
+  bool forget(Path<Name> path) {
+    if (path.isEmpty) {
+      value = null;
+      children.clear();
+      return true;
+    } else {
+      if (value != null) {
+        if (value.isLeaf) {
+          return false;
+        } else {
+          var oldValue = value;
+          value = null;
+          oldValue.children.forEach((key, tree) {
+            remember(new Path.from([key]), tree);
+          });
+          return this.forget(path);
+        }
+      } else {
+        var childKey = path.first;
+        path = path.skip(1);
+        if (this.children.containsKey(childKey)) {
+          var safeToRemove = children[childKey].forget(path);
+          if (safeToRemove) {
+            children.remove(childKey);
+          }
+        }
+        if (this.children.isEmpty) {
+          return true;
+        } else {
+          return false;
+        }
+
+      }
+    }
   }
 
 }

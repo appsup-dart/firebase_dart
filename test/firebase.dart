@@ -3,6 +3,7 @@
 
 import 'package:test/test.dart';
 import 'package:firebase_dart/src/firebase.dart';
+import 'package:firebase_dart/src/repo.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
@@ -263,6 +264,52 @@ void main() {
 
     });
 
+  });
+
+  group('OnDisconnect', () {
+    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+    var repo = new Repo(ref.url.resolve("/"));
+
+    test('put', () async {
+      await ref.set("hello");
+
+      await ref.onDisconnect.set("disconnected");
+
+      await repo.triggerDisconnect();
+
+      await new Future.delayed(new Duration(milliseconds: 200));
+
+      expect(await ref.get(),"disconnected");
+
+    });
+    test('merge', () async {
+      await ref.set({"hello":"world"});
+      ref.child('state').onValue.listen((_){});
+
+
+      await ref.onDisconnect.update({"state":"disconnected"});
+
+      await repo.triggerDisconnect();
+
+      await new Future.delayed(new Duration(milliseconds: 200));
+
+      expect(await ref.child('state').get(),"disconnected");
+
+    });
+    test('cancel', () async {
+      await ref.set({"hello":"world"});
+
+      await ref.onDisconnect.update({"state":"disconnected"});
+
+      await ref.onDisconnect.cancel();
+
+      await repo.triggerDisconnect();
+
+      await new Future.delayed(new Duration(milliseconds: 200));
+
+      expect(await ref.child('state').get(),null);
+
+    });
   });
 
   group('Query', () {

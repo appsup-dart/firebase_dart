@@ -77,6 +77,19 @@ class TreeNode<K,V> implements Comparable<TreeNode<K,V>> {
 
   toString() => "TreeNode[$value]$children";
 
+  forEachNode(void f(Path<K> key, V value)) {
+
+    _forEach(TreeNode node, Path p) {
+      node.children.forEach((c,v) {
+        f(p.child(c), v.value);
+      });
+      node.children.forEach((c,v) {
+        _forEach(v, p.child(c));
+      });
+    }
+
+    _forEach(this, new Path());
+  }
 
 }
 
