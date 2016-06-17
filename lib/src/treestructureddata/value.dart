@@ -59,11 +59,15 @@ class Value implements Comparable<Value> {
     return thisIndex - otherIndex;
   }
 
+  @override
   int get hashCode => value.hashCode;
+
+  @override
   bool operator==(other) => other is Value&&value==other.value;
 
   dynamic toJson() => value;
 
+  @override
   String toString() => "Value[$value]";
 }
 

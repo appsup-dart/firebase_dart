@@ -36,5 +36,6 @@ class Request {
       : this(DataMessage.action_stats, new MessageBody(stats: stats));
 
 
+  @override
   String toString() => "Request[${JSON.encode(message)}]";
 }

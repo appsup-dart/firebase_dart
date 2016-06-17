@@ -65,6 +65,7 @@ class SyncPoint {
     }
   }
 
+  @override
   String toString() => "SyncPoint[$views]";
 }
 
@@ -182,6 +183,8 @@ class _NoneOperation<T> extends Operation<T> {
 }
 
 class _Ack extends _Operation implements Ack {
+
+  @override
   final bool success;
 
   _Ack(Path<Name> path, this.success) : super(path, new _NoneOperation());

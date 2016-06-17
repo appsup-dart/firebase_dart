@@ -3,3 +3,4 @@ analyzer:
 linter:
   rules:
     - always_declare_return_types
+    - annotate_overrides

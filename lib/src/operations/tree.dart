@@ -28,6 +28,7 @@ class TreeOperation<K,V> extends Operation<TreeNode<K,V>> {
     return new TreeOperation(path.skip(1), nodeOperation, factory);
   }
 
+  @override
   String toString() => "TreeOperation[$path,$nodeOperation]";
 
 
@@ -78,6 +79,7 @@ class Overwrite<K,V> extends Operation<TreeNode<K,V>> {
   TreeNode<K,V> apply(TreeNode<K,V> value) =>
       value.clone()..value = this.value.value..children.clear()..children.addAll(this.value.children);
 
+  @override
   String toString() => "Overwrite[$value]";
 
   @override

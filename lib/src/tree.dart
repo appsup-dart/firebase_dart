@@ -9,6 +9,7 @@ class Path<K> extends UnmodifiableListView<K> {
 
   Path.from(Iterable<K> source) : super(source);
 
+  @override
   Path<K> skip(int count) => new Path.from(super.skip(count));
 
   Path<K> child(K child) => new Path.from(new List.from(this)..add(child));
@@ -82,6 +83,7 @@ class TreeNode<K,V> implements Comparable<TreeNode<K,V>> {
     yield* children[c].nodesOnPath(path.skip(1));
   }
 
+  @override
   String toString() => "TreeNode[$value]$children";
 
   void forEachNode(void f(Path<K> key, V value)) {

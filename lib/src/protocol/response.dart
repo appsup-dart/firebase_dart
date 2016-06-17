@@ -13,6 +13,7 @@ class Response {
 
   Response(this.message, this._request);
 
+  @override
   String toString() => "Response[${JSON.encode(message)}]";
 
 }

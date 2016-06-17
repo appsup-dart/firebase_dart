@@ -43,6 +43,7 @@ class View<T> extends DataObserver<ViewCache<T>> {
         super(new ViewCache(initialVersion, initialVersion), eventGenerator);
 
 
+  @override
   String toString() => "View[$hashCode]";
 
 

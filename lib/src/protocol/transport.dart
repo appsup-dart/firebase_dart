@@ -24,6 +24,8 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   final Completer _done = new Completer();
 
   Future<HandshakeInfo> get ready => _ready.future;
+
+  @override
   Future get done => _done.future;
 
   int _readyState;
@@ -132,6 +134,7 @@ class WebSocketTransport extends Transport {
 
   WebSocketTransport(String host, String namespace, [String sessionId]) : super(host, namespace, sessionId);
 
+  @override
   Future _start() async {
     _socket.sink.addStream(_output.stream.map(JSON.encode)
         .map((v){

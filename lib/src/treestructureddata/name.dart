@@ -12,6 +12,7 @@ class _SpecialName extends Name {
   @override
   Match matchAsPrefix(String string, [int start = 0]) => null;
 
+  @override
   int get length => 0;
 
 }
@@ -25,6 +26,7 @@ class Name implements Pattern, Comparable<Name> {
 
   const Name(this._value);
 
+  @override
   String toString() => _value;
 
   @override
@@ -35,7 +37,10 @@ class Name implements Pattern, Comparable<Name> {
   Match matchAsPrefix(String string, [int start = 0]) =>
       _value.matchAsPrefix(string, start);
 
+  @override
   int get hashCode => hash2(this is _SpecialName, _value.hashCode);
+
+  @override
   bool operator==(other) => other is Name
       &&(this is _SpecialName==other is _SpecialName)&&other._value==_value;
 

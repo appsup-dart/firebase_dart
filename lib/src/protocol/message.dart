@@ -68,6 +68,7 @@ class DataMessage extends Message {
     );
   }
 
+  @override
   Map<String,dynamic> get _payloadJson {
     var json = <String,dynamic>{};
     if (action!=null) json["a"] = action;
@@ -112,8 +113,11 @@ class Query {
     );
   }
 
+  @override
   int get hashCode => quiver.hash4(limit, isViewFromRight, index,
       quiver.hash4(endName,endValue,startName,startValue));
+
+  @override
   bool operator==(other) => other is Query&&other.limit==limit&&
       other.isViewFromRight==isViewFromRight&&other.index==index&&
       other.endName==endName&&other.endValue==endValue&&
@@ -219,6 +223,7 @@ abstract class ControlMessage extends Message {
   String get type;
   dynamic get jsonData;
 
+  @override
   Map<String,dynamic> get _payloadJson => {
     Message.messageType: type,
     Message.messageData: jsonData
@@ -227,11 +232,17 @@ abstract class ControlMessage extends Message {
 }
 
 class PingMessage extends ControlMessage {
+  @override
   String get type => ControlMessage.typeControlPing;
+
+  @override
   Map<String,dynamic> get jsonData => {};
 }
 class PongMessage extends ControlMessage {
+  @override
   String get type => ControlMessage.typeControlPong;
+
+  @override
   Map<String,dynamic> get jsonData => {};
 }
 
@@ -246,7 +257,10 @@ class ResetMessage extends ControlMessage {
     return new ResetMessage(data[Message.messageData]);
   }
 
+  @override
   String get type => ControlMessage.typeControlReset;
+
+  @override
   String get jsonData => host;
 }
 
@@ -255,6 +269,7 @@ class ShutdownMessage extends ControlMessage {
 
   ShutdownMessage(this.reason);
 
+  @override
   String get jsonData => reason;
 
   @override
@@ -272,7 +287,10 @@ class HandshakeMessage extends ControlMessage {
     return new HandshakeMessage(new HandshakeInfo.fromJson(handshake as Map<String,dynamic>));
   }
 
+  @override
   String get type => ControlMessage.typeHandshake;
+
+  @override
   HandshakeInfo get jsonData => info;
 }
 

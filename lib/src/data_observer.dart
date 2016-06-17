@@ -50,7 +50,7 @@ class IncompleteData<T> {
     return states.clone()..children[c] = _completePath(states.children[c] ?? new TreeNode(), path.skip(1));
   }
 
-
+  @override
   String toString() => "IncompleteData[$value,$_states]";
 }
 

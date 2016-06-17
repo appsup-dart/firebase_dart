@@ -12,6 +12,7 @@ class Overwrite<T> extends Operation<T> {
   @override
   T apply(T value) => this.value;
 
+  @override
   String toString() => "Overwrite[$value]";
 
   @override

@@ -99,12 +99,15 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
   int compare(a,b) =>
       _comparePair(_extract(a),_extract(b));
 
+  @override
   String toString() => "QueryFilter[${toQuery().toJson()}]";
 
 
+  @override
   int get hashCode => quiver.hash4(orderBy,startAt,endAt,
       quiver.hash2(limit, reverse));
 
+  @override
   bool operator==(other) => other is QueryFilter&&
     other.orderBy==orderBy&&other.startAt==startAt&&other.endAt==endAt&&
       other.limit==limit&&other.reverse==reverse;
@@ -671,8 +674,10 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
 
   TransactionsNode() : super([]);
 
+  @override
   Map<Name,TransactionsNode> get children => super.children;
 
+  @override
   TransactionsNode subtree(Path<Name> path, [TreeNode<Name,List<Transaction>> newInstance()]) =>
   super.subtree(path, newInstance);
 
@@ -682,6 +687,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
   bool get needsRerun => value.any((t)=>t.status==null)||
       children.values.any((n)=>n.needsRerun);
 
+  @override
   Iterable<TransactionsNode> nodesOnPath(Path<Name> path) => super.nodesOnPath(path);
 
   /**
@@ -809,6 +815,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
 
 class SparseSnapshotTree extends TreeNode<Name,TreeStructuredData> {
 
+  @override
   Map<Name,SparseSnapshotTree> get children => super.children;
 
   void remember(Path<Name> path, TreeStructuredData data) {

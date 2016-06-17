@@ -23,6 +23,7 @@ class TreeStructuredData extends TreeNode<Name,Value> {
   TreeStructuredData.nonLeaf(Map<Name,TreeStructuredData> children, [Value priority]) :
       this._(null, children, priority);
 
+  @override
   TreeStructuredData clone() => new TreeStructuredData._(value, children, priority);
 
   factory TreeStructuredData.fromJson(json, [priority, Map<ServerValue, Value> serverValues]) {
@@ -52,6 +53,7 @@ class TreeStructuredData extends TreeNode<Name,Value> {
     return new TreeStructuredData.nonLeaf(children,priority);
   }
 
+  @override
   Map<Name,TreeStructuredData> get children => super.children;
 
   dynamic toJson([bool exportFormat = false]) {
@@ -66,10 +68,12 @@ class TreeStructuredData extends TreeNode<Name,Value> {
     return isLeaf ? value.toJson() : c;
   }
 
+  @override
   bool operator==(other) => other is TreeStructuredData&&(
       isLeaf ? other.isLeaf&&value==other.value :
       !other.isLeaf&&const MapEquality().equals(children, other.children));
 
 
+  @override
   String toString() => "TreeStructuredData[${toJson()}]";
 }

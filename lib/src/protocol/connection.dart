@@ -16,6 +16,7 @@ class ServerError implements Exception {
     "unavailable": "The service is unavailable"
   }[code] ?? "Unknown Error";
 
+  @override
   String toString() => "$code: $reason";
 }
 
