@@ -12,7 +12,6 @@ import 'package:logging/logging.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
-import 'dart:math';
 
 final _logger = new Logger("firebase-repo");
 
