@@ -11,6 +11,8 @@ import 'dart:math';
 import 'package:logging/logging.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:sortedmap/sortedmap.dart';
+import 'tree.dart';
+import 'dart:math';
 
 final _logger = new Logger("firebase-repo");
 
@@ -113,8 +115,11 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
 class Repo {
 
   final Connection _connection;
+  final Uri url;
 
-  static final Map<String,Repo> _repos = {};
+  firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
+
+  static final Map<Uri,Repo> _repos = {};
 
   final SyncTree _syncTree = new SyncTree();
 
@@ -124,8 +129,10 @@ class Repo {
   final Map<int, QueryFilter> _tagToQuery = {};
   int _nextTag = 0;
   int _nextWriteId = 0;
+  TransactionsTree _transactions;
 
-  Repo._(String host) : _connection = new Connection(host) {
+  Repo._(Uri url) : _connection = new Connection(url.host), url = url {
+    _transactions = new TransactionsTree(this);
     _connection.output.listen((r) {
       switch (r.message.action) {
         case DataMessage.action_set:
@@ -162,8 +169,8 @@ class Repo {
     onAuth.listen((v)=>_authData=v);
   }
 
-  factory Repo(String host) {
-    return _repos.putIfAbsent(host, ()=>new Repo._(host));
+  factory Repo(Uri url) {
+    return _repos.putIfAbsent(url, ()=>new Repo._(url));
   }
 
   var _authData;
@@ -224,6 +231,7 @@ class Repo {
     var newValue = new TreeStructuredData.fromJson(value, priority, serverValues);
     var writeId = _nextWriteId++;
     _syncTree.applyUserOverwrite(Name.parsePath(path), newValue, writeId);
+    _transactions.abort(Name.parsePath(path));
     return _connection.put(path, newValue.toJson(true))
         ..then((_) {
           _syncTree.applyAck(Name.parsePath(path), writeId, true);
@@ -331,9 +339,9 @@ class Repo {
 
 
 
-  Future<firebase.TransactionResult> transaction(Function update, bool applyLocally) {
-    throw new UnimplementedError("transactions not implemented"); //TODO: implement transactions
-  }
+  Future<TreeStructuredData> transaction(String path, Function update, bool applyLocally) =>
+      _transactions.startTransaction(Name.parsePath(path), update, applyLocally);
+
 
   Future onDisconnectSetWithPriority(String path, value, priority) {
     throw new UnimplementedError("onDisconnect not implemented"); //TODO: implement onDisconnect
@@ -437,6 +445,324 @@ class PushIdGenerator {
       id += PUSH_CHARS[lastRandChars[i]];
     }
     return id;
+  }
+
+}
+
+
+enum TransactionStatus {run, sent, completed, sent_needs_abort}
+
+class Transaction implements Comparable<Transaction> {
+
+  final Path<Name> path;
+  final Function update;
+  final bool applyLocally;
+  final Repo repo;
+  final int order;
+  final Completer<firebase.TransactionResult> completer = new Completer();
+
+  static int _order = 0;
+
+  static const max_retries = 25;
+
+  int retryCount = 0;
+  String abortReason;
+  int currentWriteId;
+  TreeStructuredData currentInputSnapshot;
+  TreeStructuredData currentOutputSnapshot;
+
+  TransactionStatus status;
+
+  Transaction(this.repo, this.path, this.update, this.applyLocally) : order = _order++ {
+    _watch();
+  }
+
+  bool get isSent => status==TransactionStatus.sent||status==TransactionStatus.sent_needs_abort;
+  bool get isComplete => status==TransactionStatus.completed;
+  bool get isAborted => status==TransactionStatus.sent_needs_abort;
+
+  _onValue(_) {}
+
+  _watch() {
+    repo.listen(path.join("/"), new QueryFilter(), "value", _onValue);
+  }
+
+  _unwatch() {
+    repo.unlisten(path.join("/"), new QueryFilter(), "value", _onValue);
+  }
+
+  void run(TreeStructuredData currentState) {
+    assert(status==null);
+    if (retryCount >= max_retries) {
+      fail(new Exception("maxretries"));
+      return;
+    }
+
+    currentInputSnapshot = currentState;
+    try {
+      var newVal = update(currentState.toJson());
+
+      status = TransactionStatus.run;
+
+      var newNode = new TreeStructuredData.fromJson(newVal, currentState.priority, repo.serverValues);
+      currentOutputSnapshot = newNode;
+      currentWriteId = repo._nextWriteId++;
+
+      if (applyLocally) repo._syncTree.applyUserOverwrite(path, newNode, currentWriteId);
+    } catch (e) {
+      fail(e);
+    }
+  }
+
+  fail(e) {
+    _unwatch();
+    currentOutputSnapshot = null;
+    if (applyLocally)
+      repo._syncTree.applyAck(path, currentWriteId, false);
+    status = TransactionStatus.completed;
+
+    completer.complete(new firebase.TransactionResult(e, false,
+        new firebase.DataSnapshot(repo.rootRef.child(path.join("/")), currentInputSnapshot)));
+  }
+
+  stale() {
+    status = null;
+    if (applyLocally)
+      repo._syncTree.applyAck(path, currentWriteId, false);
+  }
+
+  void send() {
+    assert(status==TransactionStatus.run);
+    status = TransactionStatus.sent;
+    retryCount++;
+  }
+
+  abort(String reason) {
+    switch (status) {
+      case TransactionStatus.sent_needs_abort:
+        break;
+      case TransactionStatus.sent:
+        status = TransactionStatus.sent_needs_abort;
+        abortReason = reason;
+        break;
+      case TransactionStatus.run:
+        fail(new Exception("set"));
+        break;
+      default:
+        throw new StateError(
+            "Unable to abort transaction in state ${status}");
+    }
+  }
+
+  complete() {
+    assert(status==TransactionStatus.sent);
+    status = TransactionStatus.completed;
+
+    if (applyLocally)
+      repo._syncTree.applyAck(path, currentWriteId, true);
+
+    completer.complete(new firebase.TransactionResult(null, true,
+        new firebase.DataSnapshot(repo.rootRef.child(path.join("/")), currentOutputSnapshot)));
+
+    _unwatch();
+  }
+
+  @override
+  int compareTo(Transaction other) => Comparable.compare(order, other.order);
+
+
+}
+
+updateChild(TreeStructuredData value, Path<Name> path, TreeStructuredData child) {
+  if (path.isEmpty) {
+    return child;
+  } else {
+    var k = path.first;
+    var c = value.children[k] ?? new TreeStructuredData();
+    var newChild = updateChild(c, path.skip(1), child);
+    var newValue = value.clone();
+    if (newValue.isLeaf&&!newChild.isNil) newValue.value = null;
+    if (newChild.isNil) newValue.children.remove(k);
+    else newValue.children[k] = newChild;
+    return newValue;
+  }
+}
+
+class TransactionsTree {
+
+  final Repo repo;
+  final TransactionsNode root = new TransactionsNode();
+
+  TransactionsTree(this.repo);
+
+  Future<TreeStructuredData> startTransaction(Path<Name> path,
+      Function transactionUpdate, bool applyLocally) {
+
+    var transaction = new Transaction(repo, path, transactionUpdate, applyLocally);
+    var node = root.subtree(path, ()=>new TransactionsNode());
+
+    var current = getLatestValue(repo, path);
+    if (node.value.isEmpty) {
+      node.input = current;
+    }
+    transaction.run(current);
+    node.addTransaction(transaction);
+    send();
+
+    return transaction.completer.future;
+  }
+
+
+  Future send() async {
+    var finished = await root.send(repo, new Path());
+    if (!finished) send();
+  }
+
+  abort(Path<Name> path) {
+    root.nodesOnPath(path).forEach((n)=>n.abort());
+  }
+
+}
+
+TreeStructuredData getLatestValue(Repo repo, Path<Name> path) {
+  var node = repo._syncTree.root.subtree(path);
+  if (node==null) return new TreeStructuredData();
+  return node.value.views[new QueryFilter()].currentValue.localVersion;
+}
+
+
+class TransactionsNode extends TreeNode<Name,List<Transaction>> {
+
+  TransactionsNode() : super([]);
+
+  Map<Name,TransactionsNode> get children => super.children;
+
+  TransactionsNode subtree(Path<Name> path, [TransactionsNode newInstance()]) =>
+  super.subtree(path, newInstance);
+
+  bool get isReadyToSend => value.every((t)=>t.status==TransactionStatus.run)&&
+      children.values.every((n)=>n.isReadyToSend);
+
+  bool get needsRerun => value.any((t)=>t.status==null)||
+      children.values.any((n)=>n.needsRerun);
+  /**
+   * Completes all sent transactions
+   */
+  complete() {
+    value.where((t)=>t.isSent).forEach((m)=>m.complete());
+    value.where((t)=>!t.isComplete).forEach((m)=>m.status=null);
+    value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
+    children.values.forEach((n)=>n.complete());
+  }
+
+  /**
+   * Fails aborted transactions and resets other sent transactions
+   */
+  stale() {
+    value.where((t)=>t.isAborted).forEach((m)=>m.fail(new Exception(m.abortReason)));
+    value.where((t)=>!t.isAborted).forEach((m)=>m.stale());
+    value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
+    children.values.forEach((n)=>n.stale());
+  }
+
+  /**
+   * Fails all sent transactions
+   */
+  fail(e) {
+    value.where((t)=>t.isSent).forEach((m)=>m.fail(e));
+    value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
+    children.values.forEach((n)=>n.fail(e));
+  }
+
+  _send() {
+    value.forEach((m)=>m.send());
+    children.values.forEach((n)=>n._send());
+  }
+
+  Future<bool> send(Repo repo, Path<Name> path) async {
+    if (value.isNotEmpty) {
+      if (needsRerun) {
+        stale();
+        rerun(path, getLatestValue(repo, path));
+      }
+      if (isReadyToSend) {
+        var latestHash = calculateHash(input.toJson(true));
+        try {
+          _send();
+          await repo._connection.put(path.join("/"), output.toJson(true), latestHash);
+          complete();
+          return false;
+        } on ServerError catch(e) {
+          if (e.code=="datastale") stale();
+          else fail(e);
+          return false;
+        }
+      }
+      return true;
+    } else {
+      var allFinished = true;
+      for (var k in children.keys) {
+        allFinished = allFinished&&await children[k].send(repo, path.child(k));
+      }
+      return allFinished;
+    }
+  }
+
+  Iterable<Transaction> get transactionsInOrder => new List.from(_transactions)..sort();
+
+  Iterable<Transaction> get _transactions sync* {
+    yield* value;
+    yield* children.values.expand((n)=>n._transactions);
+  }
+
+  rerun(Path<Name> path, TreeStructuredData input) {
+    this.input = input;
+
+    var v = input;
+    for (var t in transactionsInOrder) {
+      var p = t.path.skip(path.length);
+      t.run(v.subtree(p, ()=>new TreeStructuredData()) ?? new TreeStructuredData());
+      if (!t.isComplete) {
+        v = updateChild(v, p, t.currentOutputSnapshot);
+      }
+    }
+  }
+
+
+  TreeStructuredData input;
+
+  int get lastId => max(value.isEmpty ? -1 : value.map((t)=>t.order).reduce(max),
+  children.isEmpty ? -1 : children.values.map((n)=>n.lastId).reduce(max) ?? -1);
+
+  TreeStructuredData get output {
+    var v = input;
+    var lastId = -1;
+    if (value.isNotEmpty) {
+      v = value.last.currentOutputSnapshot;
+      lastId = value.last.order;
+    }
+    v = v.clone();
+    children.forEach((key, node) {
+      if (node.lastId>lastId) {
+        v.children[key] = node.output;
+      }
+    });
+    return v;
+  }
+
+  addTransaction(Transaction transaction) {
+    if (transaction.status==TransactionStatus.run) {
+      value.add(transaction);
+    }
+  }
+
+
+
+  abort() {
+    for (var txn in value) {
+      txn.abort("set");
+    }
+    value = value.where((t)=>!t.isComplete).toList();
   }
 
 }

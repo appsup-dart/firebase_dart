@@ -23,7 +23,7 @@ class Query {
   final QueryFilter _filter;
 
   Query._(Uri url, [this._filter = const QueryFilter()]) :
-        _url = url, _repo = new Repo(url.host);
+        _url = url, _repo = new Repo(url.resolve("/"));
 
   /**
    * Gets a stream for events of type [eventType]

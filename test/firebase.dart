@@ -8,7 +8,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'dart:io';
-
+import 'dart:async';
 void main() {
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen(print);
@@ -179,6 +179,89 @@ void main() {
       expect(await childRef.get(), "hello2");
     });
 
+
+  });
+
+  group('Transaction', () {
+    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+
+    test('Counter', () async {
+      await ref.set(0);
+
+      ref.onValue.listen((e)=>print("onValue ${e.snapshot.val}"));
+      await ref.onValue.first;
+      var f1 = new Stream.periodic(new Duration(milliseconds: 10))
+          .take(10)
+          .map((i) => ref.transaction((v)=>(v??0)+1))
+          .toList();
+      var f2 = new Stream.periodic(new Duration(milliseconds: 50))
+          .take(10)
+          .map((i) => ref.transaction((v)=>(v??0)+1))
+          .toList();
+
+      await Future.wait((await f1)..addAll(await f2));
+
+      expect(await ref.get(), 20);
+    });
+
+    test('Counter in tree', () async {
+
+      await ref.child('object/count').set(0);
+
+      var f1 = new Stream.periodic(new Duration(milliseconds: 10))
+          .take(10)
+          .map((i) => ref.child('object/count').transaction((v)=>(v??0)+1))
+          .toList();
+      var f2 = new Stream.periodic(new Duration(milliseconds: 50))
+          .take(10)
+          .map((i) => ref.transaction((v) {
+        v ??= {};
+        v
+            .putIfAbsent("object",()=>{})
+            .putIfAbsent("count",()=>0);
+        v["object"]["count"]++;
+        return v;
+      }))
+          .toList();
+      var f3 = new Stream.periodic(new Duration(milliseconds: 30))
+          .take(10)
+          .map((i) => ref.child("object").transaction((v) {
+        v ??= {};
+        v
+            .putIfAbsent("count",()=>0);
+        v["count"]++;
+        return v;
+      }))
+          .toList();
+
+      await Future.wait((await f1)..addAll(await f2)..addAll(await f3));
+
+      expect(await ref.child("object/count").get(), 30);
+    });
+
+    test('Abort', () async {
+      await ref.child('object/count').set(0);
+
+      var futures = [];
+      for (var i=0;i<10;i++) {
+        futures.add(ref.child('object/count').transaction((v)=>(v??0)+1));
+      }
+      for (var i=0;i<10;i++) {
+        futures.add(ref.child('object').transaction((v) {
+          v ??= {};
+          v
+              .putIfAbsent("count",()=>0);
+          v["count"]++;
+          return v;
+        }));
+      }
+      ref.child('object/test').set('hello');
+
+      await Future.wait(futures);
+
+      expect(await ref.child("object/count").get(), 10);
+
+    });
 
   });
 
