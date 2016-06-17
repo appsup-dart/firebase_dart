@@ -12,7 +12,6 @@ part of firebase_dart;
 /// can traverse into the snapshot by calling child() to return child
 /// snapshots (which you could in turn call val() on).
 class DataSnapshot {
-
   /// Gets the Firebase reference for the location that generated this
   /// DataSnapshot.
   final Firebase ref;
@@ -29,18 +28,19 @@ class DataSnapshot {
 
   /// Returns true if this DataSnapshot contains any data.
   /// It is slightly more efficient than using snapshot.val() !== null.
-  bool get exists => _data!=null&&!_data.isNil;
+  bool get exists => _data != null && !_data.isNil;
 
   /// Get a DataSnapshot for the location at the specified relative path. The
   /// relative path can either be a simple child name or a deeper slash
   /// separated path.
-  DataSnapshot child(String c) => new DataSnapshot(ref.child(c),_data.subtree(Name.parsePath(c)));
+  DataSnapshot child(String c) =>
+      new DataSnapshot(ref.child(c), _data.subtree(Name.parsePath(c)));
 
   /// Enumerate through the DataSnapshot's children (in priority order). The
   /// provided callback will be called synchronously with a DataSnapshot for
   /// each child.
-  void forEach(cb(DataSnapshot snapshot)) => _data.children
-      .forEach((key, value) => cb(new DataSnapshot(ref.child(key.toString()), value)));
+  void forEach(cb(DataSnapshot snapshot)) => _data.children.forEach(
+      (key, value) => cb(new DataSnapshot(ref.child(key.toString()), value)));
 
   /// Returns true if the specified child exists.
   bool hasChild(String path) => _data.hasChild(Name.parsePath(path));
@@ -65,6 +65,4 @@ class DataSnapshot {
   /// similar to val(), except priority information is included, making it
   /// suitable for backing up your data.
   dynamic exportVal() => _data.toJson(true);
-
 }
-

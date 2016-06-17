@@ -18,7 +18,9 @@ String calculateHash(dynamic obj) {
         toHash += ":" + key + ":" + childHash;
       }
     });
-    return toHash == "" ? "" : BASE64.encode(sha1.convert(toHash.codeUnits).bytes);
+    return toHash == ""
+        ? ""
+        : BASE64.encode(sha1.convert(toHash.codeUnits).bytes);
   } else {
     var toHash = "";
 /*
@@ -42,9 +44,8 @@ String doubleToIEEE754String(num v) {
   var hex = "";
   for (int i = 0; i < 8; i++) {
     var b = l.buffer.asByteData().getUint8(i).toRadixString(16);
-    if (b.length==1) b = "0$b";
+    if (b.length == 1) b = "0$b";
     hex = "$b$hex";
   }
   return hex;
 }
-

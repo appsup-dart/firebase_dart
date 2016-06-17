@@ -4,7 +4,6 @@
 part of firebase.protocol;
 
 class Response {
-
   final DataMessage message;
 
   final Request _request;
@@ -15,5 +14,4 @@ class Response {
 
   @override
   String toString() => "Response[${JSON.encode(message)}]";
-
 }

@@ -12,4 +12,3 @@ import 'package:quiver/core.dart' as quiver;
 part 'treestructureddata/name.dart';
 part 'treestructureddata/value.dart';
 part 'treestructureddata/treestructureddata.dart';
-
