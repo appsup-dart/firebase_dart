@@ -253,7 +253,7 @@ void main() {
               .putIfAbsent("count",()=>0);
           v["count"]++;
           return v;
-        }));
+        }).catchError((_){}));
       }
       futures.add(ref.child('object/test').set('hello'));
 

@@ -19,6 +19,7 @@ class DataSnapshot {
 
   final TreeStructuredData _data;
 
+  /// Creates a new [DataSnapshot] instance.
   DataSnapshot(this.ref, this._data);
 
   /// Get the Dart Primitive, Map or List representation of the DataSnapshot.

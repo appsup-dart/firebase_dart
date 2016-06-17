@@ -537,8 +537,7 @@ class Transaction implements Comparable<Transaction> {
       repo._syncTree.applyAck(path, currentWriteId, false);
     status = TransactionStatus.completed;
 
-    completer.complete(new firebase.TransactionResult(e, false,
-        new firebase.DataSnapshot(repo.rootRef.child(path.join("/")), currentInputSnapshot)));
+    completer.completeError(e);
   }
 
   void stale() {
@@ -577,8 +576,7 @@ class Transaction implements Comparable<Transaction> {
     if (applyLocally)
       repo._syncTree.applyAck(path, currentWriteId, true);
 
-    completer.complete(new firebase.TransactionResult(null, true,
-        new firebase.DataSnapshot(repo.rootRef.child(path.join("/")), currentOutputSnapshot)));
+    completer.complete(currentOutputSnapshot);
 
     _unwatch();
   }

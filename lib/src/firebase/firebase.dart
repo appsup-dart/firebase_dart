@@ -12,7 +12,7 @@ class Firebase extends Query {
   /// Construct a new Firebase reference from a full Firebase URL.
   Firebase(String url)
       : super._(url.endsWith("/") ? Uri.parse(url.substring(0, url.length-1)) : Uri.parse(url)) {
-    _onDisconnect = new Disconnect(this);
+    _onDisconnect = new Disconnect._(this);
   }
 
   /// Getter for onDisconnect.
@@ -139,10 +139,9 @@ class Firebase extends Query {
   ///
   /// The returned [Future] will be completed after the transaction has
   /// finished.
-  Future<TransactionResult> transaction(dynamic update(dynamic currentVal),
+  Future<DataSnapshot> transaction(dynamic update(dynamic currentVal),
       {bool applyLocally: true}) => _repo.transaction(_url.path, update, applyLocally)
-      .then/*<TransactionResult>*/((v)=>new TransactionResult(null, true, new DataSnapshot(this, v)))
-      .catchError((e)=>new TransactionResult(e, false, null));
+      .then/*<DataSnapshot>*/((v)=>new DataSnapshot(this, v));
 
 
 

@@ -21,7 +21,7 @@ class Disconnect {
 
   final Firebase _ref;
 
-  Disconnect(this._ref);
+  Disconnect._(this._ref);
 
   /// Ensure the data at this location is set to the specified value when the
   /// client is disconnected (due to closing the browser, navigating to a new

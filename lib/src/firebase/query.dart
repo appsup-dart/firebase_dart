@@ -48,8 +48,10 @@ class Query {
   Future<DataSnapshot> once(String eventType) =>
       on(eventType).first.then/*<DataSnapshot>*/((e)=>e.snapshot);
 
+  /// Listens for exactly one 'value' event.
   Future<DataSnapshot> get onceValue => once('value');
 
+  /// Convenient method to get the value for this query.
   Future get() => onceValue.then((v)=>v.val);
 
   Query _withFilter(QueryFilter filter) => new Query._(_url, filter);

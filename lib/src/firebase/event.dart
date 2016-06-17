@@ -11,7 +11,13 @@ part of firebase_dart;
 /// that is the name of the object that is before the object referred by the
 /// event in priority order.
 class Event {
+
+  /// The [DataSnapshot] representing the new value.
   final DataSnapshot snapshot;
+
+  /// The key of the previous child.
   final String prevChild;
+
+  /// Creates a new event
   Event(this.snapshot, this.prevChild);
 }
