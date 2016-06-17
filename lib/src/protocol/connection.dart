@@ -48,9 +48,9 @@ class Connection {
 
   final List<Request> _outstandingRequests = [];
 
-  Future put(String path, value) => _request(new Request.put(path, value));
+  Future put(String path, value, [String hash]) => _request(new Request.put(path, value, hash));
 
-  Future merge(String path, value) => _request(new Request.merge(path, value));
+  Future merge(String path, value, [String hash]) => _request(new Request.merge(path, value, hash));
 
   void _addListen(Request request) {
     var path = request.message.body.path;

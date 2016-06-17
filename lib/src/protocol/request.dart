@@ -28,10 +28,10 @@ class Request {
       : this(DataMessage.action_on_disconnect_merge, new MessageBody(path: path, data: data));
   Request.onDisconnectCancel(String path, data)
       : this(DataMessage.action_on_disconnect_cancel, new MessageBody(path: path, data: data));
-  Request.put(String path, data)
-      : this(DataMessage.action_put, new MessageBody(path: path, data: data));
-  Request.merge(String path, data)
-      : this(DataMessage.action_merge, new MessageBody(path: path, data: data));
+  Request.put(String path, data, [String hash])
+      : this(DataMessage.action_put, new MessageBody(path: path, data: data, hash: hash));
+  Request.merge(String path, data, [String hash])
+      : this(DataMessage.action_merge, new MessageBody(path: path, data: data, hash: hash));
   Request.stats(stats)
       : this(DataMessage.action_stats, new MessageBody(stats: stats));
 
