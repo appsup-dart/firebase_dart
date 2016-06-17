@@ -29,7 +29,7 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
           );
 
   factory QueryFilter.fromQuery(Query query) {
-    if (query==null) return new QueryFilter();
+    if (query==null) return null;
     return new QueryFilter(
         limit: query.limit,
         reverse: query.isViewFromRight,
