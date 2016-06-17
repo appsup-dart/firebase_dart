@@ -18,7 +18,7 @@ class ViewCache<T> {
   }
 
   void recalcLocalVersion() {
-    localVersion = pendingOperations.values.fold/*<T>*/(serverVersion, (T v, o)=>o.apply(v));
+    localVersion = pendingOperations.values.fold(serverVersion, (v, o)=>o.apply(v));
   }
   ViewCache<T> updateServerVersion(T newValue) {
     return new ViewCache(localVersion, newValue, pendingOperations)..recalcLocalVersion();
@@ -29,8 +29,8 @@ class ViewCache<T> {
     );
   }
 
-  ViewCache<T> removeOperation(int writeId, bool recalc) {
-    var viewCache = new ViewCache<T>(localVersion, serverVersion,
+  ViewCache removeOperation(int writeId, bool recalc) {
+    var viewCache = new ViewCache(localVersion, serverVersion,
         pendingOperations.clone()..remove(writeId));
     if (recalc) viewCache.recalcLocalVersion();
     return viewCache;
@@ -61,8 +61,8 @@ class ViewEventGenerator<T> extends EventGenerator<ViewCache<T>> {
       IncompleteData<ViewCache<T>> oldValue,
       IncompleteData<ViewCache<T>> newValue) {
     return baseEventGenerator.generateEvents(eventType,
-        oldValue.childData/*<T>*/(ViewOperationSource.user, oldValue.value?.localVersion),
-        newValue.childData/*<T>*/(ViewOperationSource.user, newValue.value.localVersion));
+        oldValue.childData(ViewOperationSource.user, oldValue.value?.localVersion),
+        newValue.childData(ViewOperationSource.user, newValue.value.localVersion));
   }
 }
 
@@ -91,15 +91,13 @@ class ViewOperation<T> extends Operation<ViewCache<T>> {
       case ViewOperationSource.server:
         var result = dataOperation.apply(value.serverVersion);
         return value.updateServerVersion(result);
-      default:
-        throw new Exception("SHOULD NEVER HAPPEN");
     }
   }
 
   @override
   Iterable<Path> get completesPaths =>
-      dataOperation.completesPaths.expand/*<Path>*/(
-          (p)=>source==ViewOperationSource.user ? [new Path.from(<dynamic>[source]..addAll(p))] :
-  [new Path.from(<dynamic>[ViewOperationSource.server]..addAll(p)), new Path.from(<dynamic>[ViewOperationSource.user]..addAll(p))]);
+      dataOperation.completesPaths.expand(
+          (p)=>source==ViewOperationSource.user ? [new Path.from([source]..addAll(p))] :
+  [new Path.from([ViewOperationSource.server]..addAll(p)), new Path.from([ViewOperationSource.user]..addAll(p))]);
 }
 

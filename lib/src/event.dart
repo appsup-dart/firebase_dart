@@ -13,7 +13,7 @@ class Event {
 
 }
 
-typedef void EventListener(Event event);
+typedef EventListener(Event event);
 
 abstract class EventTarget {
 

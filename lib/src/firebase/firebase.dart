@@ -133,7 +133,7 @@ class Firebase extends Query {
    * timestamp so that the resulting list will be chronologically sorted.
    */
   Future<Firebase> push(dynamic value) => _repo.push(_url.path, value)
-  .then/*<Firebase>*/((n)=>child(n));
+  .then((n)=>child(n));
 
 
   /**
@@ -183,7 +183,7 @@ class Firebase extends Query {
    */
   Future<TransactionResult> transaction(update(currentVal),
       {bool applyLocally: true}) => _repo.transaction(_url.path, update, applyLocally)
-      .then/*<TransactionResult>*/((v)=>new TransactionResult(null, true, new DataSnapshot(this, v)))
+      .then((v)=>new TransactionResult(null, true, new DataSnapshot(this, v)))
       .catchError((e)=>new TransactionResult(e, false, null));
 
 

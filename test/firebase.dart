@@ -200,7 +200,7 @@ void main() {
           .map((i) => ref.transaction((v)=>(v??0)+1))
           .toList();
 
-      await Future.wait((await f1 as List<Future>)..addAll(await f2 as List<Future>));
+      await Future.wait((await f1)..addAll(await f2));
 
       expect(await ref.get(), 20);
     });
@@ -235,7 +235,7 @@ void main() {
       }))
           .toList();
 
-      await Future.wait((await f1 as List<Future>)..addAll(await f2 as List<Future>)..addAll(await f3 as List<Future>));
+      await Future.wait((await f1)..addAll(await f2)..addAll(await f3));
 
       expect(await ref.child("object/count").get(), 30);
     });
@@ -243,7 +243,7 @@ void main() {
     test('Abort', () async {
       await ref.child('object/count').set(0);
 
-      var futures = <Future>[];
+      var futures = [];
       for (var i=0;i<10;i++) {
         futures.add(ref.child('object/count').transaction((v)=>(v??0)+1));
       }
