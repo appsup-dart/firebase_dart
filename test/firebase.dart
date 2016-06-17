@@ -8,8 +8,13 @@ import 'package:logging/logging.dart';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:async';
+
+import 'secrets.dart'
+  if (dart.library.html) 'secrets.dart'
+  if (dart.library.io) 'secrets_io.dart';
+
+
 void main() {
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen(print);
@@ -37,14 +42,8 @@ void main() {
     });
   });
   group('Authenticate', () {
-    var f = new File("test/secrets.json");
-    if (!f.existsSync()) {
-      fail("Cannot test Authenticate: no secrets.json file");
-      return;
-    }
-    var options = JSON.decode(f.readAsStringSync());
-    var host = options["host"];
-    var secret = options["secret"];
+    var host = secrets["host"];
+    var secret = secrets["secret"];
 
     if (host==null||secret==null) {
       print("Cannot test Authenticate: set a host and secret.");
@@ -77,7 +76,7 @@ void main() {
 
     test('permission denied', () async {
       ref = ref.child('test');
-      ref.onValue.forEach((e)=>print(e.snapshot.val));
+      ref.onValue.listen((e)=>print(e.snapshot.val));
       await ref.authWithCustomToken(token);
       await ref.set('hello world');
       expect(await ref.get(),'hello world');
@@ -112,7 +111,7 @@ void main() {
           "hello": "world"
         }
       });
-      ref.onValue.forEach((_){});
+      ref.onValue.listen((_){});
 
       expect(await ref.child("object/hello").get(), "world");
 
@@ -243,7 +242,7 @@ void main() {
     test('Abort', () async {
       await ref.child('object/count').set(0);
 
-      var futures = [];
+      var futures = <Future>[];
       for (var i=0;i<10;i++) {
         futures.add(ref.child('object/count').transaction((v)=>(v??0)+1));
       }
@@ -254,9 +253,9 @@ void main() {
               .putIfAbsent("count",()=>0);
           v["count"]++;
           return v;
-        }));
+        }).catchError((_){}));
       }
-      ref.child('object/test').set('hello');
+      futures.add(ref.child('object/test').set('hello'));
 
       await Future.wait(futures);
 
@@ -554,7 +553,7 @@ String jwt(Map data, String secret) {
 
 String _jwt(List<int> payload, {Map header, String secret}) {
   final msg = '${BASE64URL.encode(JSON.encode(header).codeUnits)}.${BASE64URL.encode(payload)}';
-  return "${msg}.${_signMessage(msg, secret)}";
+  return "$msg.${_signMessage(msg, secret)}";
 }
 
 String _signMessage(String msg, String secret) {

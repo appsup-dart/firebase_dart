@@ -4,16 +4,16 @@
 class Event {
 
   EventTarget _target;
-  EventTarget get target => _target;
 
   final String type;
 
   Event(this.type);
 
+  EventTarget get target => _target;
 
 }
 
-typedef EventListener(Event event);
+typedef void EventListener(Event event);
 
 abstract class EventTarget {
 

@@ -7,24 +7,18 @@ class ServerValue {
   final String type;
   const ServerValue._(this.type);
 
-  static const timestamp = const ServerValue._("TIMESTAMP");
+  static const ServerValue timestamp = const ServerValue._("TIMESTAMP");
 
-  static const values = const {
+  static const Map<String,ServerValue> values = const {
     "TIMESTAMP": timestamp
   };
 
-  toJson() => {".sv": type};
+  Map<String,String> toJson() => {".sv": type};
 }
 
 class Value implements Comparable<Value> {
 
   final dynamic value;
-
-  const Value._(this.value);
-  const Value.bool(bool value) : this._(value);
-  const Value.num(num value) : this._(value);
-  const Value.string(String value) : this._(value);
-  Value.server(String type) : this._(ServerValue.values[type]);
 
   factory Value(dynamic value) {
     if (value==null) return null;
@@ -34,6 +28,12 @@ class Value implements Comparable<Value> {
     if (value is Map&&value.containsKey(".sv")) return new Value.server(value[".sv"]);
     throw new ArgumentError("Unsupported value type ${value.runtimeType}");
   }
+
+  const Value._(this.value);
+  const Value.bool(bool value) : this._(value);
+  const Value.num(num value) : this._(value);
+  const Value.string(String value) : this._(value);
+  Value.server(String type) : this._(ServerValue.values[type]);
 
   bool get isBool => value is bool;
   bool get isNum => value is num;
@@ -59,11 +59,15 @@ class Value implements Comparable<Value> {
     return thisIndex - otherIndex;
   }
 
+  @override
   int get hashCode => value.hashCode;
-  bool operator==(other) => other is Value&&value==other.value;
 
-  toJson() => value;
+  @override
+  bool operator==(dynamic other) => other is Value&&value==other.value;
 
-  toString() => "Value[$value]";
+  dynamic toJson() => value;
+
+  @override
+  String toString() => "Value[$value]";
 }
 

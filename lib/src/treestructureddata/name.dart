@@ -12,20 +12,22 @@ class _SpecialName extends Name {
   @override
   Match matchAsPrefix(String string, [int start = 0]) => null;
 
+  @override
   int get length => 0;
 
 }
 
 class Name implements Pattern, Comparable<Name> {
 
-  static const min = const _SpecialName("[MIN_NAME]");
-  static const max = const _SpecialName("[MAX_NAME]");
+  static const Name min = const _SpecialName("[MIN_NAME]");
+  static const Name max = const _SpecialName("[MAX_NAME]");
 
   final String _value;
 
   const Name(this._value);
 
-  toString() => _value;
+  @override
+  String toString() => _value;
 
   @override
   Iterable<Match> allMatches(String string, [int start = 0]) =>
@@ -35,16 +37,19 @@ class Name implements Pattern, Comparable<Name> {
   Match matchAsPrefix(String string, [int start = 0]) =>
       _value.matchAsPrefix(string, start);
 
+  @override
   int get hashCode => hash2(this is _SpecialName, _value.hashCode);
-  bool operator==(other) => other is Name
+
+  @override
+  bool operator==(dynamic other) => other is Name
       &&(this is _SpecialName==other is _SpecialName)&&other._value==_value;
 
   @override
   int compareTo(Name other) => compare(this, other);
 
 
-  asString() => _value;
-  asInt() => int.parse(_value, onError: (_)=> null);
+  String asString() => _value;
+  int asInt() => int.parse(_value, onError: (_)=> null);
 
   int get length => _value.length;
 
@@ -78,6 +83,6 @@ class Name implements Pattern, Comparable<Name> {
   }
 
   static Path<Name> parsePath(String path) {
-    return new Path.from(path.split("/").where((v)=>v.isNotEmpty).map((v)=>new Name(v)));
+    return new Path<Name>.from(path.split("/").where((v)=>v.isNotEmpty).map/*<Name>*/((v)=>new Name(v)));
   }
 }

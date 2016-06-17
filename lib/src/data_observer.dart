@@ -29,7 +29,8 @@ class IncompleteData<T> {
   bool isCompleteForPath(Path path) => _isCompleteForPath(_states,path);
   bool isCompleteForChild(Object child) => _isCompleteForPath(_states,new Path.from([child]));
 
-  IncompleteData childData(Object child, childValue) => new IncompleteData(childValue, _states.children[child]);
+  IncompleteData/*<S>*/ childData/*<S>*/(Object child, dynamic/*=S*/ childValue) =>
+      new IncompleteData/*<S>*/(childValue, _states.children[child]);
 
   bool _isCompleteForPath(TreeNode<dynamic, bool> states, Path path) =>
       states.nodesOnPath(path).any((v)=>v.value==true);
@@ -49,8 +50,8 @@ class IncompleteData<T> {
     return states.clone()..children[c] = _completePath(states.children[c] ?? new TreeNode(), path.skip(1));
   }
 
-
-  toString() => "IncompleteData[$value,$_states]";
+  @override
+  String toString() => "IncompleteData[$value,$_states]";
 }
 
 class DataObserver<T> extends EventTarget {
@@ -65,7 +66,7 @@ class DataObserver<T> extends EventTarget {
   T get currentValue => _data.value;
   IncompleteData<T> get incompleteData => _data;
 
-  void applyOperation(Operation operation) {
+  void applyOperation(Operation<T> operation) {
     var oldData = _data;
     _data = _data.update(
         operation.apply(_data.value),
@@ -75,7 +76,7 @@ class DataObserver<T> extends EventTarget {
         .forEach(dispatchEvent);
   }
 
-  generateInitialEvents(String type) =>
+  Iterable<Event> generateInitialEvents(String type) =>
       eventGenerator.generateEvents(type, new IncompleteData(null), _data);
 
 }
@@ -85,7 +86,7 @@ class EventGenerator<T> {
 
   const EventGenerator();
 
-  static _equals(a,b) {
+  static bool _equals(a,b) {
     if (a is Map&&b is Map) return const MapEquality().equals(a,b);
     if (a is Iterable&&b is Iterable) return const IterableEquality().equals(a,b);
     return a==b;

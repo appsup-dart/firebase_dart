@@ -9,21 +9,19 @@ class TreeStructuredData extends TreeNode<Name,Value> {
   Value priority;
 
 
-  TreeStructuredData({this.priority, Value value, Filter filter}) :
+  TreeStructuredData({this.priority, Value value, Filter<Pair<Name,TreeStructuredData>> filter}) :
       super(value, filter==null ? null : new FilteredMap(filter));
 
   TreeStructuredData._(Value value, Map<Name,TreeStructuredData> children,
       Value priority) :
-        super(value, children), priority = priority;
+        priority = priority, super(value, children);
 
   TreeStructuredData.leaf(Value value, [Value priority]) :
         this._(value, null, priority);
 
 
-  TreeStructuredData.children(Map<Name,TreeStructuredData> children, [Value priority]) :
+  TreeStructuredData.nonLeaf(Map<Name,TreeStructuredData> children, [Value priority]) :
       this._(null, children, priority);
-
-  TreeStructuredData clone() => new TreeStructuredData._(value, children, priority);
 
   factory TreeStructuredData.fromJson(json, [priority, Map<ServerValue, Value> serverValues]) {
     if (json == null) {
@@ -44,29 +42,40 @@ class TreeStructuredData extends TreeNode<Name,Value> {
       return new TreeStructuredData.leaf(value, priority);
     }
 
-    var children = new Map.fromIterable(
+    var children = new Map<Name,TreeStructuredData>.fromIterable(
         json.keys.where((k)=>!k.startsWith(".")),
         key: (k)=>new Name(k),
         value: (k)=>new TreeStructuredData.fromJson(json[k], null, serverValues) );
 
-    return new TreeStructuredData.children(children,priority);
+    return new TreeStructuredData.nonLeaf(children,priority);
   }
+
+  @override
+  TreeStructuredData clone() => new TreeStructuredData._(value, children, priority);
+
+  @override
+  Map<Name,TreeStructuredData> get children => super.children;
 
   dynamic toJson([bool exportFormat = false]) {
     if (isNil) return null;
-    var c = new Map.fromIterables(children.keys.map((k)=>k.toString()),
+    var c = new Map<String,dynamic>.fromIterables(children.keys.map((k)=>k.toString()),
         children.values.map((v)=>v.toJson(exportFormat)));
 
     if (exportFormat&&priority!=null) {
-      return {".priority": priority}..addAll(isLeaf ? {".value": value} : c);
+      if (isLeaf) c = {".value" : value};
+      return <String,dynamic>{".priority": priority}..addAll(c);
     }
     return isLeaf ? value.toJson() : c;
   }
 
-  bool operator==(other) => other is TreeStructuredData&&(
+  @override
+  bool operator==(dynamic other) => other is TreeStructuredData&&(
       isLeaf ? other.isLeaf&&value==other.value :
       !other.isLeaf&&const MapEquality().equals(children, other.children));
 
+  @override
+  int get hashCode => quiver.hash2(value, const MapEquality().hash(children));
 
-  toString() => "TreeStructuredData[${toJson()}]";
+  @override
+  String toString() => "TreeStructuredData[${toJson()}]";
 }

@@ -16,7 +16,8 @@ class ServerError implements Exception {
     "unavailable": "The service is unavailable"
   }[code] ?? "Unknown Error";
 
-  toString() => "$code: $reason";
+  @override
+  String toString() => "$code: $reason";
 }
 
 class Connection {
@@ -48,9 +49,11 @@ class Connection {
 
   final List<Request> _outstandingRequests = [];
 
-  Future put(String path, value, [String hash]) => _request(new Request.put(path, value, hash));
+  Future put(String path, dynamic value, [String hash]) =>
+      _request(new Request.put(path, value, hash));
 
-  Future merge(String path, value, [String hash]) => _request(new Request.merge(path, value, hash));
+  Future merge(String path, dynamic value, [String hash]) =>
+      _request(new Request.merge(path, value, hash));
 
   void _addListen(Request request) {
     var path = request.message.body.path;
@@ -84,7 +87,7 @@ class Connection {
   Stream<Response> get output => _output.stream;
   Stream<bool> get onConnect => _onConnect.stream;
 
-  Future _establishConnection() async {
+  void _establishConnection() {
     _transport = new WebSocketTransport(host, host.split(".").first, _lastSessionId);
     _transport.ready.then((_) {
       _onConnect.add(true);
@@ -97,14 +100,20 @@ class Connection {
     _transport.done.then((_) {
       _onConnect.add(false);
       _transport = null;
-      _scheduleConnect(1000);
+      if (!_output.isClosed)
+        _scheduleConnect(1000);
     });
   }
 
   Future disconnect() => _transport._close(null);
 
+  Future close() async {
+    await _output.close();
+    await _onConnect.close();
+    await disconnect();
+  }
 
-  _restoreState() async {
+  Future _restoreState() async {
     // auth
     if (_authToken!=null) {
       await auth(_authToken);
@@ -132,7 +141,7 @@ class Connection {
     return b.data;
   });
 
-  unauth() {
+  Future unauth() {
     _authToken = null;
     return _request(new Request.unauth()).then((b)=>b.data);
   }
@@ -141,8 +150,8 @@ class Connection {
 
   Future<MessageBody> _request(Request request) {
     switch (request.message.action) {
-      case DataMessage.action_listen:
-      case DataMessage.action_unlisten:
+      case DataMessage.actionListen:
+      case DataMessage.actionUnlisten:
         break;
       default:
         _outstandingRequests.add(request);
@@ -150,9 +159,9 @@ class Connection {
     if (_transportIsReady) {
       _transport.add(request);
     }
-    return request.response.then((r) {
+    return request.response.then/*<MessageBody>*/((r) {
       _outstandingRequests.remove(request);
-      if (r.message.body.status==MessageBody.status_ok) {
+      if (r.message.body.status==MessageBody.statusOk) {
         return r.message.body;
       } else {
         throw new ServerError(r.message.body.status, r.message.body.data);
@@ -162,7 +171,7 @@ class Connection {
 
 
 
-  Future<MessageBody> onDisconnectPut(String path, value) =>
+  Future<MessageBody> onDisconnectPut(String path, dynamic value) =>
       _request(new Request.onDisconnectPut(path, value));
 
 

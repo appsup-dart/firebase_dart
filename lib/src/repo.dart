@@ -12,6 +12,7 @@ import 'package:logging/logging.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
+import 'event.dart';
 
 final _logger = new Logger("firebase-repo");
 
@@ -39,7 +40,7 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
     );
   }
 
-  static _toNameValue(String key, dynamic value) =>
+  static Pair<Name, TreeStructuredData> _toNameValue(String key, dynamic value) =>
       key==null&&value==null ? null : new Pair(new Name(key), new TreeStructuredData(value: new Value(value)));
 
   QueryFilter copyWith({String orderBy, String startAtKey, dynamic startAtValue,
@@ -87,24 +88,27 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
   }
 
   @override
-  get isValid => (p) {
+  bool isValid(Pair<Name,TreeStructuredData> p) {
     p = _extract(p);
     if (startAt!=null&&_comparePair(startAt,p)>0) return false;
     if (endAt!=null&&_comparePair(p,endAt)>0) return false;
     return true;
-  };
+  }
 
   @override
-  Comparator<Pair<Name,TreeStructuredData>> get compare => (a,b) =>
+  int compare(Pair<Name,TreeStructuredData> a,Pair<Name,TreeStructuredData> b) =>
       _comparePair(_extract(a),_extract(b));
 
-  toString() => "QueryFilter[${toQuery().toJson()}]";
+  @override
+  String toString() => "QueryFilter[${toQuery().toJson()}]";
 
 
+  @override
   int get hashCode => quiver.hash4(orderBy,startAt,endAt,
       quiver.hash2(limit, reverse));
 
-  bool operator==(other) => other is QueryFilter&&
+  @override
+  bool operator==(dynamic other) => other is QueryFilter&&
     other.orderBy==orderBy&&other.startAt==startAt&&other.endAt==endAt&&
       other.limit==limit&&other.reverse==reverse;
 
@@ -116,13 +120,11 @@ class Repo {
   final Connection _connection;
   final Uri url;
 
-  firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
-
   static final Map<Uri,Repo> _repos = {};
 
   final SyncTree _syncTree = new SyncTree();
 
-  final pushIds = new PushIdGenerator();
+  final PushIdGenerator pushIds = new PushIdGenerator();
 
   final Map<QueryFilter, int> _queryToTag = {};
   final Map<int, QueryFilter> _tagToQuery = {};
@@ -130,6 +132,10 @@ class Repo {
   int _nextWriteId = 0;
   TransactionsTree _transactions;
   SparseSnapshotTree _onDisconnect = new SparseSnapshotTree();
+
+  factory Repo(Uri url) {
+    return _repos.putIfAbsent(url, ()=>new Repo._(url));
+  }
 
   Repo._(Uri url) : _connection = new Connection(url.host), url = url {
     _transactions = new TransactionsTree(this);
@@ -140,30 +146,30 @@ class Repo {
     });
     _connection.output.listen((r) {
       switch (r.message.action) {
-        case DataMessage.action_set:
+        case DataMessage.actionSet:
           var filter = _tagToQuery[r.message.body.tag];
           _syncTree.applyServerOverwrite(
               Name.parsePath(r.message.body.path), filter,
               new TreeStructuredData.fromJson(r.message.body.data)
           );
           break;
-        case DataMessage.action_merge:
+        case DataMessage.actionMerge:
           var filter = _tagToQuery[r.message.body.tag];
           _syncTree.applyServerMerge(
               Name.parsePath(r.message.body.path), filter,
               new TreeStructuredData.fromJson(r.message.body.data).children
           );
           break;
-        case DataMessage.action_auth_revoked:
+        case DataMessage.actionAuthRevoked:
           _onAuth.add(null);
           break;
-        case DataMessage.action_listen_revoked:
+        case DataMessage.actionListenRevoked:
           var filter = new QueryFilter.fromQuery(r.message.body.query); //TODO test query revoke
           _syncTree.applyListenRevoked(
               Name.parsePath(r.message.body.path), filter
           );
           break;
-        case DataMessage.action_security_debug:
+        case DataMessage.actionSecurityDebug:
           var msg = r.message.body.message;
           _logger.fine("security debug: $msg");
           break;
@@ -174,42 +180,36 @@ class Repo {
     onAuth.listen((v)=>_authData=v);
   }
 
-  factory Repo(Uri url) {
-    return _repos.putIfAbsent(url, ()=>new Repo._(url));
-  }
+  firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
 
   var _authData;
   final StreamController _onAuth = new StreamController.broadcast();
 
   Future triggerDisconnect() => _connection.disconnect();
 
+  Future close() async {
+    await _onAuth.close();
+    await _connection.close();
+  }
 
-  /**
-   * Generates the special server values
-   */
-  Map<ServerValue, dynamic> get serverValues => {
-    ServerValue.timestamp: _connection.serverTime
+  /// Generates the special server values
+  Map<ServerValue, Value> get serverValues => {
+    ServerValue.timestamp: new Value(_connection.serverTime.millisecondsSinceEpoch)
   };
 
-  /**
-   * The current authData
-   */
-  get authData => _authData;
+  /// The current authData
+  dynamic get authData => _authData;
 
-  /**
-   * Stream of auth data.
-   *
-   * When a user is logged in, its auth data is posted. When logged of, [null]
-   * is posted.
-   */
+  /// Stream of auth data.
+  ///
+  /// When a user is logged in, its auth data is posted. When logged of, [null]
+  /// is posted.
   Stream get onAuth => _onAuth.stream;
 
-  /**
-   * Tries to authenticate with [token].
-   *
-   * Returns a future that completes with the auth data on success, or fails
-   * otherwise.
-   */
+  /// Tries to authenticate with [token].
+  ///
+  /// Returns a future that completes with the auth data on success, or fails
+  /// otherwise.
   Future auth(String token) => _connection.auth(token).then((v)=>v["auth"])
       .then((auth) {
     _onAuth.add(auth);
@@ -217,24 +217,19 @@ class Repo {
     return auth;
   });
 
-
-  /**
-   * Unauthenticates.
-   *
-   * Returns a future that completes on success, or fails otherwise.
-   */
+  /// Unauthenticates.
+  ///
+  /// Returns a future that completes on success, or fails otherwise.
   Future unauth() => _connection.unauth().then((_) {
     _onAuth.add(null);
     _authData = null;
   });
 
-  /**
-   * Writes data [value] to the location [path] and sets the [priority].
-   *
-   * Returns a future that completes when the data has been written to the
-   * server and fails when data could not be written.
-   */
-  Future setWithPriority(String path, value, priority) {
+  /// Writes data [value] to the location [path] and sets the [priority].
+  ///
+  /// Returns a future that completes when the data has been written to the
+  /// server and fails when data could not be written.
+  Future setWithPriority(String path, dynamic value, dynamic priority) {
     var newValue = new TreeStructuredData.fromJson(value, priority, serverValues);
     var writeId = _nextWriteId++;
     _syncTree.applyUserOverwrite(Name.parsePath(path), newValue, writeId);
@@ -247,16 +242,14 @@ class Repo {
         });
   }
 
-  /**
-   * Writes the children in [value] to the location [path].
-   *
-   * Returns a future that completes when the data has been written to the
-   * server and fails when data could not be written.
-   */
+  /// Writes the children in [value] to the location [path].
+  ///
+  /// Returns a future that completes when the data has been written to the
+  /// server and fails when data could not be written.
   Future update(String path, Map<String, dynamic> value) {
-    var changedChildren = new Map.fromIterables(
-        value.keys.map((c)=>new Name(c)),
-        value.values.map((v)=>new TreeStructuredData.fromJson(v, null, serverValues))
+    var changedChildren = new Map<Name,TreeStructuredData>.fromIterables(
+        value.keys.map/*<Name>*/((c)=>new Name(c)),
+        value.values.map/*<TreeStructuredData>*/((v)=>new TreeStructuredData.fromJson(v, null, serverValues))
     );
     if (value.isNotEmpty) {
       int writeId = _nextWriteId++;
@@ -271,12 +264,10 @@ class Repo {
     return new Future.value();
   }
 
-  /**
-   * Adds [value] to the location [path] for which a unique id is generated.
-   *
-   * Returns a future that completes with the generated key when the data has
-   * been written to the server and fails when data could not be written.
-   */
+  /// Adds [value] to the location [path] for which a unique id is generated.
+  ///
+  /// Returns a future that completes with the generated key when the data has
+  /// been written to the server and fails when data could not be written.
   Future push(String path, dynamic value) async {
     var name = pushIds.next(_connection.serverTime);
     var pushedPath = "$path/$name";
@@ -286,14 +277,11 @@ class Repo {
     return name;
   }
 
-  /**
-   * Listens to changes of [type] at location [path] for data matching [filter].
-   *
-   * Returns a future that completes when the listener has been successfully
-   * registered at the server.
-   *
-   */
-  Future listen(String path, QueryFilter filter, String type, cb) {
+  /// Listens to changes of [type] at location [path] for data matching [filter].
+  ///
+  /// Returns a future that completes when the listener has been successfully
+  /// registered at the server.
+  Future listen(String path, QueryFilter filter, String type, EventListener cb) {
     var isFirst = _syncTree.addEventListener(type, Name.parsePath(path), filter, cb);
     if (!isFirst) return new Future.value();
     if (filter==null) return _connection.listen(path);
@@ -310,14 +298,11 @@ class Repo {
     });
   }
 
-  /**
-   * Unlistens to changes of [type] at location [path] for data matching [filter].
-   *
-   * Returns a future that completes when the listener has been successfully
-   * unregistered at the server.
-   *
-   */
-  Future unlisten(String path, QueryFilter filter, String type, cb) {
+  /// Unlistens to changes of [type] at location [path] for data matching [filter].
+  ///
+  /// Returns a future that completes when the listener has been successfully
+  /// unregistered at the server.
+  Future unlisten(String path, QueryFilter filter, String type, EventListener cb) {
     var isLast = _syncTree.removeEventListener(type, Name.parsePath(path), filter, cb);
     if (!isLast) return new Future.value();
     if (filter==null) return _connection.unlisten(path);
@@ -327,18 +312,14 @@ class Repo {
     return _connection.unlisten(path, query: filter.toQuery(), tag : tag);
   }
 
-  /**
-   * Gets the current cached value at location [path] with [filter].
-   */
+  /// Gets the current cached value at location [path] with [filter].
   TreeStructuredData cachedValue(String path, QueryFilter filter) {
     var tree = _syncTree.root.subtree(Name.parsePath(path));
     if (tree=null) return null;
     return tree.value.views[filter].currentValue.localVersion;
   }
 
-  /**
-   * Helper function to create a new stream for a particular event type.
-   */
+  /// Helper function to create a new stream for a particular event type.
   Stream<firebase.Event> createStream(firebase.Firebase ref, QueryFilter filter, String type) {
     return new _Stream(()=>new StreamFactory(this, ref, filter, type)());
   }
@@ -350,7 +331,7 @@ class Repo {
       _transactions.startTransaction(Name.parsePath(path), update, applyLocally);
 
 
-  Future onDisconnectSetWithPriority(String path, value, priority) {
+  Future onDisconnectSetWithPriority(String path, dynamic value, dynamic priority) {
     var newNode = new TreeStructuredData.fromJson(value, priority);
     return _connection.onDisconnectPut(path, newNode.toJson(true))
         .then((m) {
@@ -377,7 +358,7 @@ class Repo {
     });
   }
 
-  _runOnDisconnectEvents() {
+  void _runOnDisconnectEvents() {
     var sv = serverValues;
     _onDisconnect.forEachNode((path, snap) {
       if (snap==null) return;
@@ -390,9 +371,10 @@ class Repo {
   }
 }
 
+typedef Stream<T> _StreamCreator<T>();
 class _Stream<T> extends Stream<T> {
 
-  final Function factory;
+  final _StreamCreator<T> factory;
 
   _Stream(this.factory);
 
@@ -414,7 +396,7 @@ class StreamFactory {
 
   StreamController<firebase.Event> controller;
 
-  void addEvent(value) {
+  void addEvent(Event value) {
 
     if (value is ValueEvent) {
       new Future.microtask(()=>
@@ -423,7 +405,7 @@ class StreamFactory {
       );
     }
   }
-  void addError(error) {
+  void addError(Event error) {
     stopListen();
     controller.addError(error);
     controller.close();
@@ -438,7 +420,7 @@ class StreamFactory {
     repo.unlisten(ref.url.path, filter, "cancel", addError);
   }
 
-  call() {
+  Stream<firebase.Event> call() {
     controller = new StreamController<firebase.Event>(
         onListen: startListen, onCancel: stopListen, sync: true);
     return controller.stream;
@@ -447,9 +429,9 @@ class StreamFactory {
 }
 
 class PushIdGenerator {
-  static const PUSH_CHARS = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
-  var lastPushTime = 0;
-  final lastRandChars = new List(64);
+  static const String pushChars = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+  int lastPushTime = 0;
+  final List lastRandChars = new List(64);
   final Random random = new Random();
 
   String next(DateTime timestamp) {
@@ -460,7 +442,7 @@ class PushIdGenerator {
     lastPushTime = now;
     var timeStampChars = new List(8);
     for (var i = 7;i >= 0;i--) {
-      timeStampChars[i] = PUSH_CHARS[now % 64];
+      timeStampChars[i] = pushChars[now % 64];
       now = now ~/ 64;
     }
     var id = timeStampChars.join("");
@@ -476,7 +458,7 @@ class PushIdGenerator {
       lastRandChars[i]++;
     }
     for (var i = 0;i < 12;i++) {
-      id += PUSH_CHARS[lastRandChars[i]];
+      id += pushChars[lastRandChars[i]];
     }
     return id;
   }
@@ -484,7 +466,7 @@ class PushIdGenerator {
 }
 
 
-enum TransactionStatus {run, sent, completed, sent_needs_abort}
+enum TransactionStatus {run, sent, completed, sentNeedsAbort}
 
 class Transaction implements Comparable<Transaction> {
 
@@ -493,11 +475,11 @@ class Transaction implements Comparable<Transaction> {
   final bool applyLocally;
   final Repo repo;
   final int order;
-  final Completer<firebase.TransactionResult> completer = new Completer();
+  final Completer<TreeStructuredData> completer = new Completer();
 
   static int _order = 0;
 
-  static const max_retries = 25;
+  static const int maxRetries = 25;
 
   int retryCount = 0;
   String abortReason;
@@ -511,23 +493,23 @@ class Transaction implements Comparable<Transaction> {
     _watch();
   }
 
-  bool get isSent => status==TransactionStatus.sent||status==TransactionStatus.sent_needs_abort;
+  bool get isSent => status==TransactionStatus.sent||status==TransactionStatus.sentNeedsAbort;
   bool get isComplete => status==TransactionStatus.completed;
-  bool get isAborted => status==TransactionStatus.sent_needs_abort;
+  bool get isAborted => status==TransactionStatus.sentNeedsAbort;
 
-  _onValue(_) {}
+  void _onValue(Event _) {}
 
-  _watch() {
+  void _watch() {
     repo.listen(path.join("/"), null, "value", _onValue);
   }
 
-  _unwatch() {
+  void _unwatch() {
     repo.unlisten(path.join("/"), null, "value", _onValue);
   }
 
   void run(TreeStructuredData currentState) {
     assert(status==null);
-    if (retryCount >= max_retries) {
+    if (retryCount >= maxRetries) {
       fail(new Exception("maxretries"));
       return;
     }
@@ -548,18 +530,17 @@ class Transaction implements Comparable<Transaction> {
     }
   }
 
-  fail(e) {
+  void fail(dynamic e) {
     _unwatch();
     currentOutputSnapshot = null;
     if (applyLocally)
       repo._syncTree.applyAck(path, currentWriteId, false);
     status = TransactionStatus.completed;
 
-    completer.complete(new firebase.TransactionResult(e, false,
-        new firebase.DataSnapshot(repo.rootRef.child(path.join("/")), currentInputSnapshot)));
+    completer.completeError(e);
   }
 
-  stale() {
+  void stale() {
     status = null;
     if (applyLocally)
       repo._syncTree.applyAck(path, currentWriteId, false);
@@ -571,12 +552,12 @@ class Transaction implements Comparable<Transaction> {
     retryCount++;
   }
 
-  abort(String reason) {
+  void abort(String reason) {
     switch (status) {
-      case TransactionStatus.sent_needs_abort:
+      case TransactionStatus.sentNeedsAbort:
         break;
       case TransactionStatus.sent:
-        status = TransactionStatus.sent_needs_abort;
+        status = TransactionStatus.sentNeedsAbort;
         abortReason = reason;
         break;
       case TransactionStatus.run:
@@ -584,19 +565,18 @@ class Transaction implements Comparable<Transaction> {
         break;
       default:
         throw new StateError(
-            "Unable to abort transaction in state ${status}");
+            "Unable to abort transaction in state $status");
     }
   }
 
-  complete() {
+  void complete() {
     assert(status==TransactionStatus.sent);
     status = TransactionStatus.completed;
 
     if (applyLocally)
       repo._syncTree.applyAck(path, currentWriteId, true);
 
-    completer.complete(new firebase.TransactionResult(null, true,
-        new firebase.DataSnapshot(repo.rootRef.child(path.join("/")), currentOutputSnapshot)));
+    completer.complete(currentOutputSnapshot);
 
     _unwatch();
   }
@@ -607,7 +587,7 @@ class Transaction implements Comparable<Transaction> {
 
 }
 
-updateChild(TreeStructuredData value, Path<Name> path, TreeStructuredData child) {
+TreeStructuredData updateChild(TreeStructuredData value, Path<Name> path, TreeStructuredData child) {
   if (path.isEmpty) {
     return child;
   } else {
@@ -647,12 +627,14 @@ class TransactionsTree {
   }
 
 
-  Future send() async {
-    var finished = await root.send(repo, new Path());
-    if (!finished) send();
+  void send() {
+    root.send(repo, new Path())
+    .then((finished) {
+      if (!finished) send();
+    });
   }
 
-  abort(Path<Name> path) {
+  void abort(Path<Name> path) {
     root.nodesOnPath(path).forEach((n)=>n.abort());
   }
 
@@ -669,9 +651,11 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
 
   TransactionsNode() : super([]);
 
+  @override
   Map<Name,TransactionsNode> get children => super.children;
 
-  TransactionsNode subtree(Path<Name> path, [TransactionsNode newInstance()]) =>
+  @override
+  TransactionsNode subtree(Path<Name> path, [TreeNode<Name,List<Transaction>> newInstance()]) =>
   super.subtree(path, newInstance);
 
   bool get isReadyToSend => value.every((t)=>t.status==TransactionStatus.run)&&
@@ -679,36 +663,34 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
 
   bool get needsRerun => value.any((t)=>t.status==null)||
       children.values.any((n)=>n.needsRerun);
-  /**
-   * Completes all sent transactions
-   */
-  complete() {
+
+  @override
+  Iterable<TransactionsNode> nodesOnPath(Path<Name> path) => super.nodesOnPath(path);
+
+  /// Completes all sent transactions
+  void complete() {
     value.where((t)=>t.isSent).forEach((m)=>m.complete());
     value.where((t)=>!t.isComplete).forEach((m)=>m.status=null);
     value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
     children.values.forEach((n)=>n.complete());
   }
 
-  /**
-   * Fails aborted transactions and resets other sent transactions
-   */
-  stale() {
+  /// Fails aborted transactions and resets other sent transactions
+  void stale() {
     value.where((t)=>t.isAborted).forEach((m)=>m.fail(new Exception(m.abortReason)));
     value.where((t)=>!t.isAborted).forEach((m)=>m.stale());
     value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
     children.values.forEach((n)=>n.stale());
   }
 
-  /**
-   * Fails all sent transactions
-   */
-  fail(e) {
+  /// Fails all sent transactions
+  void fail(dynamic e) {
     value.where((t)=>t.isSent).forEach((m)=>m.fail(e));
     value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
     children.values.forEach((n)=>n.fail(e));
   }
 
-  _send() {
+  void _send() {
     value.forEach((m)=>m.send());
     children.values.forEach((n)=>n._send());
   }
@@ -746,10 +728,10 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
 
   Iterable<Transaction> get _transactions sync* {
     yield* value;
-    yield* children.values.expand((n)=>n._transactions);
+    yield* children.values.expand/*<Transaction>*/((n)=>n._transactions);
   }
 
-  rerun(Path<Name> path, TreeStructuredData input) {
+  void rerun(Path<Name> path, TreeStructuredData input) {
     this.input = input;
 
     var v = input;
@@ -784,7 +766,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
     return v;
   }
 
-  addTransaction(Transaction transaction) {
+  void addTransaction(Transaction transaction) {
     if (transaction.status==TransactionStatus.run) {
       value.add(transaction);
     }
@@ -792,7 +774,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
 
 
 
-  abort() {
+  void abort() {
     for (var txn in value) {
       txn.abort("set");
     }
@@ -804,6 +786,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
 
 class SparseSnapshotTree extends TreeNode<Name,TreeStructuredData> {
 
+  @override
   Map<Name,SparseSnapshotTree> get children => super.children;
 
   void remember(Path<Name> path, TreeStructuredData data) {

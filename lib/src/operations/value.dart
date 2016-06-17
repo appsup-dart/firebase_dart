@@ -12,7 +12,8 @@ class Overwrite<T> extends Operation<T> {
   @override
   T apply(T value) => this.value;
 
-  toString() => "Overwrite[$value]";
+  @override
+  String toString() => "Overwrite[$value]";
 
   @override
   Iterable<Path> get completesPaths => [new Path()];
