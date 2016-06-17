@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:logging/logging.dart';
+import 'dart:typed_data';
 
 part 'protocol/request.dart';
 part 'protocol/response.dart';
