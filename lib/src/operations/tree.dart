@@ -98,7 +98,7 @@ class TreeEventGenerator<K,V> extends EventGenerator<TreeNode<K,V>> {
     Map<K,TreeNode<K,V>> oldChildren = oldValue.value?.children ?? const {};
     switch (eventType) {
       case "child_added":
-        var newPrevKey = null;
+        var newPrevKey;
         for (var key in newChildren.keys) {
           if (!newValue.isCompleteForChild(key)) continue;
           if (!oldChildren.containsKey(key)) {
@@ -109,7 +109,7 @@ class TreeEventGenerator<K,V> extends EventGenerator<TreeNode<K,V>> {
         }
         return;
       case "child_changed":
-        var newPrevKey = null;
+        var newPrevKey;
         for (var key in newChildren.keys) {
           if (!newValue.isCompleteForChild(key)) continue;
           if (oldChildren.containsKey(key)) {
@@ -122,7 +122,7 @@ class TreeEventGenerator<K,V> extends EventGenerator<TreeNode<K,V>> {
         }
         return;
       case "child_removed":
-        var oldPrevKey = null;
+        var oldPrevKey;
         for (var key in oldChildren.keys) {
           if (!newValue.isCompleteForChild(key)) continue;
           if (!newChildren.containsKey(key)) {
@@ -140,7 +140,7 @@ class TreeEventGenerator<K,V> extends EventGenerator<TreeNode<K,V>> {
         }
         var newKeys = newChildren.keys.toList();
 
-        var oldPrevKey = null;
+        var oldPrevKey;
         for (var key in oldChildren.keys) {
           if (!newValue.isCompleteForChild(key)) continue;
           if (newChildren.containsKey(key)) {
