@@ -7,6 +7,7 @@ import 'package:quiver/core.dart';
 import 'package:collection/collection.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
+import 'package:quiver/core.dart' as quiver;
 
 part 'treestructureddata/name.dart';
 part 'treestructureddata/value.dart';

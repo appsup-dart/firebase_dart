@@ -73,6 +73,8 @@ class TreeStructuredData extends TreeNode<Name,Value> {
       isLeaf ? other.isLeaf&&value==other.value :
       !other.isLeaf&&const MapEquality().equals(children, other.children));
 
+  @override
+  int get hashCode => quiver.hash2(value, const MapEquality().hash(children));
 
   @override
   String toString() => "TreeStructuredData[${toJson()}]";
