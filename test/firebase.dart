@@ -8,13 +8,8 @@ import 'package:logging/logging.dart';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:async';
-
-import 'secrets.dart'
-  if (dart.library.html) 'secrets.dart'
-  if (dart.library.io) 'secrets_io.dart';
-
-
 void main() {
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen(print);
@@ -42,8 +37,14 @@ void main() {
     });
   });
   group('Authenticate', () {
-    var host = secrets["host"];
-    var secret = secrets["secret"];
+    var f = new File("test/secrets.json");
+    if (!f.existsSync()) {
+      fail("Cannot test Authenticate: no secrets.json file");
+      return;
+    }
+    var options = JSON.decode(f.readAsStringSync());
+    var host = options["host"];
+    var secret = options["secret"];
 
     if (host==null||secret==null) {
       print("Cannot test Authenticate: set a host and secret.");
@@ -199,7 +200,7 @@ void main() {
           .map((i) => ref.transaction((v)=>(v??0)+1))
           .toList();
 
-      await Future.wait((await f1 as List<Future>)..addAll(await f2 as List<Future>));
+      await Future.wait((await f1)..addAll(await f2));
 
       expect(await ref.get(), 20);
     });
@@ -234,7 +235,7 @@ void main() {
       }))
           .toList();
 
-      await Future.wait((await f1 as List<Future>)..addAll(await f2 as List<Future>)..addAll(await f3 as List<Future>));
+      await Future.wait((await f1)..addAll(await f2)..addAll(await f3));
 
       expect(await ref.child("object/count").get(), 30);
     });
@@ -242,7 +243,7 @@ void main() {
     test('Abort', () async {
       await ref.child('object/count').set(0);
 
-      var futures = <Future>[];
+      var futures = [];
       for (var i=0;i<10;i++) {
         futures.add(ref.child('object/count').transaction((v)=>(v??0)+1));
       }

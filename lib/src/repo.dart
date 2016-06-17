@@ -12,7 +12,6 @@ import 'package:logging/logging.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
-import 'event.dart';
 
 final _logger = new Logger("firebase-repo");
 
@@ -40,7 +39,7 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
     );
   }
 
-  static Pair<Name, TreeStructuredData> _toNameValue(String key, dynamic value) =>
+  static _toNameValue(String key, dynamic value) =>
       key==null&&value==null ? null : new Pair(new Name(key), new TreeStructuredData(value: new Value(value)));
 
   QueryFilter copyWith({String orderBy, String startAtKey, dynamic startAtValue,
@@ -88,15 +87,15 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
   }
 
   @override
-  isValid(p) {
+  get isValid => (p) {
     p = _extract(p);
     if (startAt!=null&&_comparePair(startAt,p)>0) return false;
     if (endAt!=null&&_comparePair(p,endAt)>0) return false;
     return true;
-  }
+  };
 
   @override
-  int compare(a,b) =>
+  Comparator<Pair<Name,TreeStructuredData>> get compare => (a,b) =>
       _comparePair(_extract(a),_extract(b));
 
   toString() => "QueryFilter[${toQuery().toJson()}]";
@@ -188,8 +187,8 @@ class Repo {
   /**
    * Generates the special server values
    */
-  Map<ServerValue, Value> get serverValues => {
-    ServerValue.timestamp: new Value(_connection.serverTime.millisecondsSinceEpoch)
+  Map<ServerValue, dynamic> get serverValues => {
+    ServerValue.timestamp: _connection.serverTime
   };
 
   /**
@@ -255,9 +254,9 @@ class Repo {
    * server and fails when data could not be written.
    */
   Future update(String path, Map<String, dynamic> value) {
-    var changedChildren = new Map<Name,TreeStructuredData>.fromIterables(
-        value.keys.map/*<Name>*/((c)=>new Name(c)),
-        value.values.map/*<TreeStructuredData>*/((v)=>new TreeStructuredData.fromJson(v, null, serverValues))
+    var changedChildren = new Map.fromIterables(
+        value.keys.map((c)=>new Name(c)),
+        value.values.map((v)=>new TreeStructuredData.fromJson(v, null, serverValues))
     );
     if (value.isNotEmpty) {
       int writeId = _nextWriteId++;
@@ -294,7 +293,7 @@ class Repo {
    * registered at the server.
    *
    */
-  Future listen(String path, QueryFilter filter, String type, EventListener cb) {
+  Future listen(String path, QueryFilter filter, String type, cb) {
     var isFirst = _syncTree.addEventListener(type, Name.parsePath(path), filter, cb);
     if (!isFirst) return new Future.value();
     if (filter==null) return _connection.listen(path);
@@ -318,7 +317,7 @@ class Repo {
    * unregistered at the server.
    *
    */
-  Future unlisten(String path, QueryFilter filter, String type, EventListener cb) {
+  Future unlisten(String path, QueryFilter filter, String type, cb) {
     var isLast = _syncTree.removeEventListener(type, Name.parsePath(path), filter, cb);
     if (!isLast) return new Future.value();
     if (filter==null) return _connection.unlisten(path);
@@ -391,10 +390,9 @@ class Repo {
   }
 }
 
-typedef Stream<T> _StreamCreator<T>();
 class _Stream<T> extends Stream<T> {
 
-  final _StreamCreator<T> factory;
+  final Function factory;
 
   _Stream(this.factory);
 
@@ -416,7 +414,7 @@ class StreamFactory {
 
   StreamController<firebase.Event> controller;
 
-  void addEvent(Event value) {
+  void addEvent(value) {
 
     if (value is ValueEvent) {
       new Future.microtask(()=>
@@ -425,7 +423,7 @@ class StreamFactory {
       );
     }
   }
-  void addError(Event error) {
+  void addError(error) {
     stopListen();
     controller.addError(error);
     controller.close();
@@ -440,7 +438,7 @@ class StreamFactory {
     repo.unlisten(ref.url.path, filter, "cancel", addError);
   }
 
-  Stream<firebase.Event> call() {
+  call() {
     controller = new StreamController<firebase.Event>(
         onListen: startListen, onCancel: stopListen, sync: true);
     return controller.stream;
@@ -495,7 +493,7 @@ class Transaction implements Comparable<Transaction> {
   final bool applyLocally;
   final Repo repo;
   final int order;
-  final Completer<TreeStructuredData> completer = new Completer();
+  final Completer<firebase.TransactionResult> completer = new Completer();
 
   static int _order = 0;
 
@@ -517,7 +515,7 @@ class Transaction implements Comparable<Transaction> {
   bool get isComplete => status==TransactionStatus.completed;
   bool get isAborted => status==TransactionStatus.sent_needs_abort;
 
-  _onValue(Event _) {}
+  _onValue(_) {}
 
   _watch() {
     repo.listen(path.join("/"), null, "value", _onValue);
@@ -673,7 +671,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
 
   Map<Name,TransactionsNode> get children => super.children;
 
-  TransactionsNode subtree(Path<Name> path, [TreeNode<Name,List<Transaction>> newInstance()]) =>
+  TransactionsNode subtree(Path<Name> path, [TransactionsNode newInstance()]) =>
   super.subtree(path, newInstance);
 
   bool get isReadyToSend => value.every((t)=>t.status==TransactionStatus.run)&&
@@ -681,9 +679,6 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
 
   bool get needsRerun => value.any((t)=>t.status==null)||
       children.values.any((n)=>n.needsRerun);
-
-  Iterable<TransactionsNode> nodesOnPath(Path<Name> path) => super.nodesOnPath(path);
-
   /**
    * Completes all sent transactions
    */
@@ -751,7 +746,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
 
   Iterable<Transaction> get _transactions sync* {
     yield* value;
-    yield* children.values.expand/*<Transaction>*/((n)=>n._transactions);
+    yield* children.values.expand((n)=>n._transactions);
   }
 
   rerun(Path<Name> path, TreeStructuredData input) {

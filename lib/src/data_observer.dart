@@ -29,8 +29,7 @@ class IncompleteData<T> {
   bool isCompleteForPath(Path path) => _isCompleteForPath(_states,path);
   bool isCompleteForChild(Object child) => _isCompleteForPath(_states,new Path.from([child]));
 
-  IncompleteData/*<S>*/ childData/*<S>*/(Object child, dynamic/*=S*/ childValue) =>
-      new IncompleteData/*<S>*/(childValue, _states.children[child]);
+  IncompleteData childData(Object child, childValue) => new IncompleteData(childValue, _states.children[child]);
 
   bool _isCompleteForPath(TreeNode<dynamic, bool> states, Path path) =>
       states.nodesOnPath(path).any((v)=>v.value==true);
@@ -66,7 +65,7 @@ class DataObserver<T> extends EventTarget {
   T get currentValue => _data.value;
   IncompleteData<T> get incompleteData => _data;
 
-  void applyOperation(Operation<T> operation) {
+  void applyOperation(Operation operation) {
     var oldData = _data;
     _data = _data.update(
         operation.apply(_data.value),

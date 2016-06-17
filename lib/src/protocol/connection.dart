@@ -150,7 +150,7 @@ class Connection {
     if (_transportIsReady) {
       _transport.add(request);
     }
-    return request.response.then/*<MessageBody>*/((r) {
+    return request.response.then((r) {
       _outstandingRequests.remove(request);
       if (r.message.body.status==MessageBody.status_ok) {
         return r.message.body;
