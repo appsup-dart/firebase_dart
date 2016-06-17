@@ -20,12 +20,6 @@ class Value implements Comparable<Value> {
 
   final dynamic value;
 
-  const Value._(this.value);
-  const Value.bool(bool value) : this._(value);
-  const Value.num(num value) : this._(value);
-  const Value.string(String value) : this._(value);
-  Value.server(String type) : this._(ServerValue.values[type]);
-
   factory Value(dynamic value) {
     if (value==null) return null;
     if (value is bool) return new Value.bool(value);
@@ -34,6 +28,12 @@ class Value implements Comparable<Value> {
     if (value is Map&&value.containsKey(".sv")) return new Value.server(value[".sv"]);
     throw new ArgumentError("Unsupported value type ${value.runtimeType}");
   }
+
+  const Value._(this.value);
+  const Value.bool(bool value) : this._(value);
+  const Value.num(num value) : this._(value);
+  const Value.string(String value) : this._(value);
+  Value.server(String type) : this._(ServerValue.values[type]);
 
   bool get isBool => value is bool;
   bool get isNum => value is num;

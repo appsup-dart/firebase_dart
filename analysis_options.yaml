@@ -30,3 +30,4 @@ linter:
 #    - public_member_api_docs
     - slash_for_doc_comments
     - sort_constructors_first
+    - sort_unnamed_constructors_first

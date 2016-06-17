@@ -133,6 +133,10 @@ class Repo {
   TransactionsTree _transactions;
   SparseSnapshotTree _onDisconnect = new SparseSnapshotTree();
 
+  factory Repo(Uri url) {
+    return _repos.putIfAbsent(url, ()=>new Repo._(url));
+  }
+
   Repo._(Uri url) : _connection = new Connection(url.host), url = url {
     _transactions = new TransactionsTree(this);
     _connection.onConnect.listen((v) {
@@ -174,10 +178,6 @@ class Repo {
       }
     });
     onAuth.listen((v)=>_authData=v);
-  }
-
-  factory Repo(Uri url) {
-    return _repos.putIfAbsent(url, ()=>new Repo._(url));
   }
 
   firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
