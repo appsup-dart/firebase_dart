@@ -48,9 +48,9 @@ class Connection {
 
   final List<Request> _outstandingRequests = [];
 
-  Future put(String path, value) => _request(new Request.put(path, value));
+  Future put(String path, value, [String hash]) => _request(new Request.put(path, value, hash));
 
-  Future merge(String path, value) => _request(new Request.merge(path, value));
+  Future merge(String path, value, [String hash]) => _request(new Request.merge(path, value, hash));
 
   void _addListen(Request request) {
     var path = request.message.body.path;
@@ -79,11 +79,15 @@ class Connection {
   }
 
   final StreamController<Response> _output = new StreamController();
+  final StreamController<bool> _onConnect = new StreamController();
+
   Stream<Response> get output => _output.stream;
+  Stream<bool> get onConnect => _onConnect.stream;
 
   Future _establishConnection() async {
     _transport = new WebSocketTransport(host, host.split(".").first, _lastSessionId);
     _transport.ready.then((_) {
+      _onConnect.add(true);
       _lastSessionId = _transport.info.sessionId;
       _serverTimeDiff = _transport.info.timestamp.difference(new DateTime.now());
       _output.addStream(_transport
@@ -91,10 +95,14 @@ class Connection {
       _restoreState();
     });
     _transport.done.then((_) {
+      _onConnect.add(false);
       _transport = null;
       _scheduleConnect(1000);
     });
   }
+
+  Future disconnect() => _transport._close(null);
+
 
   _restoreState() async {
     // auth
@@ -152,5 +160,17 @@ class Connection {
     });
   }
 
+
+
+  Future<MessageBody> onDisconnectPut(String path, value) =>
+      _request(new Request.onDisconnectPut(path, value));
+
+
+  Future<MessageBody> onDisconnectMerge(String path, Map<String, dynamic> childrenToMerge) =>
+      _request(new Request.onDisconnectMerge(path, childrenToMerge));
+
+
+  Future<MessageBody> onDisconnectCancel(String path) =>
+      _request(new Request.onDisconnectCancel(path));
 
 }

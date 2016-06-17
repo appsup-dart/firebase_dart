@@ -182,7 +182,9 @@ class Firebase extends Query {
    * finished.
    */
   Future<TransactionResult> transaction(update(currentVal),
-      {bool applyLocally: true}) => _repo.transaction(update, applyLocally);
+      {bool applyLocally: true}) => _repo.transaction(_url.path, update, applyLocally)
+      .then((v)=>new TransactionResult(null, true, new DataSnapshot(this, v)))
+      .catchError((e)=>new TransactionResult(e, false, null));
 
 
 

@@ -44,7 +44,7 @@ class TreeOperation<K,V> extends Operation<TreeNode<K,V>> {
       var child = value.children[k] ?? factory();
       var newChild = _applyOnPath(path.skip(1), child);
       var newValue = value.clone();
-      if (newValue.isLeaf) newValue.value = null;
+      if (newValue.isLeaf&&!newChild.isNil) newValue.value = null;
       if (newChild.isNil) newValue.children.remove(k);
       else newValue.children[k] = newChild;
       return newValue;

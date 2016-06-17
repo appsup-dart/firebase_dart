@@ -20,15 +20,17 @@ part of firebase_dart;
 class Query {
   final Uri _url;
   final Repo _repo;
-  final QueryFilter _filter;
+  final QueryFilter __filter;
 
-  Query._(Uri url, [this._filter = const QueryFilter()]) :
-        _url = url, _repo = new Repo(url.host);
+  Query._(Uri url, [this.__filter]) :
+        _url = url, _repo = new Repo(url.resolve("/"));
+
+  QueryFilter get _filter => __filter ?? const QueryFilter();
 
   /**
    * Gets a stream for events of type [eventType]
    */
-  Stream<Event> on(String eventType) => _repo.createStream(ref, _filter, eventType);
+  Stream<Event> on(String eventType) => _repo.createStream(ref, __filter, eventType);
 //      _streams.putIfAbsent(eventType, ()=>_repo.createStream(ref, _filter, eventType));
 
   /**

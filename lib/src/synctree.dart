@@ -186,5 +186,9 @@ class _Ack extends _Operation implements Ack {
   _Ack(Path<Name> path, this.success) : super(path, new _NoneOperation());
 
   @override
-  operationForChild(Name key) => this;
+  operationForChild(Name key) {
+    if (path.isEmpty) return null;
+    if (path.first!=key) return null;
+    return new _Ack(path.skip(1), success);
+  }
 }
