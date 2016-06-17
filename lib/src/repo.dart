@@ -719,7 +719,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
         rerun(path, getLatestValue(repo, path));
       }
       if (isReadyToSend) {
-        var latestHash = calculateHash(input.toJson(true));
+        var latestHash = input.hash;
         try {
           _send();
           await repo._connection
