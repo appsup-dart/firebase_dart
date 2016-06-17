@@ -148,8 +148,8 @@ class Connection {
 
   Future<MessageBody> _request(Request request) {
     switch (request.message.action) {
-      case DataMessage.action_listen:
-      case DataMessage.action_unlisten:
+      case DataMessage.actionListen:
+      case DataMessage.actionUnlisten:
         break;
       default:
         _outstandingRequests.add(request);
@@ -159,7 +159,7 @@ class Connection {
     }
     return request.response.then/*<MessageBody>*/((r) {
       _outstandingRequests.remove(request);
-      if (r.message.body.status==MessageBody.status_ok) {
+      if (r.message.body.status==MessageBody.statusOk) {
         return r.message.body;
       } else {
         throw new ServerError(r.message.body.status, r.message.body.data);

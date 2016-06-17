@@ -144,30 +144,30 @@ class Repo {
     });
     _connection.output.listen((r) {
       switch (r.message.action) {
-        case DataMessage.action_set:
+        case DataMessage.actionSet:
           var filter = _tagToQuery[r.message.body.tag];
           _syncTree.applyServerOverwrite(
               Name.parsePath(r.message.body.path), filter,
               new TreeStructuredData.fromJson(r.message.body.data)
           );
           break;
-        case DataMessage.action_merge:
+        case DataMessage.actionMerge:
           var filter = _tagToQuery[r.message.body.tag];
           _syncTree.applyServerMerge(
               Name.parsePath(r.message.body.path), filter,
               new TreeStructuredData.fromJson(r.message.body.data).children
           );
           break;
-        case DataMessage.action_auth_revoked:
+        case DataMessage.actionAuthRevoked:
           _onAuth.add(null);
           break;
-        case DataMessage.action_listen_revoked:
+        case DataMessage.actionListenRevoked:
           var filter = new QueryFilter.fromQuery(r.message.body.query); //TODO test query revoke
           _syncTree.applyListenRevoked(
               Name.parsePath(r.message.body.path), filter
           );
           break;
-        case DataMessage.action_security_debug:
+        case DataMessage.actionSecurityDebug:
           var msg = r.message.body.message;
           _logger.fine("security debug: $msg");
           break;
@@ -456,7 +456,7 @@ class StreamFactory {
 }
 
 class PushIdGenerator {
-  static const PUSH_CHARS = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+  static const pushChars = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
   var lastPushTime = 0;
   final lastRandChars = new List(64);
   final Random random = new Random();
@@ -469,7 +469,7 @@ class PushIdGenerator {
     lastPushTime = now;
     var timeStampChars = new List(8);
     for (var i = 7;i >= 0;i--) {
-      timeStampChars[i] = PUSH_CHARS[now % 64];
+      timeStampChars[i] = pushChars[now % 64];
       now = now ~/ 64;
     }
     var id = timeStampChars.join("");
@@ -485,7 +485,7 @@ class PushIdGenerator {
       lastRandChars[i]++;
     }
     for (var i = 0;i < 12;i++) {
-      id += PUSH_CHARS[lastRandChars[i]];
+      id += pushChars[lastRandChars[i]];
     }
     return id;
   }
@@ -493,7 +493,7 @@ class PushIdGenerator {
 }
 
 
-enum TransactionStatus {run, sent, completed, sent_needs_abort}
+enum TransactionStatus {run, sent, completed, sentNeedsAbort}
 
 class Transaction implements Comparable<Transaction> {
 
@@ -506,7 +506,7 @@ class Transaction implements Comparable<Transaction> {
 
   static int _order = 0;
 
-  static const max_retries = 25;
+  static const maxRetries = 25;
 
   int retryCount = 0;
   String abortReason;
@@ -520,9 +520,9 @@ class Transaction implements Comparable<Transaction> {
     _watch();
   }
 
-  bool get isSent => status==TransactionStatus.sent||status==TransactionStatus.sent_needs_abort;
+  bool get isSent => status==TransactionStatus.sent||status==TransactionStatus.sentNeedsAbort;
   bool get isComplete => status==TransactionStatus.completed;
-  bool get isAborted => status==TransactionStatus.sent_needs_abort;
+  bool get isAborted => status==TransactionStatus.sentNeedsAbort;
 
   void _onValue(Event _) {}
 
@@ -536,7 +536,7 @@ class Transaction implements Comparable<Transaction> {
 
   void run(TreeStructuredData currentState) {
     assert(status==null);
-    if (retryCount >= max_retries) {
+    if (retryCount >= maxRetries) {
       fail(new Exception("maxretries"));
       return;
     }
@@ -582,10 +582,10 @@ class Transaction implements Comparable<Transaction> {
 
   void abort(String reason) {
     switch (status) {
-      case TransactionStatus.sent_needs_abort:
+      case TransactionStatus.sentNeedsAbort:
         break;
       case TransactionStatus.sent:
-        status = TransactionStatus.sent_needs_abort;
+        status = TransactionStatus.sentNeedsAbort;
         abortReason = reason;
         break;
       case TransactionStatus.run:

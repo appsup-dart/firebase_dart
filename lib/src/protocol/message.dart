@@ -35,21 +35,21 @@ abstract class Message {
 
 
 class DataMessage extends Message {
-  static const action_listen = "q";
-  static const action_unlisten = "n";
-  static const action_on_disconnect_put = "o";
-  static const action_on_disconnect_merge = "om";
-  static const action_on_disconnect_cancel = "oc";
-  static const action_put = "p";
-  static const action_merge = "m";
-  static const action_stats = "s";
-  static const action_auth = "auth";
-  static const action_unauth = "unauth";
+  static const actionListen = "q";
+  static const actionUnlisten = "n";
+  static const actionOnDisconnectPut = "o";
+  static const actionOnDisconnectMerge = "om";
+  static const actionOnDisconnectCancel = "oc";
+  static const actionPut = "p";
+  static const actionMerge = "m";
+  static const actionStats = "s";
+  static const actionAuth = "auth";
+  static const actionUnauth = "unauth";
 
-  static const action_set = "d";
-  static const action_listen_revoked = "c";
-  static const action_auth_revoked = "ac";
-  static const action_security_debug = "sd";
+  static const actionSet = "d";
+  static const actionListenRevoked = "c";
+  static const actionAuthRevoked = "ac";
+  static const actionSecurityDebug = "sd";
 
   final String action;
   final int reqNum;
@@ -80,15 +80,15 @@ class DataMessage extends Message {
 }
 
 class Query {
-  static const INDEX_START_VALUE = "sp";
-  static const INDEX_START_NAME = "sn";
-  static const INDEX_END_VALUE = "ep";
-  static const INDEX_END_NAME = "en";
-  static const LIMIT = "l";
-  static const VIEW_FROM = "vf";
-  static const VIEW_FROM_LEFT = "l";
-  static const VIEW_FROM_RIGHT = "r";
-  static const INDEX = "i";
+  static const indexStartValue = "sp";
+  static const indexStartName = "sn";
+  static const indexEndValue = "ep";
+  static const indexEndName = "en";
+  static const limitTo = "l";
+  static const viewFrom = "vf";
+  static const viewFromLeft = "l";
+  static const viewFromRight = "r";
+  static const indexOn = "i";
 
   final int limit;
   final bool isViewFromRight;
@@ -103,13 +103,13 @@ class Query {
 
   factory Query.fromJson(Map<String,dynamic> json) {
     return new Query(
-        limit: json[LIMIT],
-        isViewFromRight: json[VIEW_FROM]==VIEW_FROM_RIGHT,
-        index: json[INDEX],
-        endName: json[INDEX_END_NAME],
-        endValue: json[INDEX_END_VALUE],
-        startName: json[INDEX_START_NAME],
-        startValue: json[INDEX_START_VALUE]
+        limit: json[limitTo],
+        isViewFromRight: json[viewFrom]==viewFromRight,
+        index: json[indexOn],
+        endName: json[indexEndName],
+        endValue: json[indexEndValue],
+        startName: json[indexStartName],
+        startValue: json[indexStartValue]
     );
   }
 
@@ -126,22 +126,22 @@ class Query {
   Map<String,dynamic> toJson() {
     var json = <String,dynamic>{};
     if (limit!=null) {
-      json[LIMIT] = limit;
-      json[VIEW_FROM] = isViewFromRight ? VIEW_FROM_RIGHT : VIEW_FROM_LEFT;
+      json[limitTo] = limit;
+      json[viewFrom] = isViewFromRight ? viewFromRight : viewFromLeft;
     }
     if (index!=null) {
-      json[INDEX] = index;
+      json[indexOn] = index;
     }
-    if (endName!=null) json[INDEX_END_NAME] = endName;
-    if (endValue!=null) json[INDEX_END_VALUE] = endValue;
-    if (startName!=null) json[INDEX_START_NAME] = startName;
-    if (startValue!=null) json[INDEX_START_VALUE] = startValue;
+    if (endName!=null) json[indexEndName] = endName;
+    if (endValue!=null) json[indexEndValue] = endValue;
+    if (startName!=null) json[indexStartName] = startName;
+    if (startValue!=null) json[indexStartValue] = startValue;
     return json;
   }
 }
 
 class MessageBody {
-  static const status_ok = "ok";
+  static const statusOk = "ok";
 
 
   final int tag;

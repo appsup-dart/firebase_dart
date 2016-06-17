@@ -11,3 +11,5 @@ linter:
     - camel_case_types
     - cancel_subscriptions
     - close_sinks
+    - comment_references
+    - constant_identifier_names
