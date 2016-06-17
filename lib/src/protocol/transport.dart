@@ -127,7 +127,6 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   }
 }
 
-// TODO browser websocket
 class WebSocketTransport extends Transport {
   static const String protocolVersion = "5";
   static const String versionParam = "v";
