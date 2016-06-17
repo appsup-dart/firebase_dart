@@ -15,14 +15,11 @@ class SyncPoint {
 
   final Map<Filter,View> views = {};
 
-  /**
-   * Adds an event listener for events of [type] and for data filtered by
-   * [filter].
-   *
-   * Returns true if no event listener for this [filter] was registered before
-   * and therefore we should also listen for remote changes.
-   *
-   */
+  /// Adds an event listener for events of [type] and for data filtered by
+  /// [filter].
+  ///
+  /// Returns true if no event listener for this [filter] was registered before
+  /// and therefore we should also listen for remote changes.
   bool addEventListener(String type, Filter<Pair<Name,TreeStructuredData>> filter, EventListener listener) {
     var view = views.putIfAbsent(filter,
         ()=>new View(new TreeStructuredData(filter: filter), _eventGenerator));
@@ -33,14 +30,11 @@ class SyncPoint {
     return !has;
   }
 
-  /**
-   * Removes an event listener for events of [type] and for data filtered by
-   * [filter].
-   *
-   * Returns true if no more event listerenes for this [filter] are registered
-   * and therefore we should also unlisten for remote changes.
-   *
-   */
+  /// Removes an event listener for events of [type] and for data filtered by
+  /// [filter].
+  ///
+  /// Returns true if no more event listerenes for this [filter] are registered
+  /// and therefore we should also unlisten for remote changes.
   bool removeEventListener(String type, Filter filter, EventListener listener) {
     var view = views.putIfAbsent(filter,
         ()=>new View(new TreeStructuredData(), _eventGenerator));
@@ -52,10 +46,8 @@ class SyncPoint {
     return false;
   }
 
-  /**
-   * Applies an operation to the view for [filter] at this [SyncPoint] or all
-   * views when [filter] is [null].
-   */
+  /// Applies an operation to the view for [filter] at this [SyncPoint] or all
+  /// views when [filter] is [null].
   void applyOperation(Operation operation, Filter filter, ViewOperationSource source, int writeId) {
     var op = new ViewOperation(source, operation, writeId);
     if (filter==null) {
@@ -75,50 +67,38 @@ class SyncTree {
 
   static TreeNode<Name,SyncPoint> _createNode() => new TreeNode(new SyncPoint());
 
-  /**
-   * Adds an event listener for events of [type] and for data at [path] and
-   * filtered by [filter].
-   *
-   * Returns true if no event listener for this [path] and [filter] was
-   * registered before and therefore we should also listen for remote changes.
-   *
-   */
+  /// Adds an event listener for events of [type] and for data at [path] and
+  /// filtered by [filter].
+  ///
+  /// Returns true if no event listener for this [path] and [filter] was
+  /// registered before and therefore we should also listen for remote changes.
   bool addEventListener(String type, Path<Name> path,
       Filter<Pair<Name,TreeStructuredData>> filter, EventListener listener) {
     return root.subtree(path, _createNode).value.addEventListener(type, filter, listener);
   }
 
-  /**
-   * Removes an event listener for events of [type] and for data at [path] and
-   * filtered by [filter].
-   *
-   * Returns true if no more event listerenes for this [path] and [filter]
-   * are registered and therefore we should also unlisten for remote changes.
-   *
-   */
+  /// Removes an event listener for events of [type] and for data at [path] and
+  /// filtered by [filter].
+  ///
+  /// Returns true if no more event listerenes for this [path] and [filter]
+  /// are registered and therefore we should also unlisten for remote changes.
   bool removeEventListener(String type, Path<Name> path, Filter filter, EventListener listener) {
     return root.subtree(path, _createNode).value.removeEventListener(type, filter, listener);
   }
 
-  /**
-   * Applies a user overwrite at [path] with [newData]
-   */
+  /// Applies a user overwrite at [path] with [newData]
   void applyUserOverwrite(Path<Name> path, TreeStructuredData newData, int writeId) {
     var operation = new _Operation.overwrite(path, newData);
     _applyOperationToSyncPoints(root, null, operation, ViewOperationSource.user, writeId);
   }
 
-  /**
-   * Applies a server overwrite at [path] with [newData]
-   */
+  /// Applies a server overwrite at [path] with [newData]
   void applyServerOverwrite(Path<Name> path, Filter filter, TreeStructuredData newData) {
     var operation = new _Operation.overwrite(path, newData);
     _applyOperationToSyncPoints(root, filter, operation, ViewOperationSource.server, null);
   }
 
-  /**
-   * Applies a server merge at [path] with [changedChildren]
-   */
+  /// Applies a server merge at [path] with [changedChildren]
   void applyServerMerge(Path<Name> path, Filter filter, Map<Name,TreeStructuredData> changedChildren) {
     var operation = new _Operation.merge(path, changedChildren);
     _applyOperationToSyncPoints(root, filter, operation, ViewOperationSource.server, null);
@@ -128,18 +108,14 @@ class SyncTree {
     root.subtree(path).value.views[filter].dispatchEvent(new Event("cancel"));
   }
 
-  /**
-   * Applies a user merge at [path] with [changedChildren]
-   */
+  /// Applies a user merge at [path] with [changedChildren]
   void applyUserMerge(Path<Name> path, Map<Name,TreeStructuredData> changedChildren, int writeId) {
     var operation = new _Operation.merge(path, changedChildren);
     _applyOperationToSyncPoints(root, null, operation, ViewOperationSource.user, writeId);
   }
 
-  /**
-   * Helper function to recursively apply an operation to a node in the
-   * sync tree and all the relevant descendants.
-   */
+  /// Helper function to recursively apply an operation to a node in the
+  /// sync tree and all the relevant descendants.
   static void _applyOperationToSyncPoints(TreeNode<Name,SyncPoint> tree, Filter filter,
       TreeOperation<Name,Value> operation, ViewOperationSource type, int writeId) {
     if (tree==null) return;

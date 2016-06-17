@@ -192,32 +192,24 @@ class Repo {
     await _connection.close();
   }
 
-  /**
-   * Generates the special server values
-   */
+  /// Generates the special server values
   Map<ServerValue, Value> get serverValues => {
     ServerValue.timestamp: new Value(_connection.serverTime.millisecondsSinceEpoch)
   };
 
-  /**
-   * The current authData
-   */
+  /// The current authData
   dynamic get authData => _authData;
 
-  /**
-   * Stream of auth data.
-   *
-   * When a user is logged in, its auth data is posted. When logged of, [null]
-   * is posted.
-   */
+  /// Stream of auth data.
+  ///
+  /// When a user is logged in, its auth data is posted. When logged of, [null]
+  /// is posted.
   Stream get onAuth => _onAuth.stream;
 
-  /**
-   * Tries to authenticate with [token].
-   *
-   * Returns a future that completes with the auth data on success, or fails
-   * otherwise.
-   */
+  /// Tries to authenticate with [token].
+  ///
+  /// Returns a future that completes with the auth data on success, or fails
+  /// otherwise.
   Future auth(String token) => _connection.auth(token).then((v)=>v["auth"])
       .then((auth) {
     _onAuth.add(auth);
@@ -225,23 +217,18 @@ class Repo {
     return auth;
   });
 
-
-  /**
-   * Unauthenticates.
-   *
-   * Returns a future that completes on success, or fails otherwise.
-   */
+  /// Unauthenticates.
+  ///
+  /// Returns a future that completes on success, or fails otherwise.
   Future unauth() => _connection.unauth().then((_) {
     _onAuth.add(null);
     _authData = null;
   });
 
-  /**
-   * Writes data [value] to the location [path] and sets the [priority].
-   *
-   * Returns a future that completes when the data has been written to the
-   * server and fails when data could not be written.
-   */
+  /// Writes data [value] to the location [path] and sets the [priority].
+  ///
+  /// Returns a future that completes when the data has been written to the
+  /// server and fails when data could not be written.
   Future setWithPriority(String path, value, priority) {
     var newValue = new TreeStructuredData.fromJson(value, priority, serverValues);
     var writeId = _nextWriteId++;
@@ -255,12 +242,10 @@ class Repo {
         });
   }
 
-  /**
-   * Writes the children in [value] to the location [path].
-   *
-   * Returns a future that completes when the data has been written to the
-   * server and fails when data could not be written.
-   */
+  /// Writes the children in [value] to the location [path].
+  ///
+  /// Returns a future that completes when the data has been written to the
+  /// server and fails when data could not be written.
   Future update(String path, Map<String, dynamic> value) {
     var changedChildren = new Map<Name,TreeStructuredData>.fromIterables(
         value.keys.map/*<Name>*/((c)=>new Name(c)),
@@ -279,12 +264,10 @@ class Repo {
     return new Future.value();
   }
 
-  /**
-   * Adds [value] to the location [path] for which a unique id is generated.
-   *
-   * Returns a future that completes with the generated key when the data has
-   * been written to the server and fails when data could not be written.
-   */
+  /// Adds [value] to the location [path] for which a unique id is generated.
+  ///
+  /// Returns a future that completes with the generated key when the data has
+  /// been written to the server and fails when data could not be written.
   Future push(String path, dynamic value) async {
     var name = pushIds.next(_connection.serverTime);
     var pushedPath = "$path/$name";
@@ -294,13 +277,10 @@ class Repo {
     return name;
   }
 
-  /**
-   * Listens to changes of [type] at location [path] for data matching [filter].
-   *
-   * Returns a future that completes when the listener has been successfully
-   * registered at the server.
-   *
-   */
+  /// Listens to changes of [type] at location [path] for data matching [filter].
+  ///
+  /// Returns a future that completes when the listener has been successfully
+  /// registered at the server.
   Future listen(String path, QueryFilter filter, String type, EventListener cb) {
     var isFirst = _syncTree.addEventListener(type, Name.parsePath(path), filter, cb);
     if (!isFirst) return new Future.value();
@@ -318,13 +298,10 @@ class Repo {
     });
   }
 
-  /**
-   * Unlistens to changes of [type] at location [path] for data matching [filter].
-   *
-   * Returns a future that completes when the listener has been successfully
-   * unregistered at the server.
-   *
-   */
+  /// Unlistens to changes of [type] at location [path] for data matching [filter].
+  ///
+  /// Returns a future that completes when the listener has been successfully
+  /// unregistered at the server.
   Future unlisten(String path, QueryFilter filter, String type, EventListener cb) {
     var isLast = _syncTree.removeEventListener(type, Name.parsePath(path), filter, cb);
     if (!isLast) return new Future.value();
@@ -335,18 +312,14 @@ class Repo {
     return _connection.unlisten(path, query: filter.toQuery(), tag : tag);
   }
 
-  /**
-   * Gets the current cached value at location [path] with [filter].
-   */
+  /// Gets the current cached value at location [path] with [filter].
   TreeStructuredData cachedValue(String path, QueryFilter filter) {
     var tree = _syncTree.root.subtree(Name.parsePath(path));
     if (tree=null) return null;
     return tree.value.views[filter].currentValue.localVersion;
   }
 
-  /**
-   * Helper function to create a new stream for a particular event type.
-   */
+  /// Helper function to create a new stream for a particular event type.
   Stream<firebase.Event> createStream(firebase.Firebase ref, QueryFilter filter, String type) {
     return new _Stream(()=>new StreamFactory(this, ref, filter, type)());
   }
@@ -694,9 +667,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
   @override
   Iterable<TransactionsNode> nodesOnPath(Path<Name> path) => super.nodesOnPath(path);
 
-  /**
-   * Completes all sent transactions
-   */
+  /// Completes all sent transactions
   void complete() {
     value.where((t)=>t.isSent).forEach((m)=>m.complete());
     value.where((t)=>!t.isComplete).forEach((m)=>m.status=null);
@@ -704,9 +675,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
     children.values.forEach((n)=>n.complete());
   }
 
-  /**
-   * Fails aborted transactions and resets other sent transactions
-   */
+  /// Fails aborted transactions and resets other sent transactions
   void stale() {
     value.where((t)=>t.isAborted).forEach((m)=>m.fail(new Exception(m.abortReason)));
     value.where((t)=>!t.isAborted).forEach((m)=>m.stale());
@@ -714,9 +683,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
     children.values.forEach((n)=>n.stale());
   }
 
-  /**
-   * Fails all sent transactions
-   */
+  /// Fails all sent transactions
   void fail(e) {
     value.where((t)=>t.isSent).forEach((m)=>m.fail(e));
     value = value.where((t)=>t.status!=TransactionStatus.completed).toList();

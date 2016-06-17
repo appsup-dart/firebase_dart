@@ -48,9 +48,7 @@ class TreeNode<K,V> implements Comparable<TreeNode<K,V>> {
   bool get isNil => isEmpty&&value==null;
   bool get isEmpty => children.isEmpty;
 
-  /**
-   * Order: nil, leaf, node with children
-   */
+  /// Order: nil, leaf, node with children
   @override
   int compareTo(TreeNode<K, V> other) {
     if (isLeaf) {
