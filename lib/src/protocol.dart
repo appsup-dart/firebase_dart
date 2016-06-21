@@ -12,6 +12,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'protocol/websocket.dart'
     if (dart.library.html) 'protocol/websocket_html.dart'
     if (dart.library.io) 'protocol/websocket_io.dart';
+import 'dart:math';
 
 part 'protocol/request.dart';
 part 'protocol/response.dart';

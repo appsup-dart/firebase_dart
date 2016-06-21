@@ -133,14 +133,23 @@ class WebSocketTransport extends Transport {
   static const String lastSessionParam = "ls";
   static const String transportSessionParam = "s";
 
+  static const int maxFrameSize = 16384;
+
   WebSocketTransport(String host, String namespace, [String sessionId])
       : super(host, namespace, sessionId);
 
   @override
   void _start() {
-    _socket.sink.addStream(_output.stream.map(JSON.encode).map((v) {
+    _socket.sink.addStream(_output.stream.map(JSON.encode).expand((v) sync* {
       _logger.fine("send $v");
-      return v;
+
+      var dataSegs = new List.generate((v.length/maxFrameSize).ceil(),
+          (i)=>v.substring(i*maxFrameSize, min((i+1)*maxFrameSize,v.length)));
+
+      if (dataSegs.length > 1) {
+        yield "${dataSegs.length}";
+      }
+      yield* dataSegs;
     }));
     new Stream.periodic(new Duration(seconds: 45)).forEach((_) {
       _output.add(0);
@@ -167,9 +176,33 @@ class WebSocketTransport extends Transport {
           _logger.fine("received $v");
           return v;
         })
-        .map(
-            (v) => new Message.fromJson(JSON.decode(v) as Map<String, dynamic>))
-        .listen(_onMessage);
+        .listen(_handleMessage);
+  }
+
+  int _totalFrames;
+  List<String> _frames;
+
+  void _handleMessage(data) {
+    if (_frames != null) {
+      _frames.add(data);
+      if (_frames.length == this._totalFrames) {
+        var fullMess = _frames.join("");
+        _frames = null;
+        var message = new Message.fromJson(JSON.decode(fullMess) as Map<String, dynamic>);
+        _onMessage(message);
+      }
+    } else {
+      if (data.length <= 6) {
+        var frameCount = int.parse(data, onError: (_)=>null);
+        if (frameCount!=null) {
+          _totalFrames = frameCount;
+          _frames = [];
+          return;
+        }
+      }
+      var message = new Message.fromJson(JSON.decode(data) as Map<String, dynamic>);
+      _onMessage(message);
+    }
   }
 
   @override

@@ -534,6 +534,31 @@ void main() {
     });
   });
 
+  group('multiple frames', () {
+    test('Receive large value', () async {
+
+      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+
+      var random = new Random();
+
+      var value = BASE64.encode(new List<int>.generate(15000, (i)=>random.nextInt(255)));
+      await ref.set(value);
+
+      expect(await ref.get(), value);
+    });
+    test('Send large value', () async {
+
+      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+
+      var random = new Random();
+
+      var value = BASE64.encode(new List<int>.generate(50000, (i)=>random.nextInt(255)));
+      await ref.set(value);
+
+      expect(await ref.get(), value);
+    });
+  });
+
 }
 
 
