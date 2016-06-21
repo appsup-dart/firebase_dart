@@ -9,23 +9,21 @@ class ServerValue {
 
   static const ServerValue timestamp = const ServerValue._("TIMESTAMP");
 
-  static const Map<String,ServerValue> values = const {
-    "TIMESTAMP": timestamp
-  };
+  static const Map<String, ServerValue> values = const {"TIMESTAMP": timestamp};
 
-  Map<String,String> toJson() => {".sv": type};
+  Map<String, String> toJson() => {".sv": type};
 }
 
 class Value implements Comparable<Value> {
-
   final dynamic value;
 
   factory Value(dynamic value) {
-    if (value==null) return null;
+    if (value == null) return null;
     if (value is bool) return new Value.bool(value);
     if (value is num) return new Value.num(value);
     if (value is String) return new Value.string(value);
-    if (value is Map&&value.containsKey(".sv")) return new Value.server(value[".sv"]);
+    if (value is Map && value.containsKey(".sv"))
+      return new Value.server(value[".sv"]);
     throw new ArgumentError("Unsupported value type ${value.runtimeType}");
   }
 
@@ -40,7 +38,8 @@ class Value implements Comparable<Value> {
   bool get isString => value is String;
   bool get isServerValue => value is ServerValue;
 
-  int get typeOrder => isServerValue ? 0 : isBool ? 1 : isNum ? 2 : isString ? 3 : 4;
+  int get typeOrder =>
+      isServerValue ? 0 : isBool ? 1 : isNum ? 2 : isString ? 3 : 4;
 
   @override
   int compareTo(Value other) {
@@ -51,7 +50,7 @@ class Value implements Comparable<Value> {
       if (isServerValue) return 0;
       if (isBool) {
         if (!other.isBool) return -1;
-        if (value==other.value) return 0;
+        if (value == other.value) return 0;
         return !value ? -1 : 1;
       }
       return Comparable.compare(value, other.value);
@@ -63,11 +62,21 @@ class Value implements Comparable<Value> {
   int get hashCode => value.hashCode;
 
   @override
-  bool operator==(dynamic other) => other is Value&&value==other.value;
+  bool operator ==(dynamic other) => other is Value && value == other.value;
 
   dynamic toJson() => value;
 
   @override
   String toString() => "Value[$value]";
-}
 
+  String get _hashText {
+    if (value is num) {
+      return "number:${_doubleToIEEE754String(value)}";
+    } else if (value is bool) {
+      return "boolean:$value";
+    } else if (value is String) {
+      return "string:$value";
+    }
+    throw new StateError("Invalid value to hash $value");
+  }
+}

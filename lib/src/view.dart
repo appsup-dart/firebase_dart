@@ -7,7 +7,6 @@ import 'tree.dart';
 import 'package:sortedmap/sortedmap.dart';
 
 class ViewCache<T> {
-
   T localVersion;
   T serverVersion;
 
@@ -18,15 +17,18 @@ class ViewCache<T> {
   }
 
   void recalcLocalVersion() {
-    localVersion = pendingOperations.values.fold/*<T>*/(serverVersion, (T v, o)=>o.apply(v));
+    localVersion = pendingOperations.values
+        .fold/*<T>*/(serverVersion, (T v, o) => o.apply(v));
   }
+
   ViewCache<T> updateServerVersion(T newValue) {
-    return new ViewCache(localVersion, newValue, pendingOperations)..recalcLocalVersion();
+    return new ViewCache(localVersion, newValue, pendingOperations)
+      ..recalcLocalVersion();
   }
+
   ViewCache<T> addOperation(int writeId, Operation<T> op) {
-    return new ViewCache(
-        op.apply(localVersion), serverVersion, pendingOperations.clone()..[writeId] = op
-    );
+    return new ViewCache(op.apply(localVersion), serverVersion,
+        pendingOperations.clone()..[writeId] = op);
   }
 
   ViewCache<T> removeOperation(int writeId, bool recalc) {
@@ -38,47 +40,42 @@ class ViewCache<T> {
 }
 
 class View<T> extends DataObserver<ViewCache<T>> {
-
-  View(T initialVersion, EventGenerator<ViewCache<T>> eventGenerator) :
-        super(new ViewCache(initialVersion, initialVersion), eventGenerator);
-
+  View(T initialVersion, EventGenerator<ViewCache<T>> eventGenerator)
+      : super(new ViewCache(initialVersion, initialVersion), eventGenerator);
 
   @override
   String toString() => "View[$hashCode]";
-
-
-
-
 }
 
 class ViewEventGenerator<T> extends EventGenerator<ViewCache<T>> {
-
   final EventGenerator<T> baseEventGenerator;
 
   const ViewEventGenerator(this.baseEventGenerator);
 
   @override
-  Iterable<Event> generateEvents(String eventType,
+  Iterable<Event> generateEvents(
+      String eventType,
       IncompleteData<ViewCache<T>> oldValue,
       IncompleteData<ViewCache<T>> newValue) {
-    return baseEventGenerator.generateEvents(eventType,
-        oldValue.childData/*<T>*/(ViewOperationSource.user, oldValue.value?.localVersion),
-        newValue.childData/*<T>*/(ViewOperationSource.user, newValue.value.localVersion));
+    return baseEventGenerator.generateEvents(
+        eventType,
+        oldValue.childData/*<T>*/(
+            ViewOperationSource.user, oldValue.value?.localVersion),
+        newValue.childData/*<T>*/(
+            ViewOperationSource.user, newValue.value.localVersion));
   }
 }
 
-enum ViewOperationSource {user, server, ack}
+enum ViewOperationSource { user, server, ack }
 
 abstract class Ack {
   bool get success;
 }
 
 class ViewOperation<T> extends Operation<ViewCache<T>> {
-
   final Operation<T> dataOperation;
   final ViewOperationSource source;
   final int writeId;
-
 
   ViewOperation(this.source, this.dataOperation, this.writeId);
 
@@ -98,9 +95,13 @@ class ViewOperation<T> extends Operation<ViewCache<T>> {
   }
 
   @override
-  Iterable<Path> get completesPaths =>
-      dataOperation.completesPaths.expand/*<Path>*/(
-          (p)=>source==ViewOperationSource.user ? [new Path.from(<dynamic>[source]..addAll(p))] :
-  [new Path.from(<dynamic>[ViewOperationSource.server]..addAll(p)), new Path.from(<dynamic>[ViewOperationSource.user]..addAll(p))]);
+  Iterable<Path> get completesPaths => dataOperation.completesPaths
+      .expand/*<Path>*/((p) => source == ViewOperationSource.user
+          ? [
+              new Path.from(<dynamic>[source]..addAll(p))
+            ]
+          : [
+              new Path.from(<dynamic>[ViewOperationSource.server]..addAll(p)),
+              new Path.from(<dynamic>[ViewOperationSource.user]..addAll(p))
+            ]);
 }
-

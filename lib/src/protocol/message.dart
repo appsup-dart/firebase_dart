@@ -4,7 +4,6 @@
 part of firebase.protocol;
 
 abstract class Message {
-
   static const String typeData = "d";
   static const String typeControl = "c";
   static const String messageType = "t";
@@ -12,7 +11,7 @@ abstract class Message {
 
   Message();
 
-  factory Message.fromJson(Map<String,dynamic> json) {
+  factory Message.fromJson(Map<String, dynamic> json) {
     var layer = json[messageType];
     switch (layer) {
       case typeData:
@@ -25,14 +24,12 @@ abstract class Message {
   }
 
   Map<String, dynamic> toJson() => {
-    messageType: this is ControlMessage ? typeControl : typeData,
-    messageData: _payloadJson
-  };
+        messageType: this is ControlMessage ? typeControl : typeData,
+        messageData: _payloadJson
+      };
 
-  Map<String,dynamic> get _payloadJson;
-
+  Map<String, dynamic> get _payloadJson;
 }
-
 
 class DataMessage extends Message {
   static const String actionListen = "q";
@@ -58,23 +55,20 @@ class DataMessage extends Message {
 
   DataMessage(this.action, this.body, {this.error, this.reqNum});
 
-  factory DataMessage.fromJson(Map<String,dynamic> json) {
+  factory DataMessage.fromJson(Map<String, dynamic> json) {
     var data = json[Message.messageData];
     return new DataMessage(
-        data["a"],
-        new MessageBody.fromJson(data["b"] as Map<String, dynamic>),
-        reqNum: data["r"],
-        error: data["error"]
-    );
+        data["a"], new MessageBody.fromJson(data["b"] as Map<String, dynamic>),
+        reqNum: data["r"], error: data["error"]);
   }
 
   @override
-  Map<String,dynamic> get _payloadJson {
-    var json = <String,dynamic>{};
-    if (action!=null) json["a"] = action;
-    if (body!=null) json["b"] = body;
-    if (reqNum!=null) json["r"] = reqNum;
-    if (error!=null) json["error"] = error;
+  Map<String, dynamic> get _payloadJson {
+    var json = <String, dynamic>{};
+    if (action != null) json["a"] = action;
+    if (body != null) json["b"] = body;
+    if (reqNum != null) json["r"] = reqNum;
+    if (error != null) json["error"] = error;
     return json;
   }
 }
@@ -98,51 +92,60 @@ class Query {
   final dynamic startValue;
   final String startName;
 
-  Query({this.limit, this.isViewFromRight: false, this.index, this.endName,
-  this.endValue, this.startName, this.startValue});
+  Query(
+      {this.limit,
+      this.isViewFromRight: false,
+      this.index,
+      this.endName,
+      this.endValue,
+      this.startName,
+      this.startValue});
 
-  factory Query.fromJson(Map<String,dynamic> json) {
+  factory Query.fromJson(Map<String, dynamic> json) {
     return new Query(
         limit: json[limitTo],
-        isViewFromRight: json[viewFrom]==viewFromRight,
+        isViewFromRight: json[viewFrom] == viewFromRight,
         index: json[indexOn],
         endName: json[indexEndName],
         endValue: json[indexEndValue],
         startName: json[indexStartName],
-        startValue: json[indexStartValue]
-    );
+        startValue: json[indexStartValue]);
   }
 
   @override
   int get hashCode => quiver.hash4(limit, isViewFromRight, index,
-      quiver.hash4(endName,endValue,startName,startValue));
+      quiver.hash4(endName, endValue, startName, startValue));
 
   @override
-  bool operator==(dynamic other) => other is Query&&other.limit==limit&&
-      other.isViewFromRight==isViewFromRight&&other.index==index&&
-      other.endName==endName&&other.endValue==endValue&&
-      other.startName==startName&&other.startValue==startValue;
+  bool operator ==(dynamic other) =>
+      other is Query &&
+      other.limit == limit &&
+      other.isViewFromRight == isViewFromRight &&
+      other.index == index &&
+      other.endName == endName &&
+      other.endValue == endValue &&
+      other.startName == startName &&
+      other.startValue == startValue;
 
-  Map<String,dynamic> toJson() {
-    var json = <String,dynamic>{};
-    if (limit!=null) {
+  Map<String, dynamic> toJson() {
+    var json = <String, dynamic>{};
+    if (limit != null) {
       json[limitTo] = limit;
       json[viewFrom] = isViewFromRight ? viewFromRight : viewFromLeft;
     }
-    if (index!=null) {
+    if (index != null) {
       json[indexOn] = index;
     }
-    if (endName!=null) json[indexEndName] = endName;
-    if (endValue!=null) json[indexEndValue] = endValue;
-    if (startName!=null) json[indexStartName] = startName;
-    if (startValue!=null) json[indexStartValue] = startValue;
+    if (endName != null) json[indexEndName] = endName;
+    if (endValue != null) json[indexEndValue] = endValue;
+    if (startName != null) json[indexStartName] = startName;
+    if (startValue != null) json[indexStartValue] = startValue;
     return json;
   }
 }
 
 class MessageBody {
   static const String statusOk = "ok";
-
 
   final int tag;
   final Query query;
@@ -154,35 +157,50 @@ class MessageBody {
   final String message;
   final String status;
 
-  MessageBody({this.tag,this.query,this.path,this.hash,this.data,this.stats,this.cred, this.message, this.status});
+  MessageBody(
+      {this.tag,
+      this.query,
+      this.path,
+      this.hash,
+      this.data,
+      this.stats,
+      this.cred,
+      this.message,
+      this.status});
 
-  factory MessageBody.fromJson(Map<String,dynamic> json) {
+  factory MessageBody.fromJson(Map<String, dynamic> json) {
     return new MessageBody(
         tag: json["t"],
-        query: json["q"] is Map ? new Query.fromJson(json["q"] as Map<String,dynamic>) :
-          json["q"] is List&&json["q"].isNotEmpty ? new Query.fromJson(json["q"].first as Map<String,dynamic>) : null,
-        path: json["p"], hash: json["h"],
-        data: json["d"], stats: json["c"], cred: json["cred"], message: json["msg"],
-        status: json["s"]
-    );
+        query: json["q"] is Map
+            ? new Query.fromJson(json["q"] as Map<String, dynamic>)
+            : json["q"] is List && json["q"].isNotEmpty
+                ? new Query.fromJson(json["q"].first as Map<String, dynamic>)
+                : null,
+        path: json["p"],
+        hash: json["h"],
+        data: json["d"],
+        stats: json["c"],
+        cred: json["cred"],
+        message: json["msg"],
+        status: json["s"]);
   }
 
-  Iterable<String> get warnings => data is Map ? data["w"] as Iterable<String> : const[];
+  Iterable<String> get warnings =>
+      data is Map ? data["w"] as Iterable<String> : const [];
 
-  Map<String,dynamic> toJson() {
-    var json = <String,dynamic>{};
-    if (cred!=null) json["cred"] = cred;
-    if (path!=null) json["p"] = path;
-    if (hash!=null) json["h"] = hash;
-    if (tag!=null) json["t"] = tag;
-    if (query!=null) json["q"] = query;
-    if (data!=null) json["d"] = data;
-    if (stats!=null) json["c"] = stats;
-    if (message!=null) json["msg"] = message;
-    if (status!=null) json["s"] = status;
+  Map<String, dynamic> toJson() {
+    var json = <String, dynamic>{};
+    if (cred != null) json["cred"] = cred;
+    if (path != null) json["p"] = path;
+    if (hash != null) json["h"] = hash;
+    if (tag != null) json["t"] = tag;
+    if (query != null) json["q"] = query;
+    if (data != null) json["d"] = data;
+    if (stats != null) json["c"] = stats;
+    if (message != null) json["msg"] = message;
+    if (status != null) json["s"] = status;
     return json;
   }
-
 }
 
 abstract class ControlMessage extends Message {
@@ -196,7 +214,7 @@ abstract class ControlMessage extends Message {
 
   ControlMessage();
 
-  factory ControlMessage.fromJson(Map<String,dynamic> json) {
+  factory ControlMessage.fromJson(Map<String, dynamic> json) {
     var data = json[Message.messageData];
     var cmd = data[Message.messageType];
     switch (cmd) {
@@ -224,11 +242,8 @@ abstract class ControlMessage extends Message {
   dynamic get jsonData;
 
   @override
-  Map<String,dynamic> get _payloadJson => {
-    Message.messageType: type,
-    Message.messageData: jsonData
-  };
-
+  Map<String, dynamic> get _payloadJson =>
+      {Message.messageType: type, Message.messageData: jsonData};
 }
 
 class PingMessage extends ControlMessage {
@@ -236,23 +251,23 @@ class PingMessage extends ControlMessage {
   String get type => ControlMessage.typeControlPing;
 
   @override
-  Map<String,dynamic> get jsonData => {};
+  Map<String, dynamic> get jsonData => {};
 }
+
 class PongMessage extends ControlMessage {
   @override
   String get type => ControlMessage.typeControlPong;
 
   @override
-  Map<String,dynamic> get jsonData => {};
+  Map<String, dynamic> get jsonData => {};
 }
 
 class ResetMessage extends ControlMessage {
-
   final String host;
 
   ResetMessage(this.host);
 
-  factory ResetMessage.fromJson(Map<String,dynamic> json) {
+  factory ResetMessage.fromJson(Map<String, dynamic> json) {
     var data = json[Message.messageData];
     return new ResetMessage(data[Message.messageData]);
   }
@@ -277,14 +292,14 @@ class ShutdownMessage extends ControlMessage {
 }
 
 class HandshakeMessage extends ControlMessage {
-
   final HandshakeInfo info;
 
   HandshakeMessage(this.info);
 
-  factory HandshakeMessage.fromJson(Map<String,dynamic> json) {
+  factory HandshakeMessage.fromJson(Map<String, dynamic> json) {
     var handshake = json[Message.messageData][Message.messageData];
-    return new HandshakeMessage(new HandshakeInfo.fromJson(handshake as Map<String,dynamic>));
+    return new HandshakeMessage(
+        new HandshakeInfo.fromJson(handshake as Map<String, dynamic>));
   }
 
   @override
@@ -295,7 +310,6 @@ class HandshakeMessage extends ControlMessage {
 }
 
 class HandshakeInfo {
-
   final DateTime timestamp;
   final String version;
   final String host;
@@ -303,16 +317,14 @@ class HandshakeInfo {
 
   HandshakeInfo(this.timestamp, this.version, this.host, this.sessionId);
 
-  factory HandshakeInfo.fromJson(Map<String,dynamic> json) =>
-      new HandshakeInfo(
-          new DateTime.fromMillisecondsSinceEpoch(json["ts"]),
-          json["v"], json["h"], json["s"]
-      );
+  factory HandshakeInfo.fromJson(Map<String, dynamic> json) =>
+      new HandshakeInfo(new DateTime.fromMillisecondsSinceEpoch(json["ts"]),
+          json["v"], json["h"], json["s"]);
 
-  Map<String,dynamic> toJson() => {
-    "ts": timestamp.millisecondsSinceEpoch,
-    "v": version,
-    "h": host,
-    "s": sessionId
-  };
+  Map<String, dynamic> toJson() => {
+        "ts": timestamp.millisecondsSinceEpoch,
+        "v": version,
+        "h": host,
+        "s": sessionId
+      };
 }

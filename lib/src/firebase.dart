@@ -13,4 +13,3 @@ part 'firebase/event.dart';
 part 'firebase/firebase.dart';
 part 'firebase/query.dart';
 part 'firebase/disconnect.dart';
-

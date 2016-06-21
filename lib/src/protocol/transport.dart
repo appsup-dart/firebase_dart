@@ -4,7 +4,6 @@
 part of firebase.protocol;
 
 abstract class Transport extends Stream<Response> with StreamSink<Request> {
-
   static const int connecting = 0;
   static const int connected = 1;
   static const int disconnected = 2;
@@ -18,7 +17,6 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
     _readyState = connecting;
     _connect();
   }
-
 
   final Completer<HandshakeInfo> _ready = new Completer();
   final Completer _done = new Completer();
@@ -46,7 +44,6 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   Future _reset();
   void _start();
 
-
   Future<PongMessage> ping() {
     _pings.add(new Completer());
     _output.add(new PingMessage());
@@ -56,12 +53,11 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   void _onDataMessage(DataMessage v) {
     var request = _pendingRequests.remove(v.reqNum);
     var response = new Response(v, request);
-    if (request!=null&&!request._completer.isCompleted) {
+    if (request != null && !request._completer.isCompleted) {
       request._completer.complete(response);
     }
     _input.add(response);
   }
-
 
   Future _onControlMessage(ControlMessage v) async {
     if (v is HandshakeMessage) {
@@ -81,9 +77,12 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
       await kill();
     }
   }
+
   void _onMessage(Message v) {
-    if (v is DataMessage) _onDataMessage(v);
-    else _onControlMessage(v);
+    if (v is DataMessage)
+      _onDataMessage(v);
+    else
+      _onControlMessage(v);
   }
 
   Request _prepareRequest(Request request) {
@@ -98,11 +97,14 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
       _output.addError(errorEvent, stackTrace);
 
   @override
-  Future addStream(Stream<Request> stream) => _output.addStream(stream.map(_prepareRequest));
+  Future addStream(Stream<Request> stream) =>
+      _output.addStream(stream.map(_prepareRequest));
 
   @override
-  StreamSubscription<Response> listen(void onData(Response event), {Function onError, void onDone(), bool cancelOnError}) {
-    return _input.stream.listen(onData, onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+  StreamSubscription<Response> listen(void onData(Response event),
+      {Function onError, void onDone(), bool cancelOnError}) {
+    return _input.stream.listen(onData,
+        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
 
   @override
@@ -125,30 +127,36 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   }
 }
 
-// TODO browser websocket
 class WebSocketTransport extends Transport {
   static const String protocolVersion = "5";
   static const String versionParam = "v";
   static const String lastSessionParam = "ls";
   static const String transportSessionParam = "s";
 
-  WebSocketTransport(String host, String namespace, [String sessionId]) : super(host, namespace, sessionId);
+  static const int maxFrameSize = 16384;
+
+  WebSocketTransport(String host, String namespace, [String sessionId])
+      : super(host, namespace, sessionId);
 
   @override
   void _start() {
-    _socket.sink.addStream(_output.stream.map(JSON.encode)
-        .map((v){
+    _socket.sink.addStream(_output.stream.map(JSON.encode).expand((v) sync* {
       _logger.fine("send $v");
-      return v;
+
+      var dataSegs = new List.generate((v.length/maxFrameSize).ceil(),
+          (i)=>v.substring(i*maxFrameSize, min((i+1)*maxFrameSize,v.length)));
+
+      if (dataSegs.length > 1) {
+        yield "${dataSegs.length}";
+      }
+      yield* dataSegs;
     }));
-    new Stream.periodic(new Duration(seconds: 45))
-    .forEach((_) {
+    new Stream.periodic(new Duration(seconds: 45)).forEach((_) {
       _output.add(0);
     });
   }
 
   WebSocketChannel _socket;
-
 
   @override
   Future _connect([String host]) async {
@@ -160,24 +168,46 @@ class WebSocketTransport extends Transport {
           "ns": namespace,
           lastSessionParam: sessionId
         },
-        path: ".ws"
-    );
+        path: ".ws");
     _logger.fine("connecting to $url");
     WebSocketChannel socket = _socket = connect(url.toString());
     socket.stream
         .map((v) {
-      _logger.fine("received $v");
-      return v;
-    })
-        .map((v)=>new Message.fromJson(JSON.decode(v) as Map<String,dynamic>)).listen(_onMessage);
+          _logger.fine("received $v");
+          return v;
+        })
+        .listen(_handleMessage);
   }
 
+  int _totalFrames;
+  List<String> _frames;
+
+  void _handleMessage(data) {
+    if (_frames != null) {
+      _frames.add(data);
+      if (_frames.length == this._totalFrames) {
+        var fullMess = _frames.join("");
+        _frames = null;
+        var message = new Message.fromJson(JSON.decode(fullMess) as Map<String, dynamic>);
+        _onMessage(message);
+      }
+    } else {
+      if (data.length <= 6) {
+        var frameCount = int.parse(data, onError: (_)=>null);
+        if (frameCount!=null) {
+          _totalFrames = frameCount;
+          _frames = [];
+          return;
+        }
+      }
+      var message = new Message.fromJson(JSON.decode(data) as Map<String, dynamic>);
+      _onMessage(message);
+    }
+  }
 
   @override
   Future _reset() async {
     await _socket.sink.close();
     _socket = null;
   }
-
-
 }

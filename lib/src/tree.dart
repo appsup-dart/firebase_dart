@@ -15,37 +15,34 @@ class Path<K> extends UnmodifiableListView<K> {
   Path<K> child(K child) => new Path.from(new List.from(this)..add(child));
 }
 
-class TreeNode<K,V> implements Comparable<TreeNode<K,V>> {
-
+class TreeNode<K, V> implements Comparable<TreeNode<K, V>> {
   V value;
 
-  final Map<K,TreeNode<K,V>> _children;
+  final Map<K, TreeNode<K, V>> _children;
 
-  TreeNode([this.value, Map<K,TreeNode<K,V>> children]) :
-        _children = (_cloneMap/*<K,TreeNode<K,V>>*/(children ?? {}));
+  TreeNode([this.value, Map<K, TreeNode<K, V>> children])
+      : _children = (_cloneMap/*<K,TreeNode<K,V>>*/(children ?? {}));
 
-  Map<K,TreeNode<K,V>> get children => _children;
+  Map<K, TreeNode<K, V>> get children => _children;
 
   static Map/*<K,V>*/ _cloneMap/*<K,V>*/(Map/*<K,V>*/ map) {
     if (map is SortedMap) {
       return (map as SortedMap/*<K,V>*/).clone();
     }
-    return new Map/*<K,V>*/.from(map);
+    return new Map/*<K,V>*/ .from(map);
   }
 
-  TreeNode<K,V> subtree(Path<K> path, [TreeNode<K,V> newInstance()]) {
+  TreeNode<K, V> subtree(Path<K> path, [TreeNode<K, V> newInstance()]) {
     if (path.isEmpty) return this;
-    var child = children.putIfAbsent(path.first, newInstance ?? ()=>null);
-    if (child==null) return children.remove(path.first);
+    var child = children.putIfAbsent(path.first, newInstance ?? () => null);
+    if (child == null) return children.remove(path.first);
     return child.subtree(path.skip(1), newInstance);
   }
 
+  TreeNode<K, V> clone() => new TreeNode(value, children);
 
-  TreeNode<K,V> clone() => new TreeNode(value,children);
-
-
-  bool get isLeaf => isEmpty&&value!=null;
-  bool get isNil => isEmpty&&value==null;
+  bool get isLeaf => isEmpty && value != null;
+  bool get isNil => isEmpty && value == null;
   bool get isEmpty => children.isEmpty;
 
   /// Order: nil, leaf, node with children
@@ -53,7 +50,8 @@ class TreeNode<K,V> implements Comparable<TreeNode<K,V>> {
   int compareTo(TreeNode<K, V> other) {
     if (isLeaf) {
       if (other.isLeaf) {
-        return Comparable.compare(value as Comparable,other.value as Comparable);
+        return Comparable.compare(
+            value as Comparable, other.value as Comparable);
       } else if (other.isNil) {
         return 1;
       }
@@ -69,11 +67,12 @@ class TreeNode<K,V> implements Comparable<TreeNode<K,V>> {
     }
   }
 
-  bool hasChild(Path<K> path) => path.isEmpty||
-      children.containsKey(path.first)&&children[path.first].hasChild(path.skip(1));
+  bool hasChild(Path<K> path) =>
+      path.isEmpty ||
+      children.containsKey(path.first) &&
+          children[path.first].hasChild(path.skip(1));
 
-
-  Iterable<TreeNode<K,V>> nodesOnPath(Path<K> path) sync* {
+  Iterable<TreeNode<K, V>> nodesOnPath(Path<K> path) sync* {
     if (path.isEmpty) return;
     var c = path.first;
     if (!children.containsKey(c)) return;
@@ -85,18 +84,15 @@ class TreeNode<K,V> implements Comparable<TreeNode<K,V>> {
   String toString() => "TreeNode[$value]$children";
 
   void forEachNode(void f(Path<K> key, V value)) {
-
-    void _forEach(TreeNode<K,V> node, Path<K> p) {
-      node.children.forEach((c,v) {
+    void _forEach(TreeNode<K, V> node, Path<K> p) {
+      node.children.forEach((c, v) {
         f(p.child(c), v.value);
       });
-      node.children.forEach((c,v) {
+      node.children.forEach((c, v) {
         _forEach(v, p.child(c));
       });
     }
 
     _forEach(this, new Path());
   }
-
 }
-

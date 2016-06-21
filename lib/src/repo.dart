@@ -16,50 +16,57 @@ import 'event.dart';
 
 final _logger = new Logger("firebase-repo");
 
-class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
-
+class QueryFilter extends Filter<Pair<Name, TreeStructuredData>> {
   final String orderBy;
-  final Pair<Name,TreeStructuredData> startAt;
-  final Pair<Name,TreeStructuredData> endAt;
+  final Pair<Name, TreeStructuredData> startAt;
+  final Pair<Name, TreeStructuredData> endAt;
 
-
-  const QueryFilter({this.orderBy, this.startAt, this.endAt, int limit, bool reverse}) :
-      super(
-          limit: limit,
-          reverse: reverse
-          );
+  const QueryFilter(
+      {this.orderBy, this.startAt, this.endAt, int limit, bool reverse})
+      : super(limit: limit, reverse: reverse);
 
   factory QueryFilter.fromQuery(Query query) {
-    if (query==null) return null;
+    if (query == null) return null;
     return new QueryFilter(
         limit: query.limit,
         reverse: query.isViewFromRight,
         orderBy: query.index,
         startAt: _toNameValue(query.startName, query.startValue),
-        endAt: _toNameValue(query.endName, query.endValue)
-    );
+        endAt: _toNameValue(query.endName, query.endValue));
   }
 
-  static Pair<Name, TreeStructuredData> _toNameValue(String key, dynamic value) =>
-      key==null&&value==null ? null : new Pair(new Name(key), new TreeStructuredData(value: new Value(value)));
+  static Pair<Name, TreeStructuredData> _toNameValue(
+          String key, dynamic value) =>
+      key == null && value == null
+          ? null
+          : new Pair(
+              new Name(key), new TreeStructuredData(value: new Value(value)));
 
-  QueryFilter copyWith({String orderBy, String startAtKey, dynamic startAtValue,
-  String endAtKey, dynamic endAtValue, int limit, bool reverse}) =>
+  QueryFilter copyWith(
+          {String orderBy,
+          String startAtKey,
+          dynamic startAtValue,
+          String endAtKey,
+          dynamic endAtValue,
+          int limit,
+          bool reverse}) =>
       new QueryFilter(
           orderBy: orderBy ?? this.orderBy,
           startAt: _toNameValue(startAtKey, startAtValue) ?? this.startAt,
           endAt: _toNameValue(endAtKey, endAtValue) ?? this.endAt,
           limit: limit ?? this.limit,
-          reverse: reverse ?? this.reverse
-      );
+          reverse: reverse ?? this.reverse);
 
-  Query toQuery() => new Query(limit: limit, isViewFromRight: this.reverse,
+  Query toQuery() => new Query(
+      limit: limit,
+      isViewFromRight: this.reverse,
       index: orderBy,
-      endName: endAt?.key?.asString(), endValue: endAt?.value?.value?.value,
-      startName: startAt?.key?.asString(), startValue: startAt?.value?.value?.value
-      );
+      endName: endAt?.key?.asString(),
+      endValue: endAt?.value?.value?.value,
+      startName: startAt?.key?.asString(),
+      startValue: startAt?.value?.value?.value);
 
-  Pair<Name,Comparable> _extract(Pair<Name,TreeStructuredData> p) {
+  Pair<Name, Comparable> _extract(Pair<Name, TreeStructuredData> p) {
     switch (orderBy ?? ".priority") {
       case ".value":
         return new Pair(p.key, p.value);
@@ -73,54 +80,57 @@ class QueryFilter extends Filter<Pair<Name,TreeStructuredData>> {
   }
 
   int _compareValue(Comparable a, Comparable b) {
-    if (a==null) return b==null ? 0 : -1;
-    if (b==null) return 1;
-    return Comparable.compare(a,b);
+    if (a == null) return b == null ? 0 : -1;
+    if (b == null) return 1;
+    return Comparable.compare(a, b);
   }
+
   int _compareKey(Name a, Name b) {
-    if (a.asString()==null||b.asString()==null) return 0;
-    return Comparable.compare(a,b);
+    if (a.asString() == null || b.asString() == null) return 0;
+    return Comparable.compare(a, b);
   }
-  int _comparePair(Pair<Name,Comparable> a, Pair<Name,Comparable> b) {
+
+  int _comparePair(Pair<Name, Comparable> a, Pair<Name, Comparable> b) {
     int cmp = _compareValue(a.value, b.value);
-    if (cmp!=0) return cmp;
+    if (cmp != 0) return cmp;
     return _compareKey(a.key, b.key);
   }
 
   @override
-  bool isValid(Pair<Name,TreeStructuredData> p) {
+  bool isValid(Pair<Name, TreeStructuredData> p) {
     p = _extract(p);
-    if (startAt!=null&&_comparePair(startAt,p)>0) return false;
-    if (endAt!=null&&_comparePair(p,endAt)>0) return false;
+    if (startAt != null && _comparePair(startAt, p) > 0) return false;
+    if (endAt != null && _comparePair(p, endAt) > 0) return false;
     return true;
   }
 
   @override
-  int compare(Pair<Name,TreeStructuredData> a,Pair<Name,TreeStructuredData> b) =>
-      _comparePair(_extract(a),_extract(b));
+  int compare(
+          Pair<Name, TreeStructuredData> a, Pair<Name, TreeStructuredData> b) =>
+      _comparePair(_extract(a), _extract(b));
 
   @override
   String toString() => "QueryFilter[${toQuery().toJson()}]";
 
+  @override
+  int get hashCode =>
+      quiver.hash4(orderBy, startAt, endAt, quiver.hash2(limit, reverse));
 
   @override
-  int get hashCode => quiver.hash4(orderBy,startAt,endAt,
-      quiver.hash2(limit, reverse));
-
-  @override
-  bool operator==(dynamic other) => other is QueryFilter&&
-    other.orderBy==orderBy&&other.startAt==startAt&&other.endAt==endAt&&
-      other.limit==limit&&other.reverse==reverse;
-
+  bool operator ==(dynamic other) =>
+      other is QueryFilter &&
+      other.orderBy == orderBy &&
+      other.startAt == startAt &&
+      other.endAt == endAt &&
+      other.limit == limit &&
+      other.reverse == reverse;
 }
 
-
 class Repo {
-
   final Connection _connection;
   final Uri url;
 
-  static final Map<Uri,Repo> _repos = {};
+  static final Map<Uri, Repo> _repos = {};
 
   final SyncTree _syncTree = new SyncTree();
 
@@ -134,10 +144,12 @@ class Repo {
   SparseSnapshotTree _onDisconnect = new SparseSnapshotTree();
 
   factory Repo(Uri url) {
-    return _repos.putIfAbsent(url, ()=>new Repo._(url));
+    return _repos.putIfAbsent(url, () => new Repo._(url));
   }
 
-  Repo._(Uri url) : _connection = new Connection(url.host), url = url {
+  Repo._(Uri url)
+      : _connection = new Connection(url.host),
+        url = url {
     _transactions = new TransactionsTree(this);
     _connection.onConnect.listen((v) {
       if (!v) {
@@ -148,36 +160,35 @@ class Repo {
       switch (r.message.action) {
         case DataMessage.actionSet:
           var filter = _tagToQuery[r.message.body.tag];
-          _syncTree.applyServerOverwrite(
-              Name.parsePath(r.message.body.path), filter,
-              new TreeStructuredData.fromJson(r.message.body.data)
-          );
+          _syncTree.applyServerOverwrite(Name.parsePath(r.message.body.path),
+              filter, new TreeStructuredData.fromJson(r.message.body.data));
           break;
         case DataMessage.actionMerge:
           var filter = _tagToQuery[r.message.body.tag];
           _syncTree.applyServerMerge(
-              Name.parsePath(r.message.body.path), filter,
-              new TreeStructuredData.fromJson(r.message.body.data).children
-          );
+              Name.parsePath(r.message.body.path),
+              filter,
+              new TreeStructuredData.fromJson(r.message.body.data).children);
           break;
         case DataMessage.actionAuthRevoked:
           _onAuth.add(null);
           break;
         case DataMessage.actionListenRevoked:
-          var filter = new QueryFilter.fromQuery(r.message.body.query); //TODO test query revoke
+          var filter = new QueryFilter.fromQuery(
+              r.message.body.query); //TODO test query revoke
           _syncTree.applyListenRevoked(
-              Name.parsePath(r.message.body.path), filter
-          );
+              Name.parsePath(r.message.body.path), filter);
           break;
         case DataMessage.actionSecurityDebug:
           var msg = r.message.body.message;
           _logger.fine("security debug: $msg");
           break;
         default:
-          throw new UnimplementedError("Cannot handle message with action ${r.message.action}");
+          throw new UnimplementedError(
+              "Cannot handle message with action ${r.message.action}");
       }
     });
-    onAuth.listen((v)=>_authData=v);
+    onAuth.listen((v) => _authData = v);
   }
 
   firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
@@ -194,8 +205,9 @@ class Repo {
 
   /// Generates the special server values
   Map<ServerValue, Value> get serverValues => {
-    ServerValue.timestamp: new Value(_connection.serverTime.millisecondsSinceEpoch)
-  };
+        ServerValue.timestamp:
+            new Value(_connection.serverTime.millisecondsSinceEpoch)
+      };
 
   /// The current authData
   dynamic get authData => _authData;
@@ -210,36 +222,37 @@ class Repo {
   ///
   /// Returns a future that completes with the auth data on success, or fails
   /// otherwise.
-  Future auth(String token) => _connection.auth(token).then((v)=>v["auth"])
-      .then((auth) {
-    _onAuth.add(auth);
-    _authData = auth;
-    return auth;
-  });
+  Future auth(String token) =>
+      _connection.auth(token).then((v) => v["auth"]).then((auth) {
+        _onAuth.add(auth);
+        _authData = auth;
+        return auth;
+      });
 
   /// Unauthenticates.
   ///
   /// Returns a future that completes on success, or fails otherwise.
   Future unauth() => _connection.unauth().then((_) {
-    _onAuth.add(null);
-    _authData = null;
-  });
+        _onAuth.add(null);
+        _authData = null;
+      });
 
   /// Writes data [value] to the location [path] and sets the [priority].
   ///
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
   Future setWithPriority(String path, dynamic value, dynamic priority) {
-    var newValue = new TreeStructuredData.fromJson(value, priority, serverValues);
+    var newValue =
+        new TreeStructuredData.fromJson(value, priority, serverValues);
     var writeId = _nextWriteId++;
     _syncTree.applyUserOverwrite(Name.parsePath(path), newValue, writeId);
     _transactions.abort(Name.parsePath(path));
     return _connection.put(path, newValue.toJson(true))
-        ..then((_) {
-          _syncTree.applyAck(Name.parsePath(path), writeId, true);
-        }, onError: (e) {
-          _syncTree.applyAck(Name.parsePath(path), writeId, false);
-        });
+      ..then((_) {
+        _syncTree.applyAck(Name.parsePath(path), writeId, true);
+      }, onError: (e) {
+        _syncTree.applyAck(Name.parsePath(path), writeId, false);
+      });
   }
 
   /// Writes the children in [value] to the location [path].
@@ -247,10 +260,10 @@ class Repo {
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
   Future update(String path, Map<String, dynamic> value) {
-    var changedChildren = new Map<Name,TreeStructuredData>.fromIterables(
-        value.keys.map/*<Name>*/((c)=>new Name(c)),
-        value.values.map/*<TreeStructuredData>*/((v)=>new TreeStructuredData.fromJson(v, null, serverValues))
-    );
+    var changedChildren = new Map<Name, TreeStructuredData>.fromIterables(
+        value.keys.map/*<Name>*/((c) => new Name(c)),
+        value.values.map/*<TreeStructuredData>*/(
+            (v) => new TreeStructuredData.fromJson(v, null, serverValues)));
     if (value.isNotEmpty) {
       int writeId = _nextWriteId++;
       _syncTree.applyUserMerge(Name.parsePath(path), changedChildren, writeId);
@@ -271,7 +284,7 @@ class Repo {
   Future push(String path, dynamic value) async {
     var name = pushIds.next(_connection.serverTime);
     var pushedPath = "$path/$name";
-    if (value!=null) {
+    if (value != null) {
       await setWithPriority(pushedPath, value, null);
     }
     return name;
@@ -281,17 +294,20 @@ class Repo {
   ///
   /// Returns a future that completes when the listener has been successfully
   /// registered at the server.
-  Future listen(String path, QueryFilter filter, String type, EventListener cb) {
-    var isFirst = _syncTree.addEventListener(type, Name.parsePath(path), filter, cb);
+  Future listen(
+      String path, QueryFilter filter, String type, EventListener cb) {
+    var isFirst =
+        _syncTree.addEventListener(type, Name.parsePath(path), filter, cb);
     if (!isFirst) return new Future.value();
-    if (filter==null) return _connection.listen(path);
+    if (filter == null) return _connection.listen(path);
     var tag = _nextTag++;
     _queryToTag[filter] = tag;
     _tagToQuery[tag] = filter;
     // TODO: listen only when no containing complete listener, unlisten others
     // TODO: listen and send hash
-    return _connection.listen(path, query: filter.toQuery(), tag: tag)
-        .then((MessageBody r)  {
+    return _connection
+        .listen(path, query: filter.toQuery(), tag: tag)
+        .then((MessageBody r) {
       for (var w in r.warnings ?? const []) {
         _logger.warning(w);
       }
@@ -302,48 +318,48 @@ class Repo {
   ///
   /// Returns a future that completes when the listener has been successfully
   /// unregistered at the server.
-  Future unlisten(String path, QueryFilter filter, String type, EventListener cb) {
-    var isLast = _syncTree.removeEventListener(type, Name.parsePath(path), filter, cb);
+  Future unlisten(
+      String path, QueryFilter filter, String type, EventListener cb) {
+    var isLast =
+        _syncTree.removeEventListener(type, Name.parsePath(path), filter, cb);
     if (!isLast) return new Future.value();
-    if (filter==null) return _connection.unlisten(path);
+    if (filter == null) return _connection.unlisten(path);
     var tag = _queryToTag.remove(filter);
     _tagToQuery.remove(tag);
     // TODO: listen to others when necessary
-    return _connection.unlisten(path, query: filter.toQuery(), tag : tag);
+    return _connection.unlisten(path, query: filter.toQuery(), tag: tag);
   }
 
   /// Gets the current cached value at location [path] with [filter].
   TreeStructuredData cachedValue(String path, QueryFilter filter) {
     var tree = _syncTree.root.subtree(Name.parsePath(path));
-    if (tree=null) return null;
+    if (tree = null) return null;
     return tree.value.views[filter].currentValue.localVersion;
   }
 
   /// Helper function to create a new stream for a particular event type.
-  Stream<firebase.Event> createStream(firebase.Firebase ref, QueryFilter filter, String type) {
-    return new _Stream(()=>new StreamFactory(this, ref, filter, type)());
+  Stream<firebase.Event> createStream(
+      firebase.Firebase ref, QueryFilter filter, String type) {
+    return new _Stream(() => new StreamFactory(this, ref, filter, type)());
   }
 
+  Future<TreeStructuredData> transaction(
+          String path, Function update, bool applyLocally) =>
+      _transactions.startTransaction(
+          Name.parsePath(path), update, applyLocally);
 
-
-
-  Future<TreeStructuredData> transaction(String path, Function update, bool applyLocally) =>
-      _transactions.startTransaction(Name.parsePath(path), update, applyLocally);
-
-
-  Future onDisconnectSetWithPriority(String path, dynamic value, dynamic priority) {
+  Future onDisconnectSetWithPriority(
+      String path, dynamic value, dynamic priority) {
     var newNode = new TreeStructuredData.fromJson(value, priority);
-    return _connection.onDisconnectPut(path, newNode.toJson(true))
-        .then((m) {
+    return _connection.onDisconnectPut(path, newNode.toJson(true)).then((m) {
       _onDisconnect.remember(Name.parsePath(path), newNode);
     });
   }
 
-  Future onDisconnectUpdate(String path, Map<String,dynamic> childrenToMerge) {
+  Future onDisconnectUpdate(String path, Map<String, dynamic> childrenToMerge) {
     if (childrenToMerge.isEmpty) return new Future.value();
 
-    return _connection.onDisconnectMerge(path, childrenToMerge)
-        .then((_) {
+    return _connection.onDisconnectMerge(path, childrenToMerge).then((_) {
       childrenToMerge.forEach((childName, child) {
         _onDisconnect.remember(Name.parsePath(path).child(new Name(childName)),
             new TreeStructuredData.fromJson(child));
@@ -352,8 +368,7 @@ class Repo {
   }
 
   Future onDisconnectCancel(String path) {
-    return _connection.onDisconnectCancel(path)
-      .then((_) {
+    return _connection.onDisconnectCancel(path).then((_) {
       _onDisconnect.forget(Name.parsePath(path));
     });
   }
@@ -361,8 +376,9 @@ class Repo {
   void _runOnDisconnectEvents() {
     var sv = serverValues;
     _onDisconnect.forEachNode((path, snap) {
-      if (snap==null) return;
-      snap = new TreeStructuredData.fromJson(snap.toJson(true), null, sv);  // TODO: resolve server values without serializing
+      if (snap == null) return;
+      snap = new TreeStructuredData.fromJson(snap.toJson(true), null,
+          sv); // TODO: resolve server values without serializing
       _syncTree.applyServerOverwrite(path, null, snap);
       _transactions.abort(path);
     });
@@ -372,21 +388,22 @@ class Repo {
 }
 
 typedef Stream<T> _StreamCreator<T>();
-class _Stream<T> extends Stream<T> {
 
+class _Stream<T> extends Stream<T> {
   final _StreamCreator<T> factory;
 
   _Stream(this.factory);
 
   @override
-  StreamSubscription<T> listen(void onData(T event), {Function onError, void onDone(), bool cancelOnError}) {
+  StreamSubscription<T> listen(void onData(T event),
+      {Function onError, void onDone(), bool cancelOnError}) {
     Stream<T> stream = factory();
-    return stream.listen(onData, onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+    return stream.listen(onData,
+        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
 }
 
 class StreamFactory {
-
   final Repo repo;
   final firebase.Firebase ref;
   final QueryFilter filter;
@@ -397,14 +414,12 @@ class StreamFactory {
   StreamController<firebase.Event> controller;
 
   void addEvent(Event value) {
-
     if (value is ValueEvent) {
-      new Future.microtask(()=>
-          controller
-              .add(new firebase.Event(new firebase.DataSnapshot(ref, value.value), null))
-      );
+      new Future.microtask(() => controller.add(new firebase.Event(
+          new firebase.DataSnapshot(ref, value.value), null)));
     }
   }
+
   void addError(Event error) {
     stopListen();
     controller.addError(error);
@@ -415,6 +430,7 @@ class StreamFactory {
     repo.listen(ref.url.path, filter, type, addEvent);
     repo.listen(ref.url.path, filter, "cancel", addError);
   }
+
   void stopListen() {
     repo.unlisten(ref.url.path, filter, type, addEvent);
     repo.unlisten(ref.url.path, filter, "cancel", addError);
@@ -425,51 +441,47 @@ class StreamFactory {
         onListen: startListen, onCancel: stopListen, sync: true);
     return controller.stream;
   }
-
 }
 
 class PushIdGenerator {
-  static const String pushChars = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+  static const String pushChars =
+      "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
   int lastPushTime = 0;
   final List lastRandChars = new List(64);
   final Random random = new Random();
 
   String next(DateTime timestamp) {
-
     var now = timestamp.millisecondsSinceEpoch;
 
     var duplicateTime = now == lastPushTime;
     lastPushTime = now;
     var timeStampChars = new List(8);
-    for (var i = 7;i >= 0;i--) {
+    for (var i = 7; i >= 0; i--) {
       timeStampChars[i] = pushChars[now % 64];
       now = now ~/ 64;
     }
     var id = timeStampChars.join("");
     if (!duplicateTime) {
-      for (var i = 0;i < 12;i++) {
+      for (var i = 0; i < 12; i++) {
         lastRandChars[i] = random.nextInt(64);
       }
     } else {
       var i;
-      for (i = 11;i >= 0 && lastRandChars[i] == 63;i--) {
+      for (i = 11; i >= 0 && lastRandChars[i] == 63; i--) {
         lastRandChars[i] = 0;
       }
       lastRandChars[i]++;
     }
-    for (var i = 0;i < 12;i++) {
+    for (var i = 0; i < 12; i++) {
       id += pushChars[lastRandChars[i]];
     }
     return id;
   }
-
 }
 
-
-enum TransactionStatus {run, sent, completed, sentNeedsAbort}
+enum TransactionStatus { run, sent, completed, sentNeedsAbort }
 
 class Transaction implements Comparable<Transaction> {
-
   final Path<Name> path;
   final Function update;
   final bool applyLocally;
@@ -489,13 +501,16 @@ class Transaction implements Comparable<Transaction> {
 
   TransactionStatus status;
 
-  Transaction(this.repo, this.path, this.update, this.applyLocally) : order = _order++ {
+  Transaction(this.repo, this.path, this.update, this.applyLocally)
+      : order = _order++ {
     _watch();
   }
 
-  bool get isSent => status==TransactionStatus.sent||status==TransactionStatus.sentNeedsAbort;
-  bool get isComplete => status==TransactionStatus.completed;
-  bool get isAborted => status==TransactionStatus.sentNeedsAbort;
+  bool get isSent =>
+      status == TransactionStatus.sent ||
+      status == TransactionStatus.sentNeedsAbort;
+  bool get isComplete => status == TransactionStatus.completed;
+  bool get isAborted => status == TransactionStatus.sentNeedsAbort;
 
   void _onValue(Event _) {}
 
@@ -508,7 +523,7 @@ class Transaction implements Comparable<Transaction> {
   }
 
   void run(TreeStructuredData currentState) {
-    assert(status==null);
+    assert(status == null);
     if (retryCount >= maxRetries) {
       fail(new Exception("maxretries"));
       return;
@@ -520,11 +535,13 @@ class Transaction implements Comparable<Transaction> {
 
       status = TransactionStatus.run;
 
-      var newNode = new TreeStructuredData.fromJson(newVal, currentState.priority, repo.serverValues);
+      var newNode = new TreeStructuredData.fromJson(
+          newVal, currentState.priority, repo.serverValues);
       currentOutputSnapshot = newNode;
       currentWriteId = repo._nextWriteId++;
 
-      if (applyLocally) repo._syncTree.applyUserOverwrite(path, newNode, currentWriteId);
+      if (applyLocally)
+        repo._syncTree.applyUserOverwrite(path, newNode, currentWriteId);
     } catch (e) {
       fail(e);
     }
@@ -533,8 +550,7 @@ class Transaction implements Comparable<Transaction> {
   void fail(dynamic e) {
     _unwatch();
     currentOutputSnapshot = null;
-    if (applyLocally)
-      repo._syncTree.applyAck(path, currentWriteId, false);
+    if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, false);
     status = TransactionStatus.completed;
 
     completer.completeError(e);
@@ -542,12 +558,11 @@ class Transaction implements Comparable<Transaction> {
 
   void stale() {
     status = null;
-    if (applyLocally)
-      repo._syncTree.applyAck(path, currentWriteId, false);
+    if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, false);
   }
 
   void send() {
-    assert(status==TransactionStatus.run);
+    assert(status == TransactionStatus.run);
     status = TransactionStatus.sent;
     retryCount++;
   }
@@ -564,17 +579,15 @@ class Transaction implements Comparable<Transaction> {
         fail(new Exception("set"));
         break;
       default:
-        throw new StateError(
-            "Unable to abort transaction in state $status");
+        throw new StateError("Unable to abort transaction in state $status");
     }
   }
 
   void complete() {
-    assert(status==TransactionStatus.sent);
+    assert(status == TransactionStatus.sent);
     status = TransactionStatus.completed;
 
-    if (applyLocally)
-      repo._syncTree.applyAck(path, currentWriteId, true);
+    if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, true);
 
     completer.complete(currentOutputSnapshot);
 
@@ -583,11 +596,10 @@ class Transaction implements Comparable<Transaction> {
 
   @override
   int compareTo(Transaction other) => Comparable.compare(order, other.order);
-
-
 }
 
-TreeStructuredData updateChild(TreeStructuredData value, Path<Name> path, TreeStructuredData child) {
+TreeStructuredData updateChild(
+    TreeStructuredData value, Path<Name> path, TreeStructuredData child) {
   if (path.isEmpty) {
     return child;
   } else {
@@ -595,25 +607,26 @@ TreeStructuredData updateChild(TreeStructuredData value, Path<Name> path, TreeSt
     var c = value.children[k] ?? new TreeStructuredData();
     var newChild = updateChild(c, path.skip(1), child);
     var newValue = value.clone();
-    if (newValue.isLeaf&&!newChild.isNil) newValue.value = null;
-    if (newChild.isNil) newValue.children.remove(k);
-    else newValue.children[k] = newChild;
+    if (newValue.isLeaf && !newChild.isNil) newValue.value = null;
+    if (newChild.isNil)
+      newValue.children.remove(k);
+    else
+      newValue.children[k] = newChild;
     return newValue;
   }
 }
 
 class TransactionsTree {
-
   final Repo repo;
   final TransactionsNode root = new TransactionsNode();
 
   TransactionsTree(this.repo);
 
-  Future<TreeStructuredData> startTransaction(Path<Name> path,
-      Function transactionUpdate, bool applyLocally) {
-
-    var transaction = new Transaction(repo, path, transactionUpdate, applyLocally);
-    var node = root.subtree(path, ()=>new TransactionsNode());
+  Future<TreeStructuredData> startTransaction(
+      Path<Name> path, Function transactionUpdate, bool applyLocally) {
+    var transaction =
+        new Transaction(repo, path, transactionUpdate, applyLocally);
+    var node = root.subtree(path, () => new TransactionsNode());
 
     var current = getLatestValue(repo, path);
     if (node.value.isEmpty) {
@@ -626,73 +639,77 @@ class TransactionsTree {
     return transaction.completer.future;
   }
 
-
   void send() {
-    root.send(repo, new Path())
-    .then((finished) {
+    root.send(repo, new Path()).then((finished) {
       if (!finished) send();
     });
   }
 
   void abort(Path<Name> path) {
-    root.nodesOnPath(path).forEach((n)=>n.abort());
+    root.nodesOnPath(path).forEach((n) => n.abort());
   }
-
 }
 
 TreeStructuredData getLatestValue(Repo repo, Path<Name> path) {
   var node = repo._syncTree.root.subtree(path);
-  if (node==null) return new TreeStructuredData();
+  if (node == null) return new TreeStructuredData();
   return node.value.views[null].currentValue.localVersion;
 }
 
-
-class TransactionsNode extends TreeNode<Name,List<Transaction>> {
-
+class TransactionsNode extends TreeNode<Name, List<Transaction>> {
   TransactionsNode() : super([]);
 
   @override
-  Map<Name,TransactionsNode> get children => super.children;
+  Map<Name, TransactionsNode> get children => super.children;
 
   @override
-  TransactionsNode subtree(Path<Name> path, [TreeNode<Name,List<Transaction>> newInstance()]) =>
-  super.subtree(path, newInstance);
+  TransactionsNode subtree(Path<Name> path,
+          [TreeNode<Name, List<Transaction>> newInstance()]) =>
+      super.subtree(path, newInstance);
 
-  bool get isReadyToSend => value.every((t)=>t.status==TransactionStatus.run)&&
-      children.values.every((n)=>n.isReadyToSend);
+  bool get isReadyToSend =>
+      value.every((t) => t.status == TransactionStatus.run) &&
+      children.values.every((n) => n.isReadyToSend);
 
-  bool get needsRerun => value.any((t)=>t.status==null)||
-      children.values.any((n)=>n.needsRerun);
+  bool get needsRerun =>
+      value.any((t) => t.status == null) ||
+      children.values.any((n) => n.needsRerun);
 
   @override
-  Iterable<TransactionsNode> nodesOnPath(Path<Name> path) => super.nodesOnPath(path);
+  Iterable<TransactionsNode> nodesOnPath(Path<Name> path) =>
+      super.nodesOnPath(path);
 
   /// Completes all sent transactions
   void complete() {
-    value.where((t)=>t.isSent).forEach((m)=>m.complete());
-    value.where((t)=>!t.isComplete).forEach((m)=>m.status=null);
-    value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
-    children.values.forEach((n)=>n.complete());
+    value.where((t) => t.isSent).forEach((m) => m.complete());
+    value.where((t) => !t.isComplete).forEach((m) => m.status = null);
+    value =
+        value.where((t) => t.status != TransactionStatus.completed).toList();
+    children.values.forEach((n) => n.complete());
   }
 
   /// Fails aborted transactions and resets other sent transactions
   void stale() {
-    value.where((t)=>t.isAborted).forEach((m)=>m.fail(new Exception(m.abortReason)));
-    value.where((t)=>!t.isAborted).forEach((m)=>m.stale());
-    value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
-    children.values.forEach((n)=>n.stale());
+    value
+        .where((t) => t.isAborted)
+        .forEach((m) => m.fail(new Exception(m.abortReason)));
+    value.where((t) => !t.isAborted).forEach((m) => m.stale());
+    value =
+        value.where((t) => t.status != TransactionStatus.completed).toList();
+    children.values.forEach((n) => n.stale());
   }
 
   /// Fails all sent transactions
   void fail(dynamic e) {
-    value.where((t)=>t.isSent).forEach((m)=>m.fail(e));
-    value = value.where((t)=>t.status!=TransactionStatus.completed).toList();
-    children.values.forEach((n)=>n.fail(e));
+    value.where((t) => t.isSent).forEach((m) => m.fail(e));
+    value =
+        value.where((t) => t.status != TransactionStatus.completed).toList();
+    children.values.forEach((n) => n.fail(e));
   }
 
   void _send() {
-    value.forEach((m)=>m.send());
-    children.values.forEach((n)=>n._send());
+    value.forEach((m) => m.send());
+    children.values.forEach((n) => n._send());
   }
 
   Future<bool> send(Repo repo, Path<Name> path) async {
@@ -702,15 +719,18 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
         rerun(path, getLatestValue(repo, path));
       }
       if (isReadyToSend) {
-        var latestHash = calculateHash(input.toJson(true));
+        var latestHash = input.hash;
         try {
           _send();
-          await repo._connection.put(path.join("/"), output.toJson(true), latestHash);
+          await repo._connection
+              .put(path.join("/"), output.toJson(true), latestHash);
           complete();
           return false;
-        } on ServerError catch(e) {
-          if (e.code=="datastale") stale();
-          else fail(e);
+        } on ServerError catch (e) {
+          if (e.code == "datastale")
+            stale();
+          else
+            fail(e);
           return false;
         }
       }
@@ -718,17 +738,19 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
     } else {
       var allFinished = true;
       for (var k in children.keys) {
-        allFinished = allFinished&&await children[k].send(repo, path.child(k));
+        allFinished =
+            allFinished && await children[k].send(repo, path.child(k));
       }
       return allFinished;
     }
   }
 
-  Iterable<Transaction> get transactionsInOrder => new List.from(_transactions)..sort();
+  Iterable<Transaction> get transactionsInOrder =>
+      new List.from(_transactions)..sort();
 
   Iterable<Transaction> get _transactions sync* {
     yield* value;
-    yield* children.values.expand/*<Transaction>*/((n)=>n._transactions);
+    yield* children.values.expand/*<Transaction>*/((n) => n._transactions);
   }
 
   void rerun(Path<Name> path, TreeStructuredData input) {
@@ -737,18 +759,21 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
     var v = input;
     for (var t in transactionsInOrder) {
       var p = t.path.skip(path.length);
-      t.run(v.subtree(p, ()=>new TreeStructuredData()) ?? new TreeStructuredData());
+      t.run(v.subtree(p, () => new TreeStructuredData()) ??
+          new TreeStructuredData());
       if (!t.isComplete) {
         v = updateChild(v, p, t.currentOutputSnapshot);
       }
     }
   }
 
-
   TreeStructuredData input;
 
-  int get lastId => max(value.isEmpty ? -1 : value.map((t)=>t.order).reduce(max),
-  children.isEmpty ? -1 : children.values.map((n)=>n.lastId).reduce(max) ?? -1);
+  int get lastId => max(
+      value.isEmpty ? -1 : value.map((t) => t.order).reduce(max),
+      children.isEmpty
+          ? -1
+          : children.values.map((n) => n.lastId).reduce(max) ?? -1);
 
   TreeStructuredData get output {
     var v = input;
@@ -759,7 +784,7 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
     }
     v = v.clone();
     children.forEach((key, node) {
-      if (node.lastId>lastId) {
+      if (node.lastId > lastId) {
         v.children[key] = node.output;
       }
     });
@@ -767,27 +792,22 @@ class TransactionsNode extends TreeNode<Name,List<Transaction>> {
   }
 
   void addTransaction(Transaction transaction) {
-    if (transaction.status==TransactionStatus.run) {
+    if (transaction.status == TransactionStatus.run) {
       value.add(transaction);
     }
   }
-
-
 
   void abort() {
     for (var txn in value) {
       txn.abort("set");
     }
-    value = value.where((t)=>!t.isComplete).toList();
+    value = value.where((t) => !t.isComplete).toList();
   }
-
 }
 
-
-class SparseSnapshotTree extends TreeNode<Name,TreeStructuredData> {
-
+class SparseSnapshotTree extends TreeNode<Name, TreeStructuredData> {
   @override
-  Map<Name,SparseSnapshotTree> get children => super.children;
+  Map<Name, SparseSnapshotTree> get children => super.children;
 
   void remember(Path<Name> path, TreeStructuredData data) {
     if (path.isEmpty) {
@@ -798,7 +818,7 @@ class SparseSnapshotTree extends TreeNode<Name,TreeStructuredData> {
         value = updateChild(value, path, data);
       } else {
         var childKey = path.first;
-        children.putIfAbsent(childKey, ()=>new SparseSnapshotTree());
+        children.putIfAbsent(childKey, () => new SparseSnapshotTree());
         var child = children[childKey];
         path = path.skip(1);
         child.remember(path, data);
@@ -837,9 +857,7 @@ class SparseSnapshotTree extends TreeNode<Name,TreeStructuredData> {
         } else {
           return false;
         }
-
       }
     }
   }
-
 }

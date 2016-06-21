@@ -11,7 +11,6 @@ part of firebase_dart;
 /// that is the name of the object that is before the object referred by the
 /// event in priority order.
 class Event {
-
   /// The [DataSnapshot] representing the new value.
   final DataSnapshot snapshot;
 

@@ -3,7 +3,6 @@
 
 part of firebase_dart;
 
-
 /// A Query filters the data at a Firebase location so only a subset of the
 /// child data is visible to you. This can be used for example to restrict a
 /// large list of items down to a number suitable for synchronizing to the
@@ -20,13 +19,15 @@ class Query {
   final Repo _repo;
   final QueryFilter _nullableFilter;
 
-  Query._(Uri url, [this._nullableFilter]) :
-        _url = url, _repo = new Repo(url.resolve("/"));
+  Query._(Uri url, [this._nullableFilter])
+      : _url = url,
+        _repo = new Repo(url.resolve("/"));
 
   QueryFilter get _filter => _nullableFilter ?? const QueryFilter();
 
   /// Gets a stream for events of type [eventType]
-  Stream<Event> on(String eventType) => _repo.createStream(ref, _nullableFilter, eventType);
+  Stream<Event> on(String eventType) =>
+      _repo.createStream(ref, _nullableFilter, eventType);
 
   /// Streams for 'value' events.
   Stream<Event> get onValue => on("value");
@@ -46,13 +47,13 @@ class Query {
   /// Listens for exactly one event of the specified event type, and then stops
   /// listening.
   Future<DataSnapshot> once(String eventType) =>
-      on(eventType).first.then/*<DataSnapshot>*/((e)=>e.snapshot);
+      on(eventType).first.then/*<DataSnapshot>*/((e) => e.snapshot);
 
   /// Listens for exactly one 'value' event.
   Future<DataSnapshot> get onceValue => once('value');
 
   /// Convenient method to get the value for this query.
-  Future get() => onceValue.then((v)=>v.val);
+  Future get() => onceValue.then((v) => v.val);
 
   Query _withFilter(QueryFilter filter) => new Query._(_url, filter);
 
@@ -71,7 +72,8 @@ class Query {
   Query orderByValue() => _withFilter(_filter.copyWith(orderBy: r".value"));
 
   /// Generates a new [Query] object ordered by priority.
-  Query orderByPriority() => _withFilter(_filter.copyWith(orderBy: r".priority"));
+  Query orderByPriority() =>
+      _withFilter(_filter.copyWith(orderBy: r".priority"));
 
   /// Creates a [Query] with the specified starting point. The generated Query
   /// includes children which match the specified starting point. If no arguments
@@ -118,7 +120,4 @@ class Query {
   /// Queries are attached to a location in your Firebase. This method will
   /// return a Firebase reference to that location.
   Firebase get ref => new Firebase(_url.toString());
-
-
 }
-

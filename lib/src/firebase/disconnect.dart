@@ -18,7 +18,6 @@ part of firebase_dart;
 /// operation to occur each time a disconnect occurs, you'll need to
 /// re-establish the operations each time.
 class Disconnect {
-
   final Firebase _ref;
 
   Disconnect._(this._ref);
@@ -43,7 +42,7 @@ class Disconnect {
   /// set those values. It will not recursively 'update' those children. Passing
   /// null as a value for a child is equivalent to calling remove() on that
   /// child.
-  Future update(Map<String,dynamic> value) =>
+  Future update(Map<String, dynamic> value) =>
       _ref._repo.onDisconnectUpdate(_ref._url.path, value);
 
   /// Ensure the data at this location is deleted when the client is
@@ -59,8 +58,5 @@ class Disconnect {
   /// If a write has been queued for this location via a set() or update() at a
   /// parent location, the write at this location will be canceled though all
   /// other siblings will still be written.
-  Future cancel() =>
-      _ref._repo.onDisconnectCancel(_ref._url.path);
-
-
+  Future cancel() => _ref._repo.onDisconnectCancel(_ref._url.path);
 }
