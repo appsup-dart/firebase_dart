@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+- handle messages split in multiple frames (issue #8)
+
 ## 0.4.0
 
 - browser support
