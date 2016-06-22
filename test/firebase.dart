@@ -450,6 +450,20 @@ void main() {
         "text2": "c"
       });
 
+      expect(await ref.startAt("b").get(), {
+        "text1": "b",
+        "text2": "c"
+      });
+
+      expect(await ref.startAt("b","text1").get(), {
+        "text1": "b",
+        "text2": "c"
+      });
+
+      expect(await ref.startAt("b","text2").get(), {
+        "text2": "c"
+      });
+
 
     });
 
@@ -480,6 +494,12 @@ void main() {
         "text2": "b",
         "text3": "a"
       });
+
+      expect(await ref.startAt("text2").get(), {
+        "text2": "b",
+        "text3": "a"
+      });
+
 
 
     });
@@ -516,6 +536,19 @@ void main() {
         "text3": "a"
       });
 
+      expect(await ref.startAt(2).get(), {
+        "text1": "c",
+        "text3": "a"
+      });
+
+      expect(await ref.startAt(2,"text1").get(), {
+        "text1": "c",
+        "text3": "a"
+      });
+
+      expect(await ref.startAt(2,"text2").get(), {
+        "text3": "a"
+      });
 
     });
     test('Order by child', () async {
@@ -543,6 +576,20 @@ void main() {
 
       expect(await ref.limitToLast(2).get(), {
         "text2": {"order":"b"},
+        "text1": {"order":"c"}
+      });
+
+      expect(await ref.startAt("b").get(), {
+        "text2": {"order":"b"},
+        "text1": {"order":"c"}
+      });
+
+      expect(await ref.startAt("b","text2").get(), {
+        "text2": {"order":"b"},
+        "text1": {"order":"c"}
+      });
+
+      expect(await ref.startAt("b","text3").get(), {
         "text1": {"order":"c"}
       });
 

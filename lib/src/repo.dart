@@ -10,6 +10,7 @@ import 'events/value.dart';
 import 'dart:math';
 import 'package:logging/logging.dart';
 import 'package:quiver/core.dart' as quiver;
+import 'package:quiver/check.dart' as quiver;
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
 import 'event.dart';
@@ -31,16 +32,19 @@ class QueryFilter extends Filter<Pair<Name, TreeStructuredData>> {
         limit: query.limit,
         reverse: query.isViewFromRight,
         orderBy: query.index,
-        startAt: _toNameValue(query.startName, query.startValue),
-        endAt: _toNameValue(query.endName, query.endValue));
+        startAt: _toNameValue(query.index, query.startName, query.startValue),
+        endAt: _toNameValue(query.index, query.endName, query.endValue));
   }
 
-  static Pair<Name, TreeStructuredData> _toNameValue(
-          String key, dynamic value) =>
-      key == null && value == null
-          ? null
-          : new Pair(
-              new Name(key), new TreeStructuredData(value: new Value(value)));
+  static Pair<Name, TreeStructuredData> _toNameValue(String orderBy,
+          String key, dynamic value) {
+    if (key == null && value == null) return null;
+    if (orderBy==".key") {
+      quiver.checkArgument(key==null);
+      return new Pair(new Name(value), null);
+    }
+    return new Pair(new Name(key), new TreeStructuredData(value: new Value(value)));
+  }
 
   QueryFilter copyWith(
           {String orderBy,
@@ -52,8 +56,8 @@ class QueryFilter extends Filter<Pair<Name, TreeStructuredData>> {
           bool reverse}) =>
       new QueryFilter(
           orderBy: orderBy ?? this.orderBy,
-          startAt: _toNameValue(startAtKey, startAtValue) ?? this.startAt,
-          endAt: _toNameValue(endAtKey, endAtValue) ?? this.endAt,
+          startAt: _toNameValue(orderBy ?? this.orderBy, startAtKey, startAtValue) ?? this.startAt,
+          endAt: _toNameValue(orderBy ?? this.orderBy, endAtKey, endAtValue) ?? this.endAt,
           limit: limit ?? this.limit,
           reverse: reverse ?? this.reverse);
 
@@ -61,19 +65,20 @@ class QueryFilter extends Filter<Pair<Name, TreeStructuredData>> {
       limit: limit,
       isViewFromRight: this.reverse,
       index: orderBy,
-      endName: endAt?.key?.asString(),
-      endValue: endAt?.value?.value?.value,
-      startName: startAt?.key?.asString(),
-      startValue: startAt?.value?.value?.value);
+      endName: orderBy==".key" ? null : endAt?.key?.asString(),
+      endValue: orderBy!=".key" ? endAt?.value?.value?.value : endAt?.key?.asString(),
+      startName: orderBy==".key" ? null : startAt?.key?.asString(),
+      startValue: orderBy!=".key" ? startAt?.value?.value?.value : startAt?.key?.asString()
+  );
 
   Pair<Name, Comparable> _extract(Pair<Name, TreeStructuredData> p) {
     switch (orderBy ?? ".priority") {
       case ".value":
         return new Pair(p.key, p.value);
       case ".key":
-        return new Pair(p.key, p.key);
+        return new Pair(p.key, null);
       case ".priority":
-        return new Pair(p.key, p.value.priority);
+        return new Pair(p.key, new TreeStructuredData.leaf(p.value.priority));
       default:
         return new Pair(p.key, p.value.children[new Name(orderBy)]);
     }
