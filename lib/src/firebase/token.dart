@@ -53,8 +53,6 @@ class _Decoder extends Converter<String, FirebaseToken> {
 
     if (secret!=null) {
       var signature = _signMessage("${parts[0]}.${parts[1]}", secret);
-      print(signature);
-      print(input);
       if (signature!=parts[2]) {
         throw new InvalidTokenException(input);
       }
