@@ -184,6 +184,31 @@ void main() {
 
   });
 
+  group('Special characters', () {
+    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+
+    test('colon', () async {
+
+      await ref.child("users").child("facebook:12345").set({'name':'me'});
+
+      expect(await new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test/users/facebook:12345/name").get(), "me");
+    });
+
+    test('spaces', () async {
+
+      await ref.child("users").set(null);
+      await ref.child("users").child("Jane Doe").set({'name':'Jane'});
+
+      expect(ref.child("users").child("Jane Doe").key, "Jane Doe");
+
+      expect(await ref.child("users").child("Jane Doe").get(), {"name": "Jane"});
+      expect(await ref.child("users").get(), {
+        "Jane Doe": {"name": "Jane"}
+      });
+
+    });
+  });
+
   group('Transaction', () {
     var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
 

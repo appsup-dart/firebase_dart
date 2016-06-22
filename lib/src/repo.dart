@@ -237,11 +237,14 @@ class Repo {
         _authData = null;
       });
 
+  String _preparePath(String path) => path.split("/").map(Uri.decodeComponent).join("/");
+
   /// Writes data [value] to the location [path] and sets the [priority].
   ///
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
   Future setWithPriority(String path, dynamic value, dynamic priority) {
+    path = _preparePath(path);
     var newValue =
         new TreeStructuredData.fromJson(value, priority, serverValues);
     var writeId = _nextWriteId++;
@@ -260,6 +263,7 @@ class Repo {
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
   Future update(String path, Map<String, dynamic> value) {
+    path = _preparePath(path);
     var changedChildren = new Map<Name, TreeStructuredData>.fromIterables(
         value.keys.map/*<Name>*/((c) => new Name(c)),
         value.values.map/*<TreeStructuredData>*/(
@@ -282,6 +286,7 @@ class Repo {
   /// Returns a future that completes with the generated key when the data has
   /// been written to the server and fails when data could not be written.
   Future push(String path, dynamic value) async {
+    path = _preparePath(path);
     var name = pushIds.next(_connection.serverTime);
     var pushedPath = "$path/$name";
     if (value != null) {
@@ -296,6 +301,7 @@ class Repo {
   /// registered at the server.
   Future listen(
       String path, QueryFilter filter, String type, EventListener cb) {
+    path = _preparePath(path);
     var isFirst =
         _syncTree.addEventListener(type, Name.parsePath(path), filter, cb);
     if (!isFirst) return new Future.value();
@@ -320,6 +326,7 @@ class Repo {
   /// unregistered at the server.
   Future unlisten(
       String path, QueryFilter filter, String type, EventListener cb) {
+    path = _preparePath(path);
     var isLast =
         _syncTree.removeEventListener(type, Name.parsePath(path), filter, cb);
     if (!isLast) return new Future.value();
@@ -332,6 +339,7 @@ class Repo {
 
   /// Gets the current cached value at location [path] with [filter].
   TreeStructuredData cachedValue(String path, QueryFilter filter) {
+    path = _preparePath(path);
     var tree = _syncTree.root.subtree(Name.parsePath(path));
     if (tree = null) return null;
     return tree.value.views[filter].currentValue.localVersion;
@@ -346,10 +354,11 @@ class Repo {
   Future<TreeStructuredData> transaction(
           String path, Function update, bool applyLocally) =>
       _transactions.startTransaction(
-          Name.parsePath(path), update, applyLocally);
+          Name.parsePath(_preparePath(path)), update, applyLocally);
 
   Future onDisconnectSetWithPriority(
       String path, dynamic value, dynamic priority) {
+    path = _preparePath(path);
     var newNode = new TreeStructuredData.fromJson(value, priority);
     return _connection.onDisconnectPut(path, newNode.toJson(true)).then((m) {
       _onDisconnect.remember(Name.parsePath(path), newNode);
@@ -357,6 +366,7 @@ class Repo {
   }
 
   Future onDisconnectUpdate(String path, Map<String, dynamic> childrenToMerge) {
+    path = _preparePath(path);
     if (childrenToMerge.isEmpty) return new Future.value();
 
     return _connection.onDisconnectMerge(path, childrenToMerge).then((_) {
@@ -368,6 +378,7 @@ class Repo {
   }
 
   Future onDisconnectCancel(String path) {
+    path = _preparePath(path);
     return _connection.onDisconnectCancel(path).then((_) {
       _onDisconnect.forget(Name.parsePath(path));
     });
