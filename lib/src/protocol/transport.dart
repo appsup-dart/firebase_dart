@@ -59,7 +59,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
     _input.add(response);
   }
 
-  Future _onControlMessage(ControlMessage v) async {
+  void _onControlMessage(ControlMessage v) {
     if (v is HandshakeMessage) {
       _info = v.info;
       _infoReceivedTime = new DateTime.now();
@@ -67,14 +67,13 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
       _ready.complete(_info);
       _start();
     } else if (v is ResetMessage) {
-      await _reset();
-      await _connect(v.host);
+      _reset().then((_)=>_connect(v.host));
     } else if (v is PongMessage) {
       _pings.removeAt(0).complete(v);
     } else if (v is PingMessage) {
       _output.add(new PongMessage());
     } else if (v is ShutdownMessage) {
-      await kill();
+      kill();
     }
   }
 
@@ -119,10 +118,10 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   }
 
   Future _close(int state) async {
+    _readyState = state;
     await _output.close();
     await _input.close();
     await _reset();
-    _readyState = disconnected;
     _done.complete();
   }
 }
@@ -151,7 +150,9 @@ class WebSocketTransport extends Transport {
       }
       yield* dataSegs;
     }));
-    new Stream.periodic(new Duration(seconds: 45)).forEach((_) {
+    new Stream.periodic(new Duration(seconds: 45))
+        .takeWhile((_)=>readyState<=Transport.connected)
+      .forEach((_) {
       _output.add(0);
     });
   }
@@ -176,7 +177,9 @@ class WebSocketTransport extends Transport {
           _logger.fine("received $v");
           return v;
         })
-        .listen(_handleMessage);
+        .listen(_handleMessage, onDone: () {
+      if (readyState==Transport.connected) close();
+    });
   }
 
   int _totalFrames;

@@ -118,6 +118,9 @@ class Connection {
   }
 
   Future _restoreState() async {
+    if (_transport.readyState!=Transport.connected) return;
+
+
     // auth
     if (_authToken != null) {
       await auth(_authToken);
