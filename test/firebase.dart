@@ -6,7 +6,6 @@ import 'package:firebase_dart/src/firebase.dart';
 import 'package:firebase_dart/src/repo.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
-import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'dart:async';
 
@@ -52,9 +51,12 @@ void main() {
 
     var uid = "pub-test-01";
     var authData = {
-      "uid": uid
+      "uid": uid,
+      "debug": true,
+      "provider": "custom"
     };
-    var token = jwt(authData, secret);
+    var codec = new FirebaseTokenCodec(secret);
+    var token = codec.encode(new FirebaseToken(authData));
 
     var ref = new Firebase(host);
 
@@ -561,28 +563,3 @@ void main() {
 
 }
 
-
-
-String jwt(Map data, String secret) {
-  var d = {
-    "exp": new DateTime.now().add(new Duration(days: 30)).millisecondsSinceEpoch,
-    "v": 0,
-    "d": data,
-    "iat": new DateTime.now().millisecondsSinceEpoch
-  };
-  return _jwt(JSON.encode(d).codeUnits, secret: secret, header: const {
-    'typ': 'JWT',
-    'alg': 'HS256'
-  });
-}
-
-String _jwt(List<int> payload, {Map header, String secret}) {
-  final msg = '${BASE64URL.encode(JSON.encode(header).codeUnits)}.${BASE64URL.encode(payload)}';
-  return "$msg.${_signMessage(msg, secret)}";
-}
-
-String _signMessage(String msg, String secret) {
-  final hmac = new Hmac(sha256, secret.codeUnits);
-  final signature = hmac.convert(msg.codeUnits);
-  return BASE64URL.encode(signature.bytes);
-}

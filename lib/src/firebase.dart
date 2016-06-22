@@ -7,9 +7,12 @@ import 'repo.dart';
 import 'treestructureddata.dart';
 
 import 'dart:async';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 
 part 'firebase/datasnapshot.dart';
 part 'firebase/event.dart';
 part 'firebase/firebase.dart';
 part 'firebase/query.dart';
 part 'firebase/disconnect.dart';
+part 'firebase/token.dart';
