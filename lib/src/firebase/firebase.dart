@@ -153,5 +153,7 @@ class Firebase extends Query {
 
   static Uri _rootUri(Uri uri) => uri.resolve("/").normalizePath();
 
-  Uri _childUri(String c) => _url.resolve(key == null ? c : "$key/$c");
+  Uri _childUri(String c) => _url.replace(pathSegments:
+  new List.from(_url.pathSegments)..addAll(c.split("/").map(Uri.decodeComponent)));
+
 }
