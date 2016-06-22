@@ -36,8 +36,7 @@ class Connection {
 
   final Map<String, Map<Query, Request>> _listens = {};
 
-  DateTime get serverTime =>
-      _serverTimeDiff == null ? null : new DateTime.now().add(_serverTimeDiff);
+  DateTime get serverTime => new DateTime.now().add(_serverTimeDiff ?? const Duration());
   Duration _serverTimeDiff;
 
   Future listen(String path, {Query query, int tag, String hash}) {

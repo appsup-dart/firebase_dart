@@ -24,8 +24,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
       [Value priority])
       : this._(null, children, priority);
 
-  factory TreeStructuredData.fromJson(json,
-      [priority, Map<ServerValue, Value> serverValues]) {
+  factory TreeStructuredData.fromJson(json, [priority]) {
     if (json == null) {
       return new TreeStructuredData();
     }
@@ -41,7 +40,6 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     if (json is List) json = json.asMap();
     if (json is! Map || json.containsKey(".sv")) {
       var value = new Value(json);
-      if (value is ServerValue) value = serverValues[value];
       return new TreeStructuredData.leaf(value, priority);
     }
 
@@ -49,7 +47,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
         json.keys.map((k)=>k.toString()).where((k) => !k.startsWith(".")),
         key: (k) => new Name(k),
         value: (k) =>
-            new TreeStructuredData.fromJson(json[k], null, serverValues));
+            new TreeStructuredData.fromJson(json[k], null));
 
     return new TreeStructuredData.nonLeaf(children, priority);
   }

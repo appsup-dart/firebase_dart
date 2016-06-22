@@ -245,10 +245,10 @@ class Repo {
   /// server and fails when data could not be written.
   Future setWithPriority(String path, dynamic value, dynamic priority) {
     path = _preparePath(path);
-    var newValue =
-        new TreeStructuredData.fromJson(value, priority, serverValues);
+    var newValue = new TreeStructuredData.fromJson(value, priority);
     var writeId = _nextWriteId++;
-    _syncTree.applyUserOverwrite(Name.parsePath(path), newValue, writeId);
+    _syncTree.applyUserOverwrite(Name.parsePath(path),
+        ServerValue.resolve(newValue, serverValues), writeId);
     _transactions.abort(Name.parsePath(path));
     return _connection.put(path, newValue.toJson(true))
       ..then((_) {
@@ -267,10 +267,11 @@ class Repo {
     var changedChildren = new Map<Name, TreeStructuredData>.fromIterables(
         value.keys.map/*<Name>*/((c) => new Name(c)),
         value.values.map/*<TreeStructuredData>*/(
-            (v) => new TreeStructuredData.fromJson(v, null, serverValues)));
+            (v) => new TreeStructuredData.fromJson(v, null)));
     if (value.isNotEmpty) {
       int writeId = _nextWriteId++;
-      _syncTree.applyUserMerge(Name.parsePath(path), changedChildren, writeId);
+      _syncTree.applyUserMerge(Name.parsePath(path),
+          ServerValue.resolve(new TreeStructuredData.nonLeaf(changedChildren), serverValues).children, writeId);
       return _connection.merge(path, value)
         ..then((_) {
           _syncTree.applyAck(Name.parsePath(path), writeId, true);
@@ -388,9 +389,7 @@ class Repo {
     var sv = serverValues;
     _onDisconnect.forEachNode((path, snap) {
       if (snap == null) return;
-      snap = new TreeStructuredData.fromJson(snap.toJson(true), null,
-          sv); // TODO: resolve server values without serializing
-      _syncTree.applyServerOverwrite(path, null, snap);
+      _syncTree.applyServerOverwrite(path, null, ServerValue.resolve(snap,sv));
       _transactions.abort(path);
     });
     _onDisconnect.children.clear();
@@ -508,7 +507,8 @@ class Transaction implements Comparable<Transaction> {
   String abortReason;
   int currentWriteId;
   TreeStructuredData currentInputSnapshot;
-  TreeStructuredData currentOutputSnapshot;
+  TreeStructuredData currentOutputSnapshotRaw;
+  TreeStructuredData currentOutputSnapshotResolved;
 
   TransactionStatus status;
 
@@ -546,13 +546,14 @@ class Transaction implements Comparable<Transaction> {
 
       status = TransactionStatus.run;
 
-      var newNode = new TreeStructuredData.fromJson(
-          newVal, currentState.priority, repo.serverValues);
-      currentOutputSnapshot = newNode;
+      var newNode = new TreeStructuredData.fromJson(newVal, currentState.priority);
+      currentOutputSnapshotRaw = newNode;
+      currentOutputSnapshotResolved = ServerValue.resolve(newNode, repo.serverValues);
       currentWriteId = repo._nextWriteId++;
 
       if (applyLocally)
-        repo._syncTree.applyUserOverwrite(path, newNode, currentWriteId);
+        repo._syncTree.applyUserOverwrite(path,currentOutputSnapshotResolved
+            , currentWriteId);
     } catch (e) {
       fail(e);
     }
@@ -560,7 +561,8 @@ class Transaction implements Comparable<Transaction> {
 
   void fail(dynamic e) {
     _unwatch();
-    currentOutputSnapshot = null;
+    currentOutputSnapshotRaw = null;
+    currentOutputSnapshotResolved = null;
     if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, false);
     status = TransactionStatus.completed;
 
@@ -600,7 +602,7 @@ class Transaction implements Comparable<Transaction> {
 
     if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, true);
 
-    completer.complete(currentOutputSnapshot);
+    completer.complete(currentOutputSnapshotResolved);
 
     _unwatch();
   }
@@ -773,7 +775,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
       t.run(v.subtree(p, () => new TreeStructuredData()) ??
           new TreeStructuredData());
       if (!t.isComplete) {
-        v = updateChild(v, p, t.currentOutputSnapshot);
+        v = updateChild(v, p, t.currentOutputSnapshotResolved);
       }
     }
   }
@@ -790,7 +792,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     var v = input;
     var lastId = -1;
     if (value.isNotEmpty) {
-      v = value.last.currentOutputSnapshot;
+      v = value.last.currentOutputSnapshotRaw;
       lastId = value.last.order;
     }
     v = v.clone();

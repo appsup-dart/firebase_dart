@@ -85,7 +85,7 @@ class ViewOperation<T> extends Operation<ViewCache<T>> {
       case ViewOperationSource.user:
         return value.addOperation(writeId, dataOperation);
       case ViewOperationSource.ack:
-        return value.removeOperation(writeId, !(dataOperation as Ack).success);
+        return value.removeOperation(writeId, true); // TODO doesn't need recalculate when no server values?
       case ViewOperationSource.server:
         var result = dataOperation.apply(value.serverVersion);
         return value.updateServerVersion(result);

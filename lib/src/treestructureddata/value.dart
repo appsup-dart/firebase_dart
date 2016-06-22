@@ -12,6 +12,19 @@ class ServerValue {
   static const Map<String, ServerValue> values = const {"timestamp": timestamp};
 
   Map<String, String> toJson() => {".sv": type};
+
+  static TreeStructuredData resolve(TreeStructuredData value,
+      Map<ServerValue, Value> serverValues) {
+    if (value.isLeaf) {
+      return value.value.value is ServerValue ?
+      new TreeStructuredData.leaf(serverValues[value.value.value]) : value;
+    }
+    var newValue = value.clone();
+    for (var k in newValue.children.keys.toList()) {
+      newValue.children[k] = resolve(newValue.children[k], serverValues);
+    }
+    return newValue;
+  }
 }
 
 class Value implements Comparable<Value> {

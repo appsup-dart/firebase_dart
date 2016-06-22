@@ -209,6 +209,57 @@ void main() {
     });
   });
 
+  group('ServerValue', () {
+    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+
+    test('timestamp', () async {
+
+      await ref.set(null);
+      var events = <Event>[];
+      ref.onValue.listen(events.add);
+
+      await ref.get();
+
+      await ref.set(ServerValue.timestamp);
+
+      await new Future.delayed(new Duration(seconds: 1));
+      var values = events.map((e)=>e.snapshot.val).toList();
+      expect(values.length, 3);
+      expect(values[0], null);
+
+      expect(values[1] is num, isTrue);
+      expect(values[2] is num, isTrue);
+      expect(values[2]-values[1]>0, isTrue);
+      expect(values[2]-values[1]<1000, isTrue);
+
+      await ref.set({
+        "hello": "world",
+        "it is now": ServerValue.timestamp
+      });
+
+      print(await ref.child("it is now").get());
+      expect(await ref.child("it is now").get() is num, isTrue);
+
+    });
+
+    test('transaction', () async {
+      await ref.set("hello");
+
+      await new Stream.periodic(new Duration(milliseconds: 10))
+          .take(10).forEach((_) {
+        ref.transaction((v) {
+          return ServerValue.timestamp;
+        });
+      });
+
+      await new Future.delayed(new Duration(seconds: 1));
+
+      expect(await ref.get() is num, isTrue);
+
+
+    });
+  });
+
   group('Transaction', () {
     var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
 
