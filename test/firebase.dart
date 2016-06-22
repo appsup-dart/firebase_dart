@@ -6,7 +6,6 @@ import 'package:firebase_dart/src/firebase.dart';
 import 'package:firebase_dart/src/repo.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
-import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'dart:async';
 
@@ -52,9 +51,12 @@ void main() {
 
     var uid = "pub-test-01";
     var authData = {
-      "uid": uid
+      "uid": uid,
+      "debug": true,
+      "provider": "custom"
     };
-    var token = jwt(authData, secret);
+    var codec = new FirebaseTokenCodec(secret);
+    var token = codec.encode(new FirebaseToken(authData));
 
     var ref = new Firebase(host);
 
@@ -180,6 +182,82 @@ void main() {
     });
 
 
+  });
+
+  group('Special characters', () {
+    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+
+    test('colon', () async {
+
+      await ref.child("users").child("facebook:12345").set({'name':'me'});
+
+      expect(await new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test/users/facebook:12345/name").get(), "me");
+    });
+
+    test('spaces', () async {
+
+      await ref.child("users").set(null);
+      await ref.child("users").child("Jane Doe").set({'name':'Jane'});
+
+      expect(ref.child("users").child("Jane Doe").key, "Jane Doe");
+
+      expect(await ref.child("users").child("Jane Doe").get(), {"name": "Jane"});
+      expect(await ref.child("users").get(), {
+        "Jane Doe": {"name": "Jane"}
+      });
+
+    });
+  });
+
+  group('ServerValue', () {
+    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+
+    test('timestamp', () async {
+
+      await ref.set(null);
+      var events = <Event>[];
+      ref.onValue.listen(events.add);
+
+      await ref.get();
+
+      await ref.set(ServerValue.timestamp);
+
+      await new Future.delayed(new Duration(seconds: 1));
+      var values = events.map((e)=>e.snapshot.val).toList();
+      expect(values.length, 3);
+      expect(values[0], null);
+
+      expect(values[1] is num, isTrue);
+      expect(values[2] is num, isTrue);
+      expect(values[2]-values[1]>0, isTrue);
+      expect(values[2]-values[1]<1000, isTrue);
+
+      await ref.set({
+        "hello": "world",
+        "it is now": ServerValue.timestamp
+      });
+
+      print(await ref.child("it is now").get());
+      expect(await ref.child("it is now").get() is num, isTrue);
+
+    });
+
+    test('transaction', () async {
+      await ref.set("hello");
+
+      await new Stream.periodic(new Duration(milliseconds: 10))
+          .take(10).forEach((_) {
+        ref.transaction((v) {
+          return ServerValue.timestamp;
+        });
+      });
+
+      await new Future.delayed(new Duration(seconds: 1));
+
+      expect(await ref.get() is num, isTrue);
+
+
+    });
   });
 
   group('Transaction', () {
@@ -372,6 +450,20 @@ void main() {
         "text2": "c"
       });
 
+      expect(await ref.startAt("b").get(), {
+        "text1": "b",
+        "text2": "c"
+      });
+
+      expect(await ref.startAt("b","text1").get(), {
+        "text1": "b",
+        "text2": "c"
+      });
+
+      expect(await ref.startAt("b","text2").get(), {
+        "text2": "c"
+      });
+
 
     });
 
@@ -402,6 +494,12 @@ void main() {
         "text2": "b",
         "text3": "a"
       });
+
+      expect(await ref.startAt("text2").get(), {
+        "text2": "b",
+        "text3": "a"
+      });
+
 
 
     });
@@ -438,6 +536,19 @@ void main() {
         "text3": "a"
       });
 
+      expect(await ref.startAt(2).get(), {
+        "text1": "c",
+        "text3": "a"
+      });
+
+      expect(await ref.startAt(2,"text1").get(), {
+        "text1": "c",
+        "text3": "a"
+      });
+
+      expect(await ref.startAt(2,"text2").get(), {
+        "text3": "a"
+      });
 
     });
     test('Order by child', () async {
@@ -468,6 +579,20 @@ void main() {
         "text1": {"order":"c"}
       });
 
+      expect(await ref.startAt("b").get(), {
+        "text2": {"order":"b"},
+        "text1": {"order":"c"}
+      });
+
+      expect(await ref.startAt("b","text2").get(), {
+        "text2": {"order":"b"},
+        "text1": {"order":"c"}
+      });
+
+      expect(await ref.startAt("b","text3").get(), {
+        "text1": {"order":"c"}
+      });
+
 
     });
     test('Start/End at', () async {
@@ -483,13 +608,13 @@ void main() {
 
       ref = ref.orderByChild("order");
 
-      expect(await ref.startAt(value: "b").endAt(value: "c").get(), {
+      expect(await ref.startAt("b").endAt("c").get(), {
         "text2": {"order":"b"},
         "text6": {"order":"b"},
         "text1": {"order":"c"}
       });
 
-      expect(await ref.startAt(value: "b", key: "text6").endAt(value: "c").get(), {
+      expect(await ref.startAt("b", "text6").endAt("c").get(), {
         "text6": {"order":"b"},
         "text1": {"order":"c"}
       });
@@ -561,28 +686,3 @@ void main() {
 
 }
 
-
-
-String jwt(Map data, String secret) {
-  var d = {
-    "exp": new DateTime.now().add(new Duration(days: 30)).millisecondsSinceEpoch,
-    "v": 0,
-    "d": data,
-    "iat": new DateTime.now().millisecondsSinceEpoch
-  };
-  return _jwt(JSON.encode(d).codeUnits, secret: secret, header: const {
-    'typ': 'JWT',
-    'alg': 'HS256'
-  });
-}
-
-String _jwt(List<int> payload, {Map header, String secret}) {
-  final msg = '${BASE64URL.encode(JSON.encode(header).codeUnits)}.${BASE64URL.encode(payload)}';
-  return "$msg.${_signMessage(msg, secret)}";
-}
-
-String _signMessage(String msg, String secret) {
-  final hmac = new Hmac(sha256, secret.codeUnits);
-  final signature = hmac.convert(msg.codeUnits);
-  return BASE64URL.encode(signature.bytes);
-}

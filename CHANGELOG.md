@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- **Breaking** signature of startAt/endAt
+- reconnect when connection broken
+- bugfixes
+- FirebaseToken class
+
 ## 0.4.1
 
 - handle messages split in multiple frames (issue #8)

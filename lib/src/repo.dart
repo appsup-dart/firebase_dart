@@ -10,6 +10,7 @@ import 'events/value.dart';
 import 'dart:math';
 import 'package:logging/logging.dart';
 import 'package:quiver/core.dart' as quiver;
+import 'package:quiver/check.dart' as quiver;
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
 import 'event.dart';
@@ -31,16 +32,19 @@ class QueryFilter extends Filter<Pair<Name, TreeStructuredData>> {
         limit: query.limit,
         reverse: query.isViewFromRight,
         orderBy: query.index,
-        startAt: _toNameValue(query.startName, query.startValue),
-        endAt: _toNameValue(query.endName, query.endValue));
+        startAt: _toNameValue(query.index, query.startName, query.startValue),
+        endAt: _toNameValue(query.index, query.endName, query.endValue));
   }
 
-  static Pair<Name, TreeStructuredData> _toNameValue(
-          String key, dynamic value) =>
-      key == null && value == null
-          ? null
-          : new Pair(
-              new Name(key), new TreeStructuredData(value: new Value(value)));
+  static Pair<Name, TreeStructuredData> _toNameValue(String orderBy,
+          String key, dynamic value) {
+    if (key == null && value == null) return null;
+    if (orderBy==".key") {
+      quiver.checkArgument(key==null);
+      return new Pair(new Name(value), null);
+    }
+    return new Pair(new Name(key), new TreeStructuredData(value: new Value(value)));
+  }
 
   QueryFilter copyWith(
           {String orderBy,
@@ -52,8 +56,8 @@ class QueryFilter extends Filter<Pair<Name, TreeStructuredData>> {
           bool reverse}) =>
       new QueryFilter(
           orderBy: orderBy ?? this.orderBy,
-          startAt: _toNameValue(startAtKey, startAtValue) ?? this.startAt,
-          endAt: _toNameValue(endAtKey, endAtValue) ?? this.endAt,
+          startAt: _toNameValue(orderBy ?? this.orderBy, startAtKey, startAtValue) ?? this.startAt,
+          endAt: _toNameValue(orderBy ?? this.orderBy, endAtKey, endAtValue) ?? this.endAt,
           limit: limit ?? this.limit,
           reverse: reverse ?? this.reverse);
 
@@ -61,19 +65,20 @@ class QueryFilter extends Filter<Pair<Name, TreeStructuredData>> {
       limit: limit,
       isViewFromRight: this.reverse,
       index: orderBy,
-      endName: endAt?.key?.asString(),
-      endValue: endAt?.value?.value?.value,
-      startName: startAt?.key?.asString(),
-      startValue: startAt?.value?.value?.value);
+      endName: orderBy==".key" ? null : endAt?.key?.asString(),
+      endValue: orderBy!=".key" ? endAt?.value?.value?.value : endAt?.key?.asString(),
+      startName: orderBy==".key" ? null : startAt?.key?.asString(),
+      startValue: orderBy!=".key" ? startAt?.value?.value?.value : startAt?.key?.asString()
+  );
 
   Pair<Name, Comparable> _extract(Pair<Name, TreeStructuredData> p) {
     switch (orderBy ?? ".priority") {
       case ".value":
         return new Pair(p.key, p.value);
       case ".key":
-        return new Pair(p.key, p.key);
+        return new Pair(p.key, null);
       case ".priority":
-        return new Pair(p.key, p.value.priority);
+        return new Pair(p.key, new TreeStructuredData.leaf(p.value.priority));
       default:
         return new Pair(p.key, p.value.children[new Name(orderBy)]);
     }
@@ -237,15 +242,18 @@ class Repo {
         _authData = null;
       });
 
+  String _preparePath(String path) => path.split("/").map(Uri.decodeComponent).join("/");
+
   /// Writes data [value] to the location [path] and sets the [priority].
   ///
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
   Future setWithPriority(String path, dynamic value, dynamic priority) {
-    var newValue =
-        new TreeStructuredData.fromJson(value, priority, serverValues);
+    path = _preparePath(path);
+    var newValue = new TreeStructuredData.fromJson(value, priority);
     var writeId = _nextWriteId++;
-    _syncTree.applyUserOverwrite(Name.parsePath(path), newValue, writeId);
+    _syncTree.applyUserOverwrite(Name.parsePath(path),
+        ServerValue.resolve(newValue, serverValues), writeId);
     _transactions.abort(Name.parsePath(path));
     return _connection.put(path, newValue.toJson(true))
       ..then((_) {
@@ -260,13 +268,15 @@ class Repo {
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
   Future update(String path, Map<String, dynamic> value) {
+    path = _preparePath(path);
     var changedChildren = new Map<Name, TreeStructuredData>.fromIterables(
         value.keys.map/*<Name>*/((c) => new Name(c)),
         value.values.map/*<TreeStructuredData>*/(
-            (v) => new TreeStructuredData.fromJson(v, null, serverValues)));
+            (v) => new TreeStructuredData.fromJson(v, null)));
     if (value.isNotEmpty) {
       int writeId = _nextWriteId++;
-      _syncTree.applyUserMerge(Name.parsePath(path), changedChildren, writeId);
+      _syncTree.applyUserMerge(Name.parsePath(path),
+          ServerValue.resolve(new TreeStructuredData.nonLeaf(changedChildren), serverValues).children, writeId);
       return _connection.merge(path, value)
         ..then((_) {
           _syncTree.applyAck(Name.parsePath(path), writeId, true);
@@ -282,6 +292,7 @@ class Repo {
   /// Returns a future that completes with the generated key when the data has
   /// been written to the server and fails when data could not be written.
   Future push(String path, dynamic value) async {
+    path = _preparePath(path);
     var name = pushIds.next(_connection.serverTime);
     var pushedPath = "$path/$name";
     if (value != null) {
@@ -296,6 +307,7 @@ class Repo {
   /// registered at the server.
   Future listen(
       String path, QueryFilter filter, String type, EventListener cb) {
+    path = _preparePath(path);
     var isFirst =
         _syncTree.addEventListener(type, Name.parsePath(path), filter, cb);
     if (!isFirst) return new Future.value();
@@ -320,6 +332,7 @@ class Repo {
   /// unregistered at the server.
   Future unlisten(
       String path, QueryFilter filter, String type, EventListener cb) {
+    path = _preparePath(path);
     var isLast =
         _syncTree.removeEventListener(type, Name.parsePath(path), filter, cb);
     if (!isLast) return new Future.value();
@@ -332,6 +345,7 @@ class Repo {
 
   /// Gets the current cached value at location [path] with [filter].
   TreeStructuredData cachedValue(String path, QueryFilter filter) {
+    path = _preparePath(path);
     var tree = _syncTree.root.subtree(Name.parsePath(path));
     if (tree = null) return null;
     return tree.value.views[filter].currentValue.localVersion;
@@ -346,10 +360,11 @@ class Repo {
   Future<TreeStructuredData> transaction(
           String path, Function update, bool applyLocally) =>
       _transactions.startTransaction(
-          Name.parsePath(path), update, applyLocally);
+          Name.parsePath(_preparePath(path)), update, applyLocally);
 
   Future onDisconnectSetWithPriority(
       String path, dynamic value, dynamic priority) {
+    path = _preparePath(path);
     var newNode = new TreeStructuredData.fromJson(value, priority);
     return _connection.onDisconnectPut(path, newNode.toJson(true)).then((m) {
       _onDisconnect.remember(Name.parsePath(path), newNode);
@@ -357,6 +372,7 @@ class Repo {
   }
 
   Future onDisconnectUpdate(String path, Map<String, dynamic> childrenToMerge) {
+    path = _preparePath(path);
     if (childrenToMerge.isEmpty) return new Future.value();
 
     return _connection.onDisconnectMerge(path, childrenToMerge).then((_) {
@@ -368,6 +384,7 @@ class Repo {
   }
 
   Future onDisconnectCancel(String path) {
+    path = _preparePath(path);
     return _connection.onDisconnectCancel(path).then((_) {
       _onDisconnect.forget(Name.parsePath(path));
     });
@@ -377,9 +394,7 @@ class Repo {
     var sv = serverValues;
     _onDisconnect.forEachNode((path, snap) {
       if (snap == null) return;
-      snap = new TreeStructuredData.fromJson(snap.toJson(true), null,
-          sv); // TODO: resolve server values without serializing
-      _syncTree.applyServerOverwrite(path, null, snap);
+      _syncTree.applyServerOverwrite(path, null, ServerValue.resolve(snap,sv));
       _transactions.abort(path);
     });
     _onDisconnect.children.clear();
@@ -497,7 +512,8 @@ class Transaction implements Comparable<Transaction> {
   String abortReason;
   int currentWriteId;
   TreeStructuredData currentInputSnapshot;
-  TreeStructuredData currentOutputSnapshot;
+  TreeStructuredData currentOutputSnapshotRaw;
+  TreeStructuredData currentOutputSnapshotResolved;
 
   TransactionStatus status;
 
@@ -535,13 +551,14 @@ class Transaction implements Comparable<Transaction> {
 
       status = TransactionStatus.run;
 
-      var newNode = new TreeStructuredData.fromJson(
-          newVal, currentState.priority, repo.serverValues);
-      currentOutputSnapshot = newNode;
+      var newNode = new TreeStructuredData.fromJson(newVal, currentState.priority);
+      currentOutputSnapshotRaw = newNode;
+      currentOutputSnapshotResolved = ServerValue.resolve(newNode, repo.serverValues);
       currentWriteId = repo._nextWriteId++;
 
       if (applyLocally)
-        repo._syncTree.applyUserOverwrite(path, newNode, currentWriteId);
+        repo._syncTree.applyUserOverwrite(path,currentOutputSnapshotResolved
+            , currentWriteId);
     } catch (e) {
       fail(e);
     }
@@ -549,7 +566,8 @@ class Transaction implements Comparable<Transaction> {
 
   void fail(dynamic e) {
     _unwatch();
-    currentOutputSnapshot = null;
+    currentOutputSnapshotRaw = null;
+    currentOutputSnapshotResolved = null;
     if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, false);
     status = TransactionStatus.completed;
 
@@ -589,7 +607,7 @@ class Transaction implements Comparable<Transaction> {
 
     if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, true);
 
-    completer.complete(currentOutputSnapshot);
+    completer.complete(currentOutputSnapshotResolved);
 
     _unwatch();
   }
@@ -762,7 +780,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
       t.run(v.subtree(p, () => new TreeStructuredData()) ??
           new TreeStructuredData());
       if (!t.isComplete) {
-        v = updateChild(v, p, t.currentOutputSnapshot);
+        v = updateChild(v, p, t.currentOutputSnapshotResolved);
       }
     }
   }
@@ -779,7 +797,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     var v = input;
     var lastId = -1;
     if (value.isNotEmpty) {
-      v = value.last.currentOutputSnapshot;
+      v = value.last.currentOutputSnapshotRaw;
       lastId = value.last.order;
     }
     v = v.clone();

@@ -6,6 +6,7 @@ library firebase.protocol;
 import 'dart:async';
 import 'dart:convert';
 import 'package:quiver/core.dart' as quiver;
+import 'package:quiver/check.dart' as quiver;
 import 'package:logging/logging.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 

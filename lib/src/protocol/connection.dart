@@ -30,13 +30,13 @@ class Connection {
   String _lastSessionId;
 
   Connection(this.host) {
+    quiver.checkArgument(host!=null&&host.isNotEmpty);
     _scheduleConnect(0);
   }
 
   final Map<String, Map<Query, Request>> _listens = {};
 
-  DateTime get serverTime =>
-      _serverTimeDiff == null ? null : new DateTime.now().add(_serverTimeDiff);
+  DateTime get serverTime => new DateTime.now().add(_serverTimeDiff ?? const Duration());
   Duration _serverTimeDiff;
 
   Future listen(String path, {Query query, int tag, String hash}) {
@@ -118,6 +118,9 @@ class Connection {
   }
 
   Future _restoreState() async {
+    if (_transport.readyState!=Transport.connected) return;
+
+
     // auth
     if (_authToken != null) {
       await auth(_authToken);
