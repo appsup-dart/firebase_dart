@@ -30,7 +30,7 @@ class Connection {
   String _lastSessionId;
 
   Connection(this.host) {
-    quiver.checkArgument(host==null||host.isEmpty);
+    quiver.checkArgument(host!=null&&host.isNotEmpty);
     _scheduleConnect(0);
   }
 
