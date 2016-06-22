@@ -38,6 +38,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
       json = json[".value"];
     }
 
+    if (json is List) json = json.asMap();
     if (json is! Map || json.containsKey(".sv")) {
       var value = new Value(json);
       if (value is ServerValue) value = serverValues[value];
@@ -45,7 +46,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     }
 
     var children = new Map<Name, TreeStructuredData>.fromIterable(
-        json.keys.where((k) => !k.startsWith(".")),
+        json.keys.map((k)=>k.toString()).where((k) => !k.startsWith(".")),
         key: (k) => new Name(k),
         value: (k) =>
             new TreeStructuredData.fromJson(json[k], null, serverValues));
