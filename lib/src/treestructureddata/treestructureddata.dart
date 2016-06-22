@@ -28,6 +28,12 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     if (json == null) {
       return new TreeStructuredData();
     }
+    if (json is !Map&&json is !bool&&json is !num&&json is !String&&json is !List) {
+      try {
+        json = json.toJson();
+      } on NoSuchMethodError {}
+    }
+
     if (json is Map && json.containsKey(".priority")) {
       priority = json[".priority"];
     }
