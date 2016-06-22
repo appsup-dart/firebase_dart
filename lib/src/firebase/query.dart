@@ -86,7 +86,7 @@ class Query {
   ///
   /// startAt() can be combined with endAt() or limitToFirst() or limitToLast()
   /// to create further restrictive queries.
-  Query startAt({dynamic value, String key}) =>
+  Query startAt(dynamic value, [String key]) =>
       _withFilter(_filter.copyWith(startAtKey: key, startAtValue: value));
 
   /// Creates a [Query] with the specified ending point. The generated Query
@@ -100,12 +100,12 @@ class Query {
   ///
   /// endAt() can be combined with startAt() or limitToFirst() or limitToLast()
   /// to create further restrictive queries.
-  Query endAt({dynamic value, String key}) =>
+  Query endAt(dynamic value, [String key]) =>
       _withFilter(_filter.copyWith(endAtKey: key, endAtValue: value));
 
   /// Creates a [Query] which includes children which match the specified value.
   Query equalTo(dynamic value, [String key]) =>
-      endAt(value: value, key: key).startAt(value: value, key: key);
+      endAt(value, key).startAt(value, key);
 
   /// Generates a new [Query] object limited to the first certain number of
   /// children.

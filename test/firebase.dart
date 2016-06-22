@@ -561,13 +561,13 @@ void main() {
 
       ref = ref.orderByChild("order");
 
-      expect(await ref.startAt(value: "b").endAt(value: "c").get(), {
+      expect(await ref.startAt("b").endAt("c").get(), {
         "text2": {"order":"b"},
         "text6": {"order":"b"},
         "text1": {"order":"c"}
       });
 
-      expect(await ref.startAt(value: "b", key: "text6").endAt(value: "c").get(), {
+      expect(await ref.startAt("b", "text6").endAt("c").get(), {
         "text6": {"order":"b"},
         "text1": {"order":"c"}
       });
