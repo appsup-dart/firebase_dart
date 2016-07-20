@@ -161,9 +161,14 @@ class WebSocketTransport extends Transport {
 
   @override
   Future _connect([String host]) async {
+    host ??= this.host;
+    var parts = host.split(":");
+    host = parts.first;
+    var port = parts.length>1 ? int.parse(parts[1]) : null;
     var url = new Uri(
         scheme: "wss",
-        host: host ?? this.host,
+        host: host,
+        port: port,
         queryParameters: {
           versionParam: protocolVersion,
           "ns": namespace,
