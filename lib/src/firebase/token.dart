@@ -49,8 +49,8 @@ class _Decoder extends Converter<String, FirebaseToken> {
   @override
   FirebaseToken convert(String input) {
     var parts = input.split(".");
-    parts[1] += new Iterable.generate((4-parts[1].length%4)%4,(i)=>"=").join();
-    var payload = JSON.decode(UTF8.decode(BASE64URL.decode(parts[1])));
+    var padded = parts[1] + new Iterable.generate((4-parts[1].length%4)%4,(i)=>"=").join();
+    var payload = JSON.decode(UTF8.decode(BASE64URL.decode(padded)));
 
     if (secret!=null) {
       var signature = _signMessage("${parts[0]}.${parts[1]}", secret);
