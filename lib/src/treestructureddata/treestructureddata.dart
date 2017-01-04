@@ -105,7 +105,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     children.forEach((key, child) {
       toHash += ":${key.asString()}:${child.hash}";
     });
-    return BASE64.encode(sha1.convert(toHash.codeUnits).bytes);
+    return toHash=="" ? "" : BASE64.encode(sha1.convert(toHash.codeUnits).bytes);
   }
 }
 
