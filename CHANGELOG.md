@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.4
+
+- fix hash of null in transactions
+
+## 0.5.3
+
+- fix signature check when padded
+
+## 0.5.2
+
+- fix decoding tokens not padded with =
+
+## 0.5.1
+
+- fix redirects to host with port
+
 ## 0.5.0
 
 - **Breaking** signature of startAt/endAt
