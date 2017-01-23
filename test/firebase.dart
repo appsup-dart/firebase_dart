@@ -149,9 +149,26 @@ void main() {
       await(ref.remove());
 
       var keys = ref.onChildAdded.take(2).map((e)=>e.snapshot.key).toList();
+      await ref.get();
 
       await ref.child("hello").set("world");
       await ref.child("hi").set("everyone");
+
+      expect(await keys, ["hello","hi"]);
+    });
+
+    test('Child removed', () async {
+
+      await ref.set({
+        "hello": "world",
+        "hi": "everyone"
+      });
+
+      var keys = ref.onChildRemoved.take(2).map((e)=>e.snapshot.key).toList();
+      await ref.get();
+
+      await ref.child("hello").remove();
+      await ref.child("hi").remove();
 
       expect(await keys, ["hello","hi"]);
     });
