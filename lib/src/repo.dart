@@ -7,6 +7,7 @@ import 'treestructureddata.dart';
 import 'synctree.dart';
 import 'firebase.dart' as firebase;
 import 'events/value.dart';
+import 'events/child.dart';
 import 'dart:math';
 import 'package:logging/logging.dart';
 import 'package:quiver/core.dart' as quiver;
@@ -162,6 +163,17 @@ class Repo {
       }
     });
     _connection.output.listen((r) {
+      if (r.message.reqNum!=null) {
+        if (r.request.writeId!=null) {
+          var path = r.request.message.body.path;
+          var success = r.message.body.status == MessageBody.statusOk;
+          _syncTree.applyAck(Name.parsePath(path), r.request.writeId, success);
+          var c = _writeCompleters.remove(r.request.writeId);
+          if (success) c.complete();
+          else c.completeError(new ServerError(r.message.body.status, r.message.body.data));
+        }
+        return;
+      }
       switch (r.message.action) {
         case DataMessage.actionSet:
           var filter = _tagToQuery[r.message.body.tag];
@@ -200,6 +212,7 @@ class Repo {
 
   var _authData;
   final StreamController _onAuth = new StreamController.broadcast();
+  final Map<int,Completer<Null>> _writeCompleters = {};
 
   Future triggerDisconnect() => _connection.disconnect();
 
@@ -252,15 +265,12 @@ class Repo {
     path = _preparePath(path);
     var newValue = new TreeStructuredData.fromJson(value, priority);
     var writeId = _nextWriteId++;
+    _writeCompleters[writeId] = new Completer<Null>();
     _syncTree.applyUserOverwrite(Name.parsePath(path),
         ServerValue.resolve(newValue, serverValues), writeId);
     _transactions.abort(Name.parsePath(path));
-    return _connection.put(path, newValue.toJson(true))
-      ..then((_) {
-        _syncTree.applyAck(Name.parsePath(path), writeId, true);
-      }, onError: (e) {
-        _syncTree.applyAck(Name.parsePath(path), writeId, false);
-      });
+    _connection.put(path, newValue.toJson(true), writeId: writeId).catchError((_)=>null);
+    return _writeCompleters[writeId].future;
   }
 
   /// Writes the children in [value] to the location [path].
@@ -275,14 +285,11 @@ class Repo {
             (v) => new TreeStructuredData.fromJson(v, null)));
     if (value.isNotEmpty) {
       int writeId = _nextWriteId++;
+      _writeCompleters[writeId] = new Completer<Null>();
       _syncTree.applyUserMerge(Name.parsePath(path),
           ServerValue.resolve(new TreeStructuredData.nonLeaf(changedChildren), serverValues).children, writeId);
-      return _connection.merge(path, value)
-        ..then((_) {
-          _syncTree.applyAck(Name.parsePath(path), writeId, true);
-        }, onError: (e) {
-          _syncTree.applyAck(Name.parsePath(path), writeId, false);
-        });
+      _connection.merge(path, value, writeId: writeId);
+      return _writeCompleters[writeId].future;
     }
     return new Future.value();
   }
@@ -429,10 +436,29 @@ class StreamFactory {
   StreamController<firebase.Event> controller;
 
   void addEvent(Event value) {
+    var e = _mapEvent(value);
+    if (e==null) return;
+    new Future.microtask(() => controller.add(e));
+  }
+
+  firebase.Event _mapEvent(Event value) {
     if (value is ValueEvent) {
-      new Future.microtask(() => controller.add(new firebase.Event(
-          new firebase.DataSnapshot(ref, value.value), null)));
+      if (type!="value") return null;
+      return new firebase.Event(new firebase.DataSnapshot(ref, value.value), null);
+    } else if (value is ChildAddedEvent) {
+      if (type!="child_added") return null;
+      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), value.newValue), value.prevChildKey.toString());
+    } else if (value is ChildChangedEvent) {
+      if (type!="child_changed") return null;
+      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), value.newValue), value.prevChildKey.toString());
+    } else if (value is ChildMovedEvent) {
+      if (type!="child_moved") return null;
+      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), null), value.prevChildKey.toString());
+    } else if (value is ChildRemovedEvent) {
+      if (type!="child_removed") return null;
+      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), value.oldValue), value.prevChildKey.toString());
     }
+    return null;
   }
 
   void addError(Event error) {
@@ -741,7 +767,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
         try {
           _send();
           await repo._connection
-              .put(path.join("/"), output.toJson(true), latestHash);
+              .put(path.join("/"), output.toJson(true), hash: latestHash);
           complete();
           return false;
         } on ServerError catch (e) {

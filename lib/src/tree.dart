@@ -73,10 +73,10 @@ class TreeNode<K, V> implements Comparable<TreeNode<K, V>> {
           children[path.first].hasChild(path.skip(1));
 
   Iterable<TreeNode<K, V>> nodesOnPath(Path<K> path) sync* {
+    yield this;
     if (path.isEmpty) return;
     var c = path.first;
     if (!children.containsKey(c)) return;
-    yield children[c];
     yield* children[c].nodesOnPath(path.skip(1));
   }
 

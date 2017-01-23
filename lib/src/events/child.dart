@@ -38,5 +38,5 @@ class ChildRemovedEvent<K, V> extends ChildEvent<K> {
   final V oldValue;
 
   ChildRemovedEvent(K childKey, this.oldValue, K prevChildKey)
-      : super("child_moved", childKey, prevChildKey);
+      : super("child_removed", childKey, prevChildKey);
 }
