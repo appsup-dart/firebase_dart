@@ -94,6 +94,46 @@ void main() {
       print(t.toJson());
     });
   });
+
+  group('Snapshot', () {
+    var ref = new Firebase("${testUrl}test/snapshot");
+
+    test('Child', () async {
+
+      await ref.set({
+        "hello": "world"
+      });
+
+      var e = await ref.onValue.first;
+
+      var s = e.snapshot;
+      expect(s.key, "snapshot");
+      expect(s.exists, true);
+      expect(s.val, {"hello": "world"});
+
+      s = s.child("hello");
+      expect(s.key, "hello");
+      expect(s.exists, true);
+      expect(s.val, "world");
+
+      s = s.child("does not exist");
+      expect(s.key, "does not exist");
+      expect(s.exists, false);
+      expect(s.val, null);
+
+      s = s.child("also does not exist");
+      expect(s.key, "also does not exist");
+      expect(s.exists, false);
+      expect(s.val, null);
+
+      s = s.child("also does not exist");
+      expect(s.key, "also does not exist");
+      expect(s.exists, false);
+      expect(s.val, null);
+
+    });
+  });
+
   group('Listen', () {
 
     var ref = new Firebase("${testUrl}test/listen");
