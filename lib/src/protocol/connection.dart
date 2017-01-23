@@ -53,11 +53,11 @@ class Connection {
 
   final List<Request> _outstandingRequests = [];
 
-  Future put(String path, dynamic value, [String hash]) =>
-      _request(new Request.put(path, value, hash));
+  Future put(String path, dynamic value, {String hash, int writeId}) =>
+      _request(new Request.put(path, value, hash, writeId));
 
-  Future merge(String path, dynamic value, [String hash]) =>
-      _request(new Request.merge(path, value, hash));
+  Future merge(String path, dynamic value, {String hash, int writeId}) =>
+      _request(new Request.merge(path, value, hash, writeId));
 
   void _addListen(Request request) {
     var path = request.message.body.path;
@@ -99,7 +99,7 @@ class Connection {
       _lastSessionId = _transport.info.sessionId;
       _serverTimeDiff =
           _transport.info.timestamp.difference(new DateTime.now());
-      _output.addStream(_transport.where((r) => r.message.reqNum == null));
+      _output.addStream(_transport.where((r) => r.message.reqNum == null||r.request.writeId!=null));
       _restoreState();
     });
     _transport.done.then((_) {

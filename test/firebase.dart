@@ -144,6 +144,18 @@ void main() {
 
     });
 
+    test('Child added', () async {
+
+      await(ref.remove());
+
+      var keys = ref.onChildAdded.take(2).map((e)=>e.snapshot.key).toList();
+
+      await ref.child("hello").set("world");
+      await ref.child("hi").set("everyone");
+
+      expect(await keys, ["hello","hi"]);
+    });
+
 
   });
 

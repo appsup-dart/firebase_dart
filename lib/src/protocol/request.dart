@@ -7,10 +7,11 @@ class Request {
   static int nextRequestNum = 0;
 
   final DataMessage message;
+  final int writeId;
 
   final Completer<Response> _completer = new Completer();
 
-  Request(String action, MessageBody body)
+  Request(String action, MessageBody body, [this.writeId])
       : message = new DataMessage(action, body, reqNum: nextRequestNum++);
 
   Request.auth(String cred)
@@ -30,12 +31,12 @@ class Request {
             new MessageBody(path: path, data: data));
   Request.onDisconnectCancel(String path)
       : this(DataMessage.actionOnDisconnectCancel, new MessageBody(path: path));
-  Request.put(String path, data, [String hash])
+  Request.put(String path, data, [String hash, int writeId])
       : this(DataMessage.actionPut,
-            new MessageBody(path: path, data: data, hash: hash));
-  Request.merge(String path, data, [String hash])
+            new MessageBody(path: path, data: data, hash: hash), writeId);
+  Request.merge(String path, data, [String hash, int writeId])
       : this(DataMessage.actionMerge,
-            new MessageBody(path: path, data: data, hash: hash));
+            new MessageBody(path: path, data: data, hash: hash), writeId);
   Request.stats(stats)
       : this(DataMessage.actionStats, new MessageBody(stats: stats));
 
