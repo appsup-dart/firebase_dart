@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.5
+
+- implement onChildChanged, onChildMoved, onChildRemoved and onChildAdded
+
 ## 0.5.4
 
 - fix hash of null in transactions
