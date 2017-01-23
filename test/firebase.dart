@@ -173,6 +173,43 @@ void main() {
       expect(await keys, ["hello","hi"]);
     });
 
+    test('Child changed', () async {
+
+      await ref.set({
+        "hello": "world",
+        "hi": "everyone"
+      });
+
+      var keys = ref.onChildChanged.take(2).map((e)=>e.snapshot.key).toList();
+      await ref.get();
+
+      await ref.child("hello").set("world2");
+      await ref.child("hi").set("everyone2");
+
+      expect(await keys, ["hello","hi"]);
+    });
+
+    test('Child moved', () async {
+
+      await ref.set({
+        "hello": "world",
+        "hi": "everyone",
+      });
+
+      var f = ref.orderByValue().onChildMoved.where((e)=>e.prevChild!=null).first;
+
+      await ref.get();
+
+      expect((await ref.orderByValue().get()).keys, ["hi","hello"]);
+
+      await ref.child("hello").set("abc");
+
+      var e = await f;
+
+      expect(e.snapshot.key, "hi");
+      expect(e.prevChild, "hello");
+    });
+
 
   });
 
