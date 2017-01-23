@@ -13,14 +13,15 @@ import 'secrets.dart'
   if (dart.library.html) 'secrets.dart'
   if (dart.library.io) 'secrets_io.dart';
 
+String get testUrl => "${secrets["host"]}";
 
 void main() {
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen(print);
 
   group('Reference location', () {
-    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/");
-    var ref2 = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+    var ref = new Firebase("${testUrl}");
+    var ref2 = new Firebase("${testUrl}test");
 
     test('child', () {
       expect(ref.key, null);
@@ -77,7 +78,7 @@ void main() {
     });
 
     test('permission denied', () async {
-      ref = ref.child('test');
+      ref = ref.child('test-protected');
       ref.onValue.listen((e)=>print(e.snapshot.val));
       await ref.authWithCustomToken(token);
       await ref.set('hello world');
@@ -95,7 +96,7 @@ void main() {
   });
   group('Listen', () {
 
-    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+    var ref = new Firebase("${testUrl}test/listen");
 
     test('Initial value', () async {
       print(await ref.get());
@@ -143,10 +144,11 @@ void main() {
 
     });
 
+
   });
 
   group('Push/Merge/Remove', () {
-    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+    var ref = new Firebase("${testUrl}test/push-merge-remove");
 
     test('Remove', () async {
       await ref.set('hello');
@@ -190,13 +192,13 @@ void main() {
   });
 
   group('Special characters', () {
-    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+    var ref = new Firebase("${testUrl}test/special-chars");
 
     test('colon', () async {
 
       await ref.child("users").child("facebook:12345").set({'name':'me'});
 
-      expect(await new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test/users/facebook:12345/name").get(), "me");
+      expect(await new Firebase("${ref.url}/users/facebook:12345/name").get(), "me");
     });
 
     test('spaces', () async {
@@ -215,9 +217,9 @@ void main() {
   });
 
   group('ServerValue', () {
-    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
 
     test('timestamp', () async {
+      var ref = new Firebase("${testUrl}test/server-values/timestamp");
 
       await ref.set(null);
       var events = <Event>[];
@@ -229,6 +231,7 @@ void main() {
 
       await new Future.delayed(new Duration(seconds: 1));
       var values = events.map((e)=>e.snapshot.val).toList();
+      print(values);
       expect(values.length, 3);
       expect(values[0], null);
 
@@ -237,6 +240,7 @@ void main() {
       expect(values[2]-values[1]>0, isTrue);
       expect(values[2]-values[1]<1000, isTrue);
 
+      return;
       await ref.set({
         "hello": "world",
         "it is now": ServerValue.timestamp
@@ -248,6 +252,7 @@ void main() {
     });
 
     test('transaction', () async {
+      var ref = new Firebase("${testUrl}test/server-values/transaction");
       await ref.set("hello");
 
       await new Stream.periodic(new Duration(milliseconds: 10))
@@ -266,7 +271,7 @@ void main() {
   });
 
   group('Transaction', () {
-    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+    var ref = new Firebase("${testUrl}test/transactions");
 
     test('Counter', () async {
       await ref.set(0);
@@ -349,7 +354,7 @@ void main() {
   });
 
   group('OnDisconnect', () {
-    var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+    var ref = new Firebase("${testUrl}test/disconnect");
     var repo = new Repo(ref.url.resolve("/"));
 
     test('put', () async {
@@ -395,10 +400,10 @@ void main() {
   });
 
   group('Query', () {
+    var ref = new Firebase("${testUrl}test/query");
 
 
     test('Limit', () async {
-      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
 
       await ref.set({
         "text1": "hello1",
@@ -428,44 +433,43 @@ void main() {
     });
 
     test('Order by value', () async {
-      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
       await ref.set({
         "text1": "b",
         "text2": "c",
         "text3": "a"
       });
 
-      ref = ref.orderByValue();
+      var q = ref.orderByValue();
 
-      expect(await ref.limitToFirst(1).get(), {
+      expect(await q.limitToFirst(1).get(), {
         "text3": "a"
       });
 
-      expect(await ref.limitToFirst(2).get(), {
+      expect(await q.limitToFirst(2).get(), {
         "text3": "a",
         "text1": "b"
       });
 
-      expect(await ref.limitToLast(1).get(), {
+      expect(await q.limitToLast(1).get(), {
         "text2": "c"
       });
 
-      expect(await ref.limitToLast(2).get(), {
+      expect(await q.limitToLast(2).get(), {
         "text1": "b",
         "text2": "c"
       });
 
-      expect(await ref.startAt("b").get(), {
+      expect(await q.startAt("b").get(), {
         "text1": "b",
         "text2": "c"
       });
 
-      expect(await ref.startAt("b","text1").get(), {
+      expect(await q.startAt("b","text1").get(), {
         "text1": "b",
         "text2": "c"
       });
 
-      expect(await ref.startAt("b","text2").get(), {
+      expect(await q.startAt("b","text2").get(), {
         "text2": "c"
       });
 
@@ -473,34 +477,34 @@ void main() {
     });
 
     test('Order by key', () async {
-      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
+      var ref = new Firebase("${testUrl}test/query-key");
       await ref.set({
         "text2": "b",
         "text1": "c",
         "text3": "a"
       });
 
-      ref = ref.orderByKey();
+      var q = ref.orderByKey();
 
-      expect(await ref.limitToFirst(1).get(), {
+      expect(await q.limitToFirst(1).get(), {
         "text1": "c"
       });
 
-      expect(await ref.limitToFirst(2).get(), {
+      expect(await q.limitToFirst(2).get(), {
         "text1": "c",
         "text2": "b"
       });
 
-      expect(await ref.limitToLast(1).get(), {
+      expect(await q.limitToLast(1).get(), {
         "text3": "a"
       });
 
-      expect(await ref.limitToLast(2).get(), {
+      expect(await q.limitToLast(2).get(), {
         "text2": "b",
         "text3": "a"
       });
 
-      expect(await ref.startAt("text2").get(), {
+      expect(await q.startAt("text2").get(), {
         "text2": "b",
         "text3": "a"
       });
@@ -510,7 +514,6 @@ void main() {
     });
 
     test('Order by priority', () async {
-      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
       await ref.set({
         "text2": "b",
         "text1": "c",
@@ -521,87 +524,85 @@ void main() {
       await ref.child("text3").setPriority(3);
 
 
-      ref = ref.orderByPriority();
+      var q = ref.orderByPriority();
 
-      expect(await ref.limitToFirst(1).get(), {
+      expect(await q.limitToFirst(1).get(), {
         "text2": "b"
       });
 
-      expect(await ref.limitToFirst(2).get(), {
+      expect(await q.limitToFirst(2).get(), {
         "text2": "b",
         "text1": "c"
       });
 
-      expect(await ref.limitToLast(1).get(), {
+      expect(await q.limitToLast(1).get(), {
         "text3": "a"
       });
 
-      expect(await ref.limitToLast(2).get(), {
+      expect(await q.limitToLast(2).get(), {
         "text1": "c",
         "text3": "a"
       });
 
-      expect(await ref.startAt(2).get(), {
+      expect(await q.startAt(2).get(), {
         "text1": "c",
         "text3": "a"
       });
 
-      expect(await ref.startAt(2,"text1").get(), {
+      expect(await q.startAt(2,"text1").get(), {
         "text1": "c",
         "text3": "a"
       });
 
-      expect(await ref.startAt(2,"text2").get(), {
+      expect(await q.startAt(2,"text2").get(), {
         "text3": "a"
       });
 
     });
     test('Order by child', () async {
-      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
       await ref.set({
         "text2": {"order":"b"},
         "text1": {"order":"c"},
         "text3": {"order":"a"}
       });
 
-      ref = ref.orderByChild("order");
+      var q = ref.orderByChild("order");
 
-      expect(await ref.limitToFirst(1).get(), {
+      expect(await q.limitToFirst(1).get(), {
         "text3": {"order":"a"}
       });
 
-      expect(await ref.limitToFirst(2).get(), {
+      expect(await q.limitToFirst(2).get(), {
         "text3": {"order":"a"},
         "text2": {"order":"b"}
       });
 
-      expect(await ref.limitToLast(1).get(), {
+      expect(await q.limitToLast(1).get(), {
         "text1": {"order":"c"}
       });
 
-      expect(await ref.limitToLast(2).get(), {
+      expect(await q.limitToLast(2).get(), {
         "text2": {"order":"b"},
         "text1": {"order":"c"}
       });
 
-      expect(await ref.startAt("b").get(), {
+      expect(await q.startAt("b").get(), {
         "text2": {"order":"b"},
         "text1": {"order":"c"}
       });
 
-      expect(await ref.startAt("b","text2").get(), {
+      expect(await q.startAt("b","text2").get(), {
         "text2": {"order":"b"},
         "text1": {"order":"c"}
       });
 
-      expect(await ref.startAt("b","text3").get(), {
+      expect(await q.startAt("b","text3").get(), {
         "text1": {"order":"c"}
       });
 
 
     });
     test('Start/End at', () async {
-      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
       await ref.set({
         "text2": {"order":"b"},
         "text1": {"order":"c"},
@@ -611,21 +612,20 @@ void main() {
         "text6": {"order":"b"}
       });
 
-      ref = ref.orderByChild("order");
+      var q = ref.orderByChild("order");
 
-      expect(await ref.startAt("b").endAt("c").get(), {
+      expect(await q.startAt("b").endAt("c").get(), {
         "text2": {"order":"b"},
         "text6": {"order":"b"},
         "text1": {"order":"c"}
       });
 
-      expect(await ref.startAt("b", "text6").endAt("c").get(), {
+      expect(await q.startAt("b", "text6").endAt("c").get(), {
         "text6": {"order":"b"},
         "text1": {"order":"c"}
       });
 
 
-      ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
       await ref.set({
         "text2": {"order":2},
         "text1": {"order":3},
@@ -634,14 +634,13 @@ void main() {
         "text5": {"order":4},
         "text6": {"order":2}
       });
-      ref = ref.orderByChild("order");
+      q = ref.orderByChild("order");
 
-      expect((await ref.equalTo(2).get()).keys, ["text2","text6"]);
+      expect((await q.equalTo(2).get()).keys, ["text2","text6"]);
 
     });
 
     test('Ordering', () async {
-      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
       await ref.set({
         "b": {"order":true},
         "c": {"x":1},
@@ -657,17 +656,17 @@ void main() {
         "25": {"order":5},
         "k": {"order":false},
       });
-      ref = ref.orderByChild("order");
-      expect((await ref.get()).keys, ["c","k","b","e","a","25","23a","f","g","d","h","i","j"]);
+      var q = ref.orderByChild("order");
+      expect((await q.get()).keys, ["c","k","b","e","a","25","23a","f","g","d","h","i","j"]);
 
 
     });
   });
 
   group('multiple frames', () {
+    var ref = new Firebase("${testUrl}test/frames");
     test('Receive large value', () async {
 
-      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
 
       var random = new Random();
 
@@ -677,8 +676,6 @@ void main() {
       expect(await ref.get(), value);
     });
     test('Send large value', () async {
-
-      var ref = new Firebase("https://n6ufdauwqsdfmp.firebaseio-demo.com/test");
 
       var random = new Random();
 
