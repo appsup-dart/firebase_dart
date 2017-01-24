@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.6
+
+- fix child of empty datasnapshot
+
 ## 0.5.5
 
 - implement onChildChanged, onChildMoved, onChildRemoved and onChildAdded

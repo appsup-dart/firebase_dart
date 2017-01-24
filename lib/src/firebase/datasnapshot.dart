@@ -24,7 +24,7 @@ class DataSnapshot {
   /// Get the Dart Primitive, Map or List representation of the DataSnapshot.
   /// The value may be null, indicating that the snapshot is empty and contains
   /// no data.
-  dynamic get val => _data.toJson();
+  dynamic get val => _data?.toJson();
 
   /// Returns true if this DataSnapshot contains any data.
   /// It is slightly more efficient than using snapshot.val() !== null.
@@ -34,7 +34,7 @@ class DataSnapshot {
   /// relative path can either be a simple child name or a deeper slash
   /// separated path.
   DataSnapshot child(String c) =>
-      new DataSnapshot(ref.child(c), _data.subtree(Name.parsePath(c)));
+      new DataSnapshot(ref.child(c), _data?.subtree(Name.parsePath(c)));
 
   /// Enumerate through the DataSnapshot's children (in priority order). The
   /// provided callback will be called synchronously with a DataSnapshot for
