@@ -207,7 +207,7 @@ void main() {
       var keys = ref.onChildRemoved.take(2).map((e)=>e.snapshot.key).toList();
       await ref.get();
 
-      await ref.child("hello").remove();
+      await ref.update({"test": "something","hello":null});
       await ref.child("hi").remove();
 
       expect(await keys, ["hello","hi"]);

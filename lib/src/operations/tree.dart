@@ -58,7 +58,12 @@ class Merge<K, V> extends Operation<TreeNode<K, V>> {
 
   @override
   TreeNode<K, V> apply(TreeNode<K, V> value) {
-    return value.clone()..children.addAll(children);
+    var n = value.clone();
+    children.forEach((k,v) {
+      if (v.isNil) n.children.remove(k);
+      else n.children[k] = children[k];
+    });
+    return n;
   }
 
   @override

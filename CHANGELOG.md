@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.7
+
+- fix handling merge when some new children are nil
+
 ## 0.5.6
 
 - fix child of empty datasnapshot
