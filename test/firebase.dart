@@ -706,8 +706,28 @@ void main() {
         "text1": {"order":"c"}
       });
 
+    });
+
+    test('Order after remove', () async {
+      await ref.set({
+        "text2": {"order":"b"},
+        "text1": {"order":"c"},
+        "text3": {"order":"a"}
+      });
+
+      var q = ref.orderByChild("order");
+      var l = q.startAt("b").limitToFirst(1).onValue
+          .map((e)=>e.snapshot.val?.keys?.single)
+          .take(2).toList();
+
+      await new Future.delayed(new Duration(milliseconds: 200));
+      await ref.child("text2").remove();
+      await new Future.delayed(new Duration(milliseconds: 500));
+
+      expect(await l, ["text2","text1"]);
 
     });
+
     test('Start/End at', () async {
       await ref.set({
         "text2": {"order":"b"},
