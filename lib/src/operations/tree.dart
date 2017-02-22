@@ -87,7 +87,9 @@ class Merge extends Operation {
     var n = value.clone();
     children.forEach((k,v) {
       if (v.isNil) n.children.remove(k);
-      else n.children[k] = children[k];
+    });
+    children.forEach((k,v) {
+      if (!v.isNil) n.children[k] = children[k];
     });
     return n;
   }

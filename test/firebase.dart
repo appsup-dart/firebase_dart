@@ -836,14 +836,14 @@ void main() {
       await wait(500);
 
       var l = ref.orderByKey().limitToFirst(2)
-          .onValue.map((e)=>e.snapshot.val?.keys?.first).take(3).toList();
+          .onValue.map((e)=>e.snapshot.val?.keys?.first).take(4).toList();
 
 
       await iref.child('text0').set("d");
       await iref.child('text1').remove();
       await iref.child('text0').remove();
 
-      expect(await l, ["text1","text0","text2"]);
+      expect(await l, ["text1","text0","text0","text2"]);
     });
 
     test('Upgrade subquery to master view', () async {
