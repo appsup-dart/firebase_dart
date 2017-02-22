@@ -19,11 +19,11 @@ String get testUrl => "${secrets["host"]}";
 void main() {
 
   StreamSubscription logSubscription;
-  setUpAll(() {
+  setUp(() {
     Logger.root.level = Level.ALL;
     logSubscription = Logger.root.onRecord.listen(print);
   });
-  tearDownAll(() async {
+  tearDown(() async {
     await logSubscription.cancel();
   });
 
