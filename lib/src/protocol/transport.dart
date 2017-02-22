@@ -56,6 +56,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
     if (request != null && !request._completer.isCompleted) {
       request._completer.complete(response);
     }
+    if (_input.isClosed) return;
     _input.add(response);
   }
 

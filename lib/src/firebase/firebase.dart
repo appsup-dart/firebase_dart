@@ -146,7 +146,7 @@ class Firebase extends Query {
           {bool applyLocally: true}) =>
       _repo
           .transaction(_url.path, update, applyLocally)
-          .then/*<DataSnapshot>*/((v) => new DataSnapshot(this, v));
+          .then<DataSnapshot>((v) => new DataSnapshot(this, v));
 
   static Uri _parentUri(Uri uri) =>
       Uri.parse("$uri/").resolve("..").normalizePath();

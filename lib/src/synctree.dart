@@ -8,55 +8,164 @@ import 'view.dart';
 import 'operations/tree.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
+import 'repo.dart';
+import 'dart:async';
+import 'protocol.dart';
 
-const _eventGenerator = const ViewEventGenerator(const TreeEventGenerator());
+class MasterView {
+  final QueryFilter masterFilter;
 
+  ViewCache _data;
+
+  ViewCache get data => _data;
+
+  final Map<QueryFilter,EventTarget> observers = {};
+
+  MasterView(this.masterFilter) : _data = new ViewCache(
+    new IncompleteData(new TreeStructuredData(filter: masterFilter)),
+    new IncompleteData(new TreeStructuredData(filter: masterFilter))
+  ) {
+    assert(masterFilter!=null);
+  }
+
+  MasterView withFilter(QueryFilter filter) => new MasterView(filter)
+      .._data = _data.withFilter(filter);
+
+  bool contains(QueryFilter f) {
+    if (f==masterFilter) return true;
+    if (!masterFilter.canContain(f)) return false;
+    if (!_data.localVersion.isComplete) return true;
+    return false;// TODO
+  }
+
+  /// Adds the event listener only when the filter is contained by the master
+  /// filter.
+  ///
+  /// Returns true when the listener was added.
+  bool addEventListener(String type, QueryFilter filter, EventListener listener) {
+    if (!contains(filter)) return false;
+    observers.putIfAbsent(filter,()=>new EventTarget()).addEventListener(type,listener);
+
+    var events = const TreeEventGenerator().generateEvents(type, new IncompleteData(new TreeStructuredData()), _data.valueForFilter(filter));
+    events.forEach((e)=>observers[filter].dispatchEvent(e));
+    return true;
+  }
+
+  /// Removes the event listener.
+  void removeEventListener(String type, Filter filter, EventListener listener) {
+    if (!observers.containsKey(filter)) return;
+    observers[filter].removeEventListener(type, listener);
+    if (!observers[filter].hasEventRegistrations) {
+      observers.remove(filter);
+    }
+  }
+
+  /// Applies an operation.
+  ///
+  /// Removes and returns queries that are no longer contained by this master
+  /// view.
+  Map<QueryFilter,EventTarget> applyOperation(Operation operation, ViewOperationSource source, int writeId) {
+    var oldData = _data;
+    _data = _data.applyOperation(operation, source, writeId);
+
+    var out = <QueryFilter,EventTarget>{};
+    for (var q in observers.keys.toList()) {
+      if (!contains(q)) {
+        out[q] = observers.remove(q);
+      }
+    }
+
+    for (var q in observers.keys) {
+      var t = observers[q];
+
+      var oldValue = oldData.valueForFilter(q);
+      var newValue = _data.valueForFilter(q);
+
+      t.eventTypesWithRegistrations
+          .expand((t) => const TreeEventGenerator().generateEvents(t, oldValue, newValue))
+          .forEach(t.dispatchEvent);
+    }
+    return out;
+  }
+
+
+
+}
+
+/// Represents a remote resource and holds local (partial) views and local
+/// changes of its value.
 class SyncPoint {
-  final Map<Filter, View> views = {};
+  final Map<QueryFilter, MasterView> views = {};
+
+  SyncPoint([ViewCache data]) {
+    if (data==null) return;
+    var q = new QueryFilter();
+    views[q] = new MasterView(q).._data = data;
+  }
+
+  Iterable<QueryFilter> get minimalSetOfQueries sync* {
+    prune();
+    var queries = views.keys;
+    if (queries.any((q)=>!q.limits)) {
+      yield new QueryFilter();
+    } else {
+      yield* queries;
+    }
+  }
+
+  TreeStructuredData valueForFilter(QueryFilter filter) {
+    return views.values.firstWhere((v)=>v.contains(filter), orElse: ()=>null)
+        ?._data?.valueForFilter(filter)?.value ?? new TreeStructuredData();
+  }
 
   /// Adds an event listener for events of [type] and for data filtered by
   /// [filter].
-  ///
-  /// Returns true if no event listener for this [filter] was registered before
-  /// and therefore we should also listen for remote changes.
-  bool addEventListener(String type,
-      Filter<Pair<Name, TreeStructuredData>> filter, EventListener listener) {
-    var view = views.putIfAbsent(
-        filter,
-        () =>
-            new View(new TreeStructuredData(filter: filter), _eventGenerator));
-    //TODO: create view from parents
-    var has = view.hasEventRegistrations;
-    view.addEventListener(type, listener);
-    view.generateInitialEvents(type).forEach(listener);
-    return !has;
+  void addEventListener(String type,
+      QueryFilter filter, EventListener listener) {
+    if (views.values.any((m)=>m.addEventListener(type, filter, listener)))
+      return;
+
+    createMasterViewForFilter(filter).addEventListener(type, filter, listener);
+
+  }
+
+  MasterView createMasterViewForFilter(QueryFilter filter) {
+    filter ??= new QueryFilter();
+    var unlimitedFilter = views.keys.firstWhere((q)=>!q.limits, orElse: ()=>null);
+    return views[filter] = (unlimitedFilter!=null
+        ? views[unlimitedFilter].withFilter(filter) : new MasterView(filter));
   }
 
   /// Removes an event listener for events of [type] and for data filtered by
   /// [filter].
-  ///
-  /// Returns true if no more event listerenes for this [filter] are registered
-  /// and therefore we should also unlisten for remote changes.
-  bool removeEventListener(String type, Filter filter, EventListener listener) {
-    var view = views.putIfAbsent(
-        filter, () => new View(new TreeStructuredData(), _eventGenerator));
-    view.removeEventListener(type, listener);
-    if (!view.hasEventRegistrations) {
-      views.remove(filter);
-      return true;
-    }
-    return false;
+  void removeEventListener(String type, Filter filter, EventListener listener) {
+    views.values.forEach((v)=>v.removeEventListener(type, filter, listener));
   }
 
   /// Applies an operation to the view for [filter] at this [SyncPoint] or all
   /// views when [filter] is [null].
   void applyOperation(Operation operation, Filter filter,
       ViewOperationSource source, int writeId) {
-    var op = new ViewOperation(source, operation, writeId);
     if (filter == null) {
-      views.forEach((k, v) => v.applyOperation(op));
+      for (var v in views.values) {
+        var d = v.applyOperation(operation,source,writeId);
+        for (var q in d.keys) {
+          createMasterViewForFilter(q).observers[q] = d[q];
+        }
+      }
     } else {
-      views[filter]?.applyOperation(op);
+      var d = views[filter]?.applyOperation(operation,source,writeId);
+      if (d!=null) {
+        for (var q in d.keys) {
+          createMasterViewForFilter(q).observers[q] = d[q];
+        }
+      }
+    }
+  }
+
+  void prune() {
+    for (var k in views.keys.toList()) {
+      if (views[k].observers.isEmpty) views.remove(k);
     }
   }
 
@@ -64,42 +173,96 @@ class SyncPoint {
   String toString() => "SyncPoint[$views]";
 }
 
-class SyncTree {
-  final TreeNode<Name, SyncPoint> root = _createNode();
+abstract class RemoteListenerRegistrar {
+  final TreeNode<Name,Map<QueryFilter,Future<Null>>> _queries = new TreeNode({});
 
-  static TreeNode<Name, SyncPoint> _createNode() =>
-      new TreeNode(new SyncPoint());
+  Future<Null> registerAll(Path<Name> path, Iterable<QueryFilter> filters, String hashFcn(QueryFilter filter)) async {
+    var node = _queries.subtree(path, (parent,name)=>new TreeNode({}));
+    for (var f in filters.toSet()) {
+      if (node.value.containsKey(f)) continue;
+      var hash = hashFcn(f);
+      await register(path, f, hash);
+    }
+    for (var f in node.value.keys.toSet().difference(filters.toSet())) {
+      await unregister(path, f);
+    }
+  }
+
+  Future<Null> register(Path<Name> path, QueryFilter filter, String hash) {
+    var node = _queries.subtree(path, (parent,name)=>new TreeNode({}));
+    return node.value.putIfAbsent(filter, () async {
+      try {
+        await remoteRegister(path, filter, hash);
+      } catch (e) {
+        node.value.remove(filter); // ignore: unawaited_futures
+        rethrow;
+      }
+    });
+  }
+
+  Future<Null> remoteRegister(Path<Name> path, QueryFilter filter, String hash);
+  Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter);
+
+  Future<Null> unregister(Path<Name> path, QueryFilter filter) async {
+    var node = _queries.subtree(path, (parent,name)=>new TreeNode({}));
+    if (!node.value.containsKey(filter)) return;
+    node.value.remove(filter); // ignore: unawaited_futures
+    await remoteUnregister(path, filter);
+  }
+
+}
+
+
+class SyncTree {
+  final RemoteListenerRegistrar registrar;
+
+  final TreeNode<Name, SyncPoint> root = _createNode(null,null);
+
+  SyncTree(this.registrar);
+
+  static TreeNode<Name, SyncPoint> _createNode(SyncPoint parent, Name childName) {
+    return new TreeNode(new SyncPoint(
+        parent?.views?.values
+            ?.firstWhere((v)=>v._data.localVersion.isCompleteForChild(childName)
+            ||v._data.localVersion.value.children.containsKey(childName),
+        orElse: ()=>null)
+          ?._data?.child(childName)
+    ));
+  }
+
+  _doOnSyncPoint(Path<Name> path, void action(SyncPoint point)) {
+    var point = root.subtree(path, _createNode).value;
+
+    action(point);
+
+    return registrar.registerAll(path, point.minimalSetOfQueries,
+            (f)=>point.views[f]?._data?.localVersion?.isComplete==true ? point.views[f]._data.localVersion.value.hash : null);
+
+  }
 
   /// Adds an event listener for events of [type] and for data at [path] and
   /// filtered by [filter].
-  ///
-  /// Returns true if no event listener for this [path] and [filter] was
-  /// registered before and therefore we should also listen for remote changes.
-  bool addEventListener(String type, Path<Name> path,
-      Filter<Pair<Name, TreeStructuredData>> filter, EventListener listener) {
-    return root
-        .subtree(path, _createNode)
-        .value
-        .addEventListener(type, filter, listener);
+  Future<Null> addEventListener(String type, Path<Name> path,
+      Filter<Pair<Name, TreeStructuredData>> filter, EventListener listener) async {
+    return _doOnSyncPoint(path, (point) {
+      point.addEventListener(type, filter, listener);
+    });
+    // TODO if does not filters remove all child
   }
 
   /// Removes an event listener for events of [type] and for data at [path] and
   /// filtered by [filter].
-  ///
-  /// Returns true if no more event listerenes for this [path] and [filter]
-  /// are registered and therefore we should also unlisten for remote changes.
-  bool removeEventListener(
-      String type, Path<Name> path, Filter filter, EventListener listener) {
-    return root
-        .subtree(path, _createNode)
-        .value
-        .removeEventListener(type, filter, listener);
+  Future<Null> removeEventListener(
+      String type, Path<Name> path, Filter filter, EventListener listener) async {
+    return _doOnSyncPoint(path, (point) {
+      point.removeEventListener(type, filter, listener);
+    });
   }
 
   /// Applies a user overwrite at [path] with [newData]
   void applyUserOverwrite(
       Path<Name> path, TreeStructuredData newData, int writeId) {
-    var operation = new _Operation.overwrite(path, newData);
+    var operation = new TreeOperation.overwrite(path, newData);
     _applyOperationToSyncPoints(
         root, null, operation, ViewOperationSource.user, writeId);
   }
@@ -107,7 +270,7 @@ class SyncTree {
   /// Applies a server overwrite at [path] with [newData]
   void applyServerOverwrite(
       Path<Name> path, Filter filter, TreeStructuredData newData) {
-    var operation = new _Operation.overwrite(path, newData);
+    var operation = new TreeOperation.overwrite(path, newData);
     _applyOperationToSyncPoints(
         root, filter, operation, ViewOperationSource.server, null);
   }
@@ -115,80 +278,53 @@ class SyncTree {
   /// Applies a server merge at [path] with [changedChildren]
   void applyServerMerge(Path<Name> path, Filter filter,
       Map<Name, TreeStructuredData> changedChildren) {
-    var operation = new _Operation.merge(path, changedChildren);
+    var operation = new TreeOperation.merge(path, changedChildren);
     _applyOperationToSyncPoints(
         root, filter, operation, ViewOperationSource.server, null);
   }
 
   void applyListenRevoked(Path<Name> path, Filter filter) {
-    root.subtree(path).value.views[filter].dispatchEvent(new Event("cancel"));
+    root.subtree(path).value.views[filter].observers.values
+        .forEach((t)=>t.dispatchEvent(new Event("cancel")));
   }
 
   /// Applies a user merge at [path] with [changedChildren]
   void applyUserMerge(Path<Name> path,
       Map<Name, TreeStructuredData> changedChildren, int writeId) {
-    var operation = new _Operation.merge(path, changedChildren);
+    var operation = new TreeOperation.merge(path, changedChildren);
     _applyOperationToSyncPoints(
         root, null, operation, ViewOperationSource.user, writeId);
   }
 
   /// Helper function to recursively apply an operation to a node in the
   /// sync tree and all the relevant descendants.
-  static void _applyOperationToSyncPoints(
+  void _applyOperationToSyncPoints(
       TreeNode<Name, SyncPoint> tree,
       Filter filter,
-      TreeOperation<Name, Value> operation,
+      TreeOperation operation,
       ViewOperationSource type,
-      int writeId) {
-    if (tree == null) return;
-    tree.value.applyOperation(operation, filter, type, writeId);
-    if (operation.path.isEmpty) return; // TODO: apply to descendants
+      int writeId, [Path<Name> path]) {
+    if (tree == null||operation==null) return;
+    path ??= new Path();
+    _doOnSyncPoint(path, (point)=>point.applyOperation(operation, filter, type, writeId));
+    if (operation.path.isEmpty) {
+      for (var k in tree.children.keys) {
+        _applyOperationToSyncPoints(tree.children[k], filter,
+            operation.operationForChild(k), type, writeId, path.child(k));
+      }
+      return;
+    }
     var child = operation.path.first;
     _applyOperationToSyncPoints(tree.children[child], filter,
-        operation.operationForChild(child), type, writeId);
+        operation.operationForChild(child), type, writeId, path.child(child));
   }
 
   void applyAck(Path<Name> path, int writeId, bool success) {
-    var operation = new _Operation.ack(path, success);
+    var operation = new TreeOperation.ack(path, success);
     _applyOperationToSyncPoints(
         root, null, operation, ViewOperationSource.ack, writeId);
   }
 }
 
-class _Operation extends TreeOperation<Name, Value> {
-  _Operation(Path<Name> path, Operation<TreeNode<Name, Value>> nodeOperation)
-      : super(path, nodeOperation, () => new TreeStructuredData());
 
-  _Operation.overwrite(Path<Name> path, TreeStructuredData value)
-      : this(path, new Overwrite<Name, Value>(value));
 
-  _Operation.merge(Path<Name> path, Map<Name, TreeStructuredData> children)
-      : this(path, new Merge<Name, Value>(children));
-
-  factory _Operation.ack(Path<Name> path, bool success) =>
-      new _Ack(path, success);
-}
-
-class _NoneOperation<T> extends Operation<T> {
-  @override
-  T apply(T value) {
-    throw new UnsupportedError("Should not be called");
-  }
-
-  @override
-  Iterable<Path> get completesPaths => [];
-}
-
-class _Ack extends _Operation implements Ack {
-  @override
-  final bool success;
-
-  _Ack(Path<Name> path, this.success) : super(path, new _NoneOperation());
-
-  @override
-  _Ack operationForChild(Name key) {
-    if (path.isEmpty) return null;
-    if (path.first != key) return null;
-    return new _Ack(path.skip(1), success);
-  }
-}

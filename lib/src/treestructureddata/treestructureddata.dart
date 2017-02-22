@@ -65,6 +65,10 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   @override
   Map<Name, TreeStructuredData> get children => super.children;
 
+  TreeStructuredData withFilter(Filter<Pair<Name, TreeStructuredData>> f) =>
+    new TreeStructuredData(priority: priority, value: value, filter: f)
+      ..children.addAll(children);
+
   dynamic toJson([bool exportFormat = false]) {
     if (isNil) return null;
     var c = new Map<String, dynamic>.fromIterables(

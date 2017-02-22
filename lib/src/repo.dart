@@ -12,6 +12,7 @@ import 'dart:math';
 import 'package:logging/logging.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:quiver/check.dart' as quiver;
+import 'package:quiver/collection.dart' as quiver;
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
 import 'event.dart';
@@ -46,6 +47,8 @@ class QueryFilter extends Filter<Pair<Name, TreeStructuredData>> {
     }
     return new Pair(new Name(key), new TreeStructuredData(value: new Value(value)));
   }
+
+  bool get limits => limit!=null||startAt!=null||endAt!=null;
 
   QueryFilter copyWith(
           {String orderBy,
@@ -102,6 +105,20 @@ class QueryFilter extends Filter<Pair<Name, TreeStructuredData>> {
     return _compareKey(a.key, b.key);
   }
 
+  /// Checks if a collection filtered by this filter can contain the collection
+  /// filtered by another filter.
+  ///
+  /// Returns true when both filters have the same ordering and the range of
+  /// other is within this range.
+  bool canContain(QueryFilter other) {
+    if (orderBy!=other.orderBy) return false;
+    if (!limits) return true;
+    if (startAt!=null&&(other.startAt==null||_comparePair(other.startAt,startAt)<0)) return false;
+    if (endAt!=null&&(other.endAt==null||_comparePair(other.endAt,endAt)>0)) return false;
+    if (limit!=null&&(other.limit==null||limit<other.limit)) return false;
+    return true;
+  }
+
   @override
   bool isValid(Pair<Name, TreeStructuredData> p) {
     p = _extract(p);
@@ -138,24 +155,21 @@ class Repo {
 
   static final Map<Uri, Repo> _repos = {};
 
-  final SyncTree _syncTree = new SyncTree();
+  final SyncTree _syncTree;
+
+  SyncTree get syncTree => _syncTree;
 
   final PushIdGenerator pushIds = new PushIdGenerator();
 
-  final Map<QueryFilter, int> _queryToTag = {};
-  final Map<int, QueryFilter> _tagToQuery = {};
-  int _nextTag = 0;
   int _nextWriteId = 0;
   TransactionsTree _transactions;
   SparseSnapshotTree _onDisconnect = new SparseSnapshotTree();
 
   factory Repo(Uri url) {
-    return _repos.putIfAbsent(url, () => new Repo._(url));
+    return _repos.putIfAbsent(url, () => new Repo._(url, new Connection(url.host)));
   }
 
-  Repo._(Uri url)
-      : _connection = new Connection(url.host),
-        url = url {
+  Repo._(this.url, this._connection) : _syncTree = new SyncTree(new RemoteListeners(_connection)) {
     _transactions = new TransactionsTree(this);
     _connection.onConnect.listen((v) {
       if (!v) {
@@ -176,12 +190,12 @@ class Repo {
       }
       switch (r.message.action) {
         case DataMessage.actionSet:
-          var filter = _tagToQuery[r.message.body.tag];
+          var filter = registrar._tagToQuery[r.message.body.tag]?.value;
           _syncTree.applyServerOverwrite(Name.parsePath(r.message.body.path),
               filter, new TreeStructuredData.fromJson(r.message.body.data));
           break;
         case DataMessage.actionMerge:
-          var filter = _tagToQuery[r.message.body.tag];
+          var filter = registrar._tagToQuery[r.message.body.tag]?.value;
           _syncTree.applyServerMerge(
               Name.parsePath(r.message.body.path),
               filter,
@@ -192,7 +206,7 @@ class Repo {
           break;
         case DataMessage.actionListenRevoked:
           var filter = new QueryFilter.fromQuery(
-              r.message.body.query); //TODO test query revoke
+              r.message.body.query);
           _syncTree.applyListenRevoked(
               Name.parsePath(r.message.body.path), filter);
           break;
@@ -207,6 +221,8 @@ class Repo {
     });
     onAuth.listen((v) => _authData = v);
   }
+
+  RemoteListeners get registrar => _syncTree.registrar;
 
   firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
 
@@ -315,22 +331,7 @@ class Repo {
   Future listen(
       String path, QueryFilter filter, String type, EventListener cb) {
     path = _preparePath(path);
-    var isFirst =
-        _syncTree.addEventListener(type, Name.parsePath(path), filter, cb);
-    if (!isFirst) return new Future.value();
-    if (filter == null) return _connection.listen(path);
-    var tag = _nextTag++;
-    _queryToTag[filter] = tag;
-    _tagToQuery[tag] = filter;
-    // TODO: listen only when no containing complete listener, unlisten others
-    // TODO: listen and send hash
-    return _connection
-        .listen(path, query: filter.toQuery(), tag: tag)
-        .then((MessageBody r) {
-      for (var w in r.warnings ?? const []) {
-        _logger.warning(w);
-      }
-    });
+    return _syncTree.addEventListener(type, Name.parsePath(path), filter ?? new QueryFilter(), cb);
   }
 
   /// Unlistens to changes of [type] at location [path] for data matching [filter].
@@ -340,14 +341,7 @@ class Repo {
   Future unlisten(
       String path, QueryFilter filter, String type, EventListener cb) {
     path = _preparePath(path);
-    var isLast =
-        _syncTree.removeEventListener(type, Name.parsePath(path), filter, cb);
-    if (!isLast) return new Future.value();
-    if (filter == null) return _connection.unlisten(path);
-    var tag = _queryToTag.remove(filter);
-    _tagToQuery.remove(tag);
-    // TODO: listen to others when necessary
-    return _connection.unlisten(path, query: filter.toQuery(), tag: tag);
+    return _syncTree.removeEventListener(type, Name.parsePath(path), filter, cb);
   }
 
   /// Gets the current cached value at location [path] with [filter].
@@ -355,7 +349,7 @@ class Repo {
     path = _preparePath(path);
     var tree = _syncTree.root.subtree(Name.parsePath(path));
     if (tree = null) return null;
-    return tree.value.views[filter].currentValue.localVersion;
+    return tree.value.valueForFilter(filter);
   }
 
   /// Helper function to create a new stream for a particular event type.
@@ -408,6 +402,42 @@ class Repo {
     _onDisconnect.value = null;
   }
 }
+
+class RemoteListeners extends RemoteListenerRegistrar {
+
+  int _nextTag = 0;
+  final quiver.BiMap<int,Pair<Path<Name>,QueryFilter>> _tagToQuery = new quiver.BiMap();
+
+  final Connection connection;
+
+  RemoteListeners(this.connection);
+
+  @override
+  Future<Null> remoteRegister(Path<Name> path, QueryFilter filter, String hash) async {
+    var def = new Pair(path, filter);
+    var tag = _nextTag++;
+    _tagToQuery[tag] = def;
+    try {
+      var query = filter.limits ? filter.toQuery() : null;
+      MessageBody r = await connection.listen(path.join('/'), query: query, tag: query==null ? null : tag, hash: hash);
+      for (var w in r.warnings ?? const []) {
+        _logger.warning(w);
+      }
+    } catch (e) {
+      _tagToQuery.remove(tag);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) async {
+    var def = new Pair(path, filter);
+    _tagToQuery.inverse.remove(def);
+    await connection.unlisten(path.join('/'), query: filter.toQuery());
+  }
+
+}
+
 
 typedef Stream<T> _StreamCreator<T>();
 
@@ -620,7 +650,7 @@ class Transaction implements Comparable<Transaction> {
         abortReason = reason;
         break;
       case TransactionStatus.run:
-        fail(new Exception("set"));
+        fail(new Exception(reason));
         break;
       default:
         throw new StateError("Unable to abort transaction in state $status");
@@ -670,7 +700,7 @@ class TransactionsTree {
       Path<Name> path, Function transactionUpdate, bool applyLocally) {
     var transaction =
         new Transaction(repo, path, transactionUpdate, applyLocally);
-    var node = root.subtree(path, () => new TransactionsNode());
+    var node = root.subtree(path, (a,b) => new TransactionsNode());
 
     var current = getLatestValue(repo, path);
     if (node.value.isEmpty) {
@@ -697,7 +727,7 @@ class TransactionsTree {
 TreeStructuredData getLatestValue(Repo repo, Path<Name> path) {
   var node = repo._syncTree.root.subtree(path);
   if (node == null) return new TreeStructuredData();
-  return node.value.views[null].currentValue.localVersion;
+  return node.value.valueForFilter(new QueryFilter());
 }
 
 class TransactionsNode extends TreeNode<Name, List<Transaction>> {
@@ -708,7 +738,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
 
   @override
   TransactionsNode subtree(Path<Name> path,
-          [TreeNode<Name, List<Transaction>> newInstance()]) =>
+          [TreeNode<Name, List<Transaction>> newInstance(List<Transaction> parent, Name childName)]) =>
       super.subtree(path, newInstance);
 
   bool get isReadyToSend =>
@@ -803,7 +833,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     var v = input;
     for (var t in transactionsInOrder) {
       var p = t.path.skip(path.length);
-      t.run(v.subtree(p, () => new TreeStructuredData()) ??
+      t.run(v.subtree(p, (a,b) => new TreeStructuredData()) ??
           new TreeStructuredData());
       if (!t.isComplete) {
         v = updateChild(v, p, t.currentOutputSnapshotResolved);

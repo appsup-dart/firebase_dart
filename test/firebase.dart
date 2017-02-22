@@ -12,6 +12,7 @@ import 'dart:async';
 import 'secrets.dart'
   if (dart.library.html) 'secrets.dart'
   if (dart.library.io) 'secrets_io.dart';
+import 'dart:isolate';
 
 String get testUrl => "${secrets["host"]}";
 
@@ -812,5 +813,141 @@ void main() {
     });
   });
 
+
+  group('Complex operations', () {
+    var ref = new Firebase("${testUrl}test/complex");
+    var iref = new IsolatedReference(ref);
+
+    test('Remove out of view', () async {
+      await iref.set({
+        "text1": "b",
+        "text2": "c",
+        "text3": "a"
+      });
+
+      await wait(500);
+
+      var l = ref.orderByKey().limitToFirst(2)
+          .onValue.map((e)=>e.snapshot.val?.keys?.first).take(3).toList();
+
+
+      await iref.child('text0').set("d");
+      await iref.child('text1').remove();
+      await iref.child('text0').remove();
+
+      expect(await l, ["text1","text0","text2"]);
+    });
+
+    test('Upgrade subquery to master view', () async {
+
+      await iref.set({
+        "text1": "b",
+        "text2": "c",
+        "text3": "a"
+      });
+
+      var s1 = ref.orderByKey().limitToFirst(1).onValue.listen(print);
+      var l = ref.orderByKey().startAt("text2").limitToFirst(1).onValue
+          .expand((e)=>e.snapshot.val?.values).take(2).toList();
+
+      await wait(500);
+
+      await s1.cancel();
+
+      await iref.child('text2').remove();
+
+      expect(await l, ["c","a"]);
+    });
+
+    test('Listen to child after parent', () async {
+      await iref.set({
+        "text1": "b",
+        "text2": "c",
+        "text3": "a"
+      });
+
+      var s1 = ref.orderByKey().limitToFirst(2).onValue.listen(print);
+
+      await wait(500);
+
+      expect(await ref.child("text2").get(), "c");
+      var l = ref.child("text2").onValue
+          .map((e)=>e.snapshot.val).take(3).toList();
+
+      await iref.child('text2').set("x");
+
+      await s1.cancel();
+
+      await iref.child('text2').remove();
+
+      expect(await l, ["c","x",null]);
+
+    });
+
+  });
 }
 
+wait(int millis) async => new Future.delayed(new Duration(milliseconds: millis));
+
+class IsolatedReference {
+
+  final Firebase reference;
+
+  IsolatedReference(this.reference);
+
+  IsolatedReference child(String childPath) => new IsolatedReference(reference.child(childPath));
+
+  IsolatedReference get parent => new IsolatedReference(reference.parent);
+
+  Future set(dynamic v) => _sendReceive("set",v);
+
+  Future update(dynamic v) => _sendReceive("update",v);
+
+  Future remove() => _sendReceive("set",null);
+
+  Future authWithCustomToken(String token) => _sendReceive("auth",token);
+
+  static Future<SendPort> get _sendPort async {
+    var response = new ReceivePort();
+    var isolate = await Isolate.spawn(_spawnFunction, response.sendPort);
+    var error = new ReceivePort();
+    isolate.addErrorListener(error.sendPort);
+    error.listen(print);
+    return response.first;
+  }
+
+  Future _sendReceive(String command, dynamic v) async {
+    ReceivePort response = new ReceivePort();
+    var port = await _sendPort;
+    port.send([response.sendPort, reference.url, command, v]);
+    return response.first;
+  }
+
+}
+
+
+_spawnFunction(SendPort initialReplyTo) async {
+  var port = new ReceivePort();
+  initialReplyTo.send(port.sendPort);
+
+  await for (var msg in port) {
+    SendPort replyTo = msg[0];
+    var url = msg[1]?.toString();
+    var command = msg[2];
+    var value = msg[3];
+    switch (command) {
+      case "set":
+        await new Firebase(url).set(value);
+        break;
+      case "update":
+        await new Firebase(url).update(value);
+        break;
+      case "exit":
+        port.close();
+        break;
+      case "auth":
+        await new Firebase(url).authWithCustomToken(value);
+    }
+    replyTo.send(null);
+  }
+}

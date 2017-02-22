@@ -32,9 +32,10 @@ class TreeNode<K, V> implements Comparable<TreeNode<K, V>> {
     return new Map/*<K,V>*/ .from(map);
   }
 
-  TreeNode<K, V> subtree(Path<K> path, [TreeNode<K, V> newInstance()]) {
+  TreeNode<K, V> subtree(Path<K> path, [TreeNode<K, V> newInstance(V parent, K name)]) {
     if (path.isEmpty) return this;
-    var child = children.putIfAbsent(path.first, newInstance ?? () => null);
+    newInstance ??= (p,n)=>null;
+    var child = children.putIfAbsent(path.first, () => newInstance(value,path.first));
     if (child == null) return children.remove(path.first);
     return child.subtree(path.skip(1), newInstance);
   }
