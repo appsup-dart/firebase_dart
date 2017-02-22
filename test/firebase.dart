@@ -856,7 +856,7 @@ void main() {
 
       var s1 = ref.orderByKey().limitToFirst(1).onValue.listen(print);
       var l = ref.orderByKey().startAt("text2").limitToFirst(1).onValue
-          .expand((e)=>e.snapshot.val?.values).take(2).toList();
+          .expand((e)=>e.snapshot.val?.values??[]).take(2).toList();
 
       await wait(500);
 
