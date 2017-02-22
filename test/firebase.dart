@@ -17,8 +17,16 @@ import 'dart:isolate';
 String get testUrl => "${secrets["host"]}";
 
 void main() {
-  Logger.root.level = Level.ALL;
-  Logger.root.onRecord.listen(print);
+
+  StreamSubscription logSubscription;
+  setUpAll(() {
+    Logger.root.level = Level.ALL;
+    logSubscription = Logger.root.onRecord.listen(print);
+  });
+  tearDownAll(() async {
+    await logSubscription.cancel();
+  });
+
 
   group('Reference location', () {
     var ref = new Firebase("${testUrl}");
