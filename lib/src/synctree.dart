@@ -11,9 +11,17 @@ import 'tree.dart';
 import 'repo.dart';
 import 'dart:async';
 import 'protocol.dart';
+import 'package:logging/logging.dart';
+
+final _logger = new Logger("firebase-synctree");
 
 class MasterView {
-  final QueryFilter masterFilter;
+  QueryFilter masterFilter;
+
+  void upgrade() {
+    masterFilter = new QueryFilter(orderBy: masterFilter.orderBy);
+    _data = _data.withFilter(masterFilter);
+  }
 
   ViewCache _data;
 
@@ -145,9 +153,17 @@ class SyncPoint {
 
   /// Applies an operation to the view for [filter] at this [SyncPoint] or all
   /// views when [filter] is [null].
-  void applyOperation(Operation operation, Filter filter,
+  void applyOperation(TreeOperation operation, Filter filter,
       ViewOperationSource source, int writeId) {
     if (filter == null) {
+      if (source==ViewOperationSource.server) {
+        if (operation.path.isEmpty) {
+          if (views.isNotEmpty&&views.values.every((v)=>v.masterFilter.limits)) {
+            _logger.fine("no filter: upgrade ${views.keys}");
+            views.values.forEach((v)=>v.upgrade());
+          }
+        }
+      }
       for (var v in views.values) {
         var d = v.applyOperation(operation,source,writeId);
         for (var q in d.keys) {
@@ -231,20 +247,25 @@ class SyncTree {
     ));
   }
 
-  _doOnSyncPoint(Path<Name> path, void action(SyncPoint point)) {
+  final Map<SyncPoint,Future<Null>> _invalidPoints = {};
+
+  Future<Null> _doOnSyncPoint(Path<Name> path, void action(SyncPoint point)) {
     var point = root.subtree(path, _createNode).value;
 
     action(point);
 
-    return registrar.registerAll(path, point.minimalSetOfQueries,
-            (f)=>point.views[f]?._data?.localVersion?.isComplete==true ? point.views[f]._data.localVersion.value.hash : null);
+    return _invalidPoints.putIfAbsent(point, ()=>new Future<Null>.microtask(() {
+      _invalidPoints.remove(point);
+      registrar.registerAll(path, point.minimalSetOfQueries,
+              (f)=>point.views[f]?._data?.localVersion?.isComplete==true ? point.views[f]._data.localVersion.value.hash : null);
+    }));
 
   }
 
   /// Adds an event listener for events of [type] and for data at [path] and
   /// filtered by [filter].
   Future<Null> addEventListener(String type, Path<Name> path,
-      Filter<Pair<Name, TreeStructuredData>> filter, EventListener listener) async {
+      Filter<Pair<Name, TreeStructuredData>> filter, EventListener listener) {
     return _doOnSyncPoint(path, (point) {
       point.addEventListener(type, filter, listener);
     });
@@ -254,7 +275,7 @@ class SyncTree {
   /// Removes an event listener for events of [type] and for data at [path] and
   /// filtered by [filter].
   Future<Null> removeEventListener(
-      String type, Path<Name> path, Filter filter, EventListener listener) async {
+      String type, Path<Name> path, Filter filter, EventListener listener) {
     return _doOnSyncPoint(path, (point) {
       point.removeEventListener(type, filter, listener);
     });
