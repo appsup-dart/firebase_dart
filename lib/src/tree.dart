@@ -3,6 +3,7 @@
 
 import 'dart:collection';
 import 'package:sortedmap/sortedmap.dart';
+import 'package:collection/collection.dart';
 
 class Path<K> extends UnmodifiableListView<K> {
   Path() : super([]);
@@ -13,6 +14,12 @@ class Path<K> extends UnmodifiableListView<K> {
   Path<K> skip(int count) => new Path.from(super.skip(count));
 
   Path<K> child(K child) => new Path.from(new List.from(this)..add(child));
+
+  @override
+  int get hashCode => const ListEquality().hash(this);
+
+  @override
+  bool operator==(other) => other is Path && const ListEquality().equals(this,other);
 }
 
 class TreeNode<K, V> implements Comparable<TreeNode<K, V>> {
