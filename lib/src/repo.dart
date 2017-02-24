@@ -432,8 +432,9 @@ class RemoteListeners extends RemoteListenerRegistrar {
   @override
   Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) async {
     var def = new Pair(path, filter);
-    _tagToQuery.inverse.remove(def);
-    await connection.unlisten(path.join('/'), query: filter.toQuery());
+    var query = filter.limits ? filter.toQuery() : null;
+    var tag = _tagToQuery.inverse.remove(def);
+    await connection.unlisten(path.join('/'), query: filter.toQuery(), tag: query==null ? null : tag);
   }
 
 }
