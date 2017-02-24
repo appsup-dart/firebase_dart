@@ -341,7 +341,7 @@ class Repo {
   Future unlisten(
       String path, QueryFilter filter, String type, EventListener cb) {
     path = _preparePath(path);
-    return _syncTree.removeEventListener(type, Name.parsePath(path), filter, cb);
+    return _syncTree.removeEventListener(type, Name.parsePath(path), filter ?? new QueryFilter(), cb);
   }
 
   /// Gets the current cached value at location [path] with [filter].
