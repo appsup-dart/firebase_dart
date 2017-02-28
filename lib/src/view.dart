@@ -17,11 +17,15 @@ class ViewCache {
     pendingOperations ??= new SortedMap();
   }
 
-  IncompleteData valueForFilter(Filter<Pair<Name,TreeStructuredData>> filter) {
-    return localVersion.update(localVersion.value.withFilter(filter));
+  IncompleteData valueForFilter(Filter<Name,TreeStructuredData> filter) {
+    return localVersion.update(localVersion.value.view(
+      start: filter.validInterval.start,
+      end: filter.validInterval.end,
+      limit: filter.limit,
+      reversed: filter.reversed));
   }
 
-  ViewCache withFilter(Filter<Pair<Name,TreeStructuredData>> filter) =>
+  ViewCache withFilter(Filter<Name,TreeStructuredData> filter) =>
       new ViewCache(
           localVersion.update(localVersion.value.withFilter(filter)),
           serverVersion.update(serverVersion.value.withFilter(filter)),

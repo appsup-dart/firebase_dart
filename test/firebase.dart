@@ -462,6 +462,8 @@ void main() {
 
       await Future.wait(futures);
 
+      await wait(400);
+
       expect(await ref.child("object/count").get(), 10);
 
     });
@@ -718,7 +720,8 @@ void main() {
     });
 
     test('Order after remove', () async {
-      await ref.set({
+      var iref = new IsolatedReference(ref);
+      await iref.set({
         "text2": {"order":"b"},
         "text1": {"order":"c"},
         "text3": {"order":"a"}
@@ -730,7 +733,7 @@ void main() {
           .take(2).toList();
 
       await new Future.delayed(new Duration(milliseconds: 200));
-      await ref.child("text2").remove();
+      await iref.child("text2").remove();
       await new Future.delayed(new Duration(milliseconds: 500));
 
       expect(await l, ["text2","text1"]);
@@ -874,21 +877,38 @@ void main() {
         "text3": "a"
       });
 
-      var s1 = ref.orderByKey().limitToFirst(2).onValue.listen(print);
+      var s1 = ref.orderByKey().limitToFirst(2).onValue.map((e)=>e.snapshot.val).listen(print);
 
       await wait(500);
 
       expect(await ref.child("text2").get(), "c");
       var l = ref.child("text2").onValue
+      .map((v){print(v.snapshot.val);return v;})
           .map((e)=>e.snapshot.val).take(3).toList();
 
       await iref.child('text2').set("x");
 
+      await wait(500);
       await s1.cancel();
 
       await iref.child('text2').remove();
 
       expect(await l, ["c","x",null]);
+
+    });
+
+    test('startAt increasing', () async {
+      await iref.set({
+        "10": 10,
+        "20": 20,
+        "30": 30
+      });
+
+      var s = new Stream.periodic(new Duration(milliseconds: 20), (i)=>i).take(30);
+
+      await for (var i in s) {
+        await ref.orderByKey().startAt("$i").limitToFirst(1).get();
+      }
 
     });
 

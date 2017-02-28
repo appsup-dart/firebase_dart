@@ -16,6 +16,9 @@ class TreeOperation extends Operation {
   TreeOperation.overwrite(Path<Name> path, TreeStructuredData value)
       : this(path, new Overwrite(value));
 
+  TreeOperation.setPriority(Path<Name> path, Value value)
+      : this(path, new SetPriority(value));
+
   TreeOperation.merge(Path<Name> path, Map<Name, TreeStructuredData> children)
       : this(path, new Merge(children));
 
@@ -103,6 +106,9 @@ class Merge extends Operation {
     if (!children.containsKey(key)) return null;
     return new Overwrite(children[key]);
   }
+
+  @override
+  String toString() => "Merge[$children]";
 }
 
 class Overwrite extends Operation {
@@ -111,10 +117,9 @@ class Overwrite extends Operation {
   Overwrite(this.value);
 
   @override
-  TreeStructuredData apply(TreeStructuredData value) => value.clone()
-    ..value = this.value.value
-    ..children.clear()
-    ..children.addAll(this.value.children);
+  TreeStructuredData apply(TreeStructuredData value) {
+    return this.value.withFilter(value.children.filter);
+  }
 
   @override
   String toString() => "Overwrite[$value]";
@@ -127,6 +132,26 @@ class Overwrite extends Operation {
     var child = value.children[key] ?? new TreeStructuredData();
     return new Overwrite(child);
   }
+}
+
+class SetPriority extends Operation {
+  final Value value;
+
+  SetPriority(this.value);
+
+  @override
+  TreeStructuredData apply(TreeStructuredData value) {
+    return value.clone()..priority = this.value;
+  }
+
+  @override
+  String toString() => "SetPriority[$value]";
+
+  @override
+  Iterable<Path<Name>> get completesPaths => [];
+
+  @override
+  Operation operationForChild(Name key) => null;
 }
 
 class TreeEventGenerator extends EventGenerator {

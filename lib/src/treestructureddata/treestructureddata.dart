@@ -7,22 +7,25 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   Value priority;
 
   TreeStructuredData(
-      {this.priority,
+      {Value priority,
       Value value,
-      Filter<Pair<Name, TreeStructuredData>> filter})
-      : super(value, filter == null ? null : new FilteredMap(filter));
+      Filter<Name, TreeStructuredData> filter})
+      : this._(value, new FilteredMap(filter ?? new Filter<Name,TreeStructuredData>()), priority);
 
   TreeStructuredData._(
-      Value value, Map<Name, TreeStructuredData> children, Value priority)
+      Value value, FilteredMap<Name, TreeStructuredData> children, Value priority)
       : priority = priority,
-        super(value, children);
+        super(value, children ?? new FilteredMap()) {
+    assert(children==null||children is FilteredMap);
+    assert(this.children==null||this.children is FilteredMap);
+  }
 
   TreeStructuredData.leaf(Value value, [Value priority])
       : this._(value, null, priority);
 
   TreeStructuredData.nonLeaf(Map<Name, TreeStructuredData> children,
       [Value priority])
-      : this._(null, children, priority);
+      : this._(null, children is FilteredMap ? children : new FilteredMap()..addAll(children), priority);
 
   factory TreeStructuredData.fromJson(json, [priority]) {
     if (json == null) {
@@ -63,9 +66,14 @@ class TreeStructuredData extends TreeNode<Name, Value> {
       new TreeStructuredData._(value, children, priority);
 
   @override
-  Map<Name, TreeStructuredData> get children => super.children;
+  FilteredMap<Name, TreeStructuredData> get children => super.children;
 
-  TreeStructuredData withFilter(Filter<Pair<Name, TreeStructuredData>> f) =>
+  TreeStructuredData view({Pair<Name,TreeStructuredData> start,
+  Pair<Name,TreeStructuredData> end, int limit, bool reversed}) =>
+    new TreeStructuredData._(value, children.filteredMapView(start: start, end: end, limit: limit, reversed: reversed), priority);
+
+
+  TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) =>
     new TreeStructuredData(priority: priority, value: value, filter: f)
       ..children.addAll(children);
 

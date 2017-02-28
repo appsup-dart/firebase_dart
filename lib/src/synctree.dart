@@ -10,7 +10,6 @@ import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
 import 'repo.dart';
 import 'dart:async';
-import 'protocol.dart';
 import 'package:logging/logging.dart';
 
 final _logger = new Logger("firebase-synctree");
@@ -19,7 +18,7 @@ class MasterView {
   QueryFilter masterFilter;
 
   void upgrade() {
-    masterFilter = new QueryFilter(orderBy: masterFilter.orderBy);
+    masterFilter = new QueryFilter(ordering: masterFilter.ordering);
     _data = _data.withFilter(masterFilter);
   }
 
@@ -41,10 +40,11 @@ class MasterView {
 
   bool contains(QueryFilter f) {
     if (f==masterFilter) return true;
-    if (f.orderBy==masterFilter.orderBy&&!masterFilter.limits) return true;
-    if (!masterFilter.canContain(f)) return false;
-    if (!_data.localVersion.isComplete) return true;
-    return false;// TODO
+    if (f.orderBy!=masterFilter.orderBy) return false;
+    if (!masterFilter.limits) return true;
+    return _data.localVersion.value.children.filteredMapView(
+      start: f.validInterval.start, end: f.validInterval.end, limit: f.limit,
+      reversed: f.reversed).isComplete;
   }
 
   /// Adds the event listener only when the filter is contained by the master
@@ -106,13 +106,25 @@ class MasterView {
 class SyncPoint {
   final Map<QueryFilter, MasterView> views = {};
 
+  bool isCompleteFromParent = false;
+
   SyncPoint([ViewCache data]) {
     if (data==null) return;
     var q = new QueryFilter();
     views[q] = new MasterView(q).._data = data;
   }
 
+  bool isCompleteForChild(Name child) {
+    if (isCompleteFromParent) return true;
+    prune();
+    return views.values.any((m)=>
+    m._data.localVersion.isComplete||(
+    m._data.localVersion.isCompleteForChild(child)&&
+    m._data.localVersion.value.children.containsKey(child)));
+  }
+
   Iterable<QueryFilter> get minimalSetOfQueries sync* {
+    if (isCompleteFromParent) return;
     prune();
     var queries = views.keys;
     if (queries.any((q)=>!q.limits)) {
@@ -135,7 +147,6 @@ class SyncPoint {
       return;
 
     createMasterViewForFilter(filter).addEventListener(type, filter, listener);
-
   }
 
   MasterView createMasterViewForFilter(QueryFilter filter) {
@@ -155,7 +166,7 @@ class SyncPoint {
   /// views when [filter] is [null].
   void applyOperation(TreeOperation operation, Filter filter,
       ViewOperationSource source, int writeId) {
-    if (filter == null) {
+    if (filter == null||isCompleteFromParent) {
       if (source==ViewOperationSource.server) {
         if (operation.path.isEmpty) {
           if (views.isNotEmpty&&views.values.every((v)=>v.masterFilter.limits)) {
@@ -194,7 +205,7 @@ abstract class RemoteListenerRegistrar {
   final TreeNode<Name,Map<QueryFilter,Future<Null>>> _queries = new TreeNode({});
 
   Future<Null> registerAll(Path<Name> path, Iterable<QueryFilter> filters, String hashFcn(QueryFilter filter)) async {
-    var node = _queries.subtree(path, (parent,name)=>new TreeNode({}));
+    var node = _queries.subtree(path, (parent,name)=>new TreeNode(<QueryFilter,Future<Null>>{}));
     for (var f in filters.toSet()) {
       if (node.value.containsKey(f)) continue;
       var hash = hashFcn(f);
@@ -206,7 +217,7 @@ abstract class RemoteListenerRegistrar {
   }
 
   Future<Null> register(Path<Name> path, QueryFilter filter, String hash) {
-    var node = _queries.subtree(path, (parent,name)=>new TreeNode({}));
+    var node = _queries.subtree(path, (parent,name)=>new TreeNode(<QueryFilter,Future<Null>>{}));
     return node.value.putIfAbsent(filter, () async {
       try {
         await remoteRegister(path, filter, hash);
@@ -221,7 +232,7 @@ abstract class RemoteListenerRegistrar {
   Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter);
 
   Future<Null> unregister(Path<Name> path, QueryFilter filter) async {
-    var node = _queries.subtree(path, (parent,name)=>new TreeNode({}));
+    var node = _queries.subtree(path, (parent,name)=>new TreeNode(<QueryFilter,Future<Null>>{}));
     if (!node.value.containsKey(filter)) return;
     node.value.remove(filter); // ignore: unawaited_futures
     await remoteUnregister(path, filter);
@@ -244,15 +255,23 @@ class SyncTree {
             ||v._data.localVersion.value.children.containsKey(childName),
         orElse: ()=>null)
           ?._data?.child(childName)
-    ));
+    )..isCompleteFromParent = parent?.isCompleteForChild(childName) ?? false);
   }
 
   final Map<SyncPoint,Future<Null>> _invalidPoints = {};
 
-  Future<Null> _doOnSyncPoint(Path<Name> path, void action(SyncPoint point)) {
-    var point = root.subtree(path, _createNode).value;
+  Future<Null> _invalidate(Path<Name> path) {
+    var node = root.subtree(path, _createNode);
+    var point = node.value;
 
-    action(point);
+    var children = node.children;
+    for (var child in children.keys) {
+      var v = children[child];
+
+      v.value.isCompleteFromParent = point.isCompleteForChild(child);
+
+      _invalidate(path.child(child));
+    }
 
     return _invalidPoints.putIfAbsent(point, ()=>new Future<Null>.microtask(() {
       _invalidPoints.remove(point);
@@ -262,14 +281,26 @@ class SyncTree {
 
   }
 
+  Future<Null> _doOnSyncPoint(Path<Name> path, void action(SyncPoint point)) {
+    var point = root.subtree(path, _createNode).value;
+
+    action(point);
+
+    return _invalidate(path);/*_invalidPoints.putIfAbsent(point, ()=>new Future<Null>.microtask(() {
+      _invalidPoints.remove(point);
+      registrar.registerAll(path, point.minimalSetOfQueries,
+              (f)=>point.views[f]?._data?.localVersion?.isComplete==true ? point.views[f]._data.localVersion.value.hash : null);
+    }));*/
+
+  }
+
   /// Adds an event listener for events of [type] and for data at [path] and
   /// filtered by [filter].
   Future<Null> addEventListener(String type, Path<Name> path,
-      Filter<Pair<Name, TreeStructuredData>> filter, EventListener listener) {
+      Filter<Name, TreeStructuredData> filter, EventListener listener) {
     return _doOnSyncPoint(path, (point) {
       point.addEventListener(type, filter, listener);
     });
-    // TODO if does not filters remove all child
   }
 
   /// Removes an event listener for events of [type] and for data at [path] and
@@ -292,7 +323,12 @@ class SyncTree {
   /// Applies a server overwrite at [path] with [newData]
   void applyServerOverwrite(
       Path<Name> path, Filter filter, TreeStructuredData newData) {
-    var operation = new TreeOperation.overwrite(path, newData);
+    var operation;
+    if (path.isNotEmpty&&path.last==new Name(".priority")) {
+      operation = new TreeOperation.setPriority(path.parent, newData.value);
+    } else {
+      operation = new TreeOperation.overwrite(path, newData);
+    }
     _applyOperationToSyncPoints(
         root, filter, operation, ViewOperationSource.server, null);
   }
@@ -331,7 +367,7 @@ class SyncTree {
     _doOnSyncPoint(path, (point)=>point.applyOperation(operation, filter, type, writeId));
     if (operation.path.isEmpty) {
       for (var k in tree.children.keys) {
-        _applyOperationToSyncPoints(tree.children[k], filter,
+        _applyOperationToSyncPoints(tree.children[k], null,
             operation.operationForChild(k), type, writeId, path.child(k));
       }
       return;

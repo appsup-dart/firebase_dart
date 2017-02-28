@@ -15,6 +15,8 @@ class Path<K> extends UnmodifiableListView<K> {
 
   Path<K> child(K child) => new Path.from(new List.from(this)..add(child));
 
+  Path<K> get parent => new Path.from(take(length-1));
+
   @override
   int get hashCode => const ListEquality().hash(this);
 
@@ -22,7 +24,7 @@ class Path<K> extends UnmodifiableListView<K> {
   bool operator==(other) => other is Path && const ListEquality().equals(this,other);
 }
 
-class TreeNode<K, V> implements Comparable<TreeNode<K, V>> {
+class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
   V value;
 
   final Map<K, TreeNode<K, V>> _children;
@@ -32,7 +34,7 @@ class TreeNode<K, V> implements Comparable<TreeNode<K, V>> {
 
   Map<K, TreeNode<K, V>> get children => _children;
 
-  static Map/*<K,V>*/ _cloneMap/*<K,V>*/(Map/*<K,V>*/ map) {
+  static Map/*<K,V>*/ _cloneMap/*<K extends Comparable,V>*/(Map/*<K,V>*/ map) {
     if (map is SortedMap) {
       return (map as SortedMap/*<K,V>*/).clone();
     }
