@@ -6,6 +6,7 @@ import 'dart:async';
 import 'treestructureddata.dart';
 import 'synctree.dart';
 import 'firebase.dart' as firebase;
+import 'firebase_impl.dart' as firebase;
 import 'events/value.dart';
 import 'events/child.dart';
 import 'dart:math';
@@ -298,7 +299,7 @@ class Repo {
   ///
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
-  Future setWithPriority(String path, dynamic value, dynamic priority) {
+  Future<Null> setWithPriority(String path, dynamic value, dynamic priority) {
     path = _preparePath(path);
     var newValue = new TreeStructuredData.fromJson(value, priority);
     var writeId = _nextWriteId++;
@@ -497,19 +498,19 @@ class StreamFactory {
   firebase.Event _mapEvent(Event value) {
     if (value is ValueEvent) {
       if (type!="value") return null;
-      return new firebase.Event(new firebase.DataSnapshot(ref, value.value), null);
+      return new firebase.Event(new firebase.DataSnapshotImpl(ref, value.value), null);
     } else if (value is ChildAddedEvent) {
       if (type!="child_added") return null;
-      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), value.newValue), value.prevChildKey.toString());
+      return new firebase.Event(new firebase.DataSnapshotImpl(ref.child(value.childKey.toString()), value.newValue), value.prevChildKey.toString());
     } else if (value is ChildChangedEvent) {
       if (type!="child_changed") return null;
-      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), value.newValue), value.prevChildKey.toString());
+      return new firebase.Event(new firebase.DataSnapshotImpl(ref.child(value.childKey.toString()), value.newValue), value.prevChildKey.toString());
     } else if (value is ChildMovedEvent) {
       if (type!="child_moved") return null;
-      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), null), value.prevChildKey.toString());
+      return new firebase.Event(new firebase.DataSnapshotImpl(ref.child(value.childKey.toString()), null), value.prevChildKey.toString());
     } else if (value is ChildRemovedEvent) {
       if (type!="child_removed") return null;
-      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), value.oldValue), value.prevChildKey.toString());
+      return new firebase.Event(new firebase.DataSnapshotImpl(ref.child(value.childKey.toString()), value.oldValue), value.prevChildKey.toString());
     }
     return null;
   }
