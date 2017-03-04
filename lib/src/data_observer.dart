@@ -20,7 +20,7 @@ class IncompleteData {
   final TreeStructuredData value;
 
   IncompleteData(this.value, [TreeNode<Name, bool> states])
-      : _states = states ?? new TreeNode() {
+      : _states = states ?? new TreeNode(false) {
     assert(value!=null);
   }
 
