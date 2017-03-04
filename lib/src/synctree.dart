@@ -47,6 +47,18 @@ class MasterView {
       reversed: f.reversed).isComplete;
   }
 
+  bool isCompleteForChild(Name child) {
+    var l = _data.localVersion;
+    if (!l.isComplete) return true;
+    if (!masterFilter.limits) return true;
+    if (l.value.children.containsKey(child)) return true;
+    if (masterFilter.ordering is KeyOrdering) {
+      if (l.value.children.completeInterval.containsPoint(masterFilter.ordering.mapKeyValue(child, null)))
+        return true;
+    }
+    return false;
+  }
+
   /// Adds the event listener only when the filter is contained by the master
   /// filter.
   ///
@@ -106,7 +118,16 @@ class MasterView {
 class SyncPoint {
   final Map<QueryFilter, MasterView> views = {};
 
-  bool isCompleteFromParent = false;
+  bool _isCompleteFromParent = false;
+
+  bool get isCompleteFromParent => _isCompleteFromParent;
+
+  set isCompleteFromParent(bool v) {
+    _isCompleteFromParent = v;
+    if (_isCompleteFromParent) {
+      views.putIfAbsent(new QueryFilter(), ()=>new MasterView(new QueryFilter()));
+    }
+  }
 
   SyncPoint([ViewCache data]) {
     if (data==null) return;
@@ -114,13 +135,23 @@ class SyncPoint {
     views[q] = new MasterView(q).._data = data;
   }
 
+  SyncPoint child(Name child) {
+    var p = new SyncPoint(viewCacheForChild(child));
+    p.isCompleteFromParent = p.isCompleteForChild(child);
+    return p;
+  }
+
+  ViewCache viewCacheForChild(Name child) {
+    for (var m in views.values) {
+      if (m.isCompleteForChild(child)) return m._data.child(child);
+    }
+    return null;
+  }
+
   bool isCompleteForChild(Name child) {
     if (isCompleteFromParent) return true;
     prune();
-    return views.values.any((m)=>
-    m._data.localVersion.isComplete||(
-    m._data.localVersion.isCompleteForChild(child)&&
-    m._data.localVersion.value.children.containsKey(child)));
+    return views.values.any((m)=>m.isCompleteForChild(child));
   }
 
   Iterable<QueryFilter> get minimalSetOfQueries sync* {
@@ -175,7 +206,7 @@ class SyncPoint {
           }
         }
       }
-      for (var v in views.values) {
+      for (var v in views.values.toList()) {
         var d = v.applyOperation(operation,source,writeId);
         for (var q in d.keys) {
           createMasterViewForFilter(q).observers[q] = d[q];
@@ -193,7 +224,7 @@ class SyncPoint {
 
   void prune() {
     for (var k in views.keys.toList()) {
-      if (views[k].observers.isEmpty) views.remove(k);
+      if (views[k].observers.isEmpty&&!(k==new QueryFilter()&&isCompleteFromParent)) views.remove(k);
     }
   }
 
@@ -249,13 +280,7 @@ class SyncTree {
   SyncTree(this.registrar);
 
   static TreeNode<Name, SyncPoint> _createNode(SyncPoint parent, Name childName) {
-    return new TreeNode(new SyncPoint(
-        parent?.views?.values
-            ?.firstWhere((v)=>v._data.localVersion.isCompleteForChild(childName)
-            ||v._data.localVersion.value.children.containsKey(childName),
-        orElse: ()=>null)
-          ?._data?.child(childName)
-    )..isCompleteFromParent = parent?.isCompleteForChild(childName) ?? false);
+    return new TreeNode(parent?.child(childName) ?? new SyncPoint());
   }
 
   final Map<SyncPoint,Future<Null>> _invalidPoints = {};
@@ -267,6 +292,7 @@ class SyncTree {
     var children = node.children;
     for (var child in children.keys) {
       var v = children[child];
+
 
       v.value.isCompleteFromParent = point.isCompleteForChild(child);
 
@@ -367,6 +393,9 @@ class SyncTree {
     _doOnSyncPoint(path, (point)=>point.applyOperation(operation, filter, type, writeId));
     if (operation.path.isEmpty) {
       for (var k in tree.children.keys) {
+        var childOp = operation.operationForChild(k);
+        if (filter!=null&&(childOp.nodeOperation is Overwrite)&&(childOp.nodeOperation as Overwrite).value.isNil)
+          continue;
         _applyOperationToSyncPoints(tree.children[k], null,
             operation.operationForChild(k), type, writeId, path.child(k));
       }

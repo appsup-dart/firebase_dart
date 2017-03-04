@@ -912,6 +912,64 @@ void main() {
 
     });
 
+    test('parent with filter', () async {
+      await iref.set({
+        "child1": "hello world",
+        "child2": {
+          "a": 1,
+          "b": 2,
+          "c": 3
+        }
+      });
+
+
+      var sub = ref.orderByKey().limitToFirst(1).onValue.listen(print);
+
+      await new Future.delayed(new Duration(milliseconds: 500));
+
+      var l = ref.child("child2").orderByKey().startAt("b").limitToFirst(1)
+      .onValue.map((e)=>e.snapshot.val?.keys?.first).take(2).toList();
+
+      await new Future.delayed(new Duration(milliseconds: 500));
+
+      await iref.child("child2").child("b").remove();
+
+      expect(await l, ["b","c"]);
+
+      await sub.cancel();
+    });
+
+    test('complete from parent', () async {
+      await iref.set({
+        "child1": "hello world",
+        "child2": {
+          "a": 1,
+          "b": 2,
+          "c": 3
+        }
+      });
+
+      var sub = ref.orderByKey().onValue.listen(print);
+      var sub2 = ref.child("child2").orderByKey().limitToFirst(1).onValue.listen(print);
+      await wait(500);
+
+
+      var l = ref.child("child2").child("b")
+          .onValue.map((e)=>e.snapshot.val).take(3).toList();
+
+
+      await sub.cancel();
+      await wait(200);
+
+      await iref.child("child2").child("b").set(4);
+      await wait(200);
+
+      await iref.child("child2").child("b").set(5);
+      expect(await l, [2,4,5]);
+
+
+      await sub2.cancel();
+    });
   });
 }
 
