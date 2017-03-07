@@ -45,16 +45,16 @@ class DataSnapshotImpl extends DataSnapshot {
 
 class QueryImpl extends Query {
   final Uri _url;
-  final QueryFilter _filter;
+  final QueryFilter filter;
   final Repo _repo;
 
   QueryImpl(Uri url, [QueryFilter filter = const QueryFilter()]) : this._(url,filter);
 
-  QueryImpl._(this._url, this._filter) : _repo = new Repo(_url.resolve("/"));
+  QueryImpl._(this._url, this.filter) : _repo = new Repo(_url.resolve("/"));
 
   @override
   Stream<Event> on(String eventType) =>
-      _repo.createStream(ref, _filter, eventType);
+      _repo.createStream(ref, filter, eventType);
 
   Query _withFilter(QueryFilter filter) => new QueryImpl(_url, filter);
 
@@ -64,34 +64,34 @@ class QueryImpl extends Query {
     if (child == null || child.startsWith(r"$"))
       throw new ArgumentError("'$child' is not a valid child");
 
-    return _withFilter(_filter.copyWith(orderBy: child));
+    return _withFilter(filter.copyWith(orderBy: child));
   }
 
   @override
-  Query orderByKey() => _withFilter(_filter.copyWith(orderBy: r".key"));
+  Query orderByKey() => _withFilter(filter.copyWith(orderBy: r".key"));
 
   @override
-  Query orderByValue() => _withFilter(_filter.copyWith(orderBy: r".value"));
+  Query orderByValue() => _withFilter(filter.copyWith(orderBy: r".value"));
 
   @override
   Query orderByPriority() =>
-      _withFilter(_filter.copyWith(orderBy: r".priority"));
+      _withFilter(filter.copyWith(orderBy: r".priority"));
 
   @override
   Query startAt(dynamic value, [String key]) =>
-      _withFilter(_filter.copyWith(startAtKey: key, startAtValue: value));
+      _withFilter(filter.copyWith(startAtKey: key, startAtValue: value));
 
   @override
   Query endAt(dynamic value, [String key]) =>
-      _withFilter(_filter.copyWith(endAtKey: key, endAtValue: value));
+      _withFilter(filter.copyWith(endAtKey: key, endAtValue: value));
 
   @override
   Query limitToFirst(int limit) =>
-      _withFilter(_filter.copyWith(limit: limit, reverse: false));
+      _withFilter(filter.copyWith(limit: limit, reverse: false));
 
   @override
   Query limitToLast(int limit) =>
-      _withFilter(_filter.copyWith(limit: limit, reverse: true));
+      _withFilter(filter.copyWith(limit: limit, reverse: true));
 
   @override
   Firebase get ref => new Firebase(_url.toString());
