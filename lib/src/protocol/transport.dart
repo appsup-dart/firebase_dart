@@ -56,6 +56,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
     if (request != null && !request._completer.isCompleted) {
       request._completer.complete(response);
     }
+    if (_input.isClosed) return;
     _input.add(response);
   }
 
@@ -153,7 +154,7 @@ class WebSocketTransport extends Transport {
     new Stream.periodic(new Duration(seconds: 45))
         .takeWhile((_)=>readyState<=Transport.connected)
       .forEach((_) {
-      _output.add(0);
+      if (!_output.isClosed) _output.add(0);
     });
   }
 

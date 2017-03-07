@@ -3,6 +3,7 @@
 
 import 'dart:collection';
 import 'package:sortedmap/sortedmap.dart';
+import 'package:collection/collection.dart';
 
 class Path<K> extends UnmodifiableListView<K> {
   Path() : super([]);
@@ -13,9 +14,17 @@ class Path<K> extends UnmodifiableListView<K> {
   Path<K> skip(int count) => new Path.from(super.skip(count));
 
   Path<K> child(K child) => new Path.from(new List.from(this)..add(child));
+
+  Path<K> get parent => new Path.from(take(length-1));
+
+  @override
+  int get hashCode => const ListEquality().hash(this);
+
+  @override
+  bool operator==(other) => other is Path && const ListEquality().equals(this,other);
 }
 
-class TreeNode<K, V> implements Comparable<TreeNode<K, V>> {
+class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
   V value;
 
   final Map<K, TreeNode<K, V>> _children;
@@ -25,16 +34,17 @@ class TreeNode<K, V> implements Comparable<TreeNode<K, V>> {
 
   Map<K, TreeNode<K, V>> get children => _children;
 
-  static Map/*<K,V>*/ _cloneMap/*<K,V>*/(Map/*<K,V>*/ map) {
+  static Map/*<K,V>*/ _cloneMap/*<K extends Comparable,V>*/(Map/*<K,V>*/ map) {
     if (map is SortedMap) {
       return (map as SortedMap/*<K,V>*/).clone();
     }
     return new Map/*<K,V>*/ .from(map);
   }
 
-  TreeNode<K, V> subtree(Path<K> path, [TreeNode<K, V> newInstance()]) {
+  TreeNode<K, V> subtree(Path<K> path, [TreeNode<K, V> newInstance(V parent, K name)]) {
     if (path.isEmpty) return this;
-    var child = children.putIfAbsent(path.first, newInstance ?? () => null);
+    newInstance ??= (p,n)=>null;
+    var child = children.putIfAbsent(path.first, () => newInstance(value,path.first));
     if (child == null) return children.remove(path.first);
     return child.subtree(path.skip(1), newInstance);
   }

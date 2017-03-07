@@ -14,20 +14,10 @@ part of firebase_dart;
 /// Once a Query is constructed, you can receive data for it using on(). You
 /// will only receive events and DataSnapshots for the subset of the data that
 /// matches your query.
-class Query {
-  final Uri _url;
-  final Repo _repo;
-  final QueryFilter _nullableFilter;
-
-  Query._(Uri url, [this._nullableFilter])
-      : _url = url,
-        _repo = new Repo(url.resolve("/"));
-
-  QueryFilter get _filter => _nullableFilter ?? const QueryFilter();
+abstract class Query {
 
   /// Gets a stream for events of type [eventType]
-  Stream<Event> on(String eventType) =>
-      _repo.createStream(ref, _nullableFilter, eventType);
+  Stream<Event> on(String eventType);
 
   /// Streams for 'value' events.
   Stream<Event> get onValue => on("value");
@@ -55,25 +45,18 @@ class Query {
   /// Convenient method to get the value for this query.
   Future get() => onceValue.then((v) => v.val);
 
-  Query _withFilter(QueryFilter filter) => new Query._(_url, filter);
 
   /// Generates a new [Query] object ordered by the specified child key.
-  Query orderByChild(String child) {
-    if (child == null || child.startsWith(r"$"))
-      throw new ArgumentError("'$child' is not a valid child");
-
-    return _withFilter(_filter.copyWith(orderBy: child));
-  }
+  Query orderByChild(String child);
 
   /// Generates a new [Query] object ordered by key.
-  Query orderByKey() => _withFilter(_filter.copyWith(orderBy: r".key"));
+  Query orderByKey();
 
   /// Generates a new [Query] object ordered by child values.
-  Query orderByValue() => _withFilter(_filter.copyWith(orderBy: r".value"));
+  Query orderByValue();
 
   /// Generates a new [Query] object ordered by priority.
-  Query orderByPriority() =>
-      _withFilter(_filter.copyWith(orderBy: r".priority"));
+  Query orderByPriority();
 
   /// Creates a [Query] with the specified starting point. The generated Query
   /// includes children which match the specified starting point. If no arguments
@@ -86,8 +69,7 @@ class Query {
   ///
   /// startAt() can be combined with endAt() or limitToFirst() or limitToLast()
   /// to create further restrictive queries.
-  Query startAt(dynamic value, [String key]) =>
-      _withFilter(_filter.copyWith(startAtKey: key, startAtValue: value));
+  Query startAt(dynamic value, [String key]);
 
   /// Creates a [Query] with the specified ending point. The generated Query
   /// includes children which match the specified ending point. If no arguments
@@ -100,8 +82,7 @@ class Query {
   ///
   /// endAt() can be combined with startAt() or limitToFirst() or limitToLast()
   /// to create further restrictive queries.
-  Query endAt(dynamic value, [String key]) =>
-      _withFilter(_filter.copyWith(endAtKey: key, endAtValue: value));
+  Query endAt(dynamic value, [String key]);
 
   /// Creates a [Query] which includes children which match the specified value.
   Query equalTo(dynamic value, [String key]) =>
@@ -109,15 +90,13 @@ class Query {
 
   /// Generates a new [Query] object limited to the first certain number of
   /// children.
-  Query limitToFirst(int limit) =>
-      _withFilter(_filter.copyWith(limit: limit, reverse: false));
+  Query limitToFirst(int limit);
 
   /// Generates a new [Query] object limited to the last certain number of
   /// children.
-  Query limitToLast(int limit) =>
-      _withFilter(_filter.copyWith(limit: limit, reverse: true));
+  Query limitToLast(int limit);
 
   /// Queries are attached to a location in your Firebase. This method will
   /// return a Firebase reference to that location.
-  Firebase get ref => new Firebase(_url.toString());
+  Firebase get ref;
 }

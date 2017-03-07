@@ -6,46 +6,119 @@ import 'dart:async';
 import 'treestructureddata.dart';
 import 'synctree.dart';
 import 'firebase.dart' as firebase;
+import 'firebase_impl.dart' as firebase;
 import 'events/value.dart';
 import 'events/child.dart';
 import 'dart:math';
 import 'package:logging/logging.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:quiver/check.dart' as quiver;
+import 'package:quiver/collection.dart' as quiver;
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
 import 'event.dart';
 
 final _logger = new Logger("firebase-repo");
 
-class QueryFilter extends Filter<Pair<Name, TreeStructuredData>> {
-  final String orderBy;
-  final Pair<Name, TreeStructuredData> startAt;
-  final Pair<Name, TreeStructuredData> endAt;
 
-  const QueryFilter(
-      {this.orderBy, this.startAt, this.endAt, int limit, bool reverse})
-      : super(limit: limit, reverse: reverse);
+abstract class TreeStructuredDataOrdering extends Ordering<Name,TreeStructuredData> {
+
+  factory TreeStructuredDataOrdering(String orderBy) {
+    if (orderBy==null) return null;
+    switch (orderBy) {
+      case ".key":
+        return const TreeStructuredDataOrdering.byKey();
+      case ".value":
+        return const TreeStructuredDataOrdering.byValue();
+      case ".priority":
+        return const TreeStructuredDataOrdering.byPriority();
+      default:
+        assert(!orderBy.startsWith("."));
+        return new TreeStructuredDataOrdering.byChild(orderBy);
+    }
+  }
+  const TreeStructuredDataOrdering._() : super.byValue();
+
+  const factory TreeStructuredDataOrdering.byValue() = ValueOrdering;
+  const factory TreeStructuredDataOrdering.byKey() = KeyOrdering;
+  const factory TreeStructuredDataOrdering.byPriority() = PriorityOrdering;
+  const factory TreeStructuredDataOrdering.byChild(String child) = ChildOrdering;
+
+  String get orderBy;
+
+  @override
+  TreeStructuredData mapValue(TreeStructuredData v);
+
+}
+class PriorityOrdering extends TreeStructuredDataOrdering {
+  const PriorityOrdering() : super._();
+
+  @override
+  TreeStructuredData mapValue(TreeStructuredData v) => new TreeStructuredData.leaf(v.priority);
+
+  String get orderBy => ".priority";
+}
+class ValueOrdering extends TreeStructuredDataOrdering {
+  const ValueOrdering() : super._();
+
+  @override
+  TreeStructuredData mapValue(TreeStructuredData v) => new TreeStructuredData.leaf(v.value);
+
+  String get orderBy => ".value";
+}
+class KeyOrdering extends TreeStructuredDataOrdering {
+  const KeyOrdering() : super._();
+
+  @override
+  TreeStructuredData mapValue(TreeStructuredData v) => null;
+
+  String get orderBy => ".key";
+}
+class ChildOrdering extends TreeStructuredDataOrdering {
+  final String child;
+
+  const ChildOrdering(this.child) : super._();
+
+  @override
+  TreeStructuredData mapValue(TreeStructuredData v) => v.children[new Name(child)] ?? new TreeStructuredData();
+
+  String get orderBy => child;
+}
+
+
+class QueryFilter extends Filter<Name, TreeStructuredData> {
+
+  const QueryFilter({KeyValueInterval<Name,TreeStructuredData> validInterval: const KeyValueInterval<Name,TreeStructuredData>(), int limit,
+  bool reversed: false, TreeStructuredDataOrdering ordering: const TreeStructuredDataOrdering.byPriority()}) :
+    super(ordering: ordering, limit: limit, reversed: reversed, validInterval: validInterval);
+
 
   factory QueryFilter.fromQuery(Query query) {
     if (query == null) return null;
     return new QueryFilter(
         limit: query.limit,
-        reverse: query.isViewFromRight,
-        orderBy: query.index,
-        startAt: _toNameValue(query.index, query.startName, query.startValue),
-        endAt: _toNameValue(query.index, query.endName, query.endValue));
+        reversed: query.isViewFromRight,
+        ordering: new TreeStructuredDataOrdering(query.index),
+        validInterval: _updateInterval(new KeyValueInterval(), query.startName, query.startValue, query.endName, query.endValue));
   }
 
-  static Pair<Name, TreeStructuredData> _toNameValue(String orderBy,
-          String key, dynamic value) {
-    if (key == null && value == null) return null;
-    if (orderBy==".key") {
-      quiver.checkArgument(key==null);
-      return new Pair(new Name(value), null);
+  static KeyValueInterval<Name, TreeStructuredData> _updateInterval(KeyValueInterval<Name, TreeStructuredData> validInterval,
+          String startAtKey, dynamic startAtValue, String endAtKey, dynamic endAtValue) {
+    if (startAtKey!=null||startAtValue!=null) {
+      validInterval = validInterval.startAt(
+          startAtKey==null ? null : new Name(startAtKey),
+          startAtValue==null ? null : new TreeStructuredData(value: new Value(startAtValue)));
     }
-    return new Pair(new Name(key), new TreeStructuredData(value: new Value(value)));
+    if (endAtKey!=null||endAtValue!=null) {
+      validInterval = validInterval.endAt(
+          endAtKey==null ? null : new Name(endAtKey),
+          endAtValue==null ? null : new TreeStructuredData(value: new Value(endAtValue)));
+    }
+    return validInterval;
   }
+
+
+  String get orderBy => (ordering as TreeStructuredDataOrdering).orderBy;
 
   QueryFilter copyWith(
           {String orderBy,
@@ -54,82 +127,48 @@ class QueryFilter extends Filter<Pair<Name, TreeStructuredData>> {
           String endAtKey,
           dynamic endAtValue,
           int limit,
-          bool reverse}) =>
-      new QueryFilter(
-          orderBy: orderBy ?? this.orderBy,
-          startAt: _toNameValue(orderBy ?? this.orderBy, startAtKey, startAtValue) ?? this.startAt,
-          endAt: _toNameValue(orderBy ?? this.orderBy, endAtKey, endAtValue) ?? this.endAt,
-          limit: limit ?? this.limit,
-          reverse: reverse ?? this.reverse);
+          bool reverse}) {
+    var ordering = new TreeStructuredDataOrdering(orderBy) ?? this.ordering;
+    if (ordering is KeyOrdering) {
+
+    }
+    var validInterval = (ordering is KeyOrdering) ?
+    _updateInterval(this.validInterval,startAtValue,null,endAtValue,null) :
+    _updateInterval(this.validInterval,startAtKey,startAtValue,endAtKey,endAtValue);
+
+    return new QueryFilter(
+        ordering: ordering,
+        validInterval: validInterval,
+        limit: limit ?? this.limit,
+        reversed: reverse ?? this.reversed);
+
+  }
 
   Query toQuery() => new Query(
       limit: limit,
-      isViewFromRight: this.reverse,
+      isViewFromRight: this.reversed,
       index: orderBy,
-      endName: orderBy==".key" ? null : endAt?.key?.asString(),
-      endValue: orderBy!=".key" ? endAt?.value?.value?.value : endAt?.key?.asString(),
-      startName: orderBy==".key" ? null : startAt?.key?.asString(),
-      startValue: orderBy!=".key" ? startAt?.value?.value?.value : startAt?.key?.asString()
+      endName: orderBy==".key" ? null : validTypedInterval.end?.key?.asString(),
+      endValue: orderBy!=".key" ? validTypedInterval.end?.value?.value?.value : validTypedInterval.end?.key?.asString(),
+      startName: orderBy==".key" ? null : validTypedInterval.start?.key?.asString(),
+      startValue: orderBy!=".key" ? validTypedInterval.start?.value?.value?.value : validTypedInterval.start?.key?.asString()
   );
 
-  Pair<Name, Comparable> _extract(Pair<Name, TreeStructuredData> p) {
-    switch (orderBy ?? ".priority") {
-      case ".value":
-        return new Pair(p.key, p.value);
-      case ".key":
-        return new Pair(p.key, null);
-      case ".priority":
-        return new Pair(p.key, new TreeStructuredData.leaf(p.value.priority));
-      default:
-        return new Pair(p.key, p.value.children[new Name(orderBy)]);
-    }
-  }
+  bool get limits => limit!=null||!validInterval.isUnlimited;
 
-  int _compareValue(Comparable a, Comparable b) {
-    if (a == null) return b == null ? 0 : -1;
-    if (b == null) return 1;
-    return Comparable.compare(a, b);
-  }
-
-  int _compareKey(Name a, Name b) {
-    if (a.asString() == null || b.asString() == null) return 0;
-    return Comparable.compare(a, b);
-  }
-
-  int _comparePair(Pair<Name, Comparable> a, Pair<Name, Comparable> b) {
-    int cmp = _compareValue(a.value, b.value);
-    if (cmp != 0) return cmp;
-    return _compareKey(a.key, b.key);
-  }
 
   @override
-  bool isValid(Pair<Name, TreeStructuredData> p) {
-    p = _extract(p);
-    if (startAt != null && _comparePair(startAt, p) > 0) return false;
-    if (endAt != null && _comparePair(p, endAt) > 0) return false;
-    return true;
-  }
-
-  @override
-  int compare(
-          Pair<Name, TreeStructuredData> a, Pair<Name, TreeStructuredData> b) =>
-      _comparePair(_extract(a), _extract(b));
+  KeyValueInterval<Name,TreeStructuredData> get validTypedInterval => validInterval;
 
   @override
   String toString() => "QueryFilter[${toQuery().toJson()}]";
 
   @override
-  int get hashCode =>
-      quiver.hash4(orderBy, startAt, endAt, quiver.hash2(limit, reverse));
+  int get hashCode => toQuery().hashCode;
 
   @override
   bool operator ==(dynamic other) =>
-      other is QueryFilter &&
-      other.orderBy == orderBy &&
-      other.startAt == startAt &&
-      other.endAt == endAt &&
-      other.limit == limit &&
-      other.reverse == reverse;
+      other is QueryFilter && other.toQuery()==toQuery();
 }
 
 class Repo {
@@ -138,24 +177,21 @@ class Repo {
 
   static final Map<Uri, Repo> _repos = {};
 
-  final SyncTree _syncTree = new SyncTree();
+  final SyncTree _syncTree;
+
+  SyncTree get syncTree => _syncTree;
 
   final PushIdGenerator pushIds = new PushIdGenerator();
 
-  final Map<QueryFilter, int> _queryToTag = {};
-  final Map<int, QueryFilter> _tagToQuery = {};
-  int _nextTag = 0;
   int _nextWriteId = 0;
   TransactionsTree _transactions;
   SparseSnapshotTree _onDisconnect = new SparseSnapshotTree();
 
   factory Repo(Uri url) {
-    return _repos.putIfAbsent(url, () => new Repo._(url));
+    return _repos.putIfAbsent(url, () => new Repo._(url, new Connection(url.host)));
   }
 
-  Repo._(Uri url)
-      : _connection = new Connection(url.host),
-        url = url {
+  Repo._(this.url, this._connection) : _syncTree = new SyncTree(new RemoteListeners(_connection)) {
     _transactions = new TransactionsTree(this);
     _connection.onConnect.listen((v) {
       if (!v) {
@@ -176,12 +212,12 @@ class Repo {
       }
       switch (r.message.action) {
         case DataMessage.actionSet:
-          var filter = _tagToQuery[r.message.body.tag];
+          var filter = registrar._tagToQuery[r.message.body.tag]?.value;
           _syncTree.applyServerOverwrite(Name.parsePath(r.message.body.path),
               filter, new TreeStructuredData.fromJson(r.message.body.data));
           break;
         case DataMessage.actionMerge:
-          var filter = _tagToQuery[r.message.body.tag];
+          var filter = registrar._tagToQuery[r.message.body.tag]?.value;
           _syncTree.applyServerMerge(
               Name.parsePath(r.message.body.path),
               filter,
@@ -192,7 +228,7 @@ class Repo {
           break;
         case DataMessage.actionListenRevoked:
           var filter = new QueryFilter.fromQuery(
-              r.message.body.query); //TODO test query revoke
+              r.message.body.query);
           _syncTree.applyListenRevoked(
               Name.parsePath(r.message.body.path), filter);
           break;
@@ -207,6 +243,8 @@ class Repo {
     });
     onAuth.listen((v) => _authData = v);
   }
+
+  RemoteListeners get registrar => _syncTree.registrar;
 
   firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
 
@@ -261,7 +299,7 @@ class Repo {
   ///
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
-  Future setWithPriority(String path, dynamic value, dynamic priority) {
+  Future<Null> setWithPriority(String path, dynamic value, dynamic priority) {
     path = _preparePath(path);
     var newValue = new TreeStructuredData.fromJson(value, priority);
     var writeId = _nextWriteId++;
@@ -315,22 +353,7 @@ class Repo {
   Future listen(
       String path, QueryFilter filter, String type, EventListener cb) {
     path = _preparePath(path);
-    var isFirst =
-        _syncTree.addEventListener(type, Name.parsePath(path), filter, cb);
-    if (!isFirst) return new Future.value();
-    if (filter == null) return _connection.listen(path);
-    var tag = _nextTag++;
-    _queryToTag[filter] = tag;
-    _tagToQuery[tag] = filter;
-    // TODO: listen only when no containing complete listener, unlisten others
-    // TODO: listen and send hash
-    return _connection
-        .listen(path, query: filter.toQuery(), tag: tag)
-        .then((MessageBody r) {
-      for (var w in r.warnings ?? const []) {
-        _logger.warning(w);
-      }
-    });
+    return _syncTree.addEventListener(type, Name.parsePath(path), filter ?? new QueryFilter(), cb);
   }
 
   /// Unlistens to changes of [type] at location [path] for data matching [filter].
@@ -340,14 +363,8 @@ class Repo {
   Future unlisten(
       String path, QueryFilter filter, String type, EventListener cb) {
     path = _preparePath(path);
-    var isLast =
-        _syncTree.removeEventListener(type, Name.parsePath(path), filter, cb);
-    if (!isLast) return new Future.value();
-    if (filter == null) return _connection.unlisten(path);
-    var tag = _queryToTag.remove(filter);
-    _tagToQuery.remove(tag);
-    // TODO: listen to others when necessary
-    return _connection.unlisten(path, query: filter.toQuery(), tag: tag);
+    return new Future.delayed(new Duration(milliseconds: 2000),
+    ()=>_syncTree.removeEventListener(type, Name.parsePath(path), filter ?? new QueryFilter(), cb));
   }
 
   /// Gets the current cached value at location [path] with [filter].
@@ -355,7 +372,7 @@ class Repo {
     path = _preparePath(path);
     var tree = _syncTree.root.subtree(Name.parsePath(path));
     if (tree = null) return null;
-    return tree.value.views[filter].currentValue.localVersion;
+    return tree.value.valueForFilter(filter);
   }
 
   /// Helper function to create a new stream for a particular event type.
@@ -409,6 +426,43 @@ class Repo {
   }
 }
 
+class RemoteListeners extends RemoteListenerRegistrar {
+
+  int _nextTag = 0;
+  final quiver.BiMap<int,Pair<Path<Name>,QueryFilter>> _tagToQuery = new quiver.BiMap();
+
+  final Connection connection;
+
+  RemoteListeners(this.connection);
+
+  @override
+  Future<Null> remoteRegister(Path<Name> path, QueryFilter filter, String hash) async {
+    var def = new Pair(path, filter);
+    var tag = _nextTag++;
+    _tagToQuery[tag] = def;
+    try {
+      var query = filter.limits ? filter.toQuery() : null;
+      MessageBody r = await connection.listen(path.join('/'), query: query, tag: query==null ? null : tag, hash: hash);
+      for (var w in r.warnings ?? const []) {
+        _logger.warning(w);
+      }
+    } catch (e) {
+      _tagToQuery.remove(tag);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) async {
+    var def = new Pair(path, filter);
+    var query = filter.limits ? filter.toQuery() : null;
+    var tag = _tagToQuery.inverse.remove(def);
+    await connection.unlisten(path.join('/'), query: query, tag: query==null ? null : tag);
+  }
+
+}
+
+
 typedef Stream<T> _StreamCreator<T>();
 
 class _Stream<T> extends Stream<T> {
@@ -444,19 +498,19 @@ class StreamFactory {
   firebase.Event _mapEvent(Event value) {
     if (value is ValueEvent) {
       if (type!="value") return null;
-      return new firebase.Event(new firebase.DataSnapshot(ref, value.value), null);
+      return new firebase.Event(new firebase.DataSnapshotImpl(ref, value.value), null);
     } else if (value is ChildAddedEvent) {
       if (type!="child_added") return null;
-      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), value.newValue), value.prevChildKey.toString());
+      return new firebase.Event(new firebase.DataSnapshotImpl(ref.child(value.childKey.toString()), value.newValue), value.prevChildKey.toString());
     } else if (value is ChildChangedEvent) {
       if (type!="child_changed") return null;
-      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), value.newValue), value.prevChildKey.toString());
+      return new firebase.Event(new firebase.DataSnapshotImpl(ref.child(value.childKey.toString()), value.newValue), value.prevChildKey.toString());
     } else if (value is ChildMovedEvent) {
       if (type!="child_moved") return null;
-      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), null), value.prevChildKey.toString());
+      return new firebase.Event(new firebase.DataSnapshotImpl(ref.child(value.childKey.toString()), null), value.prevChildKey.toString());
     } else if (value is ChildRemovedEvent) {
       if (type!="child_removed") return null;
-      return new firebase.Event(new firebase.DataSnapshot(ref.child(value.childKey.toString()), value.oldValue), value.prevChildKey.toString());
+      return new firebase.Event(new firebase.DataSnapshotImpl(ref.child(value.childKey.toString()), value.oldValue), value.prevChildKey.toString());
     }
     return null;
   }
@@ -620,7 +674,7 @@ class Transaction implements Comparable<Transaction> {
         abortReason = reason;
         break;
       case TransactionStatus.run:
-        fail(new Exception("set"));
+        fail(new Exception(reason));
         break;
       default:
         throw new StateError("Unable to abort transaction in state $status");
@@ -670,7 +724,7 @@ class TransactionsTree {
       Path<Name> path, Function transactionUpdate, bool applyLocally) {
     var transaction =
         new Transaction(repo, path, transactionUpdate, applyLocally);
-    var node = root.subtree(path, () => new TransactionsNode());
+    var node = root.subtree(path, (a,b) => new TransactionsNode());
 
     var current = getLatestValue(repo, path);
     if (node.value.isEmpty) {
@@ -697,7 +751,7 @@ class TransactionsTree {
 TreeStructuredData getLatestValue(Repo repo, Path<Name> path) {
   var node = repo._syncTree.root.subtree(path);
   if (node == null) return new TreeStructuredData();
-  return node.value.views[null].currentValue.localVersion;
+  return node.value.valueForFilter(new QueryFilter());
 }
 
 class TransactionsNode extends TreeNode<Name, List<Transaction>> {
@@ -708,7 +762,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
 
   @override
   TransactionsNode subtree(Path<Name> path,
-          [TreeNode<Name, List<Transaction>> newInstance()]) =>
+          [TreeNode<Name, List<Transaction>> newInstance(List<Transaction> parent, Name childName)]) =>
       super.subtree(path, newInstance);
 
   bool get isReadyToSend =>
@@ -803,7 +857,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     var v = input;
     for (var t in transactionsInOrder) {
       var p = t.path.skip(path.length);
-      t.run(v.subtree(p, () => new TreeStructuredData()) ??
+      t.run(v.subtree(p, (a,b) => new TreeStructuredData()) ??
           new TreeStructuredData());
       if (!t.isComplete) {
         v = updateChild(v, p, t.currentOutputSnapshotResolved);

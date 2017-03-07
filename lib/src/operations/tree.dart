@@ -5,40 +5,55 @@ import '../data_observer.dart';
 import '../event.dart';
 import '../events/child.dart';
 import '../tree.dart';
+import '../treestructureddata.dart';
 
-typedef TreeNode<K, V> NodeFactory<K, V>();
+class TreeOperation extends Operation {
+  final Path<Name> path;
+  final Operation nodeOperation;
 
-class TreeOperation<K, V> extends Operation<TreeNode<K, V>> {
-  final Path<K> path;
-  final Operation<TreeNode<K, V>> nodeOperation;
-  final NodeFactory<K, V> factory;
+  TreeOperation(this.path, this.nodeOperation);
 
-  TreeOperation(this.path, this.nodeOperation, this.factory);
+  TreeOperation.overwrite(Path<Name> path, TreeStructuredData value)
+      : this(path, new Overwrite(value));
+
+  TreeOperation.setPriority(Path<Name> path, Value value)
+      : this(path, new SetPriority(value));
+
+  TreeOperation.merge(Path<Name> path, Map<Name, TreeStructuredData> children)
+      : this(path, new Merge(children));
+
+  factory TreeOperation.ack(Path<Name> path, bool success) =>
+      new Ack(path, success);
 
   @override
-  TreeNode<K, V> apply(TreeNode<K, V> value) {
+  TreeStructuredData apply(TreeStructuredData value) {
     return _applyOnPath(path, value);
   }
 
-  TreeOperation<K, V> operationForChild(K key) {
-    if (path.isEmpty) return null;
+  @override
+  TreeOperation operationForChild(Name key) {
+    if (path.isEmpty) {
+      var op = nodeOperation.operationForChild(key);
+      if (op==null) return null;
+      return new TreeOperation(path, op);
+    }
     if (path.first != key) return null;
-    return new TreeOperation(path.skip(1), nodeOperation, factory);
+    return new TreeOperation(path.skip(1), nodeOperation);
   }
 
   @override
   String toString() => "TreeOperation[$path,$nodeOperation]";
 
   @override
-  Iterable<Path> get completesPaths => nodeOperation.completesPaths
-      .map/*<Path>*/((p) => new Path.from(new List.from(this.path)..addAll(p)));
+  Iterable<Path<Name>> get completesPaths => nodeOperation.completesPaths
+      .map<Path<Name>>((p) => new Path.from(new List.from(this.path)..addAll(p)));
 
-  TreeNode<K, V> _applyOnPath(Path<K> path, TreeNode<K, V> value) {
+  TreeStructuredData _applyOnPath(Path<Name> path, TreeStructuredData value) {
     if (path.isEmpty) {
       return nodeOperation.apply(value);
     } else {
       var k = path.first;
-      TreeNode<K, V> child = value.children[k] ?? factory();
+      TreeStructuredData child = value.children[k] ?? new TreeStructuredData();
       var newChild = _applyOnPath(path.skip(1), child);
       var newValue = value.clone();
       if (newValue.isLeaf && !newChild.isNil) newValue.value = null;
@@ -51,54 +66,104 @@ class TreeOperation<K, V> extends Operation<TreeNode<K, V>> {
   }
 }
 
-class Merge<K, V> extends Operation<TreeNode<K, V>> {
-  final Map<K, TreeNode<K, V>> children;
+class Ack extends TreeOperation {
+  @override
+  final bool success;
+
+  Ack(Path<Name> path, this.success) : super(path, null);
+
+  @override
+  Ack operationForChild(Name key) {
+    if (path.isEmpty) return this;
+    if (path.first != key) return null;
+    return new Ack(path.skip(1), success);
+  }
+}
+
+class Merge extends Operation {
+  final Map<Name, TreeStructuredData> children;
 
   Merge(this.children);
 
   @override
-  TreeNode<K, V> apply(TreeNode<K, V> value) {
+  TreeStructuredData apply(TreeStructuredData value) {
     var n = value.clone();
     children.forEach((k,v) {
       if (v.isNil) n.children.remove(k);
-      else n.children[k] = children[k];
+    });
+    children.forEach((k,v) {
+      if (!v.isNil) n.children[k] = children[k];
     });
     return n;
   }
 
   @override
-  Iterable<Path> get completesPaths =>
-      children.keys.map/*<Path>*/((c) => new Path.from([c]));
+  Iterable<Path<Name>> get completesPaths =>
+      children.keys.map<Path<Name>>((c) => new Path<Name>.from([c]));
+
+  @override
+  Operation operationForChild(Name key) {
+    if (!children.containsKey(key)) return null;
+    return new Overwrite(children[key]);
+  }
+
+  @override
+  String toString() => "Merge[$children]";
 }
 
-class Overwrite<K, V> extends Operation<TreeNode<K, V>> {
-  final TreeNode<K, V> value;
+class Overwrite extends Operation {
+  final TreeStructuredData value;
 
   Overwrite(this.value);
 
   @override
-  TreeNode<K, V> apply(TreeNode<K, V> value) => value.clone()
-    ..value = this.value.value
-    ..children.clear()
-    ..children.addAll(this.value.children);
+  TreeStructuredData apply(TreeStructuredData value) {
+    return this.value.withFilter(value.children.filter);
+  }
 
   @override
   String toString() => "Overwrite[$value]";
 
   @override
-  Iterable<Path> get completesPaths => [new Path()];
+  Iterable<Path<Name>> get completesPaths => [new Path()];
+
+  @override
+  Operation operationForChild(Name key) {
+    var child = value.children[key] ?? new TreeStructuredData();
+    return new Overwrite(child);
+  }
 }
 
-class TreeEventGenerator<K, V> extends EventGenerator<TreeNode<K, V>> {
+class SetPriority extends Operation {
+  final Value value;
+
+  SetPriority(this.value);
+
+  @override
+  TreeStructuredData apply(TreeStructuredData value) {
+    return value.clone()..priority = this.value;
+  }
+
+  @override
+  String toString() => "SetPriority[$value]";
+
+  @override
+  Iterable<Path<Name>> get completesPaths => [];
+
+  @override
+  Operation operationForChild(Name key) => null;
+}
+
+class TreeEventGenerator extends EventGenerator {
   const TreeEventGenerator();
 
   @override
   Iterable<Event> generateEvents(
       String eventType,
-      IncompleteData<TreeNode<K, V>> oldValue,
-      IncompleteData<TreeNode<K, V>> newValue) sync* {
+      IncompleteData oldValue,
+      IncompleteData newValue) sync* {
     var newChildren = newValue.value.children;
-    Map<K, TreeNode<K, V>> oldChildren = oldValue.value?.children ?? const {};
+    Map<Name, TreeStructuredData> oldChildren = oldValue.value?.children ?? const {};
     switch (eventType) {
       case "child_added":
         var newPrevKey;
@@ -133,7 +198,7 @@ class TreeEventGenerator<K, V> extends EventGenerator<TreeNode<K, V>> {
         }
         return;
       case "child_moved":
-        K lastKeyBefore(List<K> list, K key) {
+        Name lastKeyBefore(List<Name> list, Name key) {
           var index = list.indexOf(key);
           if (index <= 0) return null;
           return list[index - 1];

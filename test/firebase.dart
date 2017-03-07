@@ -12,12 +12,21 @@ import 'dart:async';
 import 'secrets.dart'
   if (dart.library.html) 'secrets.dart'
   if (dart.library.io) 'secrets_io.dart';
+import 'dart:isolate';
 
 String get testUrl => "${secrets["host"]}";
 
 void main() {
-  Logger.root.level = Level.ALL;
-  Logger.root.onRecord.listen(print);
+
+  StreamSubscription logSubscription;
+  setUp(() {
+    Logger.root.level = Level.ALL;
+    logSubscription = Logger.root.onRecord.listen(print);
+  });
+  tearDown(() async {
+    await logSubscription.cancel();
+  });
+
 
   group('Reference location', () {
     var ref = new Firebase("${testUrl}");
@@ -453,6 +462,8 @@ void main() {
 
       await Future.wait(futures);
 
+      await wait(400);
+
       expect(await ref.child("object/count").get(), 10);
 
     });
@@ -706,8 +717,29 @@ void main() {
         "text1": {"order":"c"}
       });
 
+    });
+
+    test('Order after remove', () async {
+      var iref = new IsolatedReference(ref);
+      await iref.set({
+        "text2": {"order":"b"},
+        "text1": {"order":"c"},
+        "text3": {"order":"a"}
+      });
+
+      var q = ref.orderByChild("order");
+      var l = q.startAt("b").limitToFirst(1).onValue
+          .map((e)=>e.snapshot.val?.keys?.single)
+          .take(2).toList();
+
+      await new Future.delayed(new Duration(milliseconds: 200));
+      await iref.child("text2").remove();
+      await new Future.delayed(new Duration(milliseconds: 500));
+
+      expect(await l, ["text2","text1"]);
 
     });
+
     test('Start/End at', () async {
       await ref.set({
         "text2": {"order":"b"},
@@ -792,5 +824,216 @@ void main() {
     });
   });
 
+
+  group('Complex operations', () {
+    var ref = new Firebase("${testUrl}test/complex");
+    var iref = new IsolatedReference(ref);
+
+    test('Remove out of view', () async {
+      await iref.set({
+        "text1": "b",
+        "text2": "c",
+        "text3": "a"
+      });
+
+      await wait(500);
+
+      var l = ref.orderByKey().limitToFirst(2)
+          .onValue.map((e)=>e.snapshot.val?.keys?.first).take(4).toList();
+
+
+      await iref.child('text0').set("d");
+      await iref.child('text1').remove();
+      await iref.child('text0').remove();
+
+      expect(await l, ["text1","text0","text0","text2"]);
+    });
+
+    test('Upgrade subquery to master view', () async {
+
+      await iref.set({
+        "text1": "b",
+        "text2": "c",
+        "text3": "a"
+      });
+
+      var s1 = ref.orderByKey().limitToFirst(1).onValue.listen(print);
+      var l = ref.orderByKey().startAt("text2").limitToFirst(1).onValue
+          .expand((e)=>e.snapshot.val?.values??[]).take(2).toList();
+
+      await wait(500);
+
+      await s1.cancel();
+
+      await iref.child('text2').remove();
+
+      expect(await l, ["c","a"]);
+    });
+
+    test('Listen to child after parent', () async {
+      await iref.set({
+        "text1": "b",
+        "text2": "c",
+        "text3": "a"
+      });
+
+      var s1 = ref.orderByKey().limitToFirst(2).onValue.map((e)=>e.snapshot.val).listen(print);
+
+      await wait(500);
+
+      expect(await ref.child("text2").get(), "c");
+      var l = ref.child("text2").onValue
+      .map((v){print(v.snapshot.val);return v;})
+          .map((e)=>e.snapshot.val).take(3).toList();
+
+      await iref.child('text2').set("x");
+
+      await wait(500);
+      await s1.cancel();
+
+      await iref.child('text2').remove();
+
+      expect(await l, ["c","x",null]);
+
+    });
+
+    test('startAt increasing', () async {
+      await iref.set({
+        "10": 10,
+        "20": 20,
+        "30": 30
+      });
+
+      var s = new Stream.periodic(new Duration(milliseconds: 20), (i)=>i).take(30);
+
+      await for (var i in s) {
+        await ref.orderByKey().startAt("$i").limitToFirst(1).get();
+      }
+
+    });
+
+    test('parent with filter', () async {
+      await iref.set({
+        "child1": "hello world",
+        "child2": {
+          "a": 1,
+          "b": 2,
+          "c": 3
+        }
+      });
+
+
+      var sub = ref.orderByKey().limitToFirst(1).onValue.listen(print);
+
+      await new Future.delayed(new Duration(milliseconds: 500));
+
+      var l = ref.child("child2").orderByKey().startAt("b").limitToFirst(1)
+      .onValue.map((e)=>e.snapshot.val?.keys?.first).take(2).toList();
+
+      await new Future.delayed(new Duration(milliseconds: 500));
+
+      await iref.child("child2").child("b").remove();
+
+      expect(await l, ["b","c"]);
+
+      await sub.cancel();
+    });
+
+    test('complete from parent', () async {
+      await iref.set({
+        "child1": "hello world",
+        "child2": {
+          "a": 1,
+          "b": 2,
+          "c": 3
+        }
+      });
+
+      var sub = ref.orderByKey().onValue.listen(print);
+      var sub2 = ref.child("child2").orderByKey().limitToFirst(1).onValue.listen(print);
+      await wait(500);
+
+
+      var l = ref.child("child2").child("b")
+          .onValue.map((e)=>e.snapshot.val).take(3).toList();
+
+
+      await sub.cancel();
+      await wait(200);
+
+      await iref.child("child2").child("b").set(4);
+      await wait(200);
+
+      await iref.child("child2").child("b").set(5);
+      expect(await l, [2,4,5]);
+
+
+      await sub2.cancel();
+    });
+  });
 }
 
+wait(int millis) async => new Future.delayed(new Duration(milliseconds: millis));
+
+class IsolatedReference {
+
+  final Firebase reference;
+
+  IsolatedReference(this.reference);
+
+  IsolatedReference child(String childPath) => new IsolatedReference(reference.child(childPath));
+
+  IsolatedReference get parent => new IsolatedReference(reference.parent);
+
+  Future set(dynamic v) => _sendReceive("set",v);
+
+  Future update(dynamic v) => _sendReceive("update",v);
+
+  Future remove() => _sendReceive("set",null);
+
+  Future authWithCustomToken(String token) => _sendReceive("auth",token);
+
+  static Future<SendPort> get _sendPort async {
+    var response = new ReceivePort();
+    var isolate = await Isolate.spawn(_spawnFunction, response.sendPort);
+    var error = new ReceivePort();
+    isolate.addErrorListener(error.sendPort);
+    error.listen(print);
+    return response.first;
+  }
+
+  Future _sendReceive(String command, dynamic v) async {
+    ReceivePort response = new ReceivePort();
+    var port = await _sendPort;
+    port.send([response.sendPort, reference.url, command, v]);
+    return response.first;
+  }
+
+}
+
+
+_spawnFunction(SendPort initialReplyTo) async {
+  var port = new ReceivePort();
+  initialReplyTo.send(port.sendPort);
+
+  await for (var msg in port) {
+    SendPort replyTo = msg[0];
+    var url = msg[1]?.toString();
+    var command = msg[2];
+    var value = msg[3];
+    switch (command) {
+      case "set":
+        await new Firebase(url).set(value);
+        break;
+      case "update":
+        await new Firebase(url).update(value);
+        break;
+      case "exit":
+        port.close();
+        break;
+      case "auth":
+        await new Firebase(url).authWithCustomToken(value);
+    }
+    replyTo.send(null);
+  }
+}

@@ -109,7 +109,7 @@ class Connection {
     });
   }
 
-  Future disconnect() => _transport._close(null);
+  Future disconnect() => _transport._close(-1);
 
   Future close() async {
     await _output.close();

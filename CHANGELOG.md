@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+- improved performance by only listening to the most general query
+- bugfixes
+
+
 ## 0.5.7
 
 - fix handling merge when some new children are nil

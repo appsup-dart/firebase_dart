@@ -5,34 +5,38 @@ import 'event.dart';
 import 'package:collection/collection.dart';
 import 'events/value.dart';
 import 'tree.dart';
+import 'treestructureddata.dart';
 
-abstract class Operation<T> {
-  T apply(T value);
+abstract class Operation {
+  TreeStructuredData apply(TreeStructuredData value);
 
-  Iterable<Path> get completesPaths;
+  Iterable<Path<Name>> get completesPaths;
+
+  Operation operationForChild(Name key);
 }
 
-class IncompleteData<T> {
-  final TreeNode<dynamic, bool> _states;
-  final T value;
+class IncompleteData {
+  final TreeNode<Name, bool> _states;
+  final TreeStructuredData value;
 
-  IncompleteData(this.value, [TreeNode<dynamic, bool> states])
-      : _states = states ?? new TreeNode();
+  IncompleteData(this.value, [TreeNode<Name, bool> states])
+      : _states = states ?? new TreeNode(false) {
+    assert(value!=null);
+  }
 
   bool get isComplete => _states.value == true;
 
-  bool isCompleteForPath(Path path) => _isCompleteForPath(_states, path);
-  bool isCompleteForChild(Object child) =>
-      _isCompleteForPath(_states, new Path.from([child]));
+  bool isCompleteForPath(Path<Comparable> path) => _isCompleteForPath(_states, path);
+  bool isCompleteForChild(Comparable child) =>
+      _isCompleteForPath(_states, new Path<Comparable>.from([child]));
 
-  IncompleteData/*<S>*/ childData/*<S>*/(
-          Object child, dynamic/*=S*/ childValue) =>
-      new IncompleteData/*<S>*/(childValue, _states.children[child]);
+  IncompleteData child(Name child) =>
+      new IncompleteData(value.children[child] ?? new TreeStructuredData(), _states.value ? new TreeNode(true) : _states.children[child]);
 
-  bool _isCompleteForPath(TreeNode<dynamic, bool> states, Path path) =>
+  bool _isCompleteForPath(TreeNode<Comparable, bool> states, Path<Comparable> path) =>
       states.nodesOnPath(path).any((v) => v.value == true);
 
-  IncompleteData<T> update(T newValue, Iterable<Path> newCompletedPaths) {
+  IncompleteData update(TreeStructuredData newValue, [Iterable<Path<Name>> newCompletedPaths=const[]]) {
     var newStates = _states;
     for (var p in newCompletedPaths) {
       if (_isCompleteForPath(newStates, p)) continue;
@@ -41,8 +45,8 @@ class IncompleteData<T> {
     return new IncompleteData(newValue, newStates);
   }
 
-  TreeNode<dynamic, bool> _completePath(
-      TreeNode<dynamic, bool> states, Path path) {
+  TreeNode<Name, bool> _completePath(
+      TreeNode<Name, bool> states, Path<Name> path) {
     if (path.isEmpty) return new TreeNode(true);
     var c = path.first;
     return states.clone()
@@ -52,33 +56,13 @@ class IncompleteData<T> {
 
   @override
   String toString() => "IncompleteData[$value,$_states]";
+
+  IncompleteData applyOperation(Operation op) =>
+      update(op.apply(value), op.completesPaths);
+
 }
 
-class DataObserver<T> extends EventTarget {
-  IncompleteData<T> _data;
-
-  final EventGenerator<T> eventGenerator;
-
-  DataObserver([T initialValue, this.eventGenerator = const EventGenerator()])
-      : _data = new IncompleteData(initialValue);
-
-  T get currentValue => _data.value;
-  IncompleteData<T> get incompleteData => _data;
-
-  void applyOperation(Operation<T> operation) {
-    var oldData = _data;
-    _data =
-        _data.update(operation.apply(_data.value), operation.completesPaths);
-    eventTypesWithRegistrations
-        .expand((t) => eventGenerator.generateEvents(t, oldData, _data))
-        .forEach(dispatchEvent);
-  }
-
-  Iterable<Event> generateInitialEvents(String type) =>
-      eventGenerator.generateEvents(type, new IncompleteData(null), _data);
-}
-
-class EventGenerator<T> {
+class EventGenerator {
   const EventGenerator();
 
   static bool _equals(a, b) {
@@ -88,8 +72,8 @@ class EventGenerator<T> {
     return a == b;
   }
 
-  Iterable<Event> generateEvents(String eventType, IncompleteData<T> oldValue,
-      IncompleteData<T> newValue) sync* {
+  Iterable<Event> generateEvents(String eventType, IncompleteData oldValue,
+      IncompleteData newValue) sync* {
     if (eventType != "value") return;
     if (!newValue.isComplete) return;
     if (oldValue.isComplete && _equals(oldValue.value, newValue.value)) return;

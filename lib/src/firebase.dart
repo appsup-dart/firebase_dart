@@ -4,12 +4,12 @@
 library firebase_dart;
 
 import 'repo.dart';
-import 'treestructureddata.dart';
 
 import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'dart:collection';
+import 'firebase_impl.dart';
 
 part 'firebase/datasnapshot.dart';
 part 'firebase/event.dart';

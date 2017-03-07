@@ -13,7 +13,7 @@ class Event {
 
 typedef void EventListener(Event event);
 
-abstract class EventTarget {
+class EventTarget {
   final Map<String, Set<EventListener>> _eventRegistrations = {};
 
   bool get hasEventRegistrations =>
