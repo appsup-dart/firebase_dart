@@ -112,6 +112,30 @@ class Query {
         startValue: json[indexStartValue]);
   }
 
+  factory Query.fromFilter(QueryFilter filter) {
+    if (filter==null) return null;
+    return new Query(
+        limit: filter.limit,
+        isViewFromRight: filter.reversed,
+        index: filter.orderBy,
+        endName: filter.orderBy==".key" ? null : filter.validTypedInterval.end?.key?.asString(),
+        endValue: filter.orderBy!=".key" ? filter.validTypedInterval.end?.value?.value?.value : filter.validTypedInterval.end?.key?.asString(),
+        startName: filter.orderBy==".key" ? null : filter.validTypedInterval.start?.key?.asString(),
+        startValue: filter.orderBy!=".key" ? filter.validTypedInterval.start?.value?.value?.value : filter.validTypedInterval.start?.key?.asString()
+    );
+  }
+
+  QueryFilter toFilter() {
+    var f = new QueryFilter(
+        limit: limit,
+        reversed: isViewFromRight,
+        ordering: new TreeStructuredDataOrdering(index));
+    if (index==".key") {
+      return f.copyWith(startAtKey: startValue, endAtKey: endValue);
+    }
+    return f.copyWith(startAtKey: startName, startAtValue: startValue, endAtKey: endName, endAtValue: endValue);
+  }
+
   @override
   int get hashCode => quiver.hash4(limit, isViewFromRight, index,
       quiver.hash4(endName, endValue, startName, startValue));

@@ -3,75 +3,32 @@
 
 part of firebase.protocol;
 
-class ServerError implements Exception {
-  final String code;
-  final String message;
 
-  ServerError(this.code, this.message);
+class ProtocolConnection extends Connection {
 
-  String get reason =>
-      const {
-        "too_big":
-            "The data requested exceeds the maximum size that can be accessed with a single request.",
-        "permission_denied":
-            "Client doesn't have permission to access the desired data.",
-        "unavailable": "The service is unavailable"
-      }[code] ??
-      "Unknown Error";
-
-  @override
-  String toString() => "$code: $reason";
-}
-
-enum OperationEventType {overwrite, merge, listenRevoked}
-
-class OperationEvent {
-  final Path<Name> path;
-  final OperationEventType type;
-  final Query query;
-  final TreeStructuredData data;
-
-  OperationEvent(this.type, this.path, this.data, this.query);
-
-  TreeOperation get operation {
-    switch (type) {
-      case OperationEventType.overwrite:
-        if (path.isNotEmpty&&path.last==new Name(".priority"))
-          return new TreeOperation.setPriority(path.parent, data.value);
-        return new TreeOperation.overwrite(path, data);
-      case OperationEventType.merge:
-        return new TreeOperation.merge(path, data.children);
-      default:
-        return null;
-    }
-  }
-}
-
-class Connection {
-  final String host;
   Transport _transport;
   Future _establishConnectionTimer;
   String _lastSessionId;
 
   int _nextTag = 0;
-  final quiver.BiMap<int,Pair<String,Query>> _tagToQuery = new quiver.BiMap();
+  final quiver.BiMap<int,Pair<String,QueryFilter>> _tagToQuery = new quiver.BiMap();
 
-  Connection(this.host) {
+  ProtocolConnection(String host) : super.base(host) {
     quiver.checkArgument(host!=null&&host.isNotEmpty);
     _scheduleConnect(0);
   }
 
-  final Map<String, Map<Query, Request>> _listens = {};
+  final Map<String, Map<QueryFilter, Request>> _listens = {};
 
   DateTime get serverTime => new DateTime.now().add(_serverTimeDiff ?? const Duration());
   Duration _serverTimeDiff;
 
-  Future<Iterable<String>> listen(String path, {Query query, String hash}) async {
+  Future<Iterable<String>> listen(String path, {QueryFilter query, String hash}) async {
     var def = new Pair(path, query);
     var tag = _nextTag++;
     _tagToQuery[tag] = def;
 
-    var r = new Request.listen(path, query: query, tag: tag, hash: hash);
+    var r = new Request.listen(path, query: new Query.fromFilter(query), tag: tag, hash: hash);
     _addListen(r);
     try {
       var body = await _request(r);
@@ -83,10 +40,10 @@ class Connection {
     }
   }
 
-  Future<Null> unlisten(String path, {Query query}) async {
+  Future<Null> unlisten(String path, {QueryFilter query}) async {
     var def = new Pair(path, query);
     var tag = _tagToQuery.inverse.remove(def);
-    var r = new Request.unlisten(path, query: query, tag: tag);
+    var r = new Request.unlisten(path, query: new Query.fromFilter(query), tag: tag);
     _removeListen(path, query);
     await _request(r);
   }
@@ -104,10 +61,10 @@ class Connection {
   void _addListen(Request request) {
     var path = request.message.body.path;
     var query = request.message.body.query;
-    _listens.putIfAbsent(path, () => {})[query] = request;
+    _listens.putIfAbsent(path, () => {})[query.toFilter()] = request;
   }
 
-  void _removeListen(String path, Query query) {
+  void _removeListen(String path, QueryFilter query) {
     _listens.putIfAbsent(path, () => {}).remove(query);
   }
 
@@ -183,9 +140,9 @@ class Connection {
     });
   }
 
-  Future disconnect() => _transport._close(-1);
+  Future<Null> disconnect() => _transport._close(-1);
 
-  Future close() async {
+  Future<Null> close() async {
     await _onDataOperation.close();
     await _onAuth.close();
     await _onConnect.close();
@@ -221,7 +178,7 @@ class Connection {
         return b.data["auth"];
       });
 
-  Future unauth() {
+  Future<Null> unauth() {
     _authToken = null;
     return _request(new Request.unauth()).then((b) => b.data);
   }
@@ -250,13 +207,16 @@ class Connection {
     });
   }
 
-  Future<MessageBody> onDisconnectPut(String path, dynamic value) =>
-      _request(new Request.onDisconnectPut(path, value));
+  Future<Null> onDisconnectPut(String path, dynamic value) async {
+    await _request(new Request.onDisconnectPut(path, value));
+  }
 
-  Future<MessageBody> onDisconnectMerge(
-          String path, Map<String, dynamic> childrenToMerge) =>
-      _request(new Request.onDisconnectMerge(path, childrenToMerge));
+  Future<Null> onDisconnectMerge(
+          String path, Map<String, dynamic> childrenToMerge) async {
+    await _request(new Request.onDisconnectMerge(path, childrenToMerge));
+  }
 
-  Future<MessageBody> onDisconnectCancel(String path) =>
-      _request(new Request.onDisconnectCancel(path));
+  Future<Null> onDisconnectCancel(String path) async {
+    await _request(new Request.onDisconnectCancel(path));
+  }
 }

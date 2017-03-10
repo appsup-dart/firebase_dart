@@ -118,7 +118,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
     return done;
   }
 
-  Future _close(int state) async {
+  Future<Null> _close(int state) async {
     _readyState = state;
     await _output.close();
     await _input.close();

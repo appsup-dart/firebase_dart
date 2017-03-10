@@ -1,7 +1,7 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-import 'protocol.dart';
+import 'connection.dart';
 import 'dart:async';
 import 'treestructureddata.dart';
 import 'synctree.dart';
@@ -47,6 +47,11 @@ abstract class TreeStructuredDataOrdering extends Ordering<Name,TreeStructuredDa
   @override
   TreeStructuredData mapValue(TreeStructuredData v);
 
+  @override
+  int get hashCode => orderBy.hashCode;
+
+  @override
+  bool operator==(Object other) => other is TreeStructuredDataOrdering&&other.orderBy==orderBy;
 }
 class PriorityOrdering extends TreeStructuredDataOrdering {
   const PriorityOrdering() : super._();
@@ -91,18 +96,6 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
     super(ordering: ordering, limit: limit, reversed: reversed, validInterval: validInterval);
 
 
-  factory QueryFilter.fromQuery(Query query) {
-    if (query == null) return null;
-    return new QueryFilter(
-        limit: query.limit,
-        reversed: query.isViewFromRight,
-        ordering: new TreeStructuredDataOrdering(query.index),
-        validInterval: query.index==".key" ?
-        _updateInterval(new KeyValueInterval(), query.startValue, null, query.endValue, null) :
-        _updateInterval(new KeyValueInterval(), query.startName, query.startValue, query.endName, query.endValue)
-    );
-  }
-
   static KeyValueInterval<Name, TreeStructuredData> _updateInterval(KeyValueInterval<Name, TreeStructuredData> validInterval,
           String startAtKey, dynamic startAtValue, String endAtKey, dynamic endAtValue) {
     if (startAtKey!=null||startAtValue!=null) {
@@ -145,31 +138,10 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
 
   }
 
-  Query toQuery() => new Query(
-      limit: limit,
-      isViewFromRight: this.reversed,
-      index: orderBy,
-      endName: orderBy==".key" ? null : validTypedInterval.end?.key?.asString(),
-      endValue: orderBy!=".key" ? validTypedInterval.end?.value?.value?.value : validTypedInterval.end?.key?.asString(),
-      startName: orderBy==".key" ? null : validTypedInterval.start?.key?.asString(),
-      startValue: orderBy!=".key" ? validTypedInterval.start?.value?.value?.value : validTypedInterval.start?.key?.asString()
-  );
-
   bool get limits => limit!=null||!validInterval.isUnlimited;
 
-
-  @override
   KeyValueInterval<Name,TreeStructuredData> get validTypedInterval => validInterval;
 
-  @override
-  String toString() => "QueryFilter[${toQuery().toJson()}]";
-
-  @override
-  int get hashCode => toQuery().hashCode;
-
-  @override
-  bool operator ==(dynamic other) =>
-      other is QueryFilter && other.toQuery()==toQuery();
 }
 
 class Repo {
@@ -189,7 +161,7 @@ class Repo {
   SparseSnapshotTree _onDisconnect = new SparseSnapshotTree();
 
   factory Repo(Uri url) {
-    return _repos.putIfAbsent(url, () => new Repo._(url, new Connection(url.host)));
+    return _repos.putIfAbsent(url, () => new Repo._(url, new Connection(url)));
   }
 
   Repo._(this.url, this._connection) : _syncTree = new SyncTree(new RemoteListeners(_connection)) {
@@ -201,9 +173,9 @@ class Repo {
     });
     _connection.onDataOperation.listen((event) {
       if (event.type==OperationEventType.listenRevoked) {
-        _syncTree.applyListenRevoked(event.path, new QueryFilter.fromQuery(event.query));
+        _syncTree.applyListenRevoked(event.path, event.query);
       } else {
-        _syncTree.applyServerOperation(event.operation, new QueryFilter.fromQuery(event.query));
+        _syncTree.applyServerOperation(event.operation, event.query);
       }
     });
     _connection.onAuth.forEach((e)=>_onAuth.add(e));
@@ -360,7 +332,7 @@ class Repo {
       String path, dynamic value, dynamic priority) {
     path = _preparePath(path);
     var newNode = new TreeStructuredData.fromJson(value, priority);
-    return _connection.onDisconnectPut(path, newNode.toJson(true)).then((m) {
+    return _connection.onDisconnectPut(path, newNode.toJson(true)).then((_) {
       _onDisconnect.remember(Name.parsePath(path), newNode);
     });
   }
@@ -405,8 +377,7 @@ class RemoteListeners extends RemoteListenerRegistrar {
 
   @override
   Future<Null> remoteRegister(Path<Name> path, QueryFilter filter, String hash) async {
-    var query = filter.limits ? filter.toQuery() : null;
-    var warnings = await connection.listen(path.join('/'), query: query, hash: hash);
+    var warnings = await connection.listen(path.join('/'), query: filter, hash: hash);
     for (var w in warnings) {
       _logger.warning(w);
     }
@@ -414,8 +385,7 @@ class RemoteListeners extends RemoteListenerRegistrar {
 
   @override
   Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) async {
-    var query = filter.limits ? filter.toQuery() : null;
-    await connection.unlisten(path.join('/'), query: query);
+    await connection.unlisten(path.join('/'), query: filter);
   }
 
 }

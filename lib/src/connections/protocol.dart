@@ -15,10 +15,12 @@ import 'protocol/websocket.dart'
     if (dart.library.html) 'protocol/websocket_html.dart'
     if (dart.library.io) 'protocol/websocket_io.dart';
 import 'dart:math';
-import 'operations/tree.dart';
-import 'treestructureddata.dart';
+import '../operations/tree.dart';
+import '../treestructureddata.dart';
 import 'package:sortedmap/sortedmap.dart';
-import 'tree.dart';
+import '../tree.dart';
+import '../repo.dart';
+import '../connection.dart';
 
 part 'protocol/request.dart';
 part 'protocol/response.dart';

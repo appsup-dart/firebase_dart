@@ -20,7 +20,7 @@ class Request {
   Request.listen(String path, {Query query, int tag, String hash})
       : this(DataMessage.actionListen,
             new MessageBody(path: path, query: query, tag: tag, hash: hash));
-  Request.unlisten(String path, {dynamic query, int tag})
+  Request.unlisten(String path, {Query query, int tag})
       : this(DataMessage.actionUnlisten,
             new MessageBody(path: path, query: query, tag: tag));
   Request.onDisconnectPut(String path, data)
