@@ -52,40 +52,59 @@ class OperationEvent {
   }
 }
 
+/// Handles the connection to a remote database.
 abstract class Connection {
   final String host;
-
-  Connection.base(this.host);
 
   factory Connection(Uri uri) {
     return new ProtocolConnection(uri.host);
   }
 
+  Connection.base(this.host);
+
   DateTime get serverTime;
 
+  /// Registers a listener.
+  ///
+  /// Returns possible warning messages.
   Future<Iterable<String>> listen(String path, {QueryFilter query, String hash});
 
+  /// Unregisters a listener
   Future<Null> unlisten(String path, {QueryFilter query});
 
+  /// Overwrites some value at a particular path.
   Future<Null> put(String path, dynamic value, {String hash, int writeId});
 
+  /// Merges children at a particular path.
   Future<Null> merge(String path, dynamic value, {String hash, int writeId});
 
+  /// Stream of connect events.
   Stream<bool> get onConnect;
+
+  /// Stream of remote data changes.
   Stream<OperationEvent> get onDataOperation;
+
+  /// Stream of auth events.
   Stream<Map> get onAuth;
 
+  /// Trigger a disconnection.
   Future<Null> disconnect();
 
+  /// Closes the connection.
   Future<Null> close();
 
+  /// Authenticates with the token.
   Future<Map> auth(String token);
 
+  /// Unauthenticates.
   Future<Null> unauth();
 
+  /// Registers an onDisconnectPut
   Future<Null> onDisconnectPut(String path, dynamic value);
 
+  /// Registers an onDisconnectMerge
   Future<Null> onDisconnectMerge(String path, Map<String, dynamic> childrenToMerge);
 
+  /// Registers an onDisconnectCancel
   Future<Null> onDisconnectCancel(String path);
 }
