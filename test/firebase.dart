@@ -27,10 +27,13 @@ void main() {
     await logSubscription.cancel();
   });
 
+  Firebase ref, ref2;
 
   group('Reference location', () {
-    var ref = new Firebase("${testUrl}");
-    var ref2 = new Firebase("${testUrl}test");
+    setUp(() {
+      ref = new Firebase("${testUrl}");
+      ref2 = new Firebase("${testUrl}test");
+    });
 
     test('child', () {
       expect(ref.key, null);
@@ -51,24 +54,27 @@ void main() {
     });
   });
   group('Authenticate', () {
-    var host = secrets["host"];
-    var secret = secrets["secret"];
+    String token, uid;
+    setUp(() {
+      var host = secrets["host"];
+      var secret = secrets["secret"];
 
-    if (host==null||secret==null) {
-      print("Cannot test Authenticate: set a host and secret.");
-      return;
-    }
+      if (host==null||secret==null) {
+        print("Cannot test Authenticate: set a host and secret.");
+        return;
+      }
 
-    var uid = "pub-test-01";
-    var authData = {
-      "uid": uid,
-      "debug": true,
-      "provider": "custom"
-    };
-    var codec = new FirebaseTokenCodec(secret);
-    var token = codec.encode(new FirebaseToken(authData));
+      uid = "pub-test-01";
+      var authData = {
+        "uid": uid,
+        "debug": true,
+        "provider": "custom"
+      };
+      var codec = new FirebaseTokenCodec(secret);
+      token = codec.encode(new FirebaseToken(authData));
 
-    var ref = new Firebase(host);
+      ref = new Firebase(host);
+    });
 
 
     test('auth', () async {
@@ -105,7 +111,10 @@ void main() {
   });
 
   group('Snapshot', () {
-    var ref = new Firebase("${testUrl}test/snapshot");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/snapshot");
+      print("ref setup");
+    });
 
     test('Child', () async {
 
@@ -145,7 +154,9 @@ void main() {
 
   group('Listen', () {
 
-    var ref = new Firebase("${testUrl}test/listen");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/listen");
+    });
 
     test('Initial value', () async {
       print(await ref.get());
@@ -263,7 +274,9 @@ void main() {
   });
 
   group('Push/Merge/Remove', () {
-    var ref = new Firebase("${testUrl}test/push-merge-remove");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/push-merge-remove");
+    });
 
     test('Remove', () async {
       await ref.set('hello');
@@ -307,7 +320,9 @@ void main() {
   });
 
   group('Special characters', () {
-    var ref = new Firebase("${testUrl}test/special-chars");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/special-chars");
+    });
 
     test('colon', () async {
 
@@ -386,7 +401,9 @@ void main() {
   });
 
   group('Transaction', () {
-    var ref = new Firebase("${testUrl}test/transactions");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/transactions");
+    });
 
     test('Counter', () async {
       await ref.set(0);
@@ -471,8 +488,11 @@ void main() {
   });
 
   group('OnDisconnect', () {
-    var ref = new Firebase("${testUrl}test/disconnect");
-    var repo = new Repo(ref.url.resolve("/"));
+    Repo repo;
+    setUp(() {
+      ref = new Firebase("${testUrl}test/disconnect");
+      repo = new Repo(ref.url.resolve("/"));
+    });
 
     test('put', () async {
       await ref.set("hello");
@@ -517,7 +537,9 @@ void main() {
   });
 
   group('Query', () {
-    var ref = new Firebase("${testUrl}test/query");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/query");
+    });
 
 
     test('Limit', () async {
@@ -802,7 +824,10 @@ void main() {
   });
 
   group('multiple frames', () {
-    var ref = new Firebase("${testUrl}test/frames");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/frames");
+    });
+
     test('Receive large value', () async {
 
 
@@ -826,8 +851,11 @@ void main() {
 
 
   group('Complex operations', () {
-    var ref = new Firebase("${testUrl}test/complex");
-    var iref = new IsolatedReference(ref);
+    IsolatedReference iref;
+    setUp(() {
+      ref = new Firebase("${testUrl}test/complex");
+      iref = new IsolatedReference(ref);
+    });
 
     test('Remove out of view', () async {
       await iref.set({
