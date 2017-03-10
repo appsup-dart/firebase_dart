@@ -38,7 +38,7 @@ class PriorityOrdering extends TreeStructuredDataOrdering {
   const PriorityOrdering() : super._();
 
   @override
-  TreeStructuredData mapValue(TreeStructuredData v) => new TreeStructuredData.leaf(v.priority);
+  TreeStructuredData mapValue(TreeStructuredData v) => new TreeStructuredData.leaf(v?.priority);
 
   String get orderBy => ".priority";
 }
