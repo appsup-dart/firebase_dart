@@ -15,3 +15,4 @@ import 'package:crypto/crypto.dart';
 part 'treestructureddata/name.dart';
 part 'treestructureddata/value.dart';
 part 'treestructureddata/treestructureddata.dart';
+part 'treestructureddata/filter.dart';
