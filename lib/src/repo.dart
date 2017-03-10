@@ -166,7 +166,7 @@ class Repo {
     return _repos.putIfAbsent(url, () => new Repo._(url, new Connection(url)));
   }
 
-  Repo._(this.url, this._connection) : _syncTree = new SyncTree(new RemoteListeners(_connection)) {
+  Repo._(this.url, this._connection) : _syncTree = new SyncTree(url.toString(), new RemoteListeners(_connection)) {
     _transactions = new TransactionsTree(this);
     _connection.onConnect.listen((v) {
       if (!v) {

@@ -116,6 +116,8 @@ class MasterView {
 /// Represents a remote resource and holds local (partial) views and local
 /// changes of its value.
 class SyncPoint {
+  final String name;
+
   final Map<QueryFilter, MasterView> views = {};
 
   bool _isCompleteFromParent = false;
@@ -129,14 +131,14 @@ class SyncPoint {
     }
   }
 
-  SyncPoint([ViewCache data]) {
+  SyncPoint(this.name, [ViewCache data]) {
     if (data==null) return;
     var q = new QueryFilter();
     views[q] = new MasterView(q).._data = data;
   }
 
   SyncPoint child(Name child) {
-    var p = new SyncPoint(viewCacheForChild(child));
+    var p = new SyncPoint("$name/$child", viewCacheForChild(child));
     p.isCompleteFromParent = isCompleteForChild(child);
     return p;
   }
@@ -229,7 +231,7 @@ class SyncPoint {
   }
 
   @override
-  String toString() => "SyncPoint[$views]";
+  String toString() => "SyncPoint[$name]";
 }
 
 abstract class RemoteListenerRegistrar {
@@ -273,14 +275,15 @@ abstract class RemoteListenerRegistrar {
 
 
 class SyncTree {
+  final String name;
   final RemoteListenerRegistrar registrar;
 
-  final TreeNode<Name, SyncPoint> root = _createNode(null,null);
+  final TreeNode<Name, SyncPoint> root;
 
-  SyncTree(this.registrar);
+  SyncTree(this.name, this.registrar) : root = new TreeNode(new SyncPoint(name));
 
   static TreeNode<Name, SyncPoint> _createNode(SyncPoint parent, Name childName) {
-    return new TreeNode(parent?.child(childName) ?? new SyncPoint());
+    return new TreeNode(parent?.child(childName));
   }
 
   final Map<SyncPoint,Future<Null>> _invalidPoints = {};
