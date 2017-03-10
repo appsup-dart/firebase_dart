@@ -142,6 +142,8 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
 
   KeyValueInterval<Name,TreeStructuredData> get validTypedInterval => validInterval;
 
+  @override
+  String toString() => "QueryFilter[orderBy: $orderBy, limit: $limit, reversed: $reversed, start: (${validInterval.start.key}, ${validInterval.start.value}), end: (${validInterval.end.key}, ${validInterval.end.value})]";
 }
 
 class Repo {
