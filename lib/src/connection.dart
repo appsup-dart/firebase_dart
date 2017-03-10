@@ -64,6 +64,11 @@ abstract class Connection {
 
   DateTime get serverTime;
 
+  /// Generates the special server values
+  Map<ServerValue, Value> get serverValues => {
+    ServerValue.timestamp: new Value(serverTime.millisecondsSinceEpoch)
+  };
+
   /// Registers a listener.
   ///
   /// Returns possible warning messages.

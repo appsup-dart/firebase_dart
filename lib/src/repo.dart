@@ -198,12 +198,6 @@ class Repo {
     await _connection.close();
   }
 
-  /// Generates the special server values
-  Map<ServerValue, Value> get serverValues => {
-        ServerValue.timestamp:
-            new Value(_connection.serverTime.millisecondsSinceEpoch)
-      };
-
   /// The current authData
   dynamic get authData => _authData;
 
@@ -243,7 +237,7 @@ class Repo {
     var newValue = new TreeStructuredData.fromJson(value, priority);
     var writeId = _nextWriteId++;
     _syncTree.applyUserOverwrite(Name.parsePath(path),
-        ServerValue.resolve(newValue, serverValues), writeId);
+        ServerValue.resolve(newValue, _connection.serverValues), writeId);
     _transactions.abort(Name.parsePath(path));
     try {
       await _connection.put(path, newValue.toJson(true), writeId: writeId);
@@ -266,7 +260,7 @@ class Repo {
     if (value.isNotEmpty) {
       int writeId = _nextWriteId++;
       _syncTree.applyUserMerge(Name.parsePath(path),
-          ServerValue.resolve(new TreeStructuredData.nonLeaf(changedChildren), serverValues).children, writeId);
+          ServerValue.resolve(new TreeStructuredData.nonLeaf(changedChildren), _connection.serverValues).children, writeId);
       try {
         await _connection.merge(path, value, writeId: writeId);
         await new Future.microtask(()=>_syncTree.applyAck(Name.parsePath(path), writeId, true));
@@ -359,7 +353,7 @@ class Repo {
   }
 
   void _runOnDisconnectEvents() {
-    var sv = serverValues;
+    var sv = _connection.serverValues;
     _onDisconnect.forEachNode((path, snap) {
       if (snap == null) return;
       _syncTree.applyServerOperation(new TreeOperation.overwrite(path, ServerValue.resolve(snap,sv)), null);
@@ -563,7 +557,7 @@ class Transaction implements Comparable<Transaction> {
 
       var newNode = new TreeStructuredData.fromJson(newVal, currentState.priority);
       currentOutputSnapshotRaw = newNode;
-      currentOutputSnapshotResolved = ServerValue.resolve(newNode, repo.serverValues);
+      currentOutputSnapshotResolved = ServerValue.resolve(newNode, repo._connection.serverValues);
       currentWriteId = repo._nextWriteId++;
 
       if (applyLocally)
