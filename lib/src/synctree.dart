@@ -346,23 +346,7 @@ class SyncTree {
         root, null, operation, ViewOperationSource.user, writeId);
   }
 
-  /// Applies a server overwrite at [path] with [newData]
-  void applyServerOverwrite(
-      Path<Name> path, Filter filter, TreeStructuredData newData) {
-    var operation;
-    if (path.isNotEmpty&&path.last==new Name(".priority")) {
-      operation = new TreeOperation.setPriority(path.parent, newData.value);
-    } else {
-      operation = new TreeOperation.overwrite(path, newData);
-    }
-    _applyOperationToSyncPoints(
-        root, filter, operation, ViewOperationSource.server, null);
-  }
-
-  /// Applies a server merge at [path] with [changedChildren]
-  void applyServerMerge(Path<Name> path, Filter filter,
-      Map<Name, TreeStructuredData> changedChildren) {
-    var operation = new TreeOperation.merge(path, changedChildren);
+  void applyServerOperation(TreeOperation operation, Filter filter) {
     _applyOperationToSyncPoints(
         root, filter, operation, ViewOperationSource.server, null);
   }

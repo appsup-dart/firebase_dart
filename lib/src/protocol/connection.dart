@@ -23,11 +23,38 @@ class ServerError implements Exception {
   String toString() => "$code: $reason";
 }
 
+enum OperationEventType {overwrite, merge, listenRevoked}
+
+class OperationEvent {
+  final Path<Name> path;
+  final OperationEventType type;
+  final Query query;
+  final TreeStructuredData data;
+
+  OperationEvent(this.type, this.path, this.data, this.query);
+
+  TreeOperation get operation {
+    switch (type) {
+      case OperationEventType.overwrite:
+        if (path.isNotEmpty&&path.last==new Name(".priority"))
+          return new TreeOperation.setPriority(path.parent, data.value);
+        return new TreeOperation.overwrite(path, data);
+      case OperationEventType.merge:
+        return new TreeOperation.merge(path, data.children);
+      default:
+        return null;
+    }
+  }
+}
+
 class Connection {
   final String host;
   Transport _transport;
   Future _establishConnectionTimer;
   String _lastSessionId;
+
+  int _nextTag = 0;
+  final quiver.BiMap<int,Pair<String,Query>> _tagToQuery = new quiver.BiMap();
 
   Connection(this.host) {
     quiver.checkArgument(host!=null&&host.isNotEmpty);
@@ -39,25 +66,40 @@ class Connection {
   DateTime get serverTime => new DateTime.now().add(_serverTimeDiff ?? const Duration());
   Duration _serverTimeDiff;
 
-  Future listen(String path, {Query query, int tag, String hash}) {
+  Future<Iterable<String>> listen(String path, {Query query, String hash}) async {
+    var def = new Pair(path, query);
+    var tag = _nextTag++;
+    _tagToQuery[tag] = def;
+
     var r = new Request.listen(path, query: query, tag: tag, hash: hash);
     _addListen(r);
-    return _request(r)..catchError((e) => _removeListen(path, query));
+    try {
+      var body = await _request(r);
+      return body.warnings ?? [];
+    } catch(e) {
+      _tagToQuery.remove(tag);
+      _removeListen(path, query);
+      rethrow;
+    }
   }
 
-  Future unlisten(String path, {Query query, int tag}) {
+  Future<Null> unlisten(String path, {Query query}) async {
+    var def = new Pair(path, query);
+    var tag = _tagToQuery.inverse.remove(def);
     var r = new Request.unlisten(path, query: query, tag: tag);
     _removeListen(path, query);
-    return _request(r);
+    await _request(r);
   }
 
   final List<Request> _outstandingRequests = [];
 
-  Future put(String path, dynamic value, {String hash, int writeId}) =>
-      _request(new Request.put(path, value, hash, writeId));
+  Future<Null> put(String path, dynamic value, {String hash, int writeId}) async {
+    await _request(new Request.put(path, value, hash, writeId));
+  }
 
-  Future merge(String path, dynamic value, {String hash, int writeId}) =>
-      _request(new Request.merge(path, value, hash, writeId));
+  Future<Null> merge(String path, dynamic value, {String hash, int writeId}) async {
+    await _request(new Request.merge(path, value, hash, writeId));
+  }
 
   void _addListen(Request request) {
     var path = request.message.body.path;
@@ -85,11 +127,14 @@ class Connection {
     });
   }
 
-  final StreamController<Response> _output = new StreamController();
   final StreamController<bool> _onConnect = new StreamController();
+  final StreamController<OperationEvent> _onDataOperation = new StreamController();
+  final StreamController<Map> _onAuth = new StreamController();
 
-  Stream<Response> get output => _output.stream;
   Stream<bool> get onConnect => _onConnect.stream;
+  Stream<OperationEvent> get onDataOperation => _onDataOperation.stream;
+  Stream<Map> get onAuth => _onAuth.stream;
+
 
   void _establishConnection() {
     _transport =
@@ -99,20 +144,50 @@ class Connection {
       _lastSessionId = _transport.info.sessionId;
       _serverTimeDiff =
           _transport.info.timestamp.difference(new DateTime.now());
-      _output.addStream(_transport.where((r) => r.message.reqNum == null||r.request.writeId!=null));
+      _transport
+      .where((r)=>r.message.reqNum == null)
+      .forEach((r) {
+        var query = r.message.body.query ?? _tagToQuery[r.message.body.tag]?.value;
+        var path = r.message.body.path==null ? null : Name.parsePath(r.message.body.path);
+        var newData = new TreeStructuredData.fromJson(r.message.body.data);
+        switch (r.message.action) {
+          case DataMessage.actionSet:
+          case DataMessage.actionMerge:
+          case DataMessage.actionListenRevoked:
+            var event = new OperationEvent(const {
+              DataMessage.actionSet: OperationEventType.overwrite,
+              DataMessage.actionMerge: OperationEventType.merge,
+              DataMessage.actionListenRevoked: OperationEventType.listenRevoked,
+            }[r.message.action], path, newData, query);
+            _onDataOperation.add(event);
+            break;
+          case DataMessage.actionAuthRevoked:
+            _onAuth.add(null);
+            break;
+          case DataMessage.actionSecurityDebug:
+            var msg = r.message.body.message;
+            _logger.fine("security debug: $msg");
+            break;
+          default:
+            throw new UnimplementedError(
+                "Cannot handle message with action ${r.message.action}: ${JSON.encode(r.message)} ${r.message.reqNum} ${r.request.writeId}");
+        }
+
+      });
       _restoreState();
     });
     _transport.done.then((_) {
       _onConnect.add(false);
       _transport = null;
-      if (!_output.isClosed) _scheduleConnect(1000);
+      if (!_onDataOperation.isClosed) _scheduleConnect(1000);
     });
   }
 
   Future disconnect() => _transport._close(-1);
 
   Future close() async {
-    await _output.close();
+    await _onDataOperation.close();
+    await _onAuth.close();
     await _onConnect.close();
     await disconnect();
   }
@@ -141,9 +216,9 @@ class Connection {
 
   var _authToken;
 
-  Future auth(String token) => _request(new Request.auth(token)).then((b) {
+  Future<Map> auth(String token) => _request(new Request.auth(token)).then((b) {
         _authToken = token;
-        return b.data;
+        return b.data["auth"];
       });
 
   Future unauth() {

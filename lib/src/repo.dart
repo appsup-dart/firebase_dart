@@ -11,12 +11,10 @@ import 'events/value.dart';
 import 'events/child.dart';
 import 'dart:math';
 import 'package:logging/logging.dart';
-import 'package:quiver/core.dart' as quiver;
-import 'package:quiver/check.dart' as quiver;
-import 'package:quiver/collection.dart' as quiver;
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
 import 'event.dart';
+import 'operations/tree.dart';
 
 final _logger = new Logger("firebase-repo");
 
@@ -201,49 +199,14 @@ class Repo {
         _runOnDisconnectEvents();
       }
     });
-    _connection.output.listen((r) {
-      if (r.message.reqNum!=null) {
-        if (r.request.writeId!=null) {
-          var path = r.request.message.body.path;
-          var success = r.message.body.status == MessageBody.statusOk;
-          _syncTree.applyAck(Name.parsePath(path), r.request.writeId, success);
-          var c = _writeCompleters.remove(r.request.writeId);
-          if (success) c.complete();
-          else c.completeError(new ServerError(r.message.body.status, r.message.body.data));
-        }
-        return;
-      }
-      switch (r.message.action) {
-        case DataMessage.actionSet:
-          var filter = registrar._tagToQuery[r.message.body.tag]?.value;
-          _syncTree.applyServerOverwrite(Name.parsePath(r.message.body.path),
-              filter, new TreeStructuredData.fromJson(r.message.body.data));
-          break;
-        case DataMessage.actionMerge:
-          var filter = registrar._tagToQuery[r.message.body.tag]?.value;
-          _syncTree.applyServerMerge(
-              Name.parsePath(r.message.body.path),
-              filter,
-              new TreeStructuredData.fromJson(r.message.body.data).children);
-          break;
-        case DataMessage.actionAuthRevoked:
-          _onAuth.add(null);
-          break;
-        case DataMessage.actionListenRevoked:
-          var filter = new QueryFilter.fromQuery(
-              r.message.body.query);
-          _syncTree.applyListenRevoked(
-              Name.parsePath(r.message.body.path), filter);
-          break;
-        case DataMessage.actionSecurityDebug:
-          var msg = r.message.body.message;
-          _logger.fine("security debug: $msg");
-          break;
-        default:
-          throw new UnimplementedError(
-              "Cannot handle message with action ${r.message.action}");
+    _connection.onDataOperation.listen((event) {
+      if (event.type==OperationEventType.listenRevoked) {
+        _syncTree.applyListenRevoked(event.path, new QueryFilter.fromQuery(event.query));
+      } else {
+        _syncTree.applyServerOperation(event.operation, new QueryFilter.fromQuery(event.query));
       }
     });
+    _connection.onAuth.forEach((e)=>_onAuth.add(e));
     onAuth.listen((v) => _authData = v);
   }
 
@@ -252,8 +215,7 @@ class Repo {
   firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
 
   var _authData;
-  final StreamController _onAuth = new StreamController.broadcast();
-  final Map<int,Completer<Null>> _writeCompleters = {};
+  final StreamController<Map> _onAuth = new StreamController.broadcast();
 
   Future triggerDisconnect() => _connection.disconnect();
 
@@ -275,18 +237,18 @@ class Repo {
   ///
   /// When a user is logged in, its auth data is posted. When logged of, [null]
   /// is posted.
-  Stream get onAuth => _onAuth.stream;
+  Stream<Map> get onAuth => _onAuth.stream;
 
   /// Tries to authenticate with [token].
   ///
   /// Returns a future that completes with the auth data on success, or fails
   /// otherwise.
-  Future auth(String token) =>
-      _connection.auth(token).then((v) => v["auth"]).then((auth) {
-        _onAuth.add(auth);
-        _authData = auth;
-        return auth;
-      });
+  Future<Map> auth(String token) async {
+    var auth = await _connection.auth(token);
+    _onAuth.add(auth);
+    _authData = auth;
+    return auth;
+  }
 
   /// Unauthenticates.
   ///
@@ -302,23 +264,26 @@ class Repo {
   ///
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
-  Future<Null> setWithPriority(String path, dynamic value, dynamic priority) {
+  Future<Null> setWithPriority(String path, dynamic value, dynamic priority) async {
     path = _preparePath(path);
     var newValue = new TreeStructuredData.fromJson(value, priority);
     var writeId = _nextWriteId++;
-    _writeCompleters[writeId] = new Completer<Null>();
     _syncTree.applyUserOverwrite(Name.parsePath(path),
         ServerValue.resolve(newValue, serverValues), writeId);
     _transactions.abort(Name.parsePath(path));
-    _connection.put(path, newValue.toJson(true), writeId: writeId).catchError((_)=>null);
-    return _writeCompleters[writeId].future;
+    try {
+      await _connection.put(path, newValue.toJson(true), writeId: writeId);
+      await new Future.microtask(()=>_syncTree.applyAck(Name.parsePath(path), writeId, true));
+    } on ServerError {
+      _syncTree.applyAck(Name.parsePath(path), writeId, false);
+    }
   }
 
   /// Writes the children in [value] to the location [path].
   ///
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
-  Future update(String path, Map<String, dynamic> value) {
+  Future update(String path, Map<String, dynamic> value) async {
     path = _preparePath(path);
     var changedChildren = new Map<Name, TreeStructuredData>.fromIterables(
         value.keys.map/*<Name>*/((c) => new Name(c)),
@@ -326,13 +291,15 @@ class Repo {
             (v) => new TreeStructuredData.fromJson(v, null)));
     if (value.isNotEmpty) {
       int writeId = _nextWriteId++;
-      _writeCompleters[writeId] = new Completer<Null>();
       _syncTree.applyUserMerge(Name.parsePath(path),
           ServerValue.resolve(new TreeStructuredData.nonLeaf(changedChildren), serverValues).children, writeId);
-      _connection.merge(path, value, writeId: writeId);
-      return _writeCompleters[writeId].future;
+      try {
+        await _connection.merge(path, value, writeId: writeId);
+        await new Future.microtask(()=>_syncTree.applyAck(Name.parsePath(path), writeId, true));
+      } on ServerError {
+        _syncTree.applyAck(Name.parsePath(path), writeId, false);
+      }
     }
-    return new Future.value();
   }
 
   /// Adds [value] to the location [path] for which a unique id is generated.
@@ -421,7 +388,7 @@ class Repo {
     var sv = serverValues;
     _onDisconnect.forEachNode((path, snap) {
       if (snap == null) return;
-      _syncTree.applyServerOverwrite(path, null, ServerValue.resolve(snap,sv));
+      _syncTree.applyServerOperation(new TreeOperation.overwrite(path, ServerValue.resolve(snap,sv)), null);
       _transactions.abort(path);
     });
     _onDisconnect.children.clear();
@@ -431,8 +398,6 @@ class Repo {
 
 class RemoteListeners extends RemoteListenerRegistrar {
 
-  int _nextTag = 0;
-  final quiver.BiMap<int,Pair<Path<Name>,QueryFilter>> _tagToQuery = new quiver.BiMap();
 
   final Connection connection;
 
@@ -440,27 +405,17 @@ class RemoteListeners extends RemoteListenerRegistrar {
 
   @override
   Future<Null> remoteRegister(Path<Name> path, QueryFilter filter, String hash) async {
-    var def = new Pair(path, filter);
-    var tag = _nextTag++;
-    _tagToQuery[tag] = def;
-    try {
-      var query = filter.limits ? filter.toQuery() : null;
-      MessageBody r = await connection.listen(path.join('/'), query: query, tag: query==null ? null : tag, hash: hash);
-      for (var w in r.warnings ?? const []) {
-        _logger.warning(w);
-      }
-    } catch (e) {
-      _tagToQuery.remove(tag);
-      rethrow;
+    var query = filter.limits ? filter.toQuery() : null;
+    var warnings = await connection.listen(path.join('/'), query: query, hash: hash);
+    for (var w in warnings) {
+      _logger.warning(w);
     }
   }
 
   @override
   Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) async {
-    var def = new Pair(path, filter);
     var query = filter.limits ? filter.toQuery() : null;
-    var tag = _tagToQuery.inverse.remove(def);
-    await connection.unlisten(path.join('/'), query: query, tag: query==null ? null : tag);
+    await connection.unlisten(path.join('/'), query: query);
   }
 
 }
