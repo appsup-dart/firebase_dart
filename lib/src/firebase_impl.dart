@@ -112,13 +112,13 @@ class FirebaseImpl extends QueryImpl with Firebase {
   Disconnect get onDisconnect => _onDisconnect;
 
   @override
-  Future authWithCustomToken(String token) => _repo.auth(token);
+  Future<Map> authWithCustomToken(String token) => _repo.auth(token);
 
   @override
   dynamic get auth => _repo.authData;
 
   @override
-  Stream get onAuth => _repo.onAuth;
+  Stream<Map> get onAuth => _repo.onAuth;
 
   @override
   Future unauth() => _repo.unauth();

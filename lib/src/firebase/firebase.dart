@@ -17,13 +17,13 @@ abstract class Firebase implements Query {
   /// Secret.
   /// Takes a single token as an argument and returns a Future that will be
   /// resolved when the authentication succeeds (or fails).
-  Future authWithCustomToken(String token);
+  Future<Map> authWithCustomToken(String token);
 
   /// Synchronously retrieves the current authentication state of the client.
   dynamic get auth;
 
   /// Listens for changes to the client's authentication state.
-  Stream get onAuth;
+  Stream<Map> get onAuth;
 
   /// Unauthenticates a Firebase client (i.e. logs out).
   Future unauth();
