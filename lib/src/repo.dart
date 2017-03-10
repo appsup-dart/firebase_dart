@@ -99,7 +99,10 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
         limit: query.limit,
         reversed: query.isViewFromRight,
         ordering: new TreeStructuredDataOrdering(query.index),
-        validInterval: _updateInterval(new KeyValueInterval(), query.startName, query.startValue, query.endName, query.endValue));
+        validInterval: query.index==".key" ?
+        _updateInterval(new KeyValueInterval(), query.startValue, null, query.endValue, null) :
+        _updateInterval(new KeyValueInterval(), query.startName, query.startValue, query.endName, query.endValue)
+    );
   }
 
   static KeyValueInterval<Name, TreeStructuredData> _updateInterval(KeyValueInterval<Name, TreeStructuredData> validInterval,
