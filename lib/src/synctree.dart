@@ -137,7 +137,7 @@ class SyncPoint {
 
   SyncPoint child(Name child) {
     var p = new SyncPoint(viewCacheForChild(child));
-    p.isCompleteFromParent = p.isCompleteForChild(child);
+    p.isCompleteFromParent = isCompleteForChild(child);
     return p;
   }
 
