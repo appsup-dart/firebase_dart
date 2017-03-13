@@ -13,11 +13,11 @@ class TreeOperation extends Operation {
 
   TreeOperation(this.path, this.nodeOperation);
 
-  TreeOperation.overwrite(Path<Name> path, TreeStructuredData value)
-      : this(path, new Overwrite(value));
-
-  TreeOperation.setPriority(Path<Name> path, Value value)
-      : this(path, new SetPriority(value));
+  factory TreeOperation.overwrite(Path<Name> path, TreeStructuredData value) {
+    if (path.isNotEmpty&&path.last==new Name(".priority"))
+      return new TreeOperation(path.parent, new SetPriority(value.value));
+    return new TreeOperation(path, new Overwrite(value));
+  }
 
   TreeOperation.merge(Path<Name> path, Map<Name, TreeStructuredData> children)
       : this(path, new Merge(children));

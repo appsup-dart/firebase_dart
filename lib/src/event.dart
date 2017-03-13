@@ -32,6 +32,10 @@ class EventTarget {
   }
 
   void removeEventListener(String type, EventListener listener) {
-    _eventRegistrations.putIfAbsent(type, () => new Set()).remove(listener);
+    if (listener==null) {
+      _eventRegistrations.remove(type);
+    } else {
+      _eventRegistrations.putIfAbsent(type, () => new Set()).remove(listener);
+    }
   }
 }
