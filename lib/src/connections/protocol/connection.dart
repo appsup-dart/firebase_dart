@@ -105,6 +105,10 @@ class ProtocolConnection extends Connection {
       .where((r)=>r.message.reqNum == null)
       .forEach((r) {
         var query = r.message.body.query ?? _tagToQuery[r.message.body.tag]?.value;
+        if (query==null&&r.message.body.tag!=null) {
+          // not listening any more.
+          return;
+        }
         var path = r.message.body.path==null ? null : Name.parsePath(r.message.body.path);
         var newData = new TreeStructuredData.fromJson(r.message.body.data);
         switch (r.message.action) {
