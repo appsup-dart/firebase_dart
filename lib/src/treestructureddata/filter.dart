@@ -104,9 +104,6 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
         int limit,
         bool reverse}) {
     var ordering = new TreeStructuredDataOrdering(orderBy) ?? this.ordering;
-    if (ordering is KeyOrdering) {
-
-    }
     var validInterval = (ordering is KeyOrdering) ?
     _updateInterval(this.validInterval,startAtValue,null,endAtValue,null) :
     _updateInterval(this.validInterval,startAtKey,startAtValue,endAtKey,endAtValue);
