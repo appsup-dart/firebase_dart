@@ -752,6 +752,7 @@ void main() {
       var q = ref.orderByChild("order");
       var l = q.startAt("b").limitToFirst(1).onValue
           .map((e)=>e.snapshot.val?.keys?.single)
+          .where((v)=>v!=null)  // returns null first when has index on order otherwise not
           .take(2).toList();
 
       await new Future.delayed(new Duration(milliseconds: 200));
