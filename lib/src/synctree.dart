@@ -185,8 +185,11 @@ class SyncPoint {
   MasterView createMasterViewForFilter(QueryFilter filter) {
     filter ??= new QueryFilter();
     var unlimitedFilter = views.keys.firstWhere((q)=>!q.limits, orElse: ()=>null);
-    return views[filter] = (unlimitedFilter!=null
-        ? views[unlimitedFilter].withFilter(filter) : new MasterView(filter));
+    if (unlimitedFilter!=null) {
+      filter = new QueryFilter(ordering: filter.ordering);
+      return views[filter] = views[unlimitedFilter].withFilter(filter);
+    }
+    return views[filter] = new MasterView(filter);
   }
 
   /// Removes an event listener for events of [type] and for data filtered by
