@@ -37,8 +37,8 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   final Map<int, Request> _pendingRequests = {};
   final List<Completer<PongMessage>> _pings = [];
 
-  final StreamController _output = new StreamController();
-  final StreamController<Response> _input = new StreamController();
+  final StreamController _output = new StreamController(sync: true);
+  final StreamController<Response> _input = new StreamController(sync: true);
 
   Future _connect([String host]);
   Future _reset();

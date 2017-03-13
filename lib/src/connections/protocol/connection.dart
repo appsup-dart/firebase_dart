@@ -84,9 +84,9 @@ class ProtocolConnection extends Connection {
     });
   }
 
-  final StreamController<bool> _onConnect = new StreamController();
-  final StreamController<OperationEvent> _onDataOperation = new StreamController();
-  final StreamController<Map> _onAuth = new StreamController();
+  final StreamController<bool> _onConnect = new StreamController(sync: true);
+  final StreamController<OperationEvent> _onDataOperation = new StreamController(sync: true);
+  final StreamController<Map> _onAuth = new StreamController(sync: true);
 
   Stream<bool> get onConnect => _onConnect.stream;
   Stream<OperationEvent> get onDataOperation => _onDataOperation.stream;
