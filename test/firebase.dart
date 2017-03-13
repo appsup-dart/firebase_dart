@@ -13,7 +13,7 @@ import 'secrets.dart'
   if (dart.library.html) 'secrets.dart'
   if (dart.library.io) 'secrets_io.dart';
 import 'dart:isolate';
-
+import 'package:isolate/isolate.dart';
 String get testUrl => "${secrets["host"]}";
 
 void main() {
@@ -1008,7 +1008,9 @@ class IsolatedReference {
 
   final Firebase reference;
 
-  IsolatedReference(this.reference);
+  final Future<IsolateRunner> _runner;
+
+  IsolatedReference(this.reference) : _runner = IsolateRunner.spawn();
 
   IsolatedReference child(String childPath) => new IsolatedReference(reference.child(childPath));
 
@@ -1022,34 +1024,23 @@ class IsolatedReference {
 
   Future authWithCustomToken(String token) => _sendReceive("auth",token);
 
-  static Future<SendPort> get _sendPort async {
-    var response = new ReceivePort();
-    var isolate = await Isolate.spawn(_spawnFunction, response.sendPort);
-    var error = new ReceivePort();
-    isolate.addErrorListener(error.sendPort);
-    error.listen(print);
-    return response.first;
-  }
-
   Future _sendReceive(String command, dynamic v) async {
-    ReceivePort response = new ReceivePort();
-    var port = await _sendPort;
-    port.send([response.sendPort, reference.url, command, v]);
-    return response.first;
+    var runner = await _runner;
+    await runner.run(_Command.execute,new _Command(reference.url.toString(), command, v));
   }
 
 }
 
 
-_spawnFunction(SendPort initialReplyTo) async {
-  var port = new ReceivePort();
-  initialReplyTo.send(port.sendPort);
 
-  await for (var msg in port) {
-    SendPort replyTo = msg[0];
-    var url = msg[1]?.toString();
-    var command = msg[2];
-    var value = msg[3];
+class _Command {
+  final String url;
+  final String command;
+  final dynamic value;
+
+  _Command(this.url,this.command,this.value);
+
+  Future exec() async {
     switch (command) {
       case "set":
         await new Firebase(url).set(value);
@@ -1057,12 +1048,13 @@ _spawnFunction(SendPort initialReplyTo) async {
       case "update":
         await new Firebase(url).update(value);
         break;
-      case "exit":
-        port.close();
-        break;
       case "auth":
         await new Firebase(url).authWithCustomToken(value);
     }
-    replyTo.send(null);
+    await new Firebase(url.toString()).set(value);
   }
+
+  static Future execute(_Command command) => command.exec();
 }
+
+
