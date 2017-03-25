@@ -7,6 +7,7 @@ import 'treestructureddata.dart';
 import 'operations/tree.dart';
 import 'repo.dart';
 import 'connections/protocol.dart';
+import 'connections/mem.dart';
 
 class ServerError implements Exception {
   final String code;
@@ -41,8 +42,6 @@ class OperationEvent {
   TreeOperation get operation {
     switch (type) {
       case OperationEventType.overwrite:
-        if (path.isNotEmpty&&path.last==new Name(".priority"))
-          return new TreeOperation.setPriority(path.parent, data.value);
         return new TreeOperation.overwrite(path, data);
       case OperationEventType.merge:
         return new TreeOperation.merge(path, data.children);
@@ -57,7 +56,15 @@ abstract class Connection {
   final String host;
 
   factory Connection(Uri uri) {
-    return new ProtocolConnection(uri.host);
+    switch (uri.scheme) {
+      case "http":
+      case "https":
+        return new ProtocolConnection(uri.host);
+      case "mem":
+        return new MemConnection(uri.host);
+      default:
+        throw new ArgumentError("No known connection for uri '$uri'.");
+    }
   }
 
   Connection.base(this.host);

@@ -4,6 +4,7 @@
 import 'package:test/test.dart';
 import 'package:firebase_dart/src/firebase.dart';
 import 'package:firebase_dart/src/repo.dart';
+import 'package:firebase_dart/src/connections/mem.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
 import 'dart:convert';
@@ -1010,7 +1011,14 @@ class IsolatedReference {
 
   final Future<IsolateRunner> _runner;
 
-  IsolatedReference(this.reference) : _runner = IsolateRunner.spawn();
+  IsolatedReference(this.reference) : _runner = IsolateRunner.spawn().then((r) async {
+    r.isolate.setErrorsFatal(false);
+    r.errors.listen((v)=>print("error x $v"), onError: (e,tr)=>print("error in isolated reference $e $tr"));
+    print("pint ${await r.ping()}");
+    await SingleInstanceBackend.enable(r);
+    print("enabled");
+    return r;
+  });
 
   IsolatedReference child(String childPath) => new IsolatedReference(reference.child(childPath));
 
@@ -1025,7 +1033,9 @@ class IsolatedReference {
   Future authWithCustomToken(String token) => _sendReceive("auth",token);
 
   Future _sendReceive(String command, dynamic v) async {
+    print("send ${reference.url} $command $v");
     var runner = await _runner;
+    print(runner);
     await runner.run(_Command.execute,new _Command(reference.url.toString(), command, v));
   }
 
@@ -1041,17 +1051,22 @@ class _Command {
   _Command(this.url,this.command,this.value);
 
   Future exec() async {
-    switch (command) {
-      case "set":
-        await new Firebase(url).set(value);
-        break;
-      case "update":
-        await new Firebase(url).update(value);
-        break;
-      case "auth":
-        await new Firebase(url).authWithCustomToken(value);
+    try {
+      print("exec $url $command $value");
+      switch (command) {
+        case "set":
+          await new Firebase(url).set(value);
+          break;
+        case "update":
+          await new Firebase(url).update(value);
+          break;
+        case "auth":
+          await new Firebase(url).authWithCustomToken(value);
+      }
+    } catch (e) {
+      print(e);
+      rethrow;
     }
-    await new Firebase(url.toString()).set(value);
   }
 
   static Future execute(_Command command) => command.exec();
