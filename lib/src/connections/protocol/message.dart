@@ -41,6 +41,7 @@ class DataMessage extends Message {
   static const String actionMerge = "m";
   static const String actionStats = "s";
   static const String actionAuth = "auth";
+  static const String actionGauth = "gauth";
   static const String actionUnauth = "unauth";
 
   static const String actionSet = "d";

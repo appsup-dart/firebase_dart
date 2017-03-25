@@ -16,6 +16,8 @@ class Request {
 
   Request.auth(String cred)
       : this(DataMessage.actionAuth, new MessageBody(cred: cred));
+  Request.gauth(String cred)
+      : this(DataMessage.actionGauth, new MessageBody(cred: cred));
   Request.unauth() : this(DataMessage.actionUnauth, new MessageBody());
   Request.listen(String path, {Query query, int tag, String hash})
       : this(DataMessage.actionListen,
