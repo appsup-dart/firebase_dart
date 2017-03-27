@@ -12,21 +12,39 @@ import 'dart:async';
 
 import 'secrets.dart'
   if (dart.library.html) 'secrets.dart'
-  if (dart.library.io) 'secrets_io.dart';
+  if (dart.library.io) 'secrets_io.dart' as s;
 import 'dart:isolate';
 import 'package:isolate/isolate.dart';
-String get testUrl => "${secrets["host"]}";
+import 'package:firebase_dart/src/isolate_runner.dart';
+
+
 
 void main() {
-
   StreamSubscription logSubscription;
-  setUp(() {
+  setUpAll(() {
     Logger.root.level = Level.ALL;
     logSubscription = Logger.root.onRecord.listen(print);
   });
-  tearDown(() async {
+  tearDownAll(() async {
     await logSubscription.cancel();
   });
+
+
+  group("mem",() {
+    testsWith({
+      "host": "mem://test/",
+      "secret": "x"
+    });
+  });
+
+  group("https",() {
+    testsWith(s.secrets);
+  });
+}
+
+void testsWith(Map<String,String> secrets) {
+  String testUrl = "${secrets["host"]}";
+
 
   Firebase ref, ref2;
 
@@ -94,6 +112,10 @@ void main() {
     });
 
     test('permission denied', () async {
+      if (ref.url.scheme=="mem") {
+        // TODO
+        return;
+      }
       ref = ref.child('test-protected');
       ref.onValue.listen((e)=>print(e.snapshot.val));
       await ref.authWithCustomToken(token);
@@ -1005,20 +1027,14 @@ void main() {
 
 wait(int millis) async => new Future.delayed(new Duration(milliseconds: millis));
 
+
 class IsolatedReference {
 
   final Firebase reference;
 
   final Future<IsolateRunner> _runner;
 
-  IsolatedReference(this.reference) : _runner = IsolateRunner.spawn().then((r) async {
-    r.isolate.setErrorsFatal(false);
-    r.errors.listen((v)=>print("error x $v"), onError: (e,tr)=>print("error in isolated reference $e $tr"));
-    print("pint ${await r.ping()}");
-    await SingleInstanceBackend.enable(r);
-    print("enabled");
-    return r;
-  });
+  IsolatedReference(this.reference) : _runner = Runners.spawnIsolate();
 
   IsolatedReference child(String childPath) => new IsolatedReference(reference.child(childPath));
 
@@ -1033,9 +1049,7 @@ class IsolatedReference {
   Future authWithCustomToken(String token) => _sendReceive("auth",token);
 
   Future _sendReceive(String command, dynamic v) async {
-    print("send ${reference.url} $command $v");
     var runner = await _runner;
-    print(runner);
     await runner.run(_Command.execute,new _Command(reference.url.toString(), command, v));
   }
 
