@@ -16,11 +16,13 @@ class Request {
 
   Request.auth(String cred)
       : this(DataMessage.actionAuth, new MessageBody(cred: cred));
+  Request.gauth(String cred)
+      : this(DataMessage.actionGauth, new MessageBody(cred: cred));
   Request.unauth() : this(DataMessage.actionUnauth, new MessageBody());
   Request.listen(String path, {Query query, int tag, String hash})
       : this(DataMessage.actionListen,
             new MessageBody(path: path, query: query, tag: tag, hash: hash));
-  Request.unlisten(String path, {dynamic query, int tag})
+  Request.unlisten(String path, {Query query, int tag})
       : this(DataMessage.actionUnlisten,
             new MessageBody(path: path, query: query, tag: tag));
   Request.onDisconnectPut(String path, data)

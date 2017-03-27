@@ -4,6 +4,7 @@
 import 'package:test/test.dart';
 import 'package:firebase_dart/src/firebase.dart';
 import 'package:firebase_dart/src/repo.dart';
+import 'package:firebase_dart/src/connections/mem.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
 import 'dart:convert';
@@ -11,13 +12,14 @@ import 'dart:async';
 
 import 'secrets.dart'
   if (dart.library.html) 'secrets.dart'
-  if (dart.library.io) 'secrets_io.dart';
+  if (dart.library.io) 'secrets_io.dart' as s;
 import 'dart:isolate';
+import 'package:isolate/isolate.dart';
+import 'package:firebase_dart/src/isolate_runner.dart';
 
-String get testUrl => "${secrets["host"]}";
+
 
 void main() {
-
   StreamSubscription logSubscription;
   setUp(() {
     Logger.root.level = Level.ALL;
@@ -28,9 +30,29 @@ void main() {
   });
 
 
+  group("mem",() {
+    testsWith({
+      "host": "mem://test/",
+      "secret": "x"
+    });
+  });
+
+  group("https",() {
+    testsWith(s.secrets);
+  });
+}
+
+void testsWith(Map<String,String> secrets) {
+  String testUrl = "${secrets["host"]}";
+
+
+  Firebase ref, ref2;
+
   group('Reference location', () {
-    var ref = new Firebase("${testUrl}");
-    var ref2 = new Firebase("${testUrl}test");
+    setUp(() {
+      ref = new Firebase("${testUrl}");
+      ref2 = new Firebase("${testUrl}test");
+    });
 
     test('child', () {
       expect(ref.key, null);
@@ -51,24 +73,27 @@ void main() {
     });
   });
   group('Authenticate', () {
-    var host = secrets["host"];
-    var secret = secrets["secret"];
+    String token, uid;
+    setUp(() {
+      var host = secrets["host"];
+      var secret = secrets["secret"];
 
-    if (host==null||secret==null) {
-      print("Cannot test Authenticate: set a host and secret.");
-      return;
-    }
+      if (host==null||secret==null) {
+        print("Cannot test Authenticate: set a host and secret.");
+        return;
+      }
 
-    var uid = "pub-test-01";
-    var authData = {
-      "uid": uid,
-      "debug": true,
-      "provider": "custom"
-    };
-    var codec = new FirebaseTokenCodec(secret);
-    var token = codec.encode(new FirebaseToken(authData));
+      uid = "pub-test-01";
+      var authData = {
+        "uid": uid,
+        "debug": true,
+        "provider": "custom"
+      };
+      var codec = new FirebaseTokenCodec(secret);
+      token = codec.encode(new FirebaseToken(authData));
 
-    var ref = new Firebase(host);
+      ref = new Firebase(host);
+    });
 
 
     test('auth', () async {
@@ -87,6 +112,10 @@ void main() {
     });
 
     test('permission denied', () async {
+      if (ref.url.scheme=="mem") {
+        // TODO
+        return;
+      }
       ref = ref.child('test-protected');
       ref.onValue.listen((e)=>print(e.snapshot.val));
       await ref.authWithCustomToken(token);
@@ -105,7 +134,10 @@ void main() {
   });
 
   group('Snapshot', () {
-    var ref = new Firebase("${testUrl}test/snapshot");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/snapshot");
+      print("ref setup");
+    });
 
     test('Child', () async {
 
@@ -145,7 +177,9 @@ void main() {
 
   group('Listen', () {
 
-    var ref = new Firebase("${testUrl}test/listen");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/listen");
+    });
 
     test('Initial value', () async {
       print(await ref.get());
@@ -263,7 +297,9 @@ void main() {
   });
 
   group('Push/Merge/Remove', () {
-    var ref = new Firebase("${testUrl}test/push-merge-remove");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/push-merge-remove");
+    });
 
     test('Remove', () async {
       await ref.set('hello');
@@ -307,7 +343,9 @@ void main() {
   });
 
   group('Special characters', () {
-    var ref = new Firebase("${testUrl}test/special-chars");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/special-chars");
+    });
 
     test('colon', () async {
 
@@ -386,7 +424,9 @@ void main() {
   });
 
   group('Transaction', () {
-    var ref = new Firebase("${testUrl}test/transactions");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/transactions");
+    });
 
     test('Counter', () async {
       await ref.set(0);
@@ -471,8 +511,11 @@ void main() {
   });
 
   group('OnDisconnect', () {
-    var ref = new Firebase("${testUrl}test/disconnect");
-    var repo = new Repo(ref.url.resolve("/"));
+    Repo repo;
+    setUp(() {
+      ref = new Firebase("${testUrl}test/disconnect");
+      repo = new Repo(ref.url.resolve("/"));
+    });
 
     test('put', () async {
       await ref.set("hello");
@@ -517,7 +560,9 @@ void main() {
   });
 
   group('Query', () {
-    var ref = new Firebase("${testUrl}test/query");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/query");
+    });
 
 
     test('Limit', () async {
@@ -730,6 +775,7 @@ void main() {
       var q = ref.orderByChild("order");
       var l = q.startAt("b").limitToFirst(1).onValue
           .map((e)=>e.snapshot.val?.keys?.single)
+          .where((v)=>v!=null)  // returns null first when has index on order otherwise not
           .take(2).toList();
 
       await new Future.delayed(new Duration(milliseconds: 200));
@@ -802,7 +848,10 @@ void main() {
   });
 
   group('multiple frames', () {
-    var ref = new Firebase("${testUrl}test/frames");
+    setUp(() {
+      ref = new Firebase("${testUrl}test/frames");
+    });
+
     test('Receive large value', () async {
 
 
@@ -826,8 +875,11 @@ void main() {
 
 
   group('Complex operations', () {
-    var ref = new Firebase("${testUrl}test/complex");
-    var iref = new IsolatedReference(ref);
+    IsolatedReference iref;
+    setUp(() {
+      ref = new Firebase("${testUrl}test/complex");
+      iref = new IsolatedReference(ref);
+    });
 
     test('Remove out of view', () async {
       await iref.set({
@@ -970,16 +1022,37 @@ void main() {
 
       await sub2.cancel();
     });
+
+    test('with canceled parent', () async {
+      var sub = ref.root.onValue.listen((v)=>print(v.snapshot.val), onError: (e)=>print("error $e"));
+      await wait(400);
+
+      await iref.set("hello world");
+
+      expect(await ref.get(), "hello world");
+
+
+
+      await iref.set("hello all");
+      await wait(400);
+      expect(await ref.get(), "hello all");
+
+      await sub.cancel();
+
+    });
   });
 }
 
 wait(int millis) async => new Future.delayed(new Duration(milliseconds: millis));
 
+
 class IsolatedReference {
 
   final Firebase reference;
 
-  IsolatedReference(this.reference);
+  final Future<IsolateRunner> _runner;
+
+  IsolatedReference(this.reference) : _runner = Runners.spawnIsolate();
 
   IsolatedReference child(String childPath) => new IsolatedReference(reference.child(childPath));
 
@@ -993,47 +1066,42 @@ class IsolatedReference {
 
   Future authWithCustomToken(String token) => _sendReceive("auth",token);
 
-  static Future<SendPort> get _sendPort async {
-    var response = new ReceivePort();
-    var isolate = await Isolate.spawn(_spawnFunction, response.sendPort);
-    var error = new ReceivePort();
-    isolate.addErrorListener(error.sendPort);
-    error.listen(print);
-    return response.first;
-  }
-
   Future _sendReceive(String command, dynamic v) async {
-    ReceivePort response = new ReceivePort();
-    var port = await _sendPort;
-    port.send([response.sendPort, reference.url, command, v]);
-    return response.first;
+    var runner = await _runner;
+    await runner.run(_Command.execute,new _Command(reference.url.toString(), command, v));
   }
 
 }
 
 
-_spawnFunction(SendPort initialReplyTo) async {
-  var port = new ReceivePort();
-  initialReplyTo.send(port.sendPort);
 
-  await for (var msg in port) {
-    SendPort replyTo = msg[0];
-    var url = msg[1]?.toString();
-    var command = msg[2];
-    var value = msg[3];
-    switch (command) {
-      case "set":
-        await new Firebase(url).set(value);
-        break;
-      case "update":
-        await new Firebase(url).update(value);
-        break;
-      case "exit":
-        port.close();
-        break;
-      case "auth":
-        await new Firebase(url).authWithCustomToken(value);
+class _Command {
+  final String url;
+  final String command;
+  final dynamic value;
+
+  _Command(this.url,this.command,this.value);
+
+  Future exec() async {
+    try {
+      print("exec $url $command $value");
+      switch (command) {
+        case "set":
+          await new Firebase(url).set(value);
+          break;
+        case "update":
+          await new Firebase(url).update(value);
+          break;
+        case "auth":
+          await new Firebase(url).authWithCustomToken(value);
+      }
+    } catch (e) {
+      print(e);
+      rethrow;
     }
-    replyTo.send(null);
   }
+
+  static Future execute(_Command command) => command.exec();
 }
+
+

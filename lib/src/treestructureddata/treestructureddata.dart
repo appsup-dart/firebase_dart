@@ -10,12 +10,12 @@ class TreeStructuredData extends TreeNode<Name, Value> {
       {Value priority,
       Value value,
       Filter<Name, TreeStructuredData> filter})
-      : this._(value, new FilteredMap(filter ?? new Filter<Name,TreeStructuredData>()), priority);
+      : this._(value, new FilteredMap(filter ?? new QueryFilter()), priority);
 
   TreeStructuredData._(
       Value value, FilteredMap<Name, TreeStructuredData> children, Value priority)
       : priority = priority,
-        super(value, children ?? new FilteredMap()) {
+        super(value, children ?? new FilteredMap(new QueryFilter())) {
     assert(children==null||children is FilteredMap);
     assert(this.children==null||this.children is FilteredMap);
   }
@@ -25,7 +25,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
 
   TreeStructuredData.nonLeaf(Map<Name, TreeStructuredData> children,
       [Value priority])
-      : this._(null, children is FilteredMap ? children : new FilteredMap()..addAll(children), priority);
+      : this._(null, children is FilteredMap ? children : new FilteredMap(new QueryFilter())..addAll(children), priority);
 
   factory TreeStructuredData.fromJson(json, [priority]) {
     if (json == null) {

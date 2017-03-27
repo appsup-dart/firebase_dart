@@ -11,6 +11,7 @@ import 'tree.dart';
 import 'repo.dart';
 import 'dart:async';
 import 'package:logging/logging.dart';
+import 'connection.dart';
 
 final _logger = new Logger("firebase-synctree");
 
@@ -116,6 +117,8 @@ class MasterView {
 /// Represents a remote resource and holds local (partial) views and local
 /// changes of its value.
 class SyncPoint {
+  final String name;
+
   final Map<QueryFilter, MasterView> views = {};
 
   bool _isCompleteFromParent = false;
@@ -129,15 +132,15 @@ class SyncPoint {
     }
   }
 
-  SyncPoint([ViewCache data]) {
+  SyncPoint(this.name, [ViewCache data]) {
     if (data==null) return;
     var q = new QueryFilter();
     views[q] = new MasterView(q).._data = data;
   }
 
   SyncPoint child(Name child) {
-    var p = new SyncPoint(viewCacheForChild(child));
-    p.isCompleteFromParent = p.isCompleteForChild(child);
+    var p = new SyncPoint("$name/$child", viewCacheForChild(child));
+    p.isCompleteFromParent = isCompleteForChild(child);
     return p;
   }
 
@@ -183,8 +186,11 @@ class SyncPoint {
   MasterView createMasterViewForFilter(QueryFilter filter) {
     filter ??= new QueryFilter();
     var unlimitedFilter = views.keys.firstWhere((q)=>!q.limits, orElse: ()=>null);
-    return views[filter] = (unlimitedFilter!=null
-        ? views[unlimitedFilter].withFilter(filter) : new MasterView(filter));
+    if (unlimitedFilter!=null) {
+      filter = new QueryFilter(ordering: filter.ordering);
+      return views[filter] = views[unlimitedFilter].withFilter(filter);
+    }
+    return views[filter] = new MasterView(filter);
   }
 
   /// Removes an event listener for events of [type] and for data filtered by
@@ -229,7 +235,7 @@ class SyncPoint {
   }
 
   @override
-  String toString() => "SyncPoint[$views]";
+  String toString() => "SyncPoint[$name]";
 }
 
 abstract class RemoteListenerRegistrar {
@@ -273,14 +279,15 @@ abstract class RemoteListenerRegistrar {
 
 
 class SyncTree {
+  final String name;
   final RemoteListenerRegistrar registrar;
 
-  final TreeNode<Name, SyncPoint> root = _createNode(null,null);
+  final TreeNode<Name, SyncPoint> root;
 
-  SyncTree(this.registrar);
+  SyncTree(this.name, this.registrar) : root = new TreeNode(new SyncPoint(name));
 
   static TreeNode<Name, SyncPoint> _createNode(SyncPoint parent, Name childName) {
-    return new TreeNode(parent?.child(childName) ?? new SyncPoint());
+    return new TreeNode(parent?.child(childName));
   }
 
   final Map<SyncPoint,Future<Null>> _invalidPoints = {};
@@ -302,7 +309,16 @@ class SyncTree {
     return _invalidPoints.putIfAbsent(point, ()=>new Future<Null>.microtask(() {
       _invalidPoints.remove(point);
       registrar.registerAll(path, point.minimalSetOfQueries,
-              (f)=>point.views[f]?._data?.localVersion?.isComplete==true ? point.views[f]._data.localVersion.value.hash : null);
+              (f)=>point.views[f]?._data?.localVersion?.isComplete==true ? point.views[f]._data.localVersion.value.hash : null)
+          .catchError((e) {
+        if (e.code == "permission_denied") {
+          point.views.values.expand((v)=>v.observers.values)
+              .forEach((t)=>t.dispatchEvent(new Event("cancel")));
+          point.views.clear();
+        } else {
+          throw e;
+        }
+      }, test: (e)=>e is ServerError);
     }));
 
   }
@@ -346,29 +362,13 @@ class SyncTree {
         root, null, operation, ViewOperationSource.user, writeId);
   }
 
-  /// Applies a server overwrite at [path] with [newData]
-  void applyServerOverwrite(
-      Path<Name> path, Filter filter, TreeStructuredData newData) {
-    var operation;
-    if (path.isNotEmpty&&path.last==new Name(".priority")) {
-      operation = new TreeOperation.setPriority(path.parent, newData.value);
-    } else {
-      operation = new TreeOperation.overwrite(path, newData);
-    }
-    _applyOperationToSyncPoints(
-        root, filter, operation, ViewOperationSource.server, null);
-  }
-
-  /// Applies a server merge at [path] with [changedChildren]
-  void applyServerMerge(Path<Name> path, Filter filter,
-      Map<Name, TreeStructuredData> changedChildren) {
-    var operation = new TreeOperation.merge(path, changedChildren);
+  void applyServerOperation(TreeOperation operation, Filter filter) {
     _applyOperationToSyncPoints(
         root, filter, operation, ViewOperationSource.server, null);
   }
 
   void applyListenRevoked(Path<Name> path, Filter filter) {
-    root.subtree(path).value.views[filter].observers.values
+    root.subtree(path).value.views.remove(filter).observers.values
         .forEach((t)=>t.dispatchEvent(new Event("cancel")));
   }
 
