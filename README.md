@@ -15,6 +15,14 @@ A simple usage example:
         print(e.snapshot.val);
       });
     }
+    
+### Local database
+
+Besides connecting to a remote firebase database, you can also create and work with a local in memory database.
+
+    var ref = new Firebase("mem://some.name/");
+
+    
 
 ## Features and bugs
 

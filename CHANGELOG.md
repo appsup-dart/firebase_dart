@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.0
+
+- Local memory database
+- bugfixes
+
 ## 0.6.0
 
 - improved performance by only listening to the most general query
