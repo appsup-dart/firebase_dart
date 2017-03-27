@@ -247,7 +247,7 @@ class RemoteListeners extends RemoteListenerRegistrar {
 
   @override
   Future<Null> remoteRegister(Path<Name> path, QueryFilter filter, String hash) async {
-    var warnings = await connection.listen(path.join('/'), query: filter, hash: hash);
+    var warnings = await connection.listen(path.join('/'), query: filter, hash: hash) ?? [];
     for (var w in warnings) {
       _logger.warning(w);
     }

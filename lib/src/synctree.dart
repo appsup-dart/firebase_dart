@@ -11,6 +11,7 @@ import 'tree.dart';
 import 'repo.dart';
 import 'dart:async';
 import 'package:logging/logging.dart';
+import 'connection.dart';
 
 final _logger = new Logger("firebase-synctree");
 
@@ -308,7 +309,16 @@ class SyncTree {
     return _invalidPoints.putIfAbsent(point, ()=>new Future<Null>.microtask(() {
       _invalidPoints.remove(point);
       registrar.registerAll(path, point.minimalSetOfQueries,
-              (f)=>point.views[f]?._data?.localVersion?.isComplete==true ? point.views[f]._data.localVersion.value.hash : null);
+              (f)=>point.views[f]?._data?.localVersion?.isComplete==true ? point.views[f]._data.localVersion.value.hash : null)
+          .catchError((e) {
+        if (e.code == "permission_denied") {
+          point.views.values.expand((v)=>v.observers.values)
+              .forEach((t)=>t.dispatchEvent(new Event("cancel")));
+          point.views.clear();
+        } else {
+          throw e;
+        }
+      }, test: (e)=>e is ServerError);
     }));
 
   }
@@ -358,7 +368,7 @@ class SyncTree {
   }
 
   void applyListenRevoked(Path<Name> path, Filter filter) {
-    root.subtree(path).value.views[filter].observers.values
+    root.subtree(path).value.views.remove(filter).observers.values
         .forEach((t)=>t.dispatchEvent(new Event("cancel")));
   }
 

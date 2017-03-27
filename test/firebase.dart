@@ -21,11 +21,11 @@ import 'package:firebase_dart/src/isolate_runner.dart';
 
 void main() {
   StreamSubscription logSubscription;
-  setUpAll(() {
+  setUp(() {
     Logger.root.level = Level.ALL;
     logSubscription = Logger.root.onRecord.listen(print);
   });
-  tearDownAll(() async {
+  tearDown(() async {
     await logSubscription.cancel();
   });
 
@@ -1021,6 +1021,24 @@ void testsWith(Map<String,String> secrets) {
 
 
       await sub2.cancel();
+    });
+
+    test('with canceled parent', () async {
+      var sub = ref.root.onValue.listen((v)=>print(v.snapshot.val), onError: (e)=>print("error $e"));
+      await wait(400);
+
+      await iref.set("hello world");
+
+      expect(await ref.get(), "hello world");
+
+
+
+      await iref.set("hello all");
+      await wait(400);
+      expect(await ref.get(), "hello all");
+
+      await sub.cancel();
+
     });
   });
 }
