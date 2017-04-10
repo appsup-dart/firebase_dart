@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1
+
+- Fix bug saving lists
+
 ## 0.7.0
 
 - Local memory database

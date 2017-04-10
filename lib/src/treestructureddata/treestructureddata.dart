@@ -53,8 +53,8 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     }
 
     var children = new Map<Name, TreeStructuredData>.fromIterable(
-        json.keys.map((k)=>k.toString()).where((k) => !k.startsWith(".")),
-        key: (k) => new Name(k),
+        json.keys.where((k) => k is! String||!k.startsWith(".")),
+        key: (k) => new Name(k.toString()),
         value: (k) =>
             new TreeStructuredData.fromJson(json[k], null));
 
