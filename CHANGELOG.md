@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.2
+
+- Fix not able to authenticate with database secret
+
 ## 0.7.1
 
 - Fix bug saving lists
