@@ -177,10 +177,8 @@ class ProtocolConnection extends Connection {
 
   var _authToken;
 
-  bool _isJwt(String token) => token.split(".").length == 3;
-
   Future<Map<String,dynamic>> auth(String token) =>
-      _request(_isJwt(token) ? new Request.auth(token) : new Request.gauth(token))
+      _request(new Request.auth(token))
           .then((b) {
         _authToken = token;
         return b.data["auth"];
