@@ -55,6 +55,7 @@ class ViewCache {
   }
 
   ViewCache addOperation(int writeId, Operation op) {
+    if (op==null) throw new ArgumentError("Trying to add null operation");
     return new ViewCache(localVersion.applyOperation(op), serverVersion,
         pendingOperations.clone()..[writeId] = op);
   }
