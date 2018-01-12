@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.3
+
+- Fix `The method 'operationForChild' was called on null.`
+
 ## 0.7.2
 
 - Fix not able to authenticate with database secret
