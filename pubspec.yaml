@@ -1,6 +1,6 @@
 name: firebase_dart
 description: A pure Dart implementation of the Firebase client
-version: 0.7.2
+version: 0.7.3
 author: Rik Bellens <rik.bellens@appsup.be>
 homepage: https://github.com/appsup-dart/firebase_dart
 
@@ -16,6 +16,7 @@ dependencies:
   sortedmap: '>=0.2.0 <0.3.0'
   web_socket_channel: '>=1.0.4 <2.0.0'
   isolate: '>=1.0.0 <1.1.0'
+  collection: '^1.9.1'
 
 dev_dependencies:
   test: '>=0.12.0 <0.13.0'
