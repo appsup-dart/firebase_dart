@@ -33,12 +33,17 @@ class ViewCache {
       );
 
   ViewCache child(Name c) {
+    var childPendingOperations = new SortedMap();
+    for (var k in pendingOperations.keys) {
+      var o = pendingOperations[k].operationForChild(c);
+      if (o!=null) {
+        childPendingOperations[k] = o;
+      }
+    }
     var v = new ViewCache(
       localVersion.child(c),
       serverVersion.child(c),
-      new SortedMap.fromIterables(pendingOperations.keys,
-          pendingOperations.values
-              .map((o)=>o.operationForChild(c))),
+      childPendingOperations,
     );
     return v;
   }
