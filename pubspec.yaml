@@ -16,6 +16,7 @@ dependencies:
   sortedmap: '>=0.2.0 <0.3.0'
   web_socket_channel: '>=1.0.4 <2.0.0'
   isolate: '>=1.0.0 <1.1.0'
+  collection: '^1.9.1'
 
 dev_dependencies:
   test: '>=0.12.0 <0.13.0'
