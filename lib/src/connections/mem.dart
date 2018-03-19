@@ -94,7 +94,7 @@ class SingleInstanceBackend {
     await new Future.delayed(new Duration(milliseconds: 1000));
   }
 
-  static Future<Null> apply(TreeOperation operation) =>
+  static Future<void> apply(TreeOperation operation) =>
       _runner.run(_applyOnInstance,new BackendOperation.fromTreeOperation(operation));
 
 
