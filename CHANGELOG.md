@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.4
+
+- Fix order by grandchild
+- Resolve strong mode analysis warnings
+
 ## 0.7.3
 
 - Fix `The method 'operationForChild' was called on null.`

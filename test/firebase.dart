@@ -760,7 +760,19 @@ void testsWith(Map<String,String> secrets) {
       });
 
     });
+    test('Order by grandchild', () async {
+      await ref.set({
+        "text2": {"order": {"x": "b"}},
+        "text1": {"order": {"x": "c"}},
+        "text3": {"order": {"x": "a"}}
+      });
 
+      var q = ref.orderByChild("order/x");
+
+      expect(await q.limitToFirst(1).get(), {
+        "text3": {"order": {"x": "a"}}
+      });
+    });
     test('Order after remove', () async {
       var iref = new IsolatedReference(ref);
       await iref.set({

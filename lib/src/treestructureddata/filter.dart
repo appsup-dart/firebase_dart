@@ -64,7 +64,10 @@ class ChildOrdering extends TreeStructuredDataOrdering {
   const ChildOrdering(this.child) : super._();
 
   @override
-  TreeStructuredData mapValue(TreeStructuredData v) => v.children[new Name(child)] ?? new TreeStructuredData();
+  TreeStructuredData mapValue(TreeStructuredData v) {
+    var parts = child.split("/").map((v)=>new Name(v));
+    return parts.fold(v, (v,c)=>v.children[c]??new TreeStructuredData());
+  }
 
   String get orderBy => child;
 }
