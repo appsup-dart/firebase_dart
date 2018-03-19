@@ -7,17 +7,15 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   Value priority;
 
   TreeStructuredData(
-      {Value priority,
-      Value value,
-      Filter<Name, TreeStructuredData> filter})
+      {Value priority, Value value, Filter<Name, TreeStructuredData> filter})
       : this._(value, new FilteredMap(filter ?? new QueryFilter()), priority);
 
-  TreeStructuredData._(
-      Value value, FilteredMap<Name, TreeStructuredData> children, Value priority)
+  TreeStructuredData._(Value value,
+      FilteredMap<Name, TreeStructuredData> children, Value priority)
       : priority = priority,
         super(value, children ?? new FilteredMap(new QueryFilter())) {
-    assert(children==null||children is FilteredMap);
-    assert(this.children==null||this.children is FilteredMap);
+    assert(children == null || children is FilteredMap);
+    assert(this.children == null || this.children is FilteredMap);
   }
 
   TreeStructuredData.leaf(Value value, [Value priority])
@@ -25,13 +23,22 @@ class TreeStructuredData extends TreeNode<Name, Value> {
 
   TreeStructuredData.nonLeaf(Map<Name, TreeStructuredData> children,
       [Value priority])
-      : this._(null, children is FilteredMap ? children : (new FilteredMap(new QueryFilter())..addAll(children)), priority);
+      : this._(
+            null,
+            children is FilteredMap
+                ? children
+                : (new FilteredMap(new QueryFilter())..addAll(children)),
+            priority);
 
   factory TreeStructuredData.fromJson(json, [priority]) {
     if (json == null) {
       return new TreeStructuredData();
     }
-    if (json is !Map&&json is !bool&&json is !num&&json is !String&&json is !List) {
+    if (json is! Map &&
+        json is! bool &&
+        json is! num &&
+        json is! String &&
+        json is! List) {
       try {
         json = json.toJson();
       } on NoSuchMethodError {}
@@ -53,10 +60,9 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     }
 
     var children = new Map<Name, TreeStructuredData>.fromIterable(
-        json.keys.where((k) => k is! String||!k.startsWith(".")),
+        json.keys.where((k) => k is! String || !k.startsWith(".")),
         key: (k) => new Name(k.toString()),
-        value: (k) =>
-            new TreeStructuredData.fromJson(json[k], null));
+        value: (k) => new TreeStructuredData.fromJson(json[k], null));
 
     return new TreeStructuredData.nonLeaf(children, priority);
   }
@@ -68,14 +74,20 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   @override
   FilteredMap<Name, TreeStructuredData> get children => super.children;
 
-  TreeStructuredData view({Pair<Name,TreeStructuredData> start,
-  Pair<Name,TreeStructuredData> end, int limit, bool reversed}) =>
-    new TreeStructuredData._(value, children.filteredMapView(start: start, end: end, limit: limit, reversed: reversed), priority);
-
+  TreeStructuredData view(
+          {Pair<Name, TreeStructuredData> start,
+          Pair<Name, TreeStructuredData> end,
+          int limit,
+          bool reversed}) =>
+      new TreeStructuredData._(
+          value,
+          children.filteredMapView(
+              start: start, end: end, limit: limit, reversed: reversed),
+          priority);
 
   TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) =>
-    new TreeStructuredData(priority: priority, value: value, filter: f)
-      ..children.addAll(children);
+      new TreeStructuredData(priority: priority, value: value, filter: f)
+        ..children.addAll(children);
 
   dynamic toJson([bool exportFormat = false]) {
     if (isNil) return null;
@@ -107,7 +119,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   String get hash {
     var toHash = "";
 
-    if (priority!=null) {
+    if (priority != null) {
       toHash += "priority:${priority._hashText}";
     }
 
@@ -117,10 +129,11 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     children.forEach((key, child) {
       toHash += ":${key.asString()}:${child.hash}";
     });
-    return toHash=="" ? "" : BASE64.encode(sha1.convert(toHash.codeUnits).bytes);
+    return toHash == ""
+        ? ""
+        : BASE64.encode(sha1.convert(toHash.codeUnits).bytes);
   }
 }
-
 
 String _doubleToIEEE754String(num v) {
   var l = new Float64List.fromList([v.toDouble()]);

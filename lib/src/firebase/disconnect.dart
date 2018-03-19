@@ -18,7 +18,6 @@ part of firebase_dart;
 /// operation to occur each time a disconnect occurs, you'll need to
 /// re-establish the operations each time.
 abstract class Disconnect {
-
   /// Ensure the data at this location is set to the specified value when the
   /// client is disconnected (due to closing the browser, navigating to a new
   /// page, or network issues).

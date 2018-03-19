@@ -15,7 +15,6 @@ part of firebase_dart;
 /// will only receive events and DataSnapshots for the subset of the data that
 /// matches your query.
 abstract class Query {
-
   /// Gets a stream for events of type [eventType]
   Stream<Event> on(String eventType);
 
@@ -44,7 +43,6 @@ abstract class Query {
 
   /// Convenient method to get the value for this query.
   Future get() => onceValue.then((v) => v.val);
-
 
   /// Generates a new [Query] object ordered by the specified child key.
   Query orderByChild(String child);

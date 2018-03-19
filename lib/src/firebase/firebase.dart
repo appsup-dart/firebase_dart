@@ -6,7 +6,6 @@ part of firebase_dart;
 /// A Firebase reference represents a particular location in your database and
 /// can be used for reading or writing data to that database location.
 abstract class Firebase implements Query {
-
   /// Construct a new Firebase reference from a full Firebase URL.
   factory Firebase(String url) => new FirebaseImpl(url);
 
@@ -32,7 +31,7 @@ abstract class Firebase implements Query {
   ///
   /// The relative path can either be a simple child name, (e.g. 'fred') or a
   /// deeper slash separated path (e.g. 'fred/name/first').
-  Firebase child(String c) => new Firebase(childUri(url,c).toString());
+  Firebase child(String c) => new Firebase(childUri(url, c).toString());
 
   /// Get a Firebase reference for the parent location. If this instance refers
   /// to the root of your Firebase, it has no parent, and therefore parent
@@ -134,11 +133,10 @@ abstract class Firebase implements Query {
   /// The returned [Future] will be completed after the transaction has
   /// finished.
   Future<DataSnapshot> transaction(dynamic update(dynamic currentVal),
-          {bool applyLocally: true});
+      {bool applyLocally: true});
 
   static Uri _parentUri(Uri uri) =>
       Uri.parse("$uri/").resolve("..").normalizePath();
 
   static Uri _rootUri(Uri uri) => uri.resolve("/").normalizePath();
-
 }

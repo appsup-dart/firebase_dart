@@ -17,26 +17,25 @@ class ViewCache {
     pendingOperations ??= new SortedMap();
   }
 
-  IncompleteData valueForFilter(Filter<Name,TreeStructuredData> filter) {
+  IncompleteData valueForFilter(Filter<Name, TreeStructuredData> filter) {
     return localVersion.update(localVersion.value.view(
-      start: filter.validInterval.start,
-      end: filter.validInterval.end,
-      limit: filter.limit,
-      reversed: filter.reversed));
+        start: filter.validInterval.start,
+        end: filter.validInterval.end,
+        limit: filter.limit,
+        reversed: filter.reversed));
   }
 
-  ViewCache withFilter(Filter<Name,TreeStructuredData> filter) =>
+  ViewCache withFilter(Filter<Name, TreeStructuredData> filter) =>
       new ViewCache(
           localVersion.update(localVersion.value.withFilter(filter)),
           serverVersion.update(serverVersion.value.withFilter(filter)),
-          new SortedMap.from(pendingOperations)
-      );
+          new SortedMap.from(pendingOperations));
 
   ViewCache child(Name c) {
     var childPendingOperations = new SortedMap();
     for (var k in pendingOperations.keys) {
       var o = pendingOperations[k].operationForChild(c);
-      if (o!=null) {
+      if (o != null) {
         childPendingOperations[k] = o;
       }
     }
@@ -49,9 +48,8 @@ class ViewCache {
   }
 
   void recalcLocalVersion() {
-    localVersion = pendingOperations.values
-        .fold<IncompleteData>(serverVersion,
-            (IncompleteData v, o) => v.applyOperation(o));
+    localVersion = pendingOperations.values.fold<IncompleteData>(
+        serverVersion, (IncompleteData v, o) => v.applyOperation(o));
   }
 
   ViewCache updateServerVersion(IncompleteData newValue) {
@@ -60,7 +58,7 @@ class ViewCache {
   }
 
   ViewCache addOperation(int writeId, Operation op) {
-    if (op==null) throw new ArgumentError("Trying to add null operation");
+    if (op == null) throw new ArgumentError("Trying to add null operation");
     return new ViewCache(localVersion.applyOperation(op), serverVersion,
         pendingOperations.clone()..[writeId] = op);
   }
@@ -72,13 +70,14 @@ class ViewCache {
     return viewCache;
   }
 
-
-  ViewCache applyOperation(Operation operation, ViewOperationSource source, int writeId) {
+  ViewCache applyOperation(
+      Operation operation, ViewOperationSource source, int writeId) {
     switch (source) {
       case ViewOperationSource.user:
         return addOperation(writeId, operation);
       case ViewOperationSource.ack:
-        return removeOperation(writeId, true); // TODO doesn't need recalculate when no server values?
+        return removeOperation(writeId,
+            true); // TODO doesn't need recalculate when no server values?
       case ViewOperationSource.server:
         var result = serverVersion.applyOperation(operation);
         return updateServerVersion(result);
@@ -88,7 +87,4 @@ class ViewCache {
   }
 }
 
-
 enum ViewOperationSource { user, server, ack }
-
-

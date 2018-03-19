@@ -32,7 +32,7 @@ class EventTarget {
   }
 
   void removeEventListener(String type, EventListener listener) {
-    if (listener==null) {
+    if (listener == null) {
       _eventRegistrations.remove(type);
     } else {
       _eventRegistrations.putIfAbsent(type, () => new Set()).remove(listener);

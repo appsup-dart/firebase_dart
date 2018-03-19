@@ -3,10 +3,9 @@
 
 part of firebase_dart;
 
-class ServerValue extends MapView<String,String> {
+class ServerValue extends MapView<String, String> {
+  static const ServerValue timestamp =
+      const ServerValue._(const {".sv": "timestamp"});
 
-  static const ServerValue timestamp = const ServerValue._(const {".sv": "timestamp"});
-
-  const ServerValue._(Map<String,String> map) : super(map);
-
+  const ServerValue._(Map<String, String> map) : super(map);
 }

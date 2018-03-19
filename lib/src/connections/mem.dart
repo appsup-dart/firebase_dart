@@ -1,4 +1,3 @@
-
 import '../connection.dart';
 import 'dart:async';
 import '../tree.dart';
@@ -15,12 +14,10 @@ import '../isolate_runner.dart';
 
 final _logger = new Logger("firebase-mem");
 
-
-
 class _Registrar extends RemoteListenerRegistrar {
-
   @override
-  Future<Null> remoteRegister(Path<Name> path, QueryFilter filter, String hash) async {
+  Future<Null> remoteRegister(
+      Path<Name> path, QueryFilter filter, String hash) async {
     // TODO: implement remoteRegister
   }
 
@@ -29,7 +26,6 @@ class _Registrar extends RemoteListenerRegistrar {
     // TODO: implement remoteUnregister
   }
 }
-
 
 class BackendOperation {
   final String path;
@@ -45,46 +41,46 @@ class BackendOperation {
     if (nop is Overwrite) {
       return new BackendOperation.overwrite(path, nop.value.toJson(true));
     } else if (nop is Merge) {
-      return new BackendOperation.merge(path, new TreeStructuredData.nonLeaf(nop.children).toJson(true));
+      return new BackendOperation.merge(
+          path, new TreeStructuredData.nonLeaf(nop.children).toJson(true));
     } else if (nop is SetPriority) {
       return new BackendOperation.overwrite("$path/.priority", nop.value);
     }
     throw new ArgumentError.value(op);
   }
 
-  TreeOperation toTreeOperation() => isMerge ?
-  new TreeOperation.merge(Name.parsePath(path),new TreeStructuredData.fromJson(data).children) :
-  new TreeOperation.overwrite(Name.parsePath(path), new TreeStructuredData.fromJson(data));
+  TreeOperation toTreeOperation() => isMerge
+      ? new TreeOperation.merge(
+          Name.parsePath(path), new TreeStructuredData.fromJson(data).children)
+      : new TreeOperation.overwrite(
+          Name.parsePath(path), new TreeStructuredData.fromJson(data));
 }
 
 class SingleInstanceBackend {
-
   static final SingleInstanceBackend _instance = new SingleInstanceBackend();
 
   TreeStructuredData data = new TreeStructuredData();
   final List<StreamController<BackendOperation>> controllers = [];
 
-
-
   Stream<BackendOperation> get _stream {
     var controller = new StreamController<BackendOperation>();
     controllers.add(controller);
-    controller.add(new BackendOperation.overwrite("",null));
+    controller.add(new BackendOperation.overwrite("", null));
     return controller.stream;
   }
 
   static void _createStream(SendPort sendPort) {
-    _instance._stream.forEach((v)=>sendPort.send(v));
+    _instance._stream.forEach((v) => sendPort.send(v));
   }
 
-  static Future<Null> _applyOnInstance(BackendOperation operation) => _instance._apply(operation);
+  static Future<Null> _applyOnInstance(BackendOperation operation) =>
+      _instance._apply(operation);
 
   static Stream<TreeOperation> get stream async* {
     var r = new ReceivePort();
-    await _runner.run(SingleInstanceBackend._createStream,r.sendPort);
-    yield* r.map((o)=>o.toTreeOperation());
+    await _runner.run(SingleInstanceBackend._createStream, r.sendPort);
+    yield* r.map((o) => o.toTreeOperation());
   }
-
 
   Future<Null> _apply(BackendOperation operation) async {
     data = operation.toTreeOperation().apply(data);
@@ -94,23 +90,18 @@ class SingleInstanceBackend {
     await new Future.delayed(new Duration(milliseconds: 1000));
   }
 
-  static Future<void> apply(TreeOperation operation) =>
-      _runner.run(_applyOnInstance,new BackendOperation.fromTreeOperation(operation));
-
+  static Future<void> apply(TreeOperation operation) => _runner.run(
+      _applyOnInstance, new BackendOperation.fromTreeOperation(operation));
 
   static Runner get _runner {
     return Runners.mainRunner;
   }
-
-
 }
 
-
-
 class MemConnection extends Connection {
-
-
-  MemConnection(String host) : syncTree = new SyncTree("", new _Registrar()), super.base(host) {
+  MemConnection(String host)
+      : syncTree = new SyncTree("", new _Registrar()),
+        super.base(host) {
     SingleInstanceBackend.stream.listen((op) {
       _logger.fine("operation from backend $op");
       syncTree.applyServerOperation(op, null);
@@ -135,26 +126,34 @@ class MemConnection extends Connection {
     _runOnDisconnectEvents();
     _onConnectController.add(true);
   }
+
   SparseSnapshotTree _onDisconnect = new SparseSnapshotTree();
   void _runOnDisconnectEvents() {
     var sv = serverValues;
     _onDisconnect.forEachNode((path, snap) {
       if (snap == null) return;
-      syncTree.applyServerOperation(new TreeOperation.overwrite(path, ServerValue.resolve(snap,sv)), null);
+      syncTree.applyServerOperation(
+          new TreeOperation.overwrite(path, ServerValue.resolve(snap, sv)),
+          null);
     });
     _onDisconnect.children.clear();
     _onDisconnect.value = null;
   }
 
   @override
-  Future<Iterable<String>> listen(String path, {QueryFilter query, String hash}) async {
+  Future<Iterable<String>> listen(String path,
+      {QueryFilter query, String hash}) async {
     _logger.fine("listen $path $query");
     var p = Name.parsePath(path);
-    await syncTree.addEventListener("value",p, query, (event) {
+    await syncTree.addEventListener("value", p, query, (event) {
       if (event is ValueEvent) {
-        var operation = new OperationEvent(OperationEventType.overwrite, p,
-            ServerValue.resolve(event.value, serverValues), query.limits ? query : null);
-        _logger.fine("operation $path ${operation.query} $query ${operation.type} ${operation.data}");
+        var operation = new OperationEvent(
+            OperationEventType.overwrite,
+            p,
+            ServerValue.resolve(event.value, serverValues),
+            query.limits ? query : null);
+        _logger.fine(
+            "operation $path ${operation.query} $query ${operation.type} ${operation.data}");
         _onDataOperation.add(operation);
       }
     });
@@ -165,16 +164,18 @@ class MemConnection extends Connection {
   @override
   Future<Null> unlisten(String path, {QueryFilter query}) async {
     var p = Name.parsePath(path);
-    await syncTree.removeEventListener("value",p,query,null);
+    await syncTree.removeEventListener("value", p, query, null);
   }
-
 
   @override
   Future<Null> merge(String path, value, {String hash, int writeId}) async {
     _logger.fine("merge $path $value");
     var p = Name.parsePath(path);
     // TODO check hash
-    syncTree.applyServerOperation(new TreeOperation.merge(p, new TreeStructuredData.fromJson(value).children), null);
+    syncTree.applyServerOperation(
+        new TreeOperation.merge(
+            p, new TreeStructuredData.fromJson(value).children),
+        null);
   }
 
   @override
@@ -182,7 +183,8 @@ class MemConnection extends Connection {
     _logger.fine("put $path $value");
     var p = Name.parsePath(path);
 
-    await SingleInstanceBackend.apply(new TreeOperation.overwrite(p, new TreeStructuredData.fromJson(value)));
+    await SingleInstanceBackend.apply(
+        new TreeOperation.overwrite(p, new TreeStructuredData.fromJson(value)));
     // TODO check hash
   }
 
@@ -197,7 +199,8 @@ class MemConnection extends Connection {
   }
 
   @override
-  Future<Null> onDisconnectMerge(String path, Map<String, dynamic> childrenToMerge) async {
+  Future<Null> onDisconnectMerge(
+      String path, Map<String, dynamic> childrenToMerge) async {
     childrenToMerge.forEach((childName, child) {
       _onDisconnect.remember(Name.parsePath(path).child(new Name(childName)),
           new TreeStructuredData.fromJson(child));
@@ -206,9 +209,9 @@ class MemConnection extends Connection {
 
   @override
   Future<Null> onDisconnectPut(String path, value) async {
-    _onDisconnect.remember(Name.parsePath(path), new TreeStructuredData.fromJson(value));
+    _onDisconnect.remember(
+        Name.parsePath(path), new TreeStructuredData.fromJson(value));
   }
-
 
   @override
   DateTime get serverTime => new DateTime.now();
@@ -222,14 +225,14 @@ class MemConnection extends Connection {
     return t.data;
   }
 
-
   @override
   Future<Null> unauth() async {
     _isAuthenticated = false;
   }
 
   final StreamController<Map> _onAuth = new StreamController(sync: true);
-  final StreamController<OperationEvent> _onDataOperation = new StreamController(sync: true);
+  final StreamController<OperationEvent> _onDataOperation =
+      new StreamController(sync: true);
 
   @override
   Stream<Map> get onAuth => _onAuth.stream;
@@ -237,4 +240,3 @@ class MemConnection extends Connection {
   @override
   Stream<OperationEvent> get onDataOperation => _onDataOperation.stream;
 }
-

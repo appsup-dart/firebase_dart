@@ -15,13 +15,14 @@ class Path<K> extends UnmodifiableListView<K> {
 
   Path<K> child(K child) => new Path.from(new List.from(this)..add(child));
 
-  Path<K> get parent => new Path.from(take(length-1));
+  Path<K> get parent => new Path.from(take(length - 1));
 
   @override
   int get hashCode => const ListEquality().hash(this);
 
   @override
-  bool operator==(other) => other is Path && const ListEquality().equals(this,other);
+  bool operator ==(other) =>
+      other is Path && const ListEquality().equals(this, other);
 }
 
 class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
@@ -30,21 +31,23 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
   final Map<K, TreeNode<K, V>> _children;
 
   TreeNode([this.value, Map<K, TreeNode<K, V>> children])
-      : _children = (_cloneMap<K,TreeNode<K,V>>(children ?? {}));
+      : _children = (_cloneMap<K, TreeNode<K, V>>(children ?? {}));
 
   Map<K, TreeNode<K, V>> get children => _children;
 
-  static Map<K,V> _cloneMap<K extends Comparable,V>(Map<K,V> map) {
-    if (map is SortedMap<K,V>) {
+  static Map<K, V> _cloneMap<K extends Comparable, V>(Map<K, V> map) {
+    if (map is SortedMap<K, V>) {
       return map.clone();
     }
-    return new Map<K,V> .from(map);
+    return new Map<K, V>.from(map);
   }
 
-  TreeNode<K, V> subtree(Path<K> path, [TreeNode<K, V> newInstance(V parent, K name)]) {
+  TreeNode<K, V> subtree(Path<K> path,
+      [TreeNode<K, V> newInstance(V parent, K name)]) {
     if (path.isEmpty) return this;
-    newInstance ??= (p,n)=>null;
-    var child = children.putIfAbsent(path.first, () => newInstance(value,path.first));
+    newInstance ??= (p, n) => null;
+    var child =
+        children.putIfAbsent(path.first, () => newInstance(value, path.first));
     if (child == null) return children.remove(path.first);
     return child.subtree(path.skip(1), newInstance);
   }

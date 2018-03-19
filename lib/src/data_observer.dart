@@ -21,22 +21,26 @@ class IncompleteData {
 
   IncompleteData(this.value, [TreeNode<Name, bool> states])
       : _states = states ?? new TreeNode(false) {
-    assert(value!=null);
+    assert(value != null);
   }
 
   bool get isComplete => _states.value == true;
 
-  bool isCompleteForPath(Path<Comparable> path) => _isCompleteForPath(_states, path);
+  bool isCompleteForPath(Path<Comparable> path) =>
+      _isCompleteForPath(_states, path);
   bool isCompleteForChild(Comparable child) =>
       _isCompleteForPath(_states, new Path<Comparable>.from([child]));
 
-  IncompleteData child(Name child) =>
-      new IncompleteData(value.children[child] ?? new TreeStructuredData(), _states.value ? new TreeNode(true) : _states.children[child]);
+  IncompleteData child(Name child) => new IncompleteData(
+      value.children[child] ?? new TreeStructuredData(),
+      _states.value ? new TreeNode(true) : _states.children[child]);
 
-  bool _isCompleteForPath(TreeNode<Comparable, bool> states, Path<Comparable> path) =>
+  bool _isCompleteForPath(
+          TreeNode<Comparable, bool> states, Path<Comparable> path) =>
       states.nodesOnPath(path).any((v) => v.value == true);
 
-  IncompleteData update(TreeStructuredData newValue, [Iterable<Path<Name>> newCompletedPaths=const[]]) {
+  IncompleteData update(TreeStructuredData newValue,
+      [Iterable<Path<Name>> newCompletedPaths = const []]) {
     var newStates = _states;
     for (var p in newCompletedPaths) {
       if (_isCompleteForPath(newStates, p)) continue;
@@ -59,7 +63,6 @@ class IncompleteData {
 
   IncompleteData applyOperation(Operation op) =>
       update(op.apply(value), op.completesPaths);
-
 }
 
 class EventGenerator {

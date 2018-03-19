@@ -68,7 +68,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
       _ready.complete(_info);
       _start();
     } else if (v is ResetMessage) {
-      _reset().then((_)=>_connect(v.host));
+      _reset().then((_) => _connect(v.host));
     } else if (v is PongMessage) {
       _pings.removeAt(0).complete(v);
     } else if (v is PingMessage) {
@@ -143,8 +143,10 @@ class WebSocketTransport extends Transport {
     _socket.sink.addStream(_output.stream.map(JSON.encode).expand((v) sync* {
       _logger.fine("send $v");
 
-      var dataSegs = new List.generate((v.length/maxFrameSize).ceil(),
-          (i)=>v.substring(i*maxFrameSize, min((i+1)*maxFrameSize,v.length)));
+      var dataSegs = new List.generate(
+          (v.length / maxFrameSize).ceil(),
+          (i) => v.substring(
+              i * maxFrameSize, min((i + 1) * maxFrameSize, v.length)));
 
       if (dataSegs.length > 1) {
         yield "${dataSegs.length}";
@@ -152,8 +154,8 @@ class WebSocketTransport extends Transport {
       yield* dataSegs;
     }));
     new Stream.periodic(new Duration(seconds: 45))
-        .takeWhile((_)=>readyState<=Transport.connected)
-      .forEach((_) {
+        .takeWhile((_) => readyState <= Transport.connected)
+        .forEach((_) {
       if (!_output.isClosed) _output.add(0);
     });
   }
@@ -165,7 +167,7 @@ class WebSocketTransport extends Transport {
     host ??= this.host;
     var parts = host.split(":");
     host = parts.first;
-    var port = parts.length>1 ? int.parse(parts[1]) : null;
+    var port = parts.length > 1 ? int.parse(parts[1]) : null;
     var url = new Uri(
         scheme: "wss",
         host: host,
@@ -178,13 +180,11 @@ class WebSocketTransport extends Transport {
         path: ".ws");
     _logger.fine("connecting to $url");
     WebSocketChannel socket = _socket = connect(url.toString());
-    socket.stream
-        .map((v) {
-          _logger.fine("received $v");
-          return v;
-        })
-        .listen(_handleMessage, onDone: () {
-      if (readyState==Transport.connected) close();
+    socket.stream.map((v) {
+      _logger.fine("received $v");
+      return v;
+    }).listen(_handleMessage, onDone: () {
+      if (readyState == Transport.connected) close();
     });
   }
 
@@ -197,19 +197,21 @@ class WebSocketTransport extends Transport {
       if (_frames.length == this._totalFrames) {
         var fullMess = _frames.join("");
         _frames = null;
-        var message = new Message.fromJson(JSON.decode(fullMess) as Map<String, dynamic>);
+        var message =
+            new Message.fromJson(JSON.decode(fullMess) as Map<String, dynamic>);
         _onMessage(message);
       }
     } else {
       if (data.length <= 6) {
-        var frameCount = int.parse(data, onError: (_)=>null);
-        if (frameCount!=null) {
+        var frameCount = int.parse(data, onError: (_) => null);
+        if (frameCount != null) {
           _totalFrames = frameCount;
           _frames = [];
           return;
         }
       }
-      var message = new Message.fromJson(JSON.decode(data) as Map<String, dynamic>);
+      var message =
+          new Message.fromJson(JSON.decode(data) as Map<String, dynamic>);
       _onMessage(message);
     }
   }

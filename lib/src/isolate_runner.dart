@@ -1,21 +1,20 @@
-
 import 'package:isolate/isolate.dart';
 import 'dart:isolate';
 import 'dart:async';
 
-
 class Runners {
-
   static Runner _mainRunner;
 
-  static Runner get mainRunner => _mainRunner ??= new IsolateRunner(Isolate.current, new IsolateRunnerRemote().commandPort);
+  static Runner get mainRunner => _mainRunner ??=
+      new IsolateRunner(Isolate.current, new IsolateRunnerRemote().commandPort);
 
   static void setMainRunner(Runner runner) {
-    assert(_mainRunner==null);
+    assert(_mainRunner == null);
     _mainRunner = runner;
   }
 
-  static Future<void> setMainRunnerOnRunner(Runner runner) => runner.run(setMainRunner, mainRunner);
+  static Future<void> setMainRunnerOnRunner(Runner runner) =>
+      runner.run(setMainRunner, mainRunner);
 
   static Future<IsolateRunner> spawnIsolate() async {
     var runner = await IsolateRunner.spawn();
@@ -23,4 +22,3 @@ class Runners {
     return runner;
   }
 }
-

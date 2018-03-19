@@ -1,11 +1,9 @@
-
 import 'firebase.dart';
 import 'treestructureddata.dart';
 import 'repo.dart';
 import 'dart:async';
 
 class DataSnapshotImpl extends DataSnapshot {
-
   final TreeStructuredData treeStructuredData;
 
   DataSnapshotImpl(Firebase ref, this.treeStructuredData) : super(ref);
@@ -17,16 +15,17 @@ class DataSnapshotImpl extends DataSnapshot {
   bool get exists => treeStructuredData != null && !treeStructuredData.isNil;
 
   @override
-  DataSnapshot child(String c) =>
-      new DataSnapshotImpl(ref.child(c), treeStructuredData?.subtree(Name.parsePath(c)));
-
-
-  @override
-  void forEach(cb(DataSnapshot snapshot)) => treeStructuredData.children.forEach(
-          (key, value) => cb(new DataSnapshotImpl(ref.child(key.toString()), value)));
+  DataSnapshot child(String c) => new DataSnapshotImpl(
+      ref.child(c), treeStructuredData?.subtree(Name.parsePath(c)));
 
   @override
-  bool hasChild(String path) => treeStructuredData.hasChild(Name.parsePath(path));
+  void forEach(cb(DataSnapshot snapshot)) =>
+      treeStructuredData.children.forEach((key, value) =>
+          cb(new DataSnapshotImpl(ref.child(key.toString()), value)));
+
+  @override
+  bool hasChild(String path) =>
+      treeStructuredData.hasChild(Name.parsePath(path));
 
   @override
   bool get hasChildren => treeStructuredData.children.isNotEmpty;
@@ -39,16 +38,15 @@ class DataSnapshotImpl extends DataSnapshot {
 
   @override
   dynamic exportVal() => treeStructuredData.toJson(true);
-
 }
-
 
 class QueryImpl extends Query {
   final Uri _url;
   final QueryFilter filter;
   final Repo _repo;
 
-  QueryImpl(Uri url, [QueryFilter filter = const QueryFilter()]) : this._(url,filter);
+  QueryImpl(Uri url, [QueryFilter filter = const QueryFilter()])
+      : this._(url, filter);
 
   QueryImpl._(this._url, this.filter) : _repo = new Repo(_url.resolve("/"));
 
@@ -57,7 +55,6 @@ class QueryImpl extends Query {
       _repo.createStream(ref, filter, eventType);
 
   Query _withFilter(QueryFilter filter) => new QueryImpl(_url, filter);
-
 
   @override
   Query orderByChild(String child) {
@@ -95,16 +92,17 @@ class QueryImpl extends Query {
 
   @override
   Firebase get ref => new Firebase(_url.toString());
-
 }
 
 class FirebaseImpl extends QueryImpl with Firebase {
   Disconnect _onDisconnect;
 
   FirebaseImpl(String url)
-      : super._(url.endsWith("/")
-      ? Uri.parse(url.substring(0, url.length - 1))
-      : Uri.parse(url), const QueryFilter()) {
+      : super._(
+            url.endsWith("/")
+                ? Uri.parse(url.substring(0, url.length - 1))
+                : Uri.parse(url),
+            const QueryFilter()) {
     _onDisconnect = new DisconnectImpl(this);
   }
 
@@ -146,13 +144,11 @@ class FirebaseImpl extends QueryImpl with Firebase {
 
   @override
   Future<DataSnapshot> transaction(dynamic update(dynamic currentVal),
-      {bool applyLocally: true}) =>
+          {bool applyLocally: true}) =>
       _repo
           .transaction(_url.path, update, applyLocally)
           .then<DataSnapshot>((v) => new DataSnapshotImpl(this, v));
-
 }
-
 
 class DisconnectImpl extends Disconnect {
   final FirebaseImpl _ref;
@@ -169,9 +165,8 @@ class DisconnectImpl extends Disconnect {
 
   @override
   Future cancel() => _ref._repo.onDisconnectCancel(_ref._url.path);
-
-
 }
 
-Uri childUri(Uri url, String c) => url.replace(pathSegments:
-new List.from(url.pathSegments)..addAll(c.split("/").map(Uri.decodeComponent)));
+Uri childUri(Uri url, String c) => url.replace(
+    pathSegments: new List.from(url.pathSegments)
+      ..addAll(c.split("/").map(Uri.decodeComponent)));

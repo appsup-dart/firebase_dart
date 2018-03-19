@@ -14,7 +14,7 @@ class TreeOperation extends Operation {
   TreeOperation(this.path, this.nodeOperation);
 
   factory TreeOperation.overwrite(Path<Name> path, TreeStructuredData value) {
-    if (path.isNotEmpty&&path.last==new Name(".priority"))
+    if (path.isNotEmpty && path.last == new Name(".priority"))
       return new TreeOperation(path.parent, new SetPriority(value.value));
     return new TreeOperation(path, new Overwrite(value));
   }
@@ -34,7 +34,7 @@ class TreeOperation extends Operation {
   TreeOperation operationForChild(Name key) {
     if (path.isEmpty) {
       var op = nodeOperation.operationForChild(key);
-      if (op==null) return null;
+      if (op == null) return null;
       return new TreeOperation(path, op);
     }
     if (path.first != key) return null;
@@ -45,8 +45,9 @@ class TreeOperation extends Operation {
   String toString() => "TreeOperation[$path,$nodeOperation]";
 
   @override
-  Iterable<Path<Name>> get completesPaths => nodeOperation.completesPaths
-      .map<Path<Name>>((p) => new Path.from(new List.from(this.path)..addAll(p)));
+  Iterable<Path<Name>> get completesPaths =>
+      nodeOperation.completesPaths.map<Path<Name>>(
+          (p) => new Path.from(new List.from(this.path)..addAll(p)));
 
   TreeStructuredData _applyOnPath(Path<Name> path, TreeStructuredData value) {
     if (path.isEmpty) {
@@ -87,10 +88,10 @@ class Merge extends Operation {
   @override
   TreeStructuredData apply(TreeStructuredData value) {
     var n = value.clone();
-    children.forEach((k,v) {
+    children.forEach((k, v) {
       if (v.isNil) n.children.remove(k);
     });
-    children.forEach((k,v) {
+    children.forEach((k, v) {
       if (!v.isNil) n.children[k] = children[k];
     });
     return n;
@@ -157,12 +158,11 @@ class TreeEventGenerator extends EventGenerator {
   const TreeEventGenerator();
 
   @override
-  Iterable<Event> generateEvents(
-      String eventType,
-      IncompleteData oldValue,
+  Iterable<Event> generateEvents(String eventType, IncompleteData oldValue,
       IncompleteData newValue) sync* {
     var newChildren = newValue.value.children;
-    Map<Name, TreeStructuredData> oldChildren = oldValue.value?.children ?? const {};
+    Map<Name, TreeStructuredData> oldChildren =
+        oldValue.value?.children ?? const {};
     switch (eventType) {
       case "child_added":
         var newPrevKey;

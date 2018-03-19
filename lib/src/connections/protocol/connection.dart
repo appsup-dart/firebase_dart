@@ -3,37 +3,39 @@
 
 part of firebase.protocol;
 
-
 class ProtocolConnection extends Connection {
-
   Transport _transport;
   Future _establishConnectionTimer;
   String _lastSessionId;
 
   int _nextTag = 0;
-  final quiver.BiMap<int,Pair<String,QueryFilter>> _tagToQuery = new quiver.BiMap();
+  final quiver.BiMap<int, Pair<String, QueryFilter>> _tagToQuery =
+      new quiver.BiMap();
 
   ProtocolConnection(String host) : super.base(host) {
-    quiver.checkArgument(host!=null&&host.isNotEmpty);
+    quiver.checkArgument(host != null && host.isNotEmpty);
     _scheduleConnect(0);
   }
 
   final Map<String, Map<QueryFilter, Request>> _listens = {};
 
-  DateTime get serverTime => new DateTime.now().add(_serverTimeDiff ?? const Duration());
+  DateTime get serverTime =>
+      new DateTime.now().add(_serverTimeDiff ?? const Duration());
   Duration _serverTimeDiff;
 
-  Future<Iterable<String>> listen(String path, {QueryFilter query, String hash}) async {
+  Future<Iterable<String>> listen(String path,
+      {QueryFilter query, String hash}) async {
     var def = new Pair(path, query);
     var tag = _nextTag++;
     _tagToQuery[tag] = def;
 
-    var r = new Request.listen(path, query: new Query.fromFilter(query), tag: tag, hash: hash);
+    var r = new Request.listen(path,
+        query: new Query.fromFilter(query), tag: tag, hash: hash);
     _addListen(r);
     try {
       var body = await _request(r);
       return body.warnings ?? [];
-    } catch(e) {
+    } catch (e) {
       _tagToQuery.remove(tag);
       _removeListen(path, query);
       rethrow;
@@ -43,18 +45,21 @@ class ProtocolConnection extends Connection {
   Future<Null> unlisten(String path, {QueryFilter query}) async {
     var def = new Pair(path, query);
     var tag = _tagToQuery.inverse.remove(def);
-    var r = new Request.unlisten(path, query: new Query.fromFilter(query), tag: tag);
+    var r = new Request.unlisten(path,
+        query: new Query.fromFilter(query), tag: tag);
     _removeListen(path, query);
     await _request(r);
   }
 
   final List<Request> _outstandingRequests = [];
 
-  Future<Null> put(String path, dynamic value, {String hash, int writeId}) async {
+  Future<Null> put(String path, dynamic value,
+      {String hash, int writeId}) async {
     await _request(new Request.put(path, value, hash, writeId));
   }
 
-  Future<Null> merge(String path, dynamic value, {String hash, int writeId}) async {
+  Future<Null> merge(String path, dynamic value,
+      {String hash, int writeId}) async {
     await _request(new Request.merge(path, value, hash, writeId));
   }
 
@@ -85,13 +90,13 @@ class ProtocolConnection extends Connection {
   }
 
   final StreamController<bool> _onConnect = new StreamController(sync: true);
-  final StreamController<OperationEvent> _onDataOperation = new StreamController(sync: true);
+  final StreamController<OperationEvent> _onDataOperation =
+      new StreamController(sync: true);
   final StreamController<Map> _onAuth = new StreamController(sync: true);
 
   Stream<bool> get onConnect => _onConnect.stream;
   Stream<OperationEvent> get onDataOperation => _onDataOperation.stream;
   Stream<Map> get onAuth => _onAuth.stream;
-
 
   void _establishConnection() {
     _transport =
@@ -101,25 +106,31 @@ class ProtocolConnection extends Connection {
       _lastSessionId = _transport.info.sessionId;
       _serverTimeDiff =
           _transport.info.timestamp.difference(new DateTime.now());
-      _transport
-      .where((r)=>r.message.reqNum == null)
-      .forEach((r) {
-        var query = r.message.body.query ?? _tagToQuery[r.message.body.tag]?.value;
-        if (query==null&&r.message.body.tag!=null) {
+      _transport.where((r) => r.message.reqNum == null).forEach((r) {
+        var query =
+            r.message.body.query ?? _tagToQuery[r.message.body.tag]?.value;
+        if (query == null && r.message.body.tag != null) {
           // not listening any more.
           return;
         }
-        var path = r.message.body.path==null ? null : Name.parsePath(r.message.body.path);
+        var path = r.message.body.path == null
+            ? null
+            : Name.parsePath(r.message.body.path);
         var newData = new TreeStructuredData.fromJson(r.message.body.data);
         switch (r.message.action) {
           case DataMessage.actionSet:
           case DataMessage.actionMerge:
           case DataMessage.actionListenRevoked:
-            var event = new OperationEvent(const {
-              DataMessage.actionSet: OperationEventType.overwrite,
-              DataMessage.actionMerge: OperationEventType.merge,
-              DataMessage.actionListenRevoked: OperationEventType.listenRevoked,
-            }[r.message.action], path, newData, query);
+            var event = new OperationEvent(
+                const {
+                  DataMessage.actionSet: OperationEventType.overwrite,
+                  DataMessage.actionMerge: OperationEventType.merge,
+                  DataMessage.actionListenRevoked:
+                      OperationEventType.listenRevoked,
+                }[r.message.action],
+                path,
+                newData,
+                query);
             _onDataOperation.add(event);
             break;
           case DataMessage.actionAuthRevoked:
@@ -133,7 +144,6 @@ class ProtocolConnection extends Connection {
             throw new UnimplementedError(
                 "Cannot handle message with action ${r.message.action}: ${JSON.encode(r.message)} ${r.message.reqNum} ${r.request.writeId}");
         }
-
       });
       _restoreState();
     });
@@ -154,8 +164,7 @@ class ProtocolConnection extends Connection {
   }
 
   Future _restoreState() async {
-    if (_transport.readyState!=Transport.connected) return;
-
+    if (_transport.readyState != Transport.connected) return;
 
     // auth
     if (_authToken != null) {
@@ -177,9 +186,8 @@ class ProtocolConnection extends Connection {
 
   var _authToken;
 
-  Future<Map<String,dynamic>> auth(String token) =>
-      _request(new Request.auth(token))
-          .then((b) {
+  Future<Map<String, dynamic>> auth(String token) =>
+      _request(new Request.auth(token)).then((b) {
         _authToken = token;
         return b.data["auth"];
       });
@@ -218,7 +226,7 @@ class ProtocolConnection extends Connection {
   }
 
   Future<Null> onDisconnectMerge(
-          String path, Map<String, dynamic> childrenToMerge) async {
+      String path, Map<String, dynamic> childrenToMerge) async {
     await _request(new Request.onDisconnectMerge(path, childrenToMerge));
   }
 

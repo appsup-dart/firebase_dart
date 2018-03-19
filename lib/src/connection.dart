@@ -1,4 +1,3 @@
-
 library firebase.connection;
 
 import 'dart:async';
@@ -17,18 +16,18 @@ class ServerError implements Exception {
   String get reason =>
       const {
         "too_big":
-        "The data requested exceeds the maximum size that can be accessed with a single request.",
+            "The data requested exceeds the maximum size that can be accessed with a single request.",
         "permission_denied":
-        "Client doesn't have permission to access the desired data.",
+            "Client doesn't have permission to access the desired data.",
         "unavailable": "The service is unavailable"
       }[code] ??
-          "Unknown Error";
+      "Unknown Error";
 
   @override
   String toString() => "$code: $reason";
 }
 
-enum OperationEventType {overwrite, merge, listenRevoked}
+enum OperationEventType { overwrite, merge, listenRevoked }
 
 class OperationEvent {
   final Path<Name> path;
@@ -71,14 +70,14 @@ abstract class Connection {
   DateTime get serverTime;
 
   /// Generates the special server values
-  Map<ServerValue, Value> get serverValues => {
-    ServerValue.timestamp: new Value(serverTime.millisecondsSinceEpoch)
-  };
+  Map<ServerValue, Value> get serverValues =>
+      {ServerValue.timestamp: new Value(serverTime.millisecondsSinceEpoch)};
 
   /// Registers a listener.
   ///
   /// Returns possible warning messages.
-  Future<Iterable<String>> listen(String path, {QueryFilter query, String hash});
+  Future<Iterable<String>> listen(String path,
+      {QueryFilter query, String hash});
 
   /// Unregisters a listener
   Future<Null> unlisten(String path, {QueryFilter query});
@@ -114,7 +113,8 @@ abstract class Connection {
   Future<Null> onDisconnectPut(String path, dynamic value);
 
   /// Registers an onDisconnectMerge
-  Future<Null> onDisconnectMerge(String path, Map<String, dynamic> childrenToMerge);
+  Future<Null> onDisconnectMerge(
+      String path, Map<String, dynamic> childrenToMerge);
 
   /// Registers an onDisconnectCancel
   Future<Null> onDisconnectCancel(String path);
