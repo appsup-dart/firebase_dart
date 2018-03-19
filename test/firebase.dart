@@ -4,7 +4,6 @@
 import 'package:test/test.dart';
 import 'package:firebase_dart/src/firebase.dart';
 import 'package:firebase_dart/src/repo.dart';
-import 'package:firebase_dart/src/connections/mem.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
 import 'dart:convert';
@@ -13,7 +12,6 @@ import 'dart:async';
 import 'secrets.dart'
   if (dart.library.html) 'secrets.dart'
   if (dart.library.io) 'secrets_io.dart' as s;
-import 'dart:isolate';
 import 'package:isolate/isolate.dart';
 import 'package:firebase_dart/src/isolate_runner.dart';
 
@@ -393,7 +391,6 @@ void testsWith(Map<String,String> secrets) {
       expect(values[2]-values[1]>0, isTrue);
       expect(values[2]-values[1]<1000, isTrue);
 
-      return;
       await ref.set({
         "hello": "world",
         "it is now": ServerValue.timestamp
@@ -1043,7 +1040,7 @@ void testsWith(Map<String,String> secrets) {
   });
 }
 
-wait(int millis) async => new Future.delayed(new Duration(milliseconds: millis));
+Future wait(int millis) async => new Future.delayed(new Duration(milliseconds: millis));
 
 
 class IsolatedReference {
