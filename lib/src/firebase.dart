@@ -3,8 +3,6 @@
 
 library firebase_dart;
 
-import 'repo.dart';
-
 import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';

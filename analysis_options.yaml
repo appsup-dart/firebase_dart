@@ -20,6 +20,7 @@ linter:
     - iterable_contains_unrelated_type
     - library_names
     - library_prefixes
+    - list_remove_unrelated_type
     - non_constant_identifier_names
     - one_member_abstracts
     - overridden_fields
@@ -40,3 +41,4 @@ linter:
     - unnecessary_brace_in_string_interp
     - unnecessary_getters_setters
     - unrelated_type_equality_checks
+    - valid_regexps

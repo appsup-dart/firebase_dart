@@ -8,7 +8,6 @@ import 'view.dart';
 import 'operations/tree.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
-import 'repo.dart';
 import 'dart:async';
 import 'package:logging/logging.dart';
 import 'connection.dart';

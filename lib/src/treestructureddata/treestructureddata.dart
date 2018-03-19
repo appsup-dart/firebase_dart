@@ -25,7 +25,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
 
   TreeStructuredData.nonLeaf(Map<Name, TreeStructuredData> children,
       [Value priority])
-      : this._(null, children is FilteredMap ? children : new FilteredMap(new QueryFilter())..addAll(children), priority);
+      : this._(null, children is FilteredMap ? children : (new FilteredMap(new QueryFilter())..addAll(children)), priority);
 
   factory TreeStructuredData.fromJson(json, [priority]) {
     if (json == null) {

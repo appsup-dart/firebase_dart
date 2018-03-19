@@ -11,7 +11,6 @@ import 'events/value.dart';
 import 'events/child.dart';
 import 'dart:math';
 import 'package:logging/logging.dart';
-import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
 import 'event.dart';
 import 'operations/tree.dart';

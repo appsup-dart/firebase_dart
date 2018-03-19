@@ -67,7 +67,6 @@ class TreeOperation extends Operation {
 }
 
 class Ack extends TreeOperation {
-  @override
   final bool success;
 
   Ack(Path<Name> path, this.success) : super(path, null);
