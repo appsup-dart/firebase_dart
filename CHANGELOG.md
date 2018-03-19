@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.5
+
+- Fix bug concurrent modification with transactions
+
 ## 0.7.4
 
 - Fix order by grandchild

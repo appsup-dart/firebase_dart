@@ -661,7 +661,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
       return true;
     } else {
       var allFinished = true;
-      for (var k in children.keys) {
+      for (var k in children.keys.toList()) {
         allFinished =
             allFinished && await children[k].send(repo, path.child(k));
       }
