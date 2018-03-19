@@ -19,10 +19,13 @@ class ProtocolConnection extends Connection {
 
   final Map<String, Map<QueryFilter, Request>> _listens = {};
 
+  @override
   DateTime get serverTime =>
       new DateTime.now().add(_serverTimeDiff ?? const Duration());
+
   Duration _serverTimeDiff;
 
+  @override
   Future<Iterable<String>> listen(String path,
       {QueryFilter query, String hash}) async {
     var def = new Pair(path, query);
@@ -42,6 +45,7 @@ class ProtocolConnection extends Connection {
     }
   }
 
+  @override
   Future<Null> unlisten(String path, {QueryFilter query}) async {
     var def = new Pair(path, query);
     var tag = _tagToQuery.inverse.remove(def);
@@ -53,11 +57,13 @@ class ProtocolConnection extends Connection {
 
   final List<Request> _outstandingRequests = [];
 
+  @override
   Future<Null> put(String path, dynamic value,
       {String hash, int writeId}) async {
     await _request(new Request.put(path, value, hash, writeId));
   }
 
+  @override
   Future<Null> merge(String path, dynamic value,
       {String hash, int writeId}) async {
     await _request(new Request.merge(path, value, hash, writeId));
@@ -94,8 +100,13 @@ class ProtocolConnection extends Connection {
       new StreamController(sync: true);
   final StreamController<Map> _onAuth = new StreamController(sync: true);
 
+  @override
   Stream<bool> get onConnect => _onConnect.stream;
+
+  @override
   Stream<OperationEvent> get onDataOperation => _onDataOperation.stream;
+
+  @override
   Stream<Map> get onAuth => _onAuth.stream;
 
   void _establishConnection() {
@@ -154,8 +165,10 @@ class ProtocolConnection extends Connection {
     });
   }
 
+  @override
   Future<Null> disconnect() => _transport._close(-1);
 
+  @override
   Future<Null> close() async {
     await _onDataOperation.close();
     await _onAuth.close();
@@ -186,12 +199,14 @@ class ProtocolConnection extends Connection {
 
   var _authToken;
 
+  @override
   Future<Map<String, dynamic>> auth(String token) =>
       _request(new Request.auth(token)).then((b) {
         _authToken = token;
         return b.data["auth"];
       });
 
+  @override
   Future<Null> unauth() {
     _authToken = null;
     return _request(new Request.unauth()).then((b) => b.data);
@@ -211,7 +226,7 @@ class ProtocolConnection extends Connection {
     if (_transportIsReady) {
       _transport.add(request);
     }
-    return request.response.then/*<MessageBody>*/((r) {
+    return request.response.then<MessageBody>((r) {
       _outstandingRequests.remove(request);
       if (r.message.body.status == MessageBody.statusOk) {
         return r.message.body;
@@ -221,15 +236,18 @@ class ProtocolConnection extends Connection {
     });
   }
 
+  @override
   Future<Null> onDisconnectPut(String path, dynamic value) async {
     await _request(new Request.onDisconnectPut(path, value));
   }
 
+  @override
   Future<Null> onDisconnectMerge(
       String path, Map<String, dynamic> childrenToMerge) async {
     await _request(new Request.onDisconnectMerge(path, childrenToMerge));
   }
 
+  @override
   Future<Null> onDisconnectCancel(String path) async {
     await _request(new Request.onDisconnectCancel(path));
   }

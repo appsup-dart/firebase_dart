@@ -85,6 +85,6 @@ class Name implements Pattern, Comparable<Name> {
     return new Path<Name>.from(path
         .split("/")
         .where((v) => v.isNotEmpty)
-        .map/*<Name>*/((v) => new Name(v)));
+        .map<Name>((v) => new Name(v)));
   }
 }

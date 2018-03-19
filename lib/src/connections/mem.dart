@@ -168,7 +168,7 @@ class MemConnection extends Connection {
   }
 
   @override
-  Future<Null> merge(String path, value, {String hash, int writeId}) async {
+  Future<Null> merge(String path, dynamic value, {String hash, int writeId}) async {
     _logger.fine("merge $path $value");
     var p = Name.parsePath(path);
     // TODO check hash
@@ -179,7 +179,7 @@ class MemConnection extends Connection {
   }
 
   @override
-  Future<Null> put(String path, value, {String hash, int writeId}) async {
+  Future<Null> put(String path, dynamic value, {String hash, int writeId}) async {
     _logger.fine("put $path $value");
     var p = Name.parsePath(path);
 
@@ -208,7 +208,7 @@ class MemConnection extends Connection {
   }
 
   @override
-  Future<Null> onDisconnectPut(String path, value) async {
+  Future<Null> onDisconnectPut(String path, dynamic value) async {
     _onDisconnect.remember(
         Name.parsePath(path), new TreeStructuredData.fromJson(value));
   }
@@ -216,18 +216,14 @@ class MemConnection extends Connection {
   @override
   DateTime get serverTime => new DateTime.now();
 
-  bool _isAuthenticated = false;
-
   @override
   Future<Map> auth(String token) async {
-    _isAuthenticated = true;
     var t = new FirebaseTokenCodec(null).decode(token);
     return t.data;
   }
 
   @override
   Future<Null> unauth() async {
-    _isAuthenticated = false;
   }
 
   final StreamController<Map> _onAuth = new StreamController(sync: true);

@@ -25,8 +25,6 @@ class Repo {
 
   final SyncTree _syncTree;
 
-  SyncTree get syncTree => _syncTree;
-
   final PushIdGenerator pushIds = new PushIdGenerator();
 
   int _nextWriteId = 0;
@@ -57,6 +55,8 @@ class Repo {
     onAuth.listen((v) => _authData = v);
   }
 
+  SyncTree get syncTree => _syncTree;
+
   RemoteListeners get registrar => _syncTree.registrar;
 
   firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
@@ -76,7 +76,7 @@ class Repo {
 
   /// Stream of auth data.
   ///
-  /// When a user is logged in, its auth data is posted. When logged of, [null]
+  /// When a user is logged in, its auth data is posted. When logged of, `null`
   /// is posted.
   Stream<Map> get onAuth => _onAuth.stream;
 
@@ -130,8 +130,8 @@ class Repo {
   Future update(String path, Map<String, dynamic> value) async {
     path = _preparePath(path);
     var changedChildren = new Map<Name, TreeStructuredData>.fromIterables(
-        value.keys.map/*<Name>*/((c) => new Name(c)),
-        value.values.map/*<TreeStructuredData>*/(
+        value.keys.map<Name>((c) => new Name(c)),
+        value.values.map<TreeStructuredData>(
             (v) => new TreeStructuredData.fromJson(v, null)));
     if (value.isNotEmpty) {
       int writeId = _nextWriteId++;
@@ -674,7 +674,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
 
   Iterable<Transaction> get _transactions sync* {
     yield* value;
-    yield* children.values.expand/*<Transaction>*/((n) => n._transactions);
+    yield* children.values.expand<Transaction>((n) => n._transactions);
   }
 
   void rerun(Path<Name> path, TreeStructuredData input) {

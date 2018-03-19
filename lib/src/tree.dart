@@ -21,7 +21,7 @@ class Path<K> extends UnmodifiableListView<K> {
   int get hashCode => const ListEquality().hash(this);
 
   @override
-  bool operator ==(other) =>
+  bool operator ==(dynamic other) =>
       other is Path && const ListEquality().equals(this, other);
 }
 

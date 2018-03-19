@@ -17,14 +17,7 @@ final _logger = new Logger("firebase-synctree");
 class MasterView {
   QueryFilter masterFilter;
 
-  void upgrade() {
-    masterFilter = new QueryFilter(ordering: masterFilter.ordering);
-    _data = _data.withFilter(masterFilter);
-  }
-
   ViewCache _data;
-
-  ViewCache get data => _data;
 
   final Map<QueryFilter, EventTarget> observers = {};
 
@@ -37,6 +30,13 @@ class MasterView {
 
   MasterView withFilter(QueryFilter filter) =>
       new MasterView(filter).._data = _data.withFilter(filter);
+
+  ViewCache get data => _data;
+
+  void upgrade() {
+    masterFilter = new QueryFilter(ordering: masterFilter.ordering);
+    _data = _data.withFilter(masterFilter);
+  }
 
   bool contains(QueryFilter f) {
     if (f == masterFilter) return true;
@@ -132,16 +132,6 @@ class SyncPoint {
 
   bool _isCompleteFromParent = false;
 
-  bool get isCompleteFromParent => _isCompleteFromParent;
-
-  set isCompleteFromParent(bool v) {
-    _isCompleteFromParent = v;
-    if (_isCompleteFromParent) {
-      views.putIfAbsent(
-          new QueryFilter(), () => new MasterView(new QueryFilter()));
-    }
-  }
-
   SyncPoint(this.name, [ViewCache data]) {
     if (data == null) return;
     var q = new QueryFilter();
@@ -152,6 +142,16 @@ class SyncPoint {
     var p = new SyncPoint("$name/$child", viewCacheForChild(child));
     p.isCompleteFromParent = isCompleteForChild(child);
     return p;
+  }
+
+  bool get isCompleteFromParent => _isCompleteFromParent;
+
+  set isCompleteFromParent(bool v) {
+    _isCompleteFromParent = v;
+    if (_isCompleteFromParent) {
+      views.putIfAbsent(
+          new QueryFilter(), () => new MasterView(new QueryFilter()));
+    }
   }
 
   ViewCache viewCacheForChild(Name child) {
@@ -215,7 +215,7 @@ class SyncPoint {
   }
 
   /// Applies an operation to the view for [filter] at this [SyncPoint] or all
-  /// views when [filter] is [null].
+  /// views when [filter] is `null`.
   void applyOperation(TreeOperation operation, Filter filter,
       ViewOperationSource source, int writeId) {
     if (filter == null || isCompleteFromParent) {

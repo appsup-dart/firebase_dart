@@ -36,7 +36,7 @@ abstract class Query {
   /// Listens for exactly one event of the specified event type, and then stops
   /// listening.
   Future<DataSnapshot> once(String eventType) =>
-      on(eventType).first.then/*<DataSnapshot>*/((e) => e.snapshot);
+      on(eventType).first.then<DataSnapshot>((e) => e.snapshot);
 
   /// Listens for exactly one 'value' event.
   Future<DataSnapshot> get onceValue => once('value');

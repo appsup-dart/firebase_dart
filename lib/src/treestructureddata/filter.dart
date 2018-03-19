@@ -44,6 +44,7 @@ class PriorityOrdering extends TreeStructuredDataOrdering {
   TreeStructuredData mapValue(TreeStructuredData v) =>
       new TreeStructuredData.leaf(v?.priority);
 
+  @override
   String get orderBy => ".priority";
 }
 
@@ -54,6 +55,7 @@ class ValueOrdering extends TreeStructuredDataOrdering {
   TreeStructuredData mapValue(TreeStructuredData v) =>
       new TreeStructuredData.leaf(v.value);
 
+  @override
   String get orderBy => ".value";
 }
 
@@ -63,6 +65,7 @@ class KeyOrdering extends TreeStructuredDataOrdering {
   @override
   TreeStructuredData mapValue(TreeStructuredData v) => null;
 
+  @override
   String get orderBy => ".key";
 }
 
@@ -77,6 +80,7 @@ class ChildOrdering extends TreeStructuredDataOrdering {
     return parts.fold(v, (v, c) => v.children[c] ?? new TreeStructuredData());
   }
 
+  @override
   String get orderBy => child;
 }
 
