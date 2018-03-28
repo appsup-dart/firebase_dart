@@ -87,7 +87,7 @@ class SingleInstanceBackend {
     for (var c in controllers) {
       c.add(operation);
     }
-    await new Future.delayed(new Duration(milliseconds: 1000));
+    await new Future.microtask(()=>null);
   }
 
   static Future<void> apply(TreeOperation operation) => _runner.run(

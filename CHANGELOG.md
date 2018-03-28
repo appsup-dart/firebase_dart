@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.6 
+
+- Remove delay on write operations with in-memory database
+
 ## 0.7.5
 
 - Fix bug concurrent modification with transactions
