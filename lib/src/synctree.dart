@@ -335,9 +335,9 @@ class SyncTree {
                   .registerAll(
                       path,
                       point.minimalSetOfQueries,
-                      (f) => point.views[f]?._data?.localVersion?.isComplete ==
+                      (f) => point.views[f]?._data?.serverVersion?.isComplete ==
                               true
-                          ? point.views[f]._data.localVersion.value.hash
+                          ? point.views[f]._data.serverVersion.value.hash
                           : null)
                   .catchError((e) {
                 if (e.code == "permission_denied") {

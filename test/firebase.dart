@@ -1049,6 +1049,21 @@ void testsWith(Map<String,String> secrets) {
       await sub.cancel();
 
     });
+
+    test("Listen, set parent and get child", () async {
+      String testUrl = "${s.secrets["host"]}";
+      var ref = new Firebase("${testUrl}test");
+
+      ref.child("cars").onValue
+          .listen((e)=>print("on value ${e.snapshot.val}"));
+
+      var data = {"cars": {"car001": {"name": "Car 001"}, "car002": {"name": "Car 002"}}};
+      await ref.set(data);
+
+      expect(await ref.child("cars/car001").get(), data["cars"]["car001"]);
+
+    });
+
   });
 }
 

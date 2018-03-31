@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.7
+
+- Fix issue ack making view incomplete
+
 ## 0.7.6 
 
 - Remove delay on write operations with in-memory database
