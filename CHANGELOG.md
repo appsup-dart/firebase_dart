@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.8
+
+- Remove dart 2 only things
+
 ## 0.7.7
 
 - Fix issue ack making view incomplete

@@ -90,7 +90,7 @@ class SingleInstanceBackend {
     await new Future.microtask(()=>null);
   }
 
-  static Future<void> apply(TreeOperation operation) => _runner.run(
+  static Future apply(TreeOperation operation) => _runner.run(
       _applyOnInstance, new BackendOperation.fromTreeOperation(operation));
 
   static Runner get _runner {

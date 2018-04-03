@@ -13,7 +13,7 @@ class Runners {
     _mainRunner = runner;
   }
 
-  static Future<void> setMainRunnerOnRunner(Runner runner) =>
+  static Future setMainRunnerOnRunner(Runner runner) =>
       runner.run(setMainRunner, mainRunner);
 
   static Future<IsolateRunner> spawnIsolate() async {
