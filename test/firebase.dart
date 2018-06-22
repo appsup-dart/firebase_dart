@@ -4,6 +4,7 @@
 import 'package:test/test.dart';
 import 'package:firebase_dart/src/firebase.dart';
 import 'package:firebase_dart/src/repo.dart';
+import 'package:firebase_dart/firebase_core.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
 import 'dart:convert';
@@ -12,8 +13,6 @@ import 'dart:async';
 import 'secrets.dart'
   if (dart.library.html) 'secrets.dart'
   if (dart.library.io) 'secrets_io.dart' as s;
-import 'package:isolate/isolate.dart';
-import 'package:firebase_dart/src/isolate_runner.dart';
 
 
 
@@ -511,7 +510,7 @@ void testsWith(Map<String,String> secrets) {
     Repo repo;
     setUp(() {
       ref = new Firebase("${testUrl}test/disconnect");
-      repo = new Repo(ref.url.resolve("/"));
+      repo = new Repo(new FirebaseDatabase(databaseURL: testUrl));
     });
 
     test('put', () async {
@@ -682,6 +681,7 @@ void testsWith(Map<String,String> secrets) {
       await ref.child("text2").setPriority(1);
       await ref.child("text3").setPriority(3);
 
+      await wait(500);
 
       var q = ref.orderByPriority();
 
@@ -774,12 +774,18 @@ void testsWith(Map<String,String> secrets) {
       });
     });
     test('Order after remove', () async {
-      var iref = new IsolatedReference(ref);
+
+      var iref = new FirebaseDatabase(
+          app: new FirebaseApp(name: "alt2"), databaseURL: testUrl)
+          .reference().child(ref.url.path);
+
       await iref.set({
         "text2": {"order":"b"},
         "text1": {"order":"c"},
         "text3": {"order":"a"}
       });
+
+      await wait(500);
 
       var q = ref.orderByChild("order");
       var l = q.startAt("b").limitToFirst(1).onValue
@@ -884,10 +890,13 @@ void testsWith(Map<String,String> secrets) {
 
 
   group('Complex operations', () {
-    IsolatedReference iref;
+    Firebase iref;
     setUp(() {
       ref = new Firebase("${testUrl}test/complex");
-      iref = new IsolatedReference(ref);
+      iref = new FirebaseDatabase(
+        app: new FirebaseApp(name: "alt"),
+        databaseURL: testUrl
+      ).reference().child("test/complex");
     });
 
     test('Remove out of view', () async {
@@ -901,6 +910,8 @@ void testsWith(Map<String,String> secrets) {
 
       var l = ref.orderByKey().limitToFirst(2)
           .onValue.map((e)=>e.snapshot.val?.keys?.first).take(4).toList();
+
+      await wait(500);
 
 
       await iref.child('text0').set("d");
@@ -1068,64 +1079,4 @@ void testsWith(Map<String,String> secrets) {
 }
 
 Future wait(int millis) async => new Future.delayed(new Duration(milliseconds: millis));
-
-
-class IsolatedReference {
-
-  final Firebase reference;
-
-  final Future<IsolateRunner> _runner;
-
-  IsolatedReference(this.reference) : _runner = Runners.spawnIsolate();
-
-  IsolatedReference child(String childPath) => new IsolatedReference(reference.child(childPath));
-
-  IsolatedReference get parent => new IsolatedReference(reference.parent);
-
-  Future set(dynamic v) => _sendReceive("set",v);
-
-  Future update(dynamic v) => _sendReceive("update",v);
-
-  Future remove() => _sendReceive("set",null);
-
-  Future authWithCustomToken(String token) => _sendReceive("auth",token);
-
-  Future _sendReceive(String command, dynamic v) async {
-    var runner = await _runner;
-    await runner.run(_Command.execute,new _Command(reference.url.toString(), command, v));
-  }
-
-}
-
-
-
-class _Command {
-  final String url;
-  final String command;
-  final dynamic value;
-
-  _Command(this.url,this.command,this.value);
-
-  Future exec() async {
-    try {
-      print("exec $url $command $value");
-      switch (command) {
-        case "set":
-          await new Firebase(url).set(value);
-          break;
-        case "update":
-          await new Firebase(url).update(value);
-          break;
-        case "auth":
-          await new Firebase(url).authWithCustomToken(value);
-      }
-    } catch (e) {
-      print(e);
-      rethrow;
-    }
-  }
-
-  static Future execute(_Command command) => command.exec();
-}
-
 
