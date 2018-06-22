@@ -21,7 +21,7 @@ class Repo {
   final Connection _connection;
   final Uri url;
 
-  static final Map<Uri, Repo> _repos = {};
+  static final Map<firebase.FirebaseDatabase, Repo> _repos = {};
 
   final SyncTree _syncTree;
 
@@ -31,8 +31,9 @@ class Repo {
   TransactionsTree _transactions;
   SparseSnapshotTree _onDisconnect = new SparseSnapshotTree();
 
-  factory Repo(Uri url) {
-    return _repos.putIfAbsent(url, () => new Repo._(url, new Connection(url)));
+  factory Repo(firebase.FirebaseDatabase db) {
+    var url = Uri.parse(db.databaseURL ?? db.app.options.databaseURL);
+    return _repos.putIfAbsent(db, () => new Repo._(url, new Connection(url)));
   }
 
   Repo._(this.url, this._connection)
@@ -58,8 +59,6 @@ class Repo {
   SyncTree get syncTree => _syncTree;
 
   RemoteListeners get registrar => _syncTree.registrar;
-
-  firebase.Firebase get rootRef => new firebase.Firebase(url.toString());
 
   var _authData;
   final StreamController<Map> _onAuth = new StreamController.broadcast();

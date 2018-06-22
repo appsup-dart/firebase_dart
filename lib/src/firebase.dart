@@ -8,6 +8,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'dart:collection';
 import 'firebase_impl.dart';
+import '../firebase_core.dart';
+import 'package:quiver/core.dart' as quiver;
 
 part 'firebase/datasnapshot.dart';
 part 'firebase/event.dart';
@@ -16,3 +18,4 @@ part 'firebase/query.dart';
 part 'firebase/disconnect.dart';
 part 'firebase/token.dart';
 part 'firebase/server_value.dart';
+part 'firebase/database.dart';

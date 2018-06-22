@@ -7,7 +7,14 @@ part of firebase_dart;
 /// can be used for reading or writing data to that database location.
 abstract class Firebase implements Query {
   /// Construct a new Firebase reference from a full Firebase URL.
-  factory Firebase(String url) => new FirebaseImpl(url);
+  factory Firebase(String url) {
+    var uri = Uri.parse(url);
+    return new Firebase._(new FirebaseDatabase(
+      databaseURL: uri.replace(pathSegments: []).toString()
+    ), uri.pathSegments.map(Uri.decodeComponent).toList());
+  }
+
+  factory Firebase._(FirebaseDatabase db, List<String> path) => new FirebaseImpl(db, path);
 
   /// Getter for onDisconnect.
   Disconnect get onDisconnect;
@@ -31,18 +38,15 @@ abstract class Firebase implements Query {
   ///
   /// The relative path can either be a simple child name, (e.g. 'fred') or a
   /// deeper slash separated path (e.g. 'fred/name/first').
-  Firebase child(String c) => new Firebase(childUri(url, c).toString());
+  Firebase child(String c);
 
   /// Get a Firebase reference for the parent location. If this instance refers
   /// to the root of your Firebase, it has no parent, and therefore parent
   /// will return null.
-  Firebase get parent {
-    if (url.pathSegments.isEmpty) return null;
-    return new Firebase(_parentUri(url).toString());
-  }
+  Firebase get parent;
 
   /// Returns a Firebase reference to the root of the Firebase.
-  Firebase get root => new Firebase(_rootUri(url).toString());
+  Firebase get root;
 
   /// Returns the last token in a Firebase location.
   /// [key] on the root of a Firebase is `null`.

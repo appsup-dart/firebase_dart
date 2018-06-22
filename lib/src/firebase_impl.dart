@@ -41,20 +41,20 @@ class DataSnapshotImpl extends DataSnapshot {
 }
 
 class QueryImpl extends Query {
-  final Uri _url;
+  final List<String> _pathSegments;
+  final String _path;
+  final FirebaseDatabase _db;
   final QueryFilter filter;
   final Repo _repo;
 
-  QueryImpl(Uri url, [QueryFilter filter = const QueryFilter()])
-      : this._(url, filter);
-
-  QueryImpl._(this._url, this.filter) : _repo = new Repo(_url.resolve("/"));
+  QueryImpl._(this._db, this._pathSegments, this.filter) :
+        _path = _pathSegments.map(Uri.encodeComponent).join("/"), _repo = new Repo(_db);
 
   @override
   Stream<Event> on(String eventType) =>
       _repo.createStream(ref, filter, eventType);
 
-  Query _withFilter(QueryFilter filter) => new QueryImpl(_url, filter);
+  Query _withFilter(QueryFilter filter) => new QueryImpl._(_db, _pathSegments, filter);
 
   @override
   Query orderByChild(String child) {
@@ -91,17 +91,14 @@ class QueryImpl extends Query {
       _withFilter(filter.copyWith(limit: limit, reverse: true));
 
   @override
-  Firebase get ref => new Firebase(_url.toString());
+  Firebase get ref => new FirebaseImpl(_db, _pathSegments);
 }
 
 class FirebaseImpl extends QueryImpl with Firebase {
   Disconnect _onDisconnect;
 
-  FirebaseImpl(String url)
-      : super._(
-            url.endsWith("/")
-                ? Uri.parse(url.substring(0, url.length - 1))
-                : Uri.parse(url),
+  FirebaseImpl(FirebaseDatabase db, List<String> path)
+      : super._(db, path,
             const QueryFilter()) {
     _onDisconnect = new DisconnectImpl(this);
   }
@@ -122,32 +119,43 @@ class FirebaseImpl extends QueryImpl with Firebase {
   Future unauth() => _repo.unauth();
 
   @override
-  Uri get url => _url;
+  Uri get url => _repo.url.replace(path: _path);
 
   @override
-  Future set(dynamic value) => _repo.setWithPriority(_url.path, value, null);
+  Future set(dynamic value) => _repo.setWithPriority(_path, value, null);
 
   @override
-  Future update(Map<String, dynamic> value) => _repo.update(_url.path, value);
+  Future update(Map<String, dynamic> value) => _repo.update(_path, value);
 
   @override
   Future<Firebase> push(dynamic value) =>
-      _repo.push(_url.path, value).then<Firebase>((n) => child(n));
+      _repo.push(_path, value).then<Firebase>((n) => child(n));
 
   @override
   Future<Null> setWithPriority(dynamic value, dynamic priority) =>
-      _repo.setWithPriority(_url.path, value, priority);
+      _repo.setWithPriority(_path, value, priority);
 
   @override
   Future setPriority(dynamic priority) =>
-      _repo.setWithPriority(childUri(_url, ".priority").path, priority, null);
+      _repo.setWithPriority("$_path/.priority", priority, null);
 
   @override
   Future<DataSnapshot> transaction(dynamic update(dynamic currentVal),
           {bool applyLocally: true}) =>
       _repo
-          .transaction(_url.path, update, applyLocally)
+          .transaction(_path, update, applyLocally)
           .then<DataSnapshot>((v) => new DataSnapshotImpl(this, v));
+
+  @override
+  Firebase child(String c) => new FirebaseImpl(_db,
+      []..addAll(_pathSegments)..addAll(c.split("/").map(Uri.decodeComponent)));
+
+  @override
+  Firebase get parent => _pathSegments.isEmpty ? null :
+    new FirebaseImpl(_db,[]..addAll(_pathSegments.sublist(0,_pathSegments.length-1)));
+
+  @override
+  Firebase get root => new FirebaseImpl(_db,[]);
 }
 
 class DisconnectImpl extends Disconnect {
@@ -157,16 +165,12 @@ class DisconnectImpl extends Disconnect {
 
   @override
   Future setWithPriority(dynamic value, dynamic priority) =>
-      _ref._repo.onDisconnectSetWithPriority(_ref._url.path, value, priority);
+      _ref._repo.onDisconnectSetWithPriority(_ref._path, value, priority);
 
   @override
   Future update(Map<String, dynamic> value) =>
-      _ref._repo.onDisconnectUpdate(_ref._url.path, value);
+      _ref._repo.onDisconnectUpdate(_ref._path, value);
 
   @override
-  Future cancel() => _ref._repo.onDisconnectCancel(_ref._url.path);
+  Future cancel() => _ref._repo.onDisconnectCancel(_ref._path);
 }
-
-Uri childUri(Uri url, String c) => url.replace(
-    pathSegments: new List.from(url.pathSegments)
-      ..addAll(c.split("/").map(Uri.decodeComponent)));
