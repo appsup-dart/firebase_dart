@@ -8,12 +8,12 @@ class TreeStructuredData extends TreeNode<Name, Value> {
 
   TreeStructuredData(
       {Value priority, Value value, Filter<Name, TreeStructuredData> filter})
-      : this._(value, new FilteredMap(filter ?? new QueryFilter()), priority);
+      : this._(value, new FilteredMap(filter ?? const QueryFilter()), priority);
 
   TreeStructuredData._(Value value,
       FilteredMap<Name, TreeStructuredData> children, Value priority)
       : priority = priority,
-        super(value, children ?? new FilteredMap(new QueryFilter())) {
+        super(value, children ?? new FilteredMap(const QueryFilter())) {
     assert(children == null || children is FilteredMap);
     assert(this.children == null || this.children is FilteredMap);
   }
@@ -27,7 +27,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
             null,
             children is FilteredMap
                 ? children
-                : (new FilteredMap(new QueryFilter())..addAll(children)),
+                : (new FilteredMap(const QueryFilter())..addAll(children)),
             priority);
 
   factory TreeStructuredData.fromJson(json, [priority]) {
@@ -85,9 +85,12 @@ class TreeStructuredData extends TreeNode<Name, Value> {
               start: start, end: end, limit: limit, reversed: reversed),
           priority);
 
-  TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) =>
-      new TreeStructuredData(priority: priority, value: value, filter: f)
-        ..children.addAll(children);
+  TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) {
+    if (children.filter==f||(f==null&&children.filter==const QueryFilter())) return this;
+    return new TreeStructuredData(priority: priority, value: value, filter: f)
+      ..children.addAll(children);
+  }
+
 
   dynamic toJson([bool exportFormat = false]) {
     if (isNil) return null;
