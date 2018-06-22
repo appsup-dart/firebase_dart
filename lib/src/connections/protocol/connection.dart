@@ -166,7 +166,7 @@ class ProtocolConnection extends Connection {
   }
 
   @override
-  Future<Null> disconnect() => _transport._close(-1);
+  Future<Null> disconnect() => _transport.close();
 
   @override
   Future<Null> close() async {

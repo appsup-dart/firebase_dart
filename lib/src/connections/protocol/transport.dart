@@ -41,7 +41,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   final StreamController<Response> _input = new StreamController(sync: true);
 
   Future _connect([String host]);
-  Future _reset();
+  void _reset();
   void _start();
 
   Future<PongMessage> ping() {
@@ -68,7 +68,8 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
       _ready.complete(_info);
       _start();
     } else if (v is ResetMessage) {
-      _reset().then((_) => _connect(v.host));
+      _reset();
+      _connect(v.host);
     } else if (v is PongMessage) {
       _pings.removeAt(0).complete(v);
     } else if (v is PingMessage) {
@@ -120,7 +121,9 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
 
   Future<Null> _close(int state) async {
     _readyState = state;
+    if (!_output.hasListener) _output.stream.listen(null);
     await _output.close();
+    if (!_input.hasListener) _input.stream.listen(null);
     await _input.close();
     await _reset();
     _done.complete();
@@ -184,7 +187,9 @@ class WebSocketTransport extends Transport {
       _logger.fine("received $v");
       return v;
     }).listen(_handleMessage, onDone: () {
-      if (readyState == Transport.connected) close();
+      if (readyState == Transport.connected||readyState == Transport.connecting) close();
+    }, onError: (e,tr) {
+      _logger.fine("Connection error: $e", e,tr);
     });
   }
 
@@ -217,8 +222,8 @@ class WebSocketTransport extends Transport {
   }
 
   @override
-  Future _reset() async {
-    await _socket.sink.close();
+  void _reset() {
+    _socket.sink.close();
     _socket = null;
   }
 }
