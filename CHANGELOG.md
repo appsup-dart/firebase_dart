@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.9
+
+- add FirebaseApp and FirebaseDatabase classes
+- performance improvements
+- recover from connection closed by peer
+
 ## 0.7.8
 
 - Remove dart 2 only things
