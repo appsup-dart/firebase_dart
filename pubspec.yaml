@@ -14,7 +14,7 @@ dependencies:
   logging: '>=0.11.0 <0.12.0'
   frappe: '>=0.4.0 <0.5.0'
   convert: ^2.0.0
-  sortedmap: '>=0.3.0 <0.4.0'
+  sortedmap: '>=0.4.0 <0.5.0'
   web_socket_channel: '>=1.0.4 <2.0.0'
   isolate: '^1.1.0'
   collection: '^1.9.1'

@@ -1,7 +1,7 @@
 part of firebase.treestructureddata;
 
 abstract class TreeStructuredDataOrdering
-    extends Ordering<Name, TreeStructuredData> {
+    extends Ordering {
   factory TreeStructuredDataOrdering(String orderBy) {
     if (orderBy == null) return null;
     switch (orderBy) {
@@ -27,7 +27,7 @@ abstract class TreeStructuredDataOrdering
   String get orderBy;
 
   @override
-  TreeStructuredData mapValue(TreeStructuredData v);
+  TreeStructuredData mapValue(covariant dynamic v);
 
   @override
   int get hashCode => orderBy.hashCode;
@@ -86,8 +86,8 @@ class ChildOrdering extends TreeStructuredDataOrdering {
 
 class QueryFilter extends Filter<Name, TreeStructuredData> {
   const QueryFilter(
-      {KeyValueInterval<Name, TreeStructuredData> validInterval:
-          const KeyValueInterval<Name, TreeStructuredData>(),
+      {KeyValueInterval validInterval:
+          const KeyValueInterval(),
       int limit,
       bool reversed: false,
       TreeStructuredDataOrdering ordering:
@@ -98,8 +98,8 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
             reversed: reversed,
             validInterval: validInterval);
 
-  static KeyValueInterval<Name, TreeStructuredData> _updateInterval(
-      KeyValueInterval<Name, TreeStructuredData> validInterval,
+  static KeyValueInterval _updateInterval(
+      KeyValueInterval validInterval,
       String startAtKey,
       dynamic startAtValue,
       String endAtKey,
@@ -120,6 +120,11 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
     }
     return validInterval;
   }
+
+  Name get endKey => validInterval?.end?.key;
+  Name get startKey => validInterval?.start?.key;
+  TreeStructuredData get endValue => validInterval?.end?.value;
+  TreeStructuredData get startValue => validInterval?.start?.value;
 
   String get orderBy => (ordering as TreeStructuredDataOrdering).orderBy;
 
@@ -147,7 +152,7 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
 
   bool get limits => limit != null || !validInterval.isUnlimited;
 
-  KeyValueInterval<Name, TreeStructuredData> get validTypedInterval =>
+  KeyValueInterval get validTypedInterval =>
       validInterval;
 
   @override

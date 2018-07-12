@@ -121,16 +121,16 @@ class Query {
         index: filter.orderBy,
         endName: filter.orderBy == ".key"
             ? null
-            : filter.validTypedInterval.end?.key?.asString(),
+            : filter.endKey?.asString(),
         endValue: filter.orderBy != ".key"
-            ? filter.validTypedInterval.end?.value?.value?.value
-            : filter.validTypedInterval.end?.key?.asString(),
+            ? filter.endValue?.value?.value
+            : filter.endKey?.asString(),
         startName: filter.orderBy == ".key"
             ? null
-            : filter.validTypedInterval.start?.key?.asString(),
+            : filter.startKey?.asString(),
         startValue: filter.orderBy != ".key"
-            ? filter.validTypedInterval.start?.value?.value?.value
-            : filter.validTypedInterval.start?.key?.asString());
+            ? filter.startValue?.value?.value
+            : filter.startKey?.asString());
   }
 
   QueryFilter toFilter() {
