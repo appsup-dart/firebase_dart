@@ -39,7 +39,7 @@ void main() {
   });
 }
 
-void testsWith(Map<String,String> secrets) {
+void testsWith(Map<String,dynamic> secrets) {
   String testUrl = "${secrets["host"]}";
 
 
