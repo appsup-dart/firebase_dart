@@ -46,8 +46,10 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
       [TreeNode<K, V> newInstance(V parent, K name)]) {
     if (path.isEmpty) return this;
     newInstance ??= (p, n) => null;
-    var child =
-        children.putIfAbsent(path.first, () => newInstance(value, path.first));
+    if (!children.containsKey(path.first)) {
+      children[path.first] = newInstance(value, path.first);
+    }
+    var child = children[path.first];
     if (child == null) return children.remove(path.first);
     return child.subtree(path.skip(1), newInstance);
   }

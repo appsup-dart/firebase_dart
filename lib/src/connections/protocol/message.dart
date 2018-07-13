@@ -222,7 +222,7 @@ class MessageBody {
   }
 
   Iterable<String> get warnings =>
-      data is Map ? data["w"] as Iterable<String> : const [];
+      data is Map ? (data["w"] as Iterable)?.map((v)=>v as String) : const [];
 
   Map<String, dynamic> toJson() {
     var json = <String, dynamic>{};

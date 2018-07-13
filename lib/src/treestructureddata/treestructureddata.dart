@@ -13,7 +13,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   TreeStructuredData._(Value value,
       FilteredMap<Name, TreeStructuredData> children, Value priority)
       : priority = priority,
-        super(value, children ?? new FilteredMap(const QueryFilter())) {
+        super(value, children ?? new FilteredMap<Name,TreeStructuredData>(const QueryFilter())) {
     assert(children == null || children is FilteredMap);
     assert(this.children == null || this.children is FilteredMap);
   }

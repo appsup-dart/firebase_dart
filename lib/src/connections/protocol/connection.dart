@@ -209,7 +209,7 @@ class ProtocolConnection extends Connection {
   @override
   Future<Null> unauth() {
     _authToken = null;
-    return _request(new Request.unauth()).then((b) => b.data);
+    return _request(new Request.unauth()).then((b) => null);
   }
 
   bool get _transportIsReady =>

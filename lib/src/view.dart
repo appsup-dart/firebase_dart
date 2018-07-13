@@ -32,7 +32,7 @@ class ViewCache {
           new SortedMap.from(pendingOperations));
 
   ViewCache child(Name c) {
-    var childPendingOperations = new SortedMap();
+    var childPendingOperations = new SortedMap<int,TreeOperation>();
     for (var k in pendingOperations.keys) {
       var o = pendingOperations[k].operationForChild(c);
       if (o != null) {

@@ -14,6 +14,7 @@ import 'package:logging/logging.dart';
 import 'tree.dart';
 import 'event.dart';
 import 'operations/tree.dart';
+import 'package:sortedmap/sortedmap.dart';
 
 final _logger = new Logger("firebase-repo");
 
@@ -579,7 +580,7 @@ TreeStructuredData getLatestValue(Repo repo, Path<Name> path) {
 }
 
 class TransactionsNode extends TreeNode<Name, List<Transaction>> {
-  TransactionsNode() : super([]);
+  TransactionsNode() : super([], new SortedMap<Name, TransactionsNode>());
 
   @override
   Map<Name, TransactionsNode> get children => super.children;
@@ -600,7 +601,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
 
   @override
   Iterable<TransactionsNode> nodesOnPath(Path<Name> path) =>
-      super.nodesOnPath(path);
+      super.nodesOnPath(path).map((v)=>v as TransactionsNode);
 
   /// Completes all sent transactions
   void complete() {
@@ -729,6 +730,8 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
 }
 
 class SparseSnapshotTree extends TreeNode<Name, TreeStructuredData> {
+  SparseSnapshotTree() : super(null, new SortedMap<Name,SparseSnapshotTree>());
+
   @override
   Map<Name, SparseSnapshotTree> get children => super.children;
 

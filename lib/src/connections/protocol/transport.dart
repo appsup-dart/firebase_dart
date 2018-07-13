@@ -19,12 +19,12 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   }
 
   final Completer<HandshakeInfo> _ready = new Completer();
-  final Completer _done = new Completer();
+  final Completer<Null> _done = new Completer();
 
   Future<HandshakeInfo> get ready => _ready.future;
 
   @override
-  Future get done => _done.future;
+  Future<Null> get done => _done.future;
 
   int _readyState;
   int get readyState => _readyState;
@@ -109,7 +109,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   }
 
   @override
-  Future close() async {
+  Future<Null> close() async {
     await _close(disconnected);
     return done;
   }
