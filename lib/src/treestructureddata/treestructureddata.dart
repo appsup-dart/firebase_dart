@@ -75,8 +75,8 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   FilteredMap<Name, TreeStructuredData> get children => super.children;
 
   TreeStructuredData view(
-          {Pair<Name, TreeStructuredData> start,
-          Pair<Name, TreeStructuredData> end,
+          {Pair<Comparable, Comparable> start,
+          Pair<Comparable, Comparable> end,
           int limit,
           bool reversed}) =>
       new TreeStructuredData._(
