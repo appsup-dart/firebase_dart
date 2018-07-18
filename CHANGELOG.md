@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.10
+
+- Dart 2 pre-release compatibility
+
 ## 0.7.9
 
 - add FirebaseApp and FirebaseDatabase classes
