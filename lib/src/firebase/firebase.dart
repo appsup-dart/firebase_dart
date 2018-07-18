@@ -139,8 +139,4 @@ abstract class Firebase implements Query {
   Future<DataSnapshot> transaction(dynamic update(dynamic currentVal),
       {bool applyLocally: true});
 
-  static Uri _parentUri(Uri uri) =>
-      Uri.parse("$uri/").resolve("..").normalizePath();
-
-  static Uri _rootUri(Uri uri) => uri.resolve("/").normalizePath();
 }

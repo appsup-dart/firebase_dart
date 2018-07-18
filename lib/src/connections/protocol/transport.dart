@@ -125,7 +125,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
     await _output.close();
     if (!_input.hasListener) _input.stream.listen(null);
     await _input.close();
-    await _reset();
+    _reset();
     _done.complete();
   }
 }

@@ -45,7 +45,7 @@ class FirebaseApp {
     assert(options != null);
     final FirebaseApp existingApp = await FirebaseApp.appNamed(name);
     if (existingApp != null) {
-      assert(await existingApp.options == options);
+      assert(existingApp.options == options);
       return existingApp;
     }
     var app = name == defaultAppName ? instance : new FirebaseApp(name: name);
