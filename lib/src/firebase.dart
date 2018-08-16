@@ -13,10 +13,17 @@ import 'package:quiver/core.dart' as quiver;
 import 'package:dart2_constant/convert.dart';
 
 part 'firebase/datasnapshot.dart';
+
 part 'firebase/event.dart';
+
 part 'firebase/firebase.dart';
+
 part 'firebase/query.dart';
+
 part 'firebase/disconnect.dart';
+
 part 'firebase/token.dart';
+
 part 'firebase/server_value.dart';
+
 part 'firebase/database.dart';

@@ -13,7 +13,11 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   TreeStructuredData._(Value value,
       FilteredMap<Name, TreeStructuredData> children, Value priority)
       : priority = priority,
-        super(value, children ?? new FilteredMap<Name,TreeStructuredData>(const QueryFilter())) {
+        super(
+            value,
+            children ??
+                new FilteredMap<Name, TreeStructuredData>(
+                    const QueryFilter())) {
     assert(children == null || children is FilteredMap);
     assert(this.children == null || this.children is FilteredMap);
   }
@@ -86,11 +90,11 @@ class TreeStructuredData extends TreeNode<Name, Value> {
           priority);
 
   TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) {
-    if (children.filter==f||(f==null&&children.filter==const QueryFilter())) return this;
+    if (children.filter == f ||
+        (f == null && children.filter == const QueryFilter())) return this;
     return new TreeStructuredData(priority: priority, value: value, filter: f)
       ..children.addAll(children);
   }
-
 
   dynamic toJson([bool exportFormat = false]) {
     if (isNil) return null;

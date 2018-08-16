@@ -57,7 +57,9 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
   TreeNode<K, V> clone() => new TreeNode(value, children);
 
   bool get isLeaf => isEmpty && value != null;
+
   bool get isNil => isEmpty && value == null;
+
   bool get isEmpty => children.isEmpty;
 
   /// Order: nil, leaf, node with children

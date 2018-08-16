@@ -5,6 +5,7 @@ part of firebase.treestructureddata;
 
 class ServerValue {
   final String type;
+
   const ServerValue._(this.type);
 
   static const ServerValue timestamp = const ServerValue._("timestamp");
@@ -42,14 +43,21 @@ class Value implements Comparable<Value> {
   }
 
   const Value._(this.value);
+
   const Value.bool(bool value) : this._(value);
+
   const Value.num(num value) : this._(value);
+
   const Value.string(String value) : this._(value);
+
   Value.server(String type) : this._(ServerValue.values[type]);
 
   bool get isBool => value is bool;
+
   bool get isNum => value is num;
+
   bool get isString => value is String;
+
   bool get isServerValue => value is ServerValue;
 
   int get typeOrder =>

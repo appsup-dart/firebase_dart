@@ -33,6 +33,7 @@ class BackendOperation {
   final dynamic data;
 
   BackendOperation.overwrite(this.path, this.data) : isMerge = false;
+
   BackendOperation.merge(this.path, this.data) : isMerge = true;
 
   factory BackendOperation.fromTreeOperation(TreeOperation op) {
@@ -87,7 +88,7 @@ class SingleInstanceBackend {
     for (var c in controllers) {
       c.add(operation);
     }
-    await new Future.microtask(()=>null);
+    await new Future.microtask(() => null);
   }
 
   static Future apply(TreeOperation operation) => _runner.run(
@@ -128,6 +129,7 @@ class MemConnection extends Connection {
   }
 
   SparseSnapshotTree _onDisconnect = new SparseSnapshotTree();
+
   void _runOnDisconnectEvents() {
     var sv = serverValues;
     _onDisconnect.forEachNode((path, snap) {
@@ -168,7 +170,8 @@ class MemConnection extends Connection {
   }
 
   @override
-  Future<Null> merge(String path, dynamic value, {String hash, int writeId}) async {
+  Future<Null> merge(String path, dynamic value,
+      {String hash, int writeId}) async {
     _logger.fine("merge $path $value");
     var p = Name.parsePath(path);
     // TODO check hash
@@ -179,7 +182,8 @@ class MemConnection extends Connection {
   }
 
   @override
-  Future<Null> put(String path, dynamic value, {String hash, int writeId}) async {
+  Future<Null> put(String path, dynamic value,
+      {String hash, int writeId}) async {
     _logger.fine("put $path $value");
     var p = Name.parsePath(path);
 
@@ -223,8 +227,7 @@ class MemConnection extends Connection {
   }
 
   @override
-  Future<Null> unauth() async {
-  }
+  Future<Null> unauth() async {}
 
   final StreamController<Map> _onAuth = new StreamController(sync: true);
   final StreamController<OperationEvent> _onDataOperation =

@@ -9,12 +9,14 @@ abstract class Firebase implements Query {
   /// Construct a new Firebase reference from a full Firebase URL.
   factory Firebase(String url) {
     var uri = Uri.parse(url);
-    return new Firebase._(new FirebaseDatabase(
-      databaseURL: uri.replace(pathSegments: []).toString()
-    ), uri.pathSegments.map(Uri.decodeComponent).toList());
+    return new Firebase._(
+        new FirebaseDatabase(
+            databaseURL: uri.replace(pathSegments: []).toString()),
+        uri.pathSegments.map(Uri.decodeComponent).toList());
   }
 
-  factory Firebase._(FirebaseDatabase db, List<String> path) => new FirebaseImpl(db, path);
+  factory Firebase._(FirebaseDatabase db, List<String> path) =>
+      new FirebaseImpl(db, path);
 
   /// Getter for onDisconnect.
   Disconnect get onDisconnect;
@@ -138,5 +140,4 @@ abstract class Firebase implements Query {
   /// finished.
   Future<DataSnapshot> transaction(dynamic update(dynamic currentVal),
       {bool applyLocally: true});
-
 }

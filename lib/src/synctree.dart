@@ -287,6 +287,7 @@ abstract class RemoteListenerRegistrar {
   }
 
   Future<Null> remoteRegister(Path<Name> path, QueryFilter filter, String hash);
+
   Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter);
 
   Future<Null> unregister(Path<Name> path, QueryFilter filter) async {

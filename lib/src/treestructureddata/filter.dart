@@ -1,7 +1,6 @@
 part of firebase.treestructureddata;
 
-abstract class TreeStructuredDataOrdering
-    extends Ordering {
+abstract class TreeStructuredDataOrdering extends Ordering {
   factory TreeStructuredDataOrdering(String orderBy) {
     if (orderBy == null) return null;
     switch (orderBy) {
@@ -16,11 +15,15 @@ abstract class TreeStructuredDataOrdering
         return new TreeStructuredDataOrdering.byChild(orderBy);
     }
   }
+
   const TreeStructuredDataOrdering._() : super.byValue();
 
   const factory TreeStructuredDataOrdering.byValue() = ValueOrdering;
+
   const factory TreeStructuredDataOrdering.byKey() = KeyOrdering;
+
   const factory TreeStructuredDataOrdering.byPriority() = PriorityOrdering;
+
   const factory TreeStructuredDataOrdering.byChild(String child) =
       ChildOrdering;
 
@@ -86,8 +89,7 @@ class ChildOrdering extends TreeStructuredDataOrdering {
 
 class QueryFilter extends Filter<Name, TreeStructuredData> {
   const QueryFilter(
-      {KeyValueInterval validInterval:
-          const KeyValueInterval(),
+      {KeyValueInterval validInterval: const KeyValueInterval(),
       int limit,
       bool reversed: false,
       TreeStructuredDataOrdering ordering:
@@ -122,8 +124,11 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
   }
 
   Name get endKey => validInterval?.end?.key;
+
   Name get startKey => validInterval?.start?.key;
+
   TreeStructuredData get endValue => validInterval?.end?.value;
+
   TreeStructuredData get startValue => validInterval?.start?.value;
 
   String get orderBy => (ordering as TreeStructuredDataOrdering).orderBy;
@@ -152,8 +157,7 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
 
   bool get limits => limit != null || !validInterval.isUnlimited;
 
-  KeyValueInterval get validTypedInterval =>
-      validInterval;
+  KeyValueInterval get validTypedInterval => validInterval;
 
   @override
   String toString() =>

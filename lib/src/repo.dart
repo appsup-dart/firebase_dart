@@ -137,8 +137,7 @@ class Repo {
       int writeId = _nextWriteId++;
       _syncTree.applyUserMerge(
           Name.parsePath(path),
-          ServerValue
-              .resolve(new TreeStructuredData.nonLeaf(changedChildren),
+          ServerValue.resolve(new TreeStructuredData.nonLeaf(changedChildren),
                   _connection.serverValues)
               .children,
           writeId);
@@ -428,7 +427,9 @@ class Transaction implements Comparable<Transaction> {
   bool get isSent =>
       status == TransactionStatus.sent ||
       status == TransactionStatus.sentNeedsAbort;
+
   bool get isComplete => status == TransactionStatus.completed;
+
   bool get isAborted => status == TransactionStatus.sentNeedsAbort;
 
   void _onValue(Event _) {}
@@ -601,7 +602,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
 
   @override
   Iterable<TransactionsNode> nodesOnPath(Path<Name> path) =>
-      super.nodesOnPath(path).map((v)=>v as TransactionsNode);
+      super.nodesOnPath(path).map((v) => v as TransactionsNode);
 
   /// Completes all sent transactions
   void complete() {
@@ -730,7 +731,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
 }
 
 class SparseSnapshotTree extends TreeNode<Name, TreeStructuredData> {
-  SparseSnapshotTree() : super(null, new SortedMap<Name,SparseSnapshotTree>());
+  SparseSnapshotTree() : super(null, new SortedMap<Name, SparseSnapshotTree>());
 
   @override
   Map<Name, SparseSnapshotTree> get children => super.children;

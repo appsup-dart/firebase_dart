@@ -13,6 +13,9 @@ import 'package:crypto/crypto.dart';
 import 'package:dart2_constant/convert.dart';
 
 part 'treestructureddata/name.dart';
+
 part 'treestructureddata/value.dart';
+
 part 'treestructureddata/treestructureddata.dart';
+
 part 'treestructureddata/filter.dart';

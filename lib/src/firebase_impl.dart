@@ -47,14 +47,16 @@ class QueryImpl extends Query {
   final QueryFilter filter;
   final Repo _repo;
 
-  QueryImpl._(this._db, this._pathSegments, this.filter) :
-        _path = _pathSegments.map(Uri.encodeComponent).join("/"), _repo = new Repo(_db);
+  QueryImpl._(this._db, this._pathSegments, this.filter)
+      : _path = _pathSegments.map(Uri.encodeComponent).join("/"),
+        _repo = new Repo(_db);
 
   @override
   Stream<Event> on(String eventType) =>
       _repo.createStream(ref, filter, eventType);
 
-  Query _withFilter(QueryFilter filter) => new QueryImpl._(_db, _pathSegments, filter);
+  Query _withFilter(QueryFilter filter) =>
+      new QueryImpl._(_db, _pathSegments, filter);
 
   @override
   Query orderByChild(String child) {
@@ -98,8 +100,7 @@ class FirebaseImpl extends QueryImpl with Firebase {
   Disconnect _onDisconnect;
 
   FirebaseImpl(FirebaseDatabase db, List<String> path)
-      : super._(db, path,
-            const QueryFilter()) {
+      : super._(db, path, const QueryFilter()) {
     _onDisconnect = new DisconnectImpl(this);
   }
 
@@ -151,11 +152,13 @@ class FirebaseImpl extends QueryImpl with Firebase {
       []..addAll(_pathSegments)..addAll(c.split("/").map(Uri.decodeComponent)));
 
   @override
-  Firebase get parent => _pathSegments.isEmpty ? null :
-    new FirebaseImpl(_db,[]..addAll(_pathSegments.sublist(0,_pathSegments.length-1)));
+  Firebase get parent => _pathSegments.isEmpty
+      ? null
+      : new FirebaseImpl(
+          _db, []..addAll(_pathSegments.sublist(0, _pathSegments.length - 1)));
 
   @override
-  Firebase get root => new FirebaseImpl(_db,[]);
+  Firebase get root => new FirebaseImpl(_db, []);
 }
 
 class DisconnectImpl extends Disconnect {

@@ -20,9 +20,13 @@ import '../connection.dart';
 import 'package:dart2_constant/convert.dart';
 
 part 'protocol/request.dart';
+
 part 'protocol/response.dart';
+
 part 'protocol/transport.dart';
+
 part 'protocol/message.dart';
+
 part 'protocol/connection.dart';
 
 final _logger = new Logger("firebase-connection");

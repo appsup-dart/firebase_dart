@@ -27,11 +27,14 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   Future<Null> get done => _done.future;
 
   int _readyState;
+
   int get readyState => _readyState;
 
   HandshakeInfo _info;
+
   HandshakeInfo get info => _info;
   DateTime _infoReceivedTime;
+
   DateTime get infoReceivedTime => _infoReceivedTime;
 
   final Map<int, Request> _pendingRequests = {};
@@ -41,7 +44,9 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   final StreamController<Response> _input = new StreamController(sync: true);
 
   Future _connect([String host]);
+
   void _reset();
+
   void _start();
 
   Future<PongMessage> ping() {
@@ -187,9 +192,10 @@ class WebSocketTransport extends Transport {
       _logger.fine("received $v");
       return v;
     }).listen(_handleMessage, onDone: () {
-      if (readyState == Transport.connected||readyState == Transport.connecting) close();
-    }, onError: (e,tr) {
-      _logger.fine("Connection error: $e", e,tr);
+      if (readyState == Transport.connected ||
+          readyState == Transport.connecting) close();
+    }, onError: (e, tr) {
+      _logger.fine("Connection error: $e", e, tr);
     });
   }
 

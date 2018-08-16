@@ -119,15 +119,12 @@ class Query {
         limit: filter.limit,
         isViewFromRight: filter.reversed,
         index: filter.orderBy,
-        endName: filter.orderBy == ".key"
-            ? null
-            : filter.endKey?.asString(),
+        endName: filter.orderBy == ".key" ? null : filter.endKey?.asString(),
         endValue: filter.orderBy != ".key"
             ? filter.endValue?.value?.value
             : filter.endKey?.asString(),
-        startName: filter.orderBy == ".key"
-            ? null
-            : filter.startKey?.asString(),
+        startName:
+            filter.orderBy == ".key" ? null : filter.startKey?.asString(),
         startValue: filter.orderBy != ".key"
             ? filter.startValue?.value?.value
             : filter.startKey?.asString());
@@ -222,7 +219,7 @@ class MessageBody {
   }
 
   Iterable<String> get warnings =>
-      data is Map ? (data["w"] as Iterable)?.map((v)=>v as String) : const [];
+      data is Map ? (data["w"] as Iterable)?.map((v) => v as String) : const [];
 
   Map<String, dynamic> toJson() {
     var json = <String, dynamic>{};
@@ -275,6 +272,7 @@ abstract class ControlMessage extends Message {
   }
 
   String get type;
+
   dynamic get jsonData;
 
   @override

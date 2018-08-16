@@ -26,8 +26,8 @@ class IncompleteData {
 
   bool get isComplete => _states.value == true;
 
-  bool isCompleteForPath(Path<Name> path) =>
-      _isCompleteForPath(_states, path);
+  bool isCompleteForPath(Path<Name> path) => _isCompleteForPath(_states, path);
+
   bool isCompleteForChild(Comparable child) =>
       _isCompleteForPath(_states, new Path<Name>.from([child]));
 
@@ -35,8 +35,7 @@ class IncompleteData {
       value.children[child] ?? new TreeStructuredData(),
       _states.value ? new TreeNode(true) : _states.children[child]);
 
-  bool _isCompleteForPath(
-          TreeNode<Comparable, bool> states, Path<Name> path) =>
+  bool _isCompleteForPath(TreeNode<Comparable, bool> states, Path<Name> path) =>
       states.nodesOnPath(path).any((v) => v.value == true);
 
   IncompleteData update(TreeStructuredData newValue,

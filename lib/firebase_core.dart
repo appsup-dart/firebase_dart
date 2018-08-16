@@ -1,12 +1,10 @@
-
 import 'package:meta/meta.dart';
 import 'dart:async';
 
-final Map<String,FirebaseApp> _apps = {};
-final Map<FirebaseApp,FirebaseOptions> _options = {};
+final Map<String, FirebaseApp> _apps = {};
+final Map<FirebaseApp, FirebaseOptions> _options = {};
 
 class FirebaseApp {
-
   /// The name of this app.
   final String name;
 
@@ -20,10 +18,10 @@ class FirebaseApp {
   /// Returns the default (first initialized) instance of the FirebaseApp.
   static const FirebaseApp instance = const FirebaseApp(name: defaultAppName);
 
-
   /// Returns a list of all extant FirebaseApp instances, or null if there are
   /// no FirebaseApp instances.
-  static FutureOr<List<FirebaseApp>> allApps() => _apps.isEmpty ? null : _apps.values.toList();
+  static FutureOr<List<FirebaseApp>> allApps() =>
+      _apps.isEmpty ? null : _apps.values.toList();
 
   /// Returns a previously created FirebaseApp instance with the given name, or
   /// null if no such app exists.
@@ -58,22 +56,21 @@ class FirebaseApp {
   int get hashCode => name.hashCode;
 
   @override
-  bool operator==(Object other) => other is FirebaseApp&&other.name==name;
+  bool operator ==(Object other) => other is FirebaseApp && other.name == name;
 }
 
 class FirebaseOptions {
-
   final String databaseURL;
 
   const FirebaseOptions({this.databaseURL});
 
-  factory FirebaseOptions.from(Map map) => new FirebaseOptions(
-    databaseURL: map["databaseURL"]
-  );
+  factory FirebaseOptions.from(Map map) =>
+      new FirebaseOptions(databaseURL: map["databaseURL"]);
 
   @override
   int get hashCode => databaseURL.hashCode;
 
   @override
-  bool operator==(Object other) => other is FirebaseOptions&&other.databaseURL==databaseURL;
+  bool operator ==(Object other) =>
+      other is FirebaseOptions && other.databaseURL == databaseURL;
 }

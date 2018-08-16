@@ -18,6 +18,7 @@ class EventTarget {
 
   bool get hasEventRegistrations =>
       _eventRegistrations.values.any((v) => v.isNotEmpty);
+
   Iterable<String> get eventTypesWithRegistrations =>
       _eventRegistrations.keys.where((k) => _eventRegistrations[k].isNotEmpty);
 
