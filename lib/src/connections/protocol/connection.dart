@@ -153,7 +153,7 @@ class ProtocolConnection extends Connection {
             break;
           default:
             throw new UnimplementedError(
-                "Cannot handle message with action ${r.message.action}: ${JSON.encode(r.message)} ${r.message.reqNum} ${r.request.writeId}");
+                "Cannot handle message with action ${r.message.action}: ${json.encode(r.message)} ${r.message.reqNum} ${r.request.writeId}");
         }
       });
       _restoreState();

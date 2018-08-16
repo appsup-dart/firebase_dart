@@ -134,7 +134,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     });
     return toHash == ""
         ? ""
-        : BASE64.encode(sha1.convert(toHash.codeUnits).bytes);
+        : base64.encode(sha1.convert(toHash.codeUnits).bytes);
   }
 }
 

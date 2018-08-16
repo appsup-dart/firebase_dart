@@ -6,7 +6,7 @@ part of firebase_dart;
 String _signMessage(String msg, String secret) {
   final hmac = new Hmac(sha256, secret.codeUnits);
   final signature = hmac.convert(msg.codeUnits);
-  return BASE64URL.encode(signature.bytes).replaceAll("=", "");
+  return base64Url.encode(signature.bytes).replaceAll("=", "");
 }
 
 class InvalidTokenException implements Exception {
@@ -29,11 +29,11 @@ class _Encoder extends Converter<FirebaseToken, String> {
 
   @override
   String convert(FirebaseToken data) {
-    var encodedHeader = BASE64URL
-        .encode(JSON.encode(_defaultHeader).codeUnits)
+    var encodedHeader = base64Url
+        .encode(json.encode(_defaultHeader).codeUnits)
         .replaceAll("=", "");
     var encodedPayload =
-        BASE64URL.encode(JSON.encode(data).codeUnits).replaceAll("=", "");
+        base64Url.encode(json.encode(data).codeUnits).replaceAll("=", "");
     var msg = "$encodedHeader.$encodedPayload";
     return "$msg.${_signMessage(msg, secret)}";
   }
@@ -49,7 +49,7 @@ class _Decoder extends Converter<String, FirebaseToken> {
     var parts = input.split(".");
     var padded = parts[1] +
         new Iterable.generate((4 - parts[1].length % 4) % 4, (i) => "=").join();
-    var payload = JSON.decode(UTF8.decode(BASE64URL.decode(padded)));
+    var payload = json.decode(utf8.decode(base64Url.decode(padded)));
 
     if (secret != null) {
       var signature = _signMessage("${parts[0]}.${parts[1]}", secret);

@@ -8,9 +8,9 @@ import 'package:collection/collection.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
 import 'package:quiver/core.dart' as quiver;
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
+import 'package:dart2_constant/convert.dart';
 
 part 'treestructureddata/name.dart';
 part 'treestructureddata/value.dart';

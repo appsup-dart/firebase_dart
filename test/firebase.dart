@@ -7,13 +7,12 @@ import 'package:firebase_dart/src/repo.dart';
 import 'package:firebase_dart/firebase_core.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
-import 'dart:convert';
 import 'dart:async';
 
 import 'secrets.dart'
   if (dart.library.html) 'secrets.dart'
   if (dart.library.io) 'secrets_io.dart' as s;
-
+import 'package:dart2_constant/convert.dart';
 
 
 void main() {
@@ -872,7 +871,7 @@ void testsWith(Map<String,dynamic> secrets) {
 
       var random = new Random();
 
-      var value = BASE64.encode(new List<int>.generate(15000, (i)=>random.nextInt(255)));
+      var value = base64.encode(new List<int>.generate(15000, (i)=>random.nextInt(255)));
       await ref.set(value);
 
       expect(await ref.get(), value);
@@ -881,7 +880,7 @@ void testsWith(Map<String,dynamic> secrets) {
 
       var random = new Random();
 
-      var value = BASE64.encode(new List<int>.generate(50000, (i)=>random.nextInt(255)));
+      var value = base64.encode(new List<int>.generate(50000, (i)=>random.nextInt(255)));
       await ref.set(value);
 
       expect(await ref.get(), value);

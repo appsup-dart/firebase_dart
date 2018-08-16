@@ -143,7 +143,7 @@ class WebSocketTransport extends Transport {
 
   @override
   void _start() {
-    _socket.sink.addStream(_output.stream.map(JSON.encode).expand((v) sync* {
+    _socket.sink.addStream(_output.stream.map(json.encode).expand((v) sync* {
       _logger.fine("send $v");
 
       var dataSegs = new List.generate(
@@ -203,7 +203,7 @@ class WebSocketTransport extends Transport {
         var fullMess = _frames.join("");
         _frames = null;
         var message =
-            new Message.fromJson(JSON.decode(fullMess) as Map<String, dynamic>);
+            new Message.fromJson(json.decode(fullMess) as Map<String, dynamic>);
         _onMessage(message);
       }
     } else {
@@ -216,7 +216,7 @@ class WebSocketTransport extends Transport {
         }
       }
       var message =
-          new Message.fromJson(JSON.decode(data) as Map<String, dynamic>);
+          new Message.fromJson(json.decode(data) as Map<String, dynamic>);
       _onMessage(message);
     }
   }

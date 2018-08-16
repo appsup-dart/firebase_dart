@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.11
+
+- Support Dart 2 in `pubspec.yaml`
+
+
 ## 0.7.10
 
 - Dart 2 pre-release compatibility

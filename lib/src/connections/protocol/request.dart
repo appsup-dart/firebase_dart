@@ -45,5 +45,5 @@ class Request {
   Future<Response> get response => _completer.future;
 
   @override
-  String toString() => "Request[${JSON.encode(message)}]";
+  String toString() => "Request[${json.encode(message)}]";
 }

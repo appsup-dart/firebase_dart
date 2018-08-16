@@ -13,5 +13,5 @@ class Response {
   Request get request => _request;
 
   @override
-  String toString() => "Response[${JSON.encode(message)}]";
+  String toString() => "Response[${json.encode(message)}]";
 }
