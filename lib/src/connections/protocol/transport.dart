@@ -73,8 +73,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
       _ready.complete(_info);
       _start();
     } else if (v is ResetMessage) {
-      _reset();
-      _connect(v.host);
+      close();
     } else if (v is PongMessage) {
       _pings.removeAt(0).complete(v);
     } else if (v is PingMessage) {
@@ -125,6 +124,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   }
 
   Future<Null> _close(int state) async {
+    if (_readyState >= disconnected) return _done;
     _readyState = state;
     if (!_output.hasListener) _output.stream.listen(null);
     await _output.close();
