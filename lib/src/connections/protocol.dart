@@ -18,6 +18,7 @@ import '../treestructureddata.dart';
 import 'package:sortedmap/sortedmap.dart';
 import '../connection.dart';
 import 'package:dart2_constant/convert.dart';
+import 'package:meta/meta.dart';
 
 part 'protocol/request.dart';
 

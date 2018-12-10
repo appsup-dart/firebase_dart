@@ -3,6 +3,38 @@
 
 part of firebase.protocol;
 
+@visibleForTesting
+class TransportTester {
+  final List<Transport> _activeTransports = [];
+
+  static final _instance = new TransportTester();
+
+  static Future<void> mockConnectionLost() {
+    return _instance._socketCloseAll();
+  }
+
+  static Future<void> mockResetMessage() {
+    return _instance._resetAll();
+  }
+
+  void addTransport(Transport transport) {
+    _activeTransports.add(transport);
+    transport.done.then((_) => _activeTransports.remove(transport));
+  }
+
+  Future<void> _socketCloseAll() async {
+    await Future.wait(_activeTransports
+        .whereType<WebSocketTransport>()
+        .map((t) => t._socket.sink.close()));
+  }
+
+  Future _resetAll() async {
+    _activeTransports
+        .whereType<WebSocketTransport>()
+        .forEach((t) => t._onMessage(new ResetMessage(t.host)));
+  }
+}
+
 abstract class Transport extends Stream<Response> with StreamSink<Request> {
   static const int connecting = 0;
   static const int connected = 1;
@@ -14,6 +46,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   final String sessionId;
 
   Transport(this.host, this.namespace, this.sessionId) {
+    TransportTester._instance.addTransport(this);
     _readyState = connecting;
     _connect();
   }
@@ -45,7 +78,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
 
   Future _connect([String host]);
 
-  void _reset();
+  Future<void> _reset();
 
   void _start();
 
@@ -124,13 +157,9 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   }
 
   Future<Null> _close(int state) async {
-    if (_readyState >= disconnected) return _done;
+    if (_readyState >= disconnected) return _done.future;
     _readyState = state;
-    if (!_output.hasListener) _output.stream.listen(null);
-    await _output.close();
-    if (!_input.hasListener) _input.stream.listen(null);
-    await _input.close();
-    _reset();
+    await _reset();
     _done.complete();
   }
 }
@@ -146,9 +175,11 @@ class WebSocketTransport extends Transport {
   WebSocketTransport(String host, String namespace, [String sessionId])
       : super(host, namespace, sessionId);
 
+  StreamSubscription _outputSubscription;
+
   @override
   void _start() {
-    _socket.sink.addStream(_output.stream.map(json.encode).expand((v) sync* {
+    var stream = _output.stream.map(json.encode).expand((v) sync* {
       _logger.fine("send $v");
 
       var dataSegs = new List.generate(
@@ -160,7 +191,12 @@ class WebSocketTransport extends Transport {
         yield "${dataSegs.length}";
       }
       yield* dataSegs;
-    }));
+    });
+    _outputSubscription = stream.listen((v) {
+      _socket.sink.add(v);
+    });
+    _socket.sink.done.then((_) => _outputSubscription.cancel());
+
     new Stream.periodic(new Duration(seconds: 45))
         .takeWhile((_) => readyState <= Transport.connected)
         .forEach((_) {
@@ -192,10 +228,11 @@ class WebSocketTransport extends Transport {
       _logger.fine("received $v");
       return v;
     }).listen(_handleMessage, onDone: () {
-      if (readyState == Transport.connected ||
-          readyState == Transport.connecting) close();
+      _logger.fine("WebSocket done: ${socket.closeCode} ${socket.closeReason}");
+      close();
     }, onError: (e, tr) {
-      _logger.fine("Connection error: $e", e, tr);
+      _logger.fine("WebSocket error: $e", e, tr);
+      close();
     });
   }
 
@@ -228,7 +265,11 @@ class WebSocketTransport extends Transport {
   }
 
   @override
-  void _reset() {
+  Future<void> _reset() async {
+    if (_outputSubscription == null) _output.stream.listen(null);
+    await _output.close();
+    if (!_input.hasListener) _input.stream.listen(null);
+    await _input.close();
     _socket.sink.close();
     _socket = null;
   }

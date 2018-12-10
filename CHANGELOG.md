@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.12
+
+- Fix recovering from broken connection and reset messages
+
 ## 0.7.11
 
 - Support Dart 2 in `pubspec.yaml`

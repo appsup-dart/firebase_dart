@@ -13,6 +13,7 @@ import 'secrets.dart'
     if (dart.library.html) 'secrets.dart'
     if (dart.library.io) 'secrets_io.dart' as s;
 import 'package:dart2_constant/convert.dart';
+import 'package:firebase_dart/src/connections/protocol.dart';
 
 void main() {
   StreamSubscription logSubscription;
@@ -37,6 +38,44 @@ void testsWith(Map<String, dynamic> secrets) {
   String testUrl = "${secrets["host"]}";
 
   Firebase ref, ref2;
+
+  group('Recover from connection loss', () {
+    Future<void> connectionLostTests(
+        FutureOr<void> connectionDestroyer()) async {
+      var ref = new FirebaseDatabase(
+              app: new FirebaseApp(name: "app1"), databaseURL: testUrl)
+          .reference()
+          .child('test');
+
+      var ref2 = new FirebaseDatabase(
+              app: new FirebaseApp(name: "app2"), databaseURL: testUrl)
+          .reference()
+          .child('test');
+
+      await ref2.set("hello");
+      await wait(200);
+
+      var f = ref.onValue
+          .map((v) {
+            return v.snapshot.val;
+          })
+          .take(2)
+          .toList();
+
+      await wait(200);
+
+      await connectionDestroyer();
+
+      await ref2.set("world");
+
+      expect(await f, ["hello", "world"]);
+    }
+
+    test('Recover when internet connection broken',
+        () => connectionLostTests(() => TransportTester.mockConnectionLost()));
+    test('Recover when reset message received',
+        () => connectionLostTests(() => TransportTester.mockResetMessage()));
+  });
 
   group('Reference location', () {
     setUp(() {
