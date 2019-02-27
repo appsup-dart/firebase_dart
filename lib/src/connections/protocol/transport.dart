@@ -9,11 +9,11 @@ class TransportTester {
 
   static final _instance = new TransportTester();
 
-  static Future<void> mockConnectionLost() {
+  static Future<Null> mockConnectionLost() {
     return _instance._socketCloseAll();
   }
 
-  static Future<void> mockResetMessage() {
+  static Future<Null> mockResetMessage() {
     return _instance._resetAll();
   }
 
@@ -22,13 +22,13 @@ class TransportTester {
     transport.done.then((_) => _activeTransports.remove(transport));
   }
 
-  Future<void> _socketCloseAll() async {
+  Future<Null> _socketCloseAll() async {
     await Future.wait(_activeTransports
         .whereType<WebSocketTransport>()
         .map((t) => t._socket.sink.close()));
   }
 
-  Future _resetAll() async {
+  Future<Null> _resetAll() async {
     _activeTransports
         .whereType<WebSocketTransport>()
         .forEach((t) => t._onMessage(new ResetMessage(t.host)));
