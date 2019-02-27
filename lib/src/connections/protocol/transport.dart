@@ -78,7 +78,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
 
   Future _connect([String host]);
 
-  Future<void> _reset();
+  Future<Null> _reset();
 
   void _start();
 
@@ -265,7 +265,7 @@ class WebSocketTransport extends Transport {
   }
 
   @override
-  Future<void> _reset() async {
+  Future<Null> _reset() async {
     if (_outputSubscription == null) _output.stream.listen(null);
     await _output.close();
     if (!_input.hasListener) _input.stream.listen(null);
