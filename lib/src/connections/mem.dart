@@ -7,12 +7,6 @@ import '../synctree.dart';
 import '../repo.dart';
 import '../events/value.dart';
 import '../firebase.dart' show FirebaseTokenCodec;
-import 'package:logging/logging.dart';
-import 'package:isolate/isolate.dart';
-import 'dart:isolate';
-import '../isolate_runner.dart';
-
-final _logger = new Logger("firebase-mem");
 
 class _Registrar extends RemoteListenerRegistrar {
   @override
@@ -30,7 +24,7 @@ class _Registrar extends RemoteListenerRegistrar {
 class BackendOperation {
   final String path;
   final bool isMerge;
-  final dynamic data;
+  final TreeStructuredData data;
 
   BackendOperation.overwrite(this.path, this.data) : isMerge = false;
 
@@ -40,21 +34,21 @@ class BackendOperation {
     var path = op.path.join("/");
     var nop = op.nodeOperation;
     if (nop is Overwrite) {
-      return new BackendOperation.overwrite(path, nop.value.toJson(true));
+      return new BackendOperation.overwrite(path, nop.value);
     } else if (nop is Merge) {
       return new BackendOperation.merge(
-          path, new TreeStructuredData.nonLeaf(nop.children).toJson(true));
+          path, new TreeStructuredData.nonLeaf(nop.children));
     } else if (nop is SetPriority) {
-      return new BackendOperation.overwrite("$path/.priority", nop.value);
+      return new BackendOperation.overwrite("$path/.priority",new TreeStructuredData.leaf(nop.value));
     }
     throw new ArgumentError.value(op);
   }
 
   TreeOperation toTreeOperation() => isMerge
       ? new TreeOperation.merge(
-          Name.parsePath(path), new TreeStructuredData.fromJson(data).children)
+          Name.parsePath(path), data.children)
       : new TreeOperation.overwrite(
-          Name.parsePath(path), new TreeStructuredData.fromJson(data));
+          Name.parsePath(path), data);
 }
 
 class SingleInstanceBackend {
@@ -66,21 +60,15 @@ class SingleInstanceBackend {
   Stream<BackendOperation> get _stream {
     var controller = new StreamController<BackendOperation>();
     controllers.add(controller);
-    controller.add(new BackendOperation.overwrite("", null));
+    controller.add(new BackendOperation.overwrite("", data));
     return controller.stream;
-  }
-
-  static void _createStream(SendPort sendPort) {
-    _instance._stream.forEach((v) => sendPort.send(v));
   }
 
   static Future<Null> _applyOnInstance(BackendOperation operation) =>
       _instance._apply(operation);
 
   static Stream<TreeOperation> get stream async* {
-    var r = new ReceivePort();
-    await _runner.run(SingleInstanceBackend._createStream, r.sendPort);
-    yield* r.map((o) => o.toTreeOperation());
+    yield* _instance._stream.map((o) => o.toTreeOperation());
   }
 
   Future<Null> _apply(BackendOperation operation) async {
@@ -91,12 +79,9 @@ class SingleInstanceBackend {
     await new Future.microtask(() => null);
   }
 
-  static Future apply(TreeOperation operation) => _runner.run(
-      _applyOnInstance, new BackendOperation.fromTreeOperation(operation));
+  static Future apply(TreeOperation operation) =>
+      _applyOnInstance(new BackendOperation.fromTreeOperation(operation));
 
-  static Runner get _runner {
-    return Runners.mainRunner;
-  }
 }
 
 class MemConnection extends Connection {
@@ -104,7 +89,6 @@ class MemConnection extends Connection {
       : syncTree = new SyncTree("", new _Registrar()),
         super.base(host) {
     SingleInstanceBackend.stream.listen((op) {
-      _logger.fine("operation from backend $op");
       syncTree.applyServerOperation(op, null);
     });
     _onConnectController.add(true);
@@ -145,7 +129,6 @@ class MemConnection extends Connection {
   @override
   Future<Iterable<String>> listen(String path,
       {QueryFilter query, String hash}) async {
-    _logger.fine("listen $path $query");
     var p = Name.parsePath(path);
     await syncTree.addEventListener("value", p, query, (event) {
       if (event is ValueEvent) {
@@ -154,8 +137,6 @@ class MemConnection extends Connection {
             p,
             ServerValue.resolve(event.value, serverValues),
             query.limits ? query : null);
-        _logger.fine(
-            "operation $path ${operation.query} $query ${operation.type} ${operation.data}");
         _onDataOperation.add(operation);
       }
     });
@@ -172,7 +153,6 @@ class MemConnection extends Connection {
   @override
   Future<Null> merge(String path, dynamic value,
       {String hash, int writeId}) async {
-    _logger.fine("merge $path $value");
     var p = Name.parsePath(path);
     // TODO check hash
     syncTree.applyServerOperation(
@@ -184,7 +164,6 @@ class MemConnection extends Connection {
   @override
   Future<Null> put(String path, dynamic value,
       {String hash, int writeId}) async {
-    _logger.fine("put $path $value");
     var p = Name.parsePath(path);
 
     await SingleInstanceBackend.apply(
