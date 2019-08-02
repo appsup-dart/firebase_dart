@@ -64,7 +64,7 @@ class ProtocolConnection extends Connection {
   }
 
   @override
-  Future<Null> merge(String path, dynamic value,
+  Future<Null> merge(String path, Map<String,dynamic> value,
       {String hash, int writeId}) async {
     await _request(new Request.merge(path, value, hash, writeId));
   }
@@ -127,7 +127,6 @@ class ProtocolConnection extends Connection {
         var path = r.message.body.path == null
             ? null
             : Name.parsePath(r.message.body.path);
-        var newData = new TreeStructuredData.fromJson(r.message.body.data);
         switch (r.message.action) {
           case DataMessage.actionSet:
           case DataMessage.actionMerge:
@@ -140,7 +139,7 @@ class ProtocolConnection extends Connection {
                       OperationEventType.listenRevoked,
                 }[r.message.action],
                 path,
-                newData,
+                r.message.body.data,
                 query);
             _onDataOperation.add(event);
             break;

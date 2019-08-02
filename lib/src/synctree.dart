@@ -410,7 +410,7 @@ class SyncTree {
 
   /// Applies a user merge at [path] with [changedChildren]
   void applyUserMerge(Path<Name> path,
-      Map<Name, TreeStructuredData> changedChildren, int writeId) {
+      Map<Path<Name>, TreeStructuredData> changedChildren, int writeId) {
     var operation = new TreeOperation.merge(path, changedChildren);
     _applyOperationToSyncPoints(
         root, null, operation, ViewOperationSource.user, writeId);

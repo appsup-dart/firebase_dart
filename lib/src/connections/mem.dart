@@ -21,58 +21,28 @@ class _Registrar extends RemoteListenerRegistrar {
   }
 }
 
-class BackendOperation {
-  final String path;
-  final bool isMerge;
-  final TreeStructuredData data;
-
-  BackendOperation.overwrite(this.path, this.data) : isMerge = false;
-
-  BackendOperation.merge(this.path, this.data) : isMerge = true;
-
-  factory BackendOperation.fromTreeOperation(TreeOperation op) {
-    var path = op.path.join("/");
-    var nop = op.nodeOperation;
-    if (nop is Overwrite) {
-      return new BackendOperation.overwrite(path, nop.value);
-    } else if (nop is Merge) {
-      return new BackendOperation.merge(
-          path, new TreeStructuredData.nonLeaf(nop.children));
-    } else if (nop is SetPriority) {
-      return new BackendOperation.overwrite("$path/.priority",new TreeStructuredData.leaf(nop.value));
-    }
-    throw new ArgumentError.value(op);
-  }
-
-  TreeOperation toTreeOperation() => isMerge
-      ? new TreeOperation.merge(
-          Name.parsePath(path), data.children)
-      : new TreeOperation.overwrite(
-          Name.parsePath(path), data);
-}
-
 class SingleInstanceBackend {
   static final SingleInstanceBackend _instance = new SingleInstanceBackend();
 
   TreeStructuredData data = new TreeStructuredData();
-  final List<StreamController<BackendOperation>> controllers = [];
+  final List<StreamController<TreeOperation>> controllers = [];
 
-  Stream<BackendOperation> get _stream {
-    var controller = new StreamController<BackendOperation>();
+  Stream<TreeOperation> get _stream {
+    var controller = new StreamController<TreeOperation>();
     controllers.add(controller);
-    controller.add(new BackendOperation.overwrite("", data));
+    controller.add(new TreeOperation.overwrite(Name.parsePath(""), data));
     return controller.stream;
   }
 
-  static Future<Null> _applyOnInstance(BackendOperation operation) =>
+  static Future<Null> _applyOnInstance(TreeOperation operation) =>
       _instance._apply(operation);
 
   static Stream<TreeOperation> get stream async* {
-    yield* _instance._stream.map((o) => o.toTreeOperation());
+    yield* _instance._stream;
   }
 
-  Future<Null> _apply(BackendOperation operation) async {
-    data = operation.toTreeOperation().apply(data);
+  Future<Null> _apply(TreeOperation operation) async {
+    data = operation.apply(data);
     for (var c in controllers) {
       c.add(operation);
     }
@@ -80,7 +50,7 @@ class SingleInstanceBackend {
   }
 
   static Future apply(TreeOperation operation) =>
-      _applyOnInstance(new BackendOperation.fromTreeOperation(operation));
+      _applyOnInstance(operation);
 
 }
 
@@ -132,10 +102,14 @@ class MemConnection extends Connection {
     var p = Name.parsePath(path);
     await syncTree.addEventListener("value", p, query, (event) {
       if (event is ValueEvent) {
+        print(event.value);
+        print(ServerValue.resolve(event.value, serverValues).toJson(true));
+        print(ServerValue.resolve(event.value, serverValues).toJson(false));
+
         var operation = new OperationEvent(
             OperationEventType.overwrite,
             p,
-            ServerValue.resolve(event.value, serverValues),
+            ServerValue.resolve(event.value, serverValues).toJson(true),
             query.limits ? query : null);
         _onDataOperation.add(operation);
       }
@@ -151,13 +125,16 @@ class MemConnection extends Connection {
   }
 
   @override
-  Future<Null> merge(String path, dynamic value,
+  Future<Null> merge(String path, Map<String,dynamic> value,
       {String hash, int writeId}) async {
     var p = Name.parsePath(path);
     // TODO check hash
     syncTree.applyServerOperation(
         new TreeOperation.merge(
-            p, new TreeStructuredData.fromJson(value).children),
+            p, new Map.fromIterables(
+            value.keys.map((k)=>Name.parsePath(k)),
+            value.values.map((v)=>new TreeStructuredData.fromJson(v))
+        )),
         null);
   }
 

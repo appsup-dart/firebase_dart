@@ -319,6 +319,17 @@ void testsWith(Map<String, dynamic> secrets) {
 
       expect(await ref.get(),
           {"text1": "hello1", "text2": "hello2", "text3": "hello3"});
+
+      await ref.child('text1/hello').set('world');
+
+      expect(await ref.get(),
+          {"text1": {'hello': 'world'}, "text2": "hello2", "text3": "hello3"});
+
+      await ref.update({'text1/hello': null});
+
+      expect(await ref.get(),
+          {"text2": "hello2", "text3": "hello3"});
+
     });
 
     test('Push', () async {

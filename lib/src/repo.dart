@@ -128,19 +128,15 @@ class Repo {
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
   Future update(String path, Map<String, dynamic> value) async {
-    path = _preparePath(path);
-    var changedChildren = new Map<Name, TreeStructuredData>.fromIterables(
-        value.keys.map<Name>((c) => new Name(c)),
-        value.values.map<TreeStructuredData>(
-            (v) => new TreeStructuredData.fromJson(v, null)));
     if (value.isNotEmpty) {
+      path = _preparePath(path);
+      var serverValues = _connection.serverValues;
+      var changedChildren = new Map<Path<Name>, TreeStructuredData>.fromIterables(
+          value.keys.map<Path<Name>>((c) => Name.parsePath(c)),
+          value.values.map<TreeStructuredData>(
+                  (v) => ServerValue.resolve(new TreeStructuredData.fromJson(v, null), serverValues)));
       int writeId = _nextWriteId++;
-      _syncTree.applyUserMerge(
-          Name.parsePath(path),
-          ServerValue.resolve(new TreeStructuredData.nonLeaf(changedChildren),
-                  _connection.serverValues)
-              .children,
-          writeId);
+      _syncTree.applyUserMerge(Name.parsePath(path), changedChildren, writeId);
       try {
         await _connection.merge(path, value, writeId: writeId);
         await new Future.microtask(

@@ -1,6 +1,8 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
+import 'package:logging/logging.dart';
+
 import '../data_observer.dart';
 import '../event.dart';
 import '../events/child.dart';
@@ -19,7 +21,7 @@ class TreeOperation extends Operation {
     return new TreeOperation(path, new Overwrite(value));
   }
 
-  TreeOperation.merge(Path<Name> path, Map<Name, TreeStructuredData> children)
+  TreeOperation.merge(Path<Name> path, Map<Path<Name>, TreeStructuredData> children)
       : this(path, new Merge(children));
 
   factory TreeOperation.ack(Path<Name> path, bool success) =>
@@ -81,34 +83,36 @@ class Ack extends TreeOperation {
 }
 
 class Merge extends Operation {
-  final Map<Name, TreeStructuredData> children;
+  final List<TreeOperation> overwrites;
 
-  Merge(this.children);
+  Merge._(this.overwrites);
+  Merge(Map<Path<Name>, TreeStructuredData> children) : this._(
+      children.keys.map((p)=>new TreeOperation.overwrite(p, children[p])).toList());
 
   @override
   TreeStructuredData apply(TreeStructuredData value) {
-    var n = value.clone();
-    children.forEach((k, v) {
-      if (v.isNil) n.children.remove(k);
-    });
-    children.forEach((k, v) {
-      if (!v.isNil) n.children[k] = children[k];
-    });
-    return n;
+    // first do remove operations then set operations, otherwise filtered views
+    // might remove some values
+    var removeOperations = overwrites.where((t)=>(t.nodeOperation as Overwrite).value.isNil);
+    var setOperations = overwrites.where((t)=>!(t.nodeOperation as Overwrite).value.isNil);
+    var v = removeOperations.fold(value, (v,o)=>o.apply(v));
+    v = setOperations.fold(v, (v,o)=>o.apply(v));
+    return v;
   }
 
   @override
   Iterable<Path<Name>> get completesPaths =>
-      children.keys.map<Path<Name>>((c) => new Path<Name>.from([c]));
+      overwrites.expand<Path<Name>>((c) => c.completesPaths);
 
   @override
   Operation operationForChild(Name key) {
-    if (!children.containsKey(key)) return null;
-    return new Overwrite(children[key]);
+    var o = overwrites.map((o)=>o.operationForChild(key)).where((o)=>o!=null);
+    if (o.isEmpty) return null;
+    return new Merge._(o.toList());
   }
 
   @override
-  String toString() => "Merge[$children]";
+  String toString() => "Merge[$overwrites]";
 }
 
 class Overwrite extends Operation {
