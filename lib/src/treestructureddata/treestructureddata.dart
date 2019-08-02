@@ -103,8 +103,8 @@ class TreeStructuredData extends TreeNode<Name, Value> {
         children.values.map((v) => v.toJson(exportFormat)));
 
     if (exportFormat && priority != null) {
-      if (isLeaf) c = {".value": value};
-      return <String, dynamic>{".priority": priority}..addAll(c);
+      if (isLeaf) c = {".value": value.toJson()};
+      return <String, dynamic>{".priority": priority.toJson()}..addAll(c);
     }
     return isLeaf ? value.toJson() : c;
   }
