@@ -52,7 +52,6 @@ class OperationEvent {
   TreeOperation get operation {
     switch (type) {
       case OperationEventType.overwrite:
-        print(data);
         return new TreeOperation.overwrite(path, new TreeStructuredData.fromJson(data));
       case OperationEventType.merge:
         return new TreeOperation.merge(path,
