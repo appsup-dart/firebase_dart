@@ -102,10 +102,6 @@ class MemConnection extends Connection {
     var p = Name.parsePath(path);
     await syncTree.addEventListener("value", p, query, (event) {
       if (event is ValueEvent) {
-        print(event.value);
-        print(ServerValue.resolve(event.value, serverValues).toJson(true));
-        print(ServerValue.resolve(event.value, serverValues).toJson(false));
-
         var operation = new OperationEvent(
             OperationEventType.overwrite,
             p,
