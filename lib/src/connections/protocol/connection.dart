@@ -12,7 +12,10 @@ class ProtocolConnection extends Connection {
   final quiver.BiMap<int, Pair<String, QueryFilter>> _tagToQuery =
       new quiver.BiMap();
 
-  ProtocolConnection(String host) : super.base(host) {
+  final String namespace;
+  final bool ssl;
+
+  ProtocolConnection(String host, {this.namespace, this.ssl}) : super.base(host) {
     quiver.checkArgument(host != null && host.isNotEmpty);
     _scheduleConnect(0);
   }
@@ -111,7 +114,7 @@ class ProtocolConnection extends Connection {
 
   void _establishConnection() {
     _transport =
-        new WebSocketTransport(host, host.split(".").first, _lastSessionId);
+        new WebSocketTransport(host, namespace ?? host.split(".").first, ssl, _lastSessionId);
     _transport.ready.then((_) {
       _onConnect.add(true);
       _lastSessionId = _transport.info.sessionId;

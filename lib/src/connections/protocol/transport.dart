@@ -172,7 +172,9 @@ class WebSocketTransport extends Transport {
 
   static const int maxFrameSize = 16384;
 
-  WebSocketTransport(String host, String namespace, [String sessionId])
+  final bool ssl;
+
+  WebSocketTransport(String host, String namespace, this.ssl, [String sessionId])
       : super(host, namespace, sessionId);
 
   StreamSubscription _outputSubscription;
@@ -213,7 +215,7 @@ class WebSocketTransport extends Transport {
     host = parts.first;
     var port = parts.length > 1 ? int.parse(parts[1]) : null;
     var url = new Uri(
-        scheme: "wss",
+        scheme: ssl ? "wss" : "ws",
         host: host,
         port: port,
         queryParameters: {

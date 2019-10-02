@@ -72,8 +72,9 @@ abstract class Connection {
   factory Connection(Uri uri) {
     switch (uri.scheme) {
       case "http":
+        return new ProtocolConnection("${uri.host}:${uri.port ?? 80}", namespace: uri.queryParameters["ns"], ssl: false);
       case "https":
-        return new ProtocolConnection(uri.host);
+        return new ProtocolConnection("${uri.host}:${uri.port ?? 443}", namespace: uri.queryParameters["ns"], ssl: true);
       case "mem":
         return new MemConnection(uri.host);
       default:
