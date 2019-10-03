@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.13
+
+- Now works with firebase emulators, e.g. `new Firebase("http://localhost:9000?ns=my-project")`
+
 ## 0.7.12
 
 - Fix recovering from broken connection and reset messages
