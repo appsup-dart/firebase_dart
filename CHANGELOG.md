@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.14
+
+- fixed crash when receiving a merge in some situations
+
 ## 0.7.13
 
 - Now works with firebase emulators, e.g. `new Firebase("http://localhost:9000?ns=my-project")`

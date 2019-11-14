@@ -999,7 +999,21 @@ void testsWith(Map<String, dynamic> secrets) {
 
       expect(await ref.child("cars/car001").get(), data["cars"]["car001"]);
     });
+
+    test('Bugfix: crash when receiving merge', () async {
+
+      var ref = new Firebase("${testUrl}test").child("some/path");
+
+      ref.parent.orderByKey().equalTo('path').onValue.listen(print);
+      ref.child("child1").onValue.listen(print);
+      await ref.set({"child1": "v", "child2": 3});
+
+      await ref.update({"hello": "world"});
+
+
+    });
   });
+
 }
 
 Future wait(int millis) async =>

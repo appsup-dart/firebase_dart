@@ -432,11 +432,12 @@ class SyncTree {
     if (operation.path.isEmpty) {
       for (var k in tree.children.keys) {
         var childOp = operation.operationForChild(k);
+        if (childOp == null) continue;
         if (filter != null &&
             (childOp.nodeOperation is Overwrite) &&
             (childOp.nodeOperation as Overwrite).value.isNil) continue;
         _applyOperationToSyncPoints(tree.children[k], null,
-            operation.operationForChild(k), type, writeId, path.child(k));
+            childOp, type, writeId, path.child(k));
       }
       return;
     }
