@@ -111,6 +111,14 @@ class FirebaseImpl extends QueryImpl with Firebase {
   Future<Map> authWithCustomToken(String token) => _repo.auth(token);
 
   @override
+  Future<Map<String, dynamic>> exchangeCustomToken(String token, String apiKey) =>
+      _repo.exchangeCustomToken(token, apiKey);
+
+  @override
+  Future<Map<String, dynamic>> refreshIdToken(String refreshToken, String apiKey) =>
+      _repo.refreshIdToken(refreshToken, apiKey);
+
+  @override
   dynamic get auth => _repo.authData;
 
   @override
