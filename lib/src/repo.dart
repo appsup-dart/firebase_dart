@@ -15,6 +15,8 @@ import 'tree.dart';
 import 'event.dart';
 import 'operations/tree.dart';
 import 'package:sortedmap/sortedmap.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 final _logger = new Logger("firebase-repo");
 
@@ -89,6 +91,39 @@ class Repo {
     _onAuth.add(auth);
     _authData = auth;
     return auth;
+  }
+
+  Future<Map<String, dynamic>> exchangeCustomToken(token, apiKey) async {
+    var idToken = await http.post(
+        "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=$apiKey",
+        body: jsonEncode({"token": token, "returnSecureToken": true}),
+        headers: {'Content-Type': 'application/json'});
+    if (idToken.statusCode == 200) {
+      try {
+        return jsonDecode(idToken.body);
+      } on FormatException catch (e) {
+        print(e);
+      }
+    } else {
+      // do something with error code?
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>> refreshIdToken(refreshToken, apiKey) async {
+    var idToken = await http.post("https://securetoken.googleapis.com/v1/token?key=$apiKey",
+        body: {"refresh_token": refreshToken, "grant_type": "refresh_token"},
+        headers: {'Content-Type': 'application/x-www-form-urlencoded '});
+    if (idToken.statusCode == 200) {
+      try {
+        return jsonDecode(idToken.body);
+      } on FormatException catch (e) {
+        print(e);
+      }
+    } else {
+      // do something with error code?
+    }
+    return null;
   }
 
   /// Unauthenticates.

@@ -27,6 +27,14 @@ abstract class Firebase implements Query {
   /// resolved when the authentication succeeds (or fails).
   Future<Map> authWithCustomToken(String token);
 
+  /// Authenticates a Firebase client using an custom token created by the admin sdk.
+  /// Returns a JWT id_token that is accepted by [authWithCustomToken]
+  Future<Map<String, dynamic>> exchangeCustomToken(String token, String apiKey);
+
+  /// Refresh a token retrieved with [exchangeCustomToken].
+  /// The id_token is typically valid 1h, but can be refreshed indefinitely.
+  Future<Map<String, dynamic>> refreshIdToken(String token, String apiKey);
+
   /// Synchronously retrieves the current authentication state of the client.
   dynamic get auth;
 

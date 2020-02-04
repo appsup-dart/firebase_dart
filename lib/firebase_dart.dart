@@ -6,3 +6,4 @@
 library firebase_dart;
 
 export 'src/firebase.dart';
+export 'src/connection.dart';
