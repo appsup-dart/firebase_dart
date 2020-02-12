@@ -14,7 +14,7 @@ part of firebase_dart;
 abstract class DataSnapshot {
   /// Gets the Firebase reference for the location that generated this
   /// DataSnapshot.
-  final Firebase ref;
+  final Reference ref;
 
   /// Creates a new [DataSnapshot] instance.
   DataSnapshot(this.ref);

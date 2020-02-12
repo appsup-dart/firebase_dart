@@ -3,6 +3,7 @@
 ## 0.7.15
 
 - support more authentication methods: firebase secret, id token, access token 
+- deprecate use of `Firebase` object, replaced by `Reference` object
 
 ## 0.7.14
 

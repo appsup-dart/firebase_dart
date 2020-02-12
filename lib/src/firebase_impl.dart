@@ -6,7 +6,7 @@ import 'dart:async';
 class DataSnapshotImpl extends DataSnapshot {
   final TreeStructuredData treeStructuredData;
 
-  DataSnapshotImpl(Firebase ref, this.treeStructuredData) : super(ref);
+  DataSnapshotImpl(Reference ref, this.treeStructuredData) : super(ref);
 
   @override
   dynamic get val => treeStructuredData?.toJson();
@@ -93,31 +93,19 @@ class QueryImpl extends Query {
       _withFilter(filter.copyWith(limit: limit, reverse: true));
 
   @override
-  Firebase get ref => new FirebaseImpl(_db, _pathSegments);
+  Reference get ref => new FirebaseImpl(_db, _pathSegments);
 }
 
-class FirebaseImpl extends QueryImpl with Firebase {
+class ReferenceImpl extends QueryImpl with Reference {
   Disconnect _onDisconnect;
 
-  FirebaseImpl(FirebaseDatabase db, List<String> path)
+  ReferenceImpl(FirebaseDatabase db, List<String> path)
       : super._(db, path, const QueryFilter()) {
     _onDisconnect = new DisconnectImpl(this);
   }
 
   @override
   Disconnect get onDisconnect => _onDisconnect;
-
-  @override
-  Future<Map> authWithCustomToken(String token) => _repo.auth(token);
-
-  @override
-  dynamic get auth => _repo.authData;
-
-  @override
-  Stream<Map> get onAuth => _repo.onAuth;
-
-  @override
-  Future unauth() => _repo.unauth();
 
   @override
   Uri get url => _repo.url.replace(path: _path);
@@ -129,8 +117,8 @@ class FirebaseImpl extends QueryImpl with Firebase {
   Future update(Map<String, dynamic> value) => _repo.update(_path, value);
 
   @override
-  Future<Firebase> push(dynamic value) =>
-      _repo.push(_path, value).then<Firebase>((n) => child(n));
+  Future<Reference> push(dynamic value) =>
+      _repo.push(_path, value).then<Reference>((n) => child(n));
 
   @override
   Future<Null> setWithPriority(dynamic value, dynamic priority) =>
@@ -148,21 +136,40 @@ class FirebaseImpl extends QueryImpl with Firebase {
           .then<DataSnapshot>((v) => new DataSnapshotImpl(this, v));
 
   @override
-  Firebase child(String c) => new FirebaseImpl(_db,
+  Reference child(String c) => new FirebaseImpl(_db,
       []..addAll(_pathSegments)..addAll(c.split("/").map(Uri.decodeComponent)));
 
   @override
-  Firebase get parent => _pathSegments.isEmpty
+  Reference get parent => _pathSegments.isEmpty
       ? null
       : new FirebaseImpl(
           _db, []..addAll(_pathSegments.sublist(0, _pathSegments.length - 1)));
 
   @override
-  Firebase get root => new FirebaseImpl(_db, []);
+  Reference get root => new FirebaseImpl(_db, []);
+}
+
+class FirebaseImpl extends ReferenceImpl with Firebase {
+  FirebaseImpl(FirebaseDatabase db, List<String> path) : super(db, path);
+
+  @override
+  Future<Map> authWithCustomToken(String token) => authenticate(token);
+
+  @override
+  dynamic get auth => _repo.authData;
+
+  @override
+  Stream<Map> get onAuth => _repo.onAuth;
+
+  @override
+  Future unauth() => _repo.unauth();
+
+  @override
+  Future<Map> authenticate(FutureOr<String> token) => _repo.auth(token);
 }
 
 class DisconnectImpl extends Disconnect {
-  final FirebaseImpl _ref;
+  final ReferenceImpl _ref;
 
   DisconnectImpl(this._ref);
 

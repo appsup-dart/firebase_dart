@@ -27,3 +27,4 @@ part 'firebase/token.dart';
 part 'firebase/server_value.dart';
 
 part 'firebase/database.dart';
+part 'firebase/reference.dart';
