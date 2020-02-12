@@ -8,17 +8,17 @@ class ServerValue {
 
   const ServerValue._(this.type);
 
-  static const ServerValue timestamp = const ServerValue._("timestamp");
+  static const ServerValue timestamp = ServerValue._('timestamp');
 
-  static const Map<String, ServerValue> values = const {"timestamp": timestamp};
+  static const Map<String, ServerValue> values = {'timestamp': timestamp};
 
-  Map<String, String> toJson() => {".sv": type};
+  Map<String, String> toJson() => {'.sv': type};
 
   static TreeStructuredData resolve(
       TreeStructuredData value, Map<ServerValue, Value> serverValues) {
     if (value.isLeaf) {
       return value.value.value is ServerValue
-          ? new TreeStructuredData.leaf(serverValues[value.value.value])
+          ? TreeStructuredData.leaf(serverValues[value.value.value])
           : value;
     }
     var newValue = value.clone();
@@ -34,12 +34,13 @@ class Value implements Comparable<Value> {
 
   factory Value(dynamic value) {
     if (value == null) return null;
-    if (value is bool) return new Value.bool(value);
-    if (value is num) return new Value.num(value);
-    if (value is String) return new Value.string(value);
-    if (value is Map && value.containsKey(".sv"))
-      return new Value.server(value[".sv"]);
-    throw new ArgumentError("Unsupported value type ${value.runtimeType}");
+    if (value is bool) return Value.bool(value);
+    if (value is num) return Value.num(value);
+    if (value is String) return Value.string(value);
+    if (value is Map && value.containsKey('.sv')) {
+      return Value.server(value['.sv']);
+    }
+    throw ArgumentError('Unsupported value type ${value.runtimeType}');
   }
 
   const Value._(this.value);
@@ -89,16 +90,16 @@ class Value implements Comparable<Value> {
   dynamic toJson() => value;
 
   @override
-  String toString() => "Value[$value]";
+  String toString() => 'Value[$value]';
 
   String get _hashText {
     if (value is num) {
-      return "number:${_doubleToIEEE754String(value)}";
+      return 'number:${_doubleToIEEE754String(value)}';
     } else if (value is bool) {
-      return "boolean:$value";
+      return 'boolean:$value';
     } else if (value is String) {
-      return "string:$value";
+      return 'string:$value';
     }
-    throw new StateError("Invalid value to hash $value");
+    throw StateError('Invalid value to hash $value');
   }
 }

@@ -1,8 +1,6 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-import 'package:logging/logging.dart';
-
 import '../data_observer.dart';
 import '../event.dart';
 import '../events/child.dart';
@@ -16,17 +14,18 @@ class TreeOperation extends Operation {
   TreeOperation(this.path, this.nodeOperation);
 
   factory TreeOperation.overwrite(Path<Name> path, TreeStructuredData value) {
-    if (path.isNotEmpty && path.last == new Name(".priority"))
-      return new TreeOperation(path.parent, new SetPriority(value.value));
-    return new TreeOperation(path, new Overwrite(value));
+    if (path.isNotEmpty && path.last == Name('.priority')) {
+      return TreeOperation(path.parent, SetPriority(value.value));
+    }
+    return TreeOperation(path, Overwrite(value));
   }
 
   TreeOperation.merge(
       Path<Name> path, Map<Path<Name>, TreeStructuredData> children)
-      : this(path, new Merge(children));
+      : this(path, Merge(children));
 
   factory TreeOperation.ack(Path<Name> path, bool success) =>
-      new Ack(path, success);
+      Ack(path, success);
 
   @override
   TreeStructuredData apply(TreeStructuredData value) {
@@ -38,33 +37,33 @@ class TreeOperation extends Operation {
     if (path.isEmpty) {
       var op = nodeOperation.operationForChild(key);
       if (op == null) return null;
-      return new TreeOperation(path, op);
+      return TreeOperation(path, op);
     }
     if (path.first != key) return null;
-    return new TreeOperation(path.skip(1), nodeOperation);
+    return TreeOperation(path.skip(1), nodeOperation);
   }
 
   @override
-  String toString() => "TreeOperation[$path,$nodeOperation]";
+  String toString() => 'TreeOperation[$path,$nodeOperation]';
 
   @override
-  Iterable<Path<Name>> get completesPaths =>
-      nodeOperation.completesPaths.map<Path<Name>>(
-          (p) => new Path.from(new List.from(this.path)..addAll(p)));
+  Iterable<Path<Name>> get completesPaths => nodeOperation.completesPaths
+      .map<Path<Name>>((p) => Path.from(List.from(path)..addAll(p)));
 
   TreeStructuredData _applyOnPath(Path<Name> path, TreeStructuredData value) {
     if (path.isEmpty) {
       return nodeOperation.apply(value);
     } else {
       var k = path.first;
-      TreeStructuredData child = value.children[k] ?? new TreeStructuredData();
+      var child = value.children[k] ?? TreeStructuredData();
       var newChild = _applyOnPath(path.skip(1), child);
       var newValue = value.clone();
       if (newValue.isLeaf && !newChild.isNil) newValue.value = null;
-      if (newChild.isNil)
+      if (newChild.isNil) {
         newValue.children.remove(k);
-      else
+      } else {
         newValue.children[k] = newChild;
+      }
       return newValue;
     }
   }
@@ -79,7 +78,7 @@ class Ack extends TreeOperation {
   Ack operationForChild(Name key) {
     if (path.isEmpty) return this;
     if (path.first != key) return null;
-    return new Ack(path.skip(1), success);
+    return Ack(path.skip(1), success);
   }
 }
 
@@ -89,7 +88,7 @@ class Merge extends Operation {
   Merge._(this.overwrites);
   Merge(Map<Path<Name>, TreeStructuredData> children)
       : this._(children.keys
-            .map((p) => new TreeOperation.overwrite(p, children[p]))
+            .map((p) => TreeOperation.overwrite(p, children[p]))
             .toList());
 
   @override
@@ -114,11 +113,11 @@ class Merge extends Operation {
     var o =
         overwrites.map((o) => o.operationForChild(key)).where((o) => o != null);
     if (o.isEmpty) return null;
-    return new Merge._(o.toList());
+    return Merge._(o.toList());
   }
 
   @override
-  String toString() => "Merge[$overwrites]";
+  String toString() => 'Merge[$overwrites]';
 }
 
 class Overwrite extends Operation {
@@ -132,15 +131,15 @@ class Overwrite extends Operation {
   }
 
   @override
-  String toString() => "Overwrite[$value]";
+  String toString() => 'Overwrite[$value]';
 
   @override
-  Iterable<Path<Name>> get completesPaths => [new Path()];
+  Iterable<Path<Name>> get completesPaths => [Path()];
 
   @override
   Operation operationForChild(Name key) {
-    var child = value.children[key] ?? new TreeStructuredData();
-    return new Overwrite(child);
+    var child = value.children[key] ?? TreeStructuredData();
+    return Overwrite(child);
   }
 }
 
@@ -155,7 +154,7 @@ class SetPriority extends Operation {
   }
 
   @override
-  String toString() => "SetPriority[$value]";
+  String toString() => 'SetPriority[$value]';
 
   @override
   Iterable<Path<Name>> get completesPaths => [];
@@ -171,42 +170,41 @@ class TreeEventGenerator extends EventGenerator {
   Iterable<Event> generateEvents(String eventType, IncompleteData oldValue,
       IncompleteData newValue) sync* {
     var newChildren = newValue.value.children;
-    Map<Name, TreeStructuredData> oldChildren =
-        oldValue.value?.children ?? const {};
+    var oldChildren = oldValue.value?.children ?? const {};
     switch (eventType) {
-      case "child_added":
+      case 'child_added':
         var newPrevKey;
         for (var key in newChildren.keys) {
           if (!newValue.isCompleteForChild(key)) continue;
           if (!oldChildren.containsKey(key)) {
-            yield new ChildAddedEvent(key, newChildren[key], newPrevKey);
+            yield ChildAddedEvent(key, newChildren[key], newPrevKey);
           }
           newPrevKey = key;
         }
         return;
-      case "child_changed":
+      case 'child_changed':
         var newPrevKey;
         for (var key in newChildren.keys) {
           if (!newValue.isCompleteForChild(key)) continue;
           if (oldChildren.containsKey(key)) {
             if (oldChildren[key] != newChildren[key]) {
-              yield new ChildChangedEvent(key, newChildren[key], newPrevKey);
+              yield ChildChangedEvent(key, newChildren[key], newPrevKey);
             }
           }
           newPrevKey = key;
         }
         return;
-      case "child_removed":
+      case 'child_removed':
         var oldPrevKey;
         for (var key in oldChildren.keys) {
           if (!newValue.isCompleteForChild(key)) continue;
           if (!newChildren.containsKey(key)) {
-            yield new ChildRemovedEvent(key, oldChildren[key], oldPrevKey);
+            yield ChildRemovedEvent(key, oldChildren[key], oldPrevKey);
           }
           oldPrevKey = key;
         }
         return;
-      case "child_moved":
+      case 'child_moved':
         Name lastKeyBefore(List<Name> list, Name key) {
           var index = list.indexOf(key);
           if (index <= 0) return null;
@@ -220,7 +218,7 @@ class TreeEventGenerator extends EventGenerator {
           if (newChildren.containsKey(key)) {
             var newPrevKey = lastKeyBefore(newKeys, key);
             if (oldPrevKey != newPrevKey) {
-              yield new ChildMovedEvent(key, lastKeyBefore(newKeys, key));
+              yield ChildMovedEvent(key, lastKeyBefore(newKeys, key));
             }
           }
           oldPrevKey = key;

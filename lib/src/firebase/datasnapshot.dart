@@ -36,7 +36,7 @@ abstract class DataSnapshot {
   /// Enumerate through the DataSnapshot's children (in priority order). The
   /// provided callback will be called synchronously with a DataSnapshot for
   /// each child.
-  void forEach(cb(DataSnapshot snapshot));
+  void forEach(Function(DataSnapshot snapshot) cb);
 
   /// Returns true if the specified child exists.
   bool hasChild(String path);

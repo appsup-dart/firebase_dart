@@ -6,8 +6,8 @@ import '../event.dart';
 class ValueEvent<T> extends Event {
   final T value;
 
-  ValueEvent(this.value) : super("value");
+  ValueEvent(this.value) : super('value');
 
   @override
-  String toString() => "ValueEvent[$value]";
+  String toString() => 'ValueEvent[$value]';
 }

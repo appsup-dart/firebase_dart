@@ -31,4 +31,4 @@ part 'protocol/message.dart';
 
 part 'protocol/connection.dart';
 
-final _logger = new Logger("firebase-connection");
+final _logger = Logger('firebase-connection');

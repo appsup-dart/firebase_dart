@@ -8,7 +8,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
 
   TreeStructuredData(
       {Value priority, Value value, Filter<Name, TreeStructuredData> filter})
-      : this._(value, new FilteredMap(filter ?? const QueryFilter()), priority);
+      : this._(value, FilteredMap(filter ?? const QueryFilter()), priority);
 
   TreeStructuredData._(Value value,
       FilteredMap<Name, TreeStructuredData> children, Value priority)
@@ -16,8 +16,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
         super(
             value,
             children ??
-                new FilteredMap<Name, TreeStructuredData>(
-                    const QueryFilter())) {
+                FilteredMap<Name, TreeStructuredData>(const QueryFilter())) {
     assert(children == null || children is FilteredMap);
     assert(this.children == null || this.children is FilteredMap);
   }
@@ -31,12 +30,12 @@ class TreeStructuredData extends TreeNode<Name, Value> {
             null,
             children is FilteredMap
                 ? children
-                : (new FilteredMap(const QueryFilter())..addAll(children)),
+                : (FilteredMap(const QueryFilter())..addAll(children)),
             priority);
 
   factory TreeStructuredData.fromJson(json, [priority]) {
     if (json == null) {
-      return new TreeStructuredData();
+      return TreeStructuredData();
     }
     if (json is! Map &&
         json is! bool &&
@@ -45,35 +44,36 @@ class TreeStructuredData extends TreeNode<Name, Value> {
         json is! List) {
       try {
         json = json.toJson();
-      } on NoSuchMethodError {}
+      } on NoSuchMethodError {
+        // ignore
+      }
     }
 
-    if (json is Map && json.containsKey(".priority")) {
-      priority = json[".priority"];
+    if (json is Map && json.containsKey('.priority')) {
+      priority = json['.priority'];
     }
-    priority = priority == null ? null : new Value(priority);
+    priority = priority == null ? null : Value(priority);
 
-    if (json is Map && json.containsKey(".value") && json[".value"] != null) {
-      json = json[".value"];
+    if (json is Map && json.containsKey('.value') && json['.value'] != null) {
+      json = json['.value'];
     }
 
     if (json is List) json = json.asMap();
-    if (json is! Map || json.containsKey(".sv")) {
-      var value = new Value(json);
-      return new TreeStructuredData.leaf(value, priority);
+    if (json is! Map || json.containsKey('.sv')) {
+      var value = Value(json);
+      return TreeStructuredData.leaf(value, priority);
     }
 
-    var children = new Map<Name, TreeStructuredData>.fromIterable(
-        json.keys.where((k) => k is! String || !k.startsWith(".")),
-        key: (k) => new Name(k.toString()),
-        value: (k) => new TreeStructuredData.fromJson(json[k], null));
+    var children = {
+      for (var k in json.keys.where((k) => k is! String || !k.startsWith('.')))
+        Name(k.toString()): TreeStructuredData.fromJson(json[k], null)
+    };
 
-    return new TreeStructuredData.nonLeaf(children, priority);
+    return TreeStructuredData.nonLeaf(children, priority);
   }
 
   @override
-  TreeStructuredData clone() =>
-      new TreeStructuredData._(value, children, priority);
+  TreeStructuredData clone() => TreeStructuredData._(value, children, priority);
 
   @override
   FilteredMap<Name, TreeStructuredData> get children => super.children;
@@ -83,7 +83,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
           Pair<Comparable, Comparable> end,
           int limit,
           bool reversed}) =>
-      new TreeStructuredData._(
+      TreeStructuredData._(
           value,
           children.filteredMapView(
               start: start, end: end, limit: limit, reversed: reversed),
@@ -92,19 +92,19 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) {
     if (children.filter == f ||
         (f == null && children.filter == const QueryFilter())) return this;
-    return new TreeStructuredData(priority: priority, value: value, filter: f)
+    return TreeStructuredData(priority: priority, value: value, filter: f)
       ..children.addAll(children);
   }
 
   dynamic toJson([bool exportFormat = false]) {
     if (isNil) return null;
-    var c = new Map<String, dynamic>.fromIterables(
+    var c = Map<String, dynamic>.fromIterables(
         children.keys.map((k) => k.toString()),
         children.values.map((v) => v.toJson(exportFormat)));
 
     if (exportFormat && priority != null) {
-      if (isLeaf) c = {".value": value.toJson()};
-      return <String, dynamic>{".priority": priority.toJson()}..addAll(c);
+      if (isLeaf) c = {'.value': value.toJson()};
+      return <String, dynamic>{'.priority': priority.toJson()}..addAll(c);
     }
     return isLeaf ? value.toJson() : c;
   }
@@ -121,34 +121,34 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   int get hashCode => quiver.hash2(value, const MapEquality().hash(children));
 
   @override
-  String toString() => "TreeStructuredData[${toJson()}]";
+  String toString() => 'TreeStructuredData[${toJson()}]';
 
   String get hash {
-    var toHash = "";
+    var toHash = '';
 
     if (priority != null) {
-      toHash += "priority:${priority._hashText}";
+      toHash += 'priority:${priority._hashText}';
     }
 
     if (isLeaf) {
       toHash += value._hashText;
     }
     children.forEach((key, child) {
-      toHash += ":${key.asString()}:${child.hash}";
+      toHash += ':${key.asString()}:${child.hash}';
     });
-    return toHash == ""
-        ? ""
+    return toHash == ''
+        ? ''
         : base64.encode(sha1.convert(toHash.codeUnits).bytes);
   }
 }
 
 String _doubleToIEEE754String(num v) {
-  var l = new Float64List.fromList([v.toDouble()]);
-  var hex = "";
-  for (int i = 0; i < 8; i++) {
+  var l = Float64List.fromList([v.toDouble()]);
+  var hex = '';
+  for (var i = 0; i < 8; i++) {
     var b = l.buffer.asByteData().getUint8(i).toRadixString(16);
-    if (b.length == 1) b = "0$b";
-    hex = "$b$hex";
+    if (b.length == 1) b = '0$b';
+    hex = '$b$hex';
   }
   return hex;
 }

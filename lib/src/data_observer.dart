@@ -20,7 +20,7 @@ class IncompleteData {
   final TreeStructuredData value;
 
   IncompleteData(this.value, [TreeNode<Name, bool> states])
-      : _states = states ?? new TreeNode(false) {
+      : _states = states ?? TreeNode(false) {
     assert(value != null);
   }
 
@@ -29,11 +29,11 @@ class IncompleteData {
   bool isCompleteForPath(Path<Name> path) => _isCompleteForPath(_states, path);
 
   bool isCompleteForChild(Comparable child) =>
-      _isCompleteForPath(_states, new Path<Name>.from([child]));
+      _isCompleteForPath(_states, Path<Name>.from([child]));
 
-  IncompleteData child(Name child) => new IncompleteData(
-      value.children[child] ?? new TreeStructuredData(),
-      _states.value ? new TreeNode(true) : _states.children[child]);
+  IncompleteData child(Name child) => IncompleteData(
+      value.children[child] ?? TreeStructuredData(),
+      _states.value ? TreeNode(true) : _states.children[child]);
 
   bool _isCompleteForPath(TreeNode<Comparable, bool> states, Path<Name> path) =>
       states.nodesOnPath(path).any((v) => v.value == true);
@@ -45,20 +45,20 @@ class IncompleteData {
       if (_isCompleteForPath(newStates, p)) continue;
       newStates = _completePath(newStates, p);
     }
-    return new IncompleteData(newValue, newStates);
+    return IncompleteData(newValue, newStates);
   }
 
   TreeNode<Name, bool> _completePath(
       TreeNode<Name, bool> states, Path<Name> path) {
-    if (path.isEmpty) return new TreeNode(true);
+    if (path.isEmpty) return TreeNode(true);
     var c = path.first;
     return states.clone()
       ..children[c] =
-          _completePath(states.children[c] ?? new TreeNode(), path.skip(1));
+          _completePath(states.children[c] ?? TreeNode(), path.skip(1));
   }
 
   @override
-  String toString() => "IncompleteData[$value,$_states]";
+  String toString() => 'IncompleteData[$value,$_states]';
 
   IncompleteData applyOperation(Operation op) =>
       update(op.apply(value), op.completesPaths);
@@ -69,16 +69,17 @@ class EventGenerator {
 
   static bool _equals(a, b) {
     if (a is Map && b is Map) return const MapEquality().equals(a, b);
-    if (a is Iterable && b is Iterable)
+    if (a is Iterable && b is Iterable) {
       return const IterableEquality().equals(a, b);
+    }
     return a == b;
   }
 
   Iterable<Event> generateEvents(String eventType, IncompleteData oldValue,
       IncompleteData newValue) sync* {
-    if (eventType != "value") return;
+    if (eventType != 'value') return;
     if (!newValue.isComplete) return;
     if (oldValue.isComplete && _equals(oldValue.value, newValue.value)) return;
-    yield new ValueEvent(newValue.value);
+    yield ValueEvent(newValue.value);
   }
 }

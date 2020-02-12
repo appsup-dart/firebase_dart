@@ -11,11 +11,11 @@ class Path<K> extends UnmodifiableListView<K> {
   Path.from(Iterable<K> source) : super(source);
 
   @override
-  Path<K> skip(int count) => new Path.from(super.skip(count));
+  Path<K> skip(int count) => Path.from(super.skip(count));
 
-  Path<K> child(K child) => new Path.from(new List.from(this)..add(child));
+  Path<K> child(K child) => Path.from(List.from(this)..add(child));
 
-  Path<K> get parent => new Path.from(take(length - 1));
+  Path<K> get parent => Path.from(take(length - 1));
 
   @override
   int get hashCode => const ListEquality().hash(this);
@@ -39,11 +39,11 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
     if (map is SortedMap<K, V>) {
       return map.clone();
     }
-    return new Map<K, V>.from(map);
+    return Map<K, V>.from(map);
   }
 
   TreeNode<K, V> subtree(Path<K> path,
-      [TreeNode<K, V> newInstance(V parent, K name)]) {
+      [TreeNode<K, V> Function(V parent, K name) newInstance]) {
     if (path.isEmpty) return this;
     newInstance ??= (p, n) => null;
     if (!children.containsKey(path.first)) {
@@ -54,7 +54,7 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
     return child.subtree(path.skip(1), newInstance);
   }
 
-  TreeNode<K, V> clone() => new TreeNode(value, children);
+  TreeNode<K, V> clone() => TreeNode(value, children);
 
   bool get isLeaf => isEmpty && value != null;
 
@@ -98,9 +98,9 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
   }
 
   @override
-  String toString() => "TreeNode[$value]$children";
+  String toString() => 'TreeNode[$value]$children';
 
-  void forEachNode(void f(Path<K> key, V value)) {
+  void forEachNode(void Function(Path<K> key, V value) f) {
     void _forEach(TreeNode<K, V> node, Path<K> p) {
       node.children.forEach((c, v) {
         f(p.child(c), v.value);
@@ -110,6 +110,6 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
       });
     }
 
-    _forEach(this, new Path());
+    _forEach(this, Path());
   }
 }

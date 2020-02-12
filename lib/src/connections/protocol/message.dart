@@ -4,10 +4,10 @@
 part of firebase.protocol;
 
 abstract class Message {
-  static const String typeData = "d";
-  static const String typeControl = "c";
-  static const String messageType = "t";
-  static const String messageData = "d";
+  static const String typeData = 'd';
+  static const String typeControl = 'c';
+  static const String messageType = 't';
+  static const String messageData = 'd';
 
   Message();
 
@@ -15,11 +15,11 @@ abstract class Message {
     var layer = json[messageType];
     switch (layer) {
       case typeData:
-        return new DataMessage.fromJson(json);
+        return DataMessage.fromJson(json);
       case typeControl:
-        return new ControlMessage.fromJson(json);
+        return ControlMessage.fromJson(json);
       default:
-        throw new ArgumentError("Invalid message $json");
+        throw ArgumentError('Invalid message $json');
     }
   }
 
@@ -32,22 +32,22 @@ abstract class Message {
 }
 
 class DataMessage extends Message {
-  static const String actionListen = "q";
-  static const String actionUnlisten = "n";
-  static const String actionOnDisconnectPut = "o";
-  static const String actionOnDisconnectMerge = "om";
-  static const String actionOnDisconnectCancel = "oc";
-  static const String actionPut = "p";
-  static const String actionMerge = "m";
-  static const String actionStats = "s";
-  static const String actionAuth = "auth";
-  static const String actionGauth = "gauth";
-  static const String actionUnauth = "unauth";
+  static const String actionListen = 'q';
+  static const String actionUnlisten = 'n';
+  static const String actionOnDisconnectPut = 'o';
+  static const String actionOnDisconnectMerge = 'om';
+  static const String actionOnDisconnectCancel = 'oc';
+  static const String actionPut = 'p';
+  static const String actionMerge = 'm';
+  static const String actionStats = 's';
+  static const String actionAuth = 'auth';
+  static const String actionGauth = 'gauth';
+  static const String actionUnauth = 'unauth';
 
-  static const String actionSet = "d";
-  static const String actionListenRevoked = "c";
-  static const String actionAuthRevoked = "ac";
-  static const String actionSecurityDebug = "sd";
+  static const String actionSet = 'd';
+  static const String actionListenRevoked = 'c';
+  static const String actionAuthRevoked = 'ac';
+  static const String actionSecurityDebug = 'sd';
 
   final String action;
   final int reqNum;
@@ -58,32 +58,32 @@ class DataMessage extends Message {
 
   factory DataMessage.fromJson(Map<String, dynamic> json) {
     var data = json[Message.messageData];
-    return new DataMessage(
-        data["a"], new MessageBody.fromJson(data["b"] as Map<String, dynamic>),
-        reqNum: data["r"], error: data["error"]);
+    return DataMessage(
+        data['a'], MessageBody.fromJson(data['b'] as Map<String, dynamic>),
+        reqNum: data['r'], error: data['error']);
   }
 
   @override
   Map<String, dynamic> get _payloadJson {
     var json = <String, dynamic>{};
-    if (action != null) json["a"] = action;
-    if (body != null) json["b"] = body;
-    if (reqNum != null) json["r"] = reqNum;
-    if (error != null) json["error"] = error;
+    if (action != null) json['a'] = action;
+    if (body != null) json['b'] = body;
+    if (reqNum != null) json['r'] = reqNum;
+    if (error != null) json['error'] = error;
     return json;
   }
 }
 
 class Query {
-  static const String indexStartValue = "sp";
-  static const String indexStartName = "sn";
-  static const String indexEndValue = "ep";
-  static const String indexEndName = "en";
-  static const String limitTo = "l";
-  static const String viewFrom = "vf";
-  static const String viewFromLeft = "l";
-  static const String viewFromRight = "r";
-  static const String indexOn = "i";
+  static const String indexStartValue = 'sp';
+  static const String indexStartName = 'sn';
+  static const String indexEndValue = 'ep';
+  static const String indexEndName = 'en';
+  static const String limitTo = 'l';
+  static const String viewFrom = 'vf';
+  static const String viewFromLeft = 'l';
+  static const String viewFromRight = 'r';
+  static const String indexOn = 'i';
 
   final int limit;
   final bool isViewFromRight;
@@ -95,7 +95,7 @@ class Query {
 
   Query(
       {this.limit,
-      this.isViewFromRight: false,
+      this.isViewFromRight = false,
       this.index,
       this.endName,
       this.endValue,
@@ -103,7 +103,7 @@ class Query {
       this.startValue});
 
   factory Query.fromJson(Map<String, dynamic> json) {
-    return new Query(
+    return Query(
         limit: json[limitTo],
         isViewFromRight: json[viewFrom] == viewFromRight,
         index: json[indexOn],
@@ -115,27 +115,27 @@ class Query {
 
   factory Query.fromFilter(QueryFilter filter) {
     if (filter == null) return null;
-    return new Query(
+    return Query(
         limit: filter.limit,
         isViewFromRight: filter.reversed,
         index: filter.orderBy,
-        endName: filter.orderBy == ".key" ? null : filter.endKey?.asString(),
-        endValue: filter.orderBy != ".key"
+        endName: filter.orderBy == '.key' ? null : filter.endKey?.asString(),
+        endValue: filter.orderBy != '.key'
             ? filter.endValue?.value?.value
             : filter.endKey?.asString(),
         startName:
-            filter.orderBy == ".key" ? null : filter.startKey?.asString(),
-        startValue: filter.orderBy != ".key"
+            filter.orderBy == '.key' ? null : filter.startKey?.asString(),
+        startValue: filter.orderBy != '.key'
             ? filter.startValue?.value?.value
             : filter.startKey?.asString());
   }
 
   QueryFilter toFilter() {
-    var f = new QueryFilter(
+    var f = QueryFilter(
         limit: limit,
         reversed: isViewFromRight,
-        ordering: new TreeStructuredDataOrdering(index));
-    if (index == ".key") {
+        ordering: TreeStructuredDataOrdering(index));
+    if (index == '.key') {
       return f.copyWith(startAtKey: startValue, endAtKey: endValue);
     }
     return f.copyWith(
@@ -178,7 +178,7 @@ class Query {
 }
 
 class MessageBody {
-  static const String statusOk = "ok";
+  static const String statusOk = 'ok';
 
   final int tag;
   final Query query;
@@ -202,48 +202,48 @@ class MessageBody {
       this.status});
 
   factory MessageBody.fromJson(Map<String, dynamic> json) {
-    return new MessageBody(
-        tag: json["t"],
-        query: json["q"] is Map
-            ? new Query.fromJson(json["q"] as Map<String, dynamic>)
-            : json["q"] is List && json["q"].isNotEmpty
-                ? new Query.fromJson(json["q"].first as Map<String, dynamic>)
+    return MessageBody(
+        tag: json['t'],
+        query: json['q'] is Map
+            ? Query.fromJson(json['q'] as Map<String, dynamic>)
+            : json['q'] is List && json['q'].isNotEmpty
+                ? Query.fromJson(json['q'].first as Map<String, dynamic>)
                 : null,
-        path: json["p"],
-        hash: json["h"],
-        data: json["d"],
-        stats: json["c"],
-        cred: json["cred"],
-        message: json["msg"],
-        status: json["s"]);
+        path: json['p'],
+        hash: json['h'],
+        data: json['d'],
+        stats: json['c'],
+        cred: json['cred'],
+        message: json['msg'],
+        status: json['s']);
   }
 
   Iterable<String> get warnings =>
-      data is Map ? (data["w"] as Iterable)?.map((v) => v as String) : const [];
+      data is Map ? (data['w'] as Iterable)?.map((v) => v as String) : const [];
 
   Map<String, dynamic> toJson() {
     var json = <String, dynamic>{};
-    if (cred != null) json["cred"] = cred;
-    if (path != null) json["p"] = path;
-    if (hash != null) json["h"] = hash;
-    if (tag != null) json["t"] = tag;
-    if (query != null) json["q"] = query;
-    if (data != null) json["d"] = data;
-    if (stats != null) json["c"] = stats;
-    if (message != null) json["msg"] = message;
-    if (status != null) json["s"] = status;
+    if (cred != null) json['cred'] = cred;
+    if (path != null) json['p'] = path;
+    if (hash != null) json['h'] = hash;
+    if (tag != null) json['t'] = tag;
+    if (query != null) json['q'] = query;
+    if (data != null) json['d'] = data;
+    if (stats != null) json['c'] = stats;
+    if (message != null) json['msg'] = message;
+    if (status != null) json['s'] = status;
     return json;
   }
 }
 
 abstract class ControlMessage extends Message {
-  static const String typeHandshake = "h";
-  static const String typeEndTransmission = "n";
-  static const String typeControlShutdown = "s";
-  static const String typeControlReset = "r";
-  static const String typeControlError = "e";
-  static const String typeControlPong = "o";
-  static const String typeControlPing = "p";
+  static const String typeHandshake = 'h';
+  static const String typeEndTransmission = 'n';
+  static const String typeControlShutdown = 's';
+  static const String typeControlReset = 'r';
+  static const String typeControlError = 'e';
+  static const String typeControlPong = 'o';
+  static const String typeControlPing = 'p';
 
   ControlMessage();
 
@@ -252,22 +252,22 @@ abstract class ControlMessage extends Message {
     var cmd = data[Message.messageType];
     switch (cmd) {
       case typeHandshake:
-        return new HandshakeMessage.fromJson(json);
+        return HandshakeMessage.fromJson(json);
       case typeEndTransmission:
-        throw new UnimplementedError("Received control message: $json");
+        throw UnimplementedError('Received control message: $json');
       case typeControlShutdown:
-        return new ShutdownMessage(data[Message.messageData]);
+        return ShutdownMessage(data[Message.messageData]);
       case typeControlReset:
-        return new ResetMessage.fromJson(json);
+        return ResetMessage.fromJson(json);
       case typeControlError:
         print(json);
-        throw new UnimplementedError("Received control message: $json");
+        throw UnimplementedError('Received control message: $json');
       case typeControlPing:
-        return new PingMessage();
+        return PingMessage();
       case typeControlPong:
-        return new PongMessage();
+        return PongMessage();
       default:
-        throw new ArgumentError("Unknown control message $json");
+        throw ArgumentError('Unknown control message $json');
     }
   }
 
@@ -303,7 +303,7 @@ class ResetMessage extends ControlMessage {
 
   factory ResetMessage.fromJson(Map<String, dynamic> json) {
     var data = json[Message.messageData];
-    return new ResetMessage(data[Message.messageData]);
+    return ResetMessage(data[Message.messageData]);
   }
 
   @override
@@ -332,8 +332,8 @@ class HandshakeMessage extends ControlMessage {
 
   factory HandshakeMessage.fromJson(Map<String, dynamic> json) {
     var handshake = json[Message.messageData][Message.messageData];
-    return new HandshakeMessage(
-        new HandshakeInfo.fromJson(handshake as Map<String, dynamic>));
+    return HandshakeMessage(
+        HandshakeInfo.fromJson(handshake as Map<String, dynamic>));
   }
 
   @override
@@ -351,14 +351,16 @@ class HandshakeInfo {
 
   HandshakeInfo(this.timestamp, this.version, this.host, this.sessionId);
 
-  factory HandshakeInfo.fromJson(Map<String, dynamic> json) =>
-      new HandshakeInfo(new DateTime.fromMillisecondsSinceEpoch(json["ts"]),
-          json["v"], json["h"], json["s"]);
+  factory HandshakeInfo.fromJson(Map<String, dynamic> json) => HandshakeInfo(
+      DateTime.fromMillisecondsSinceEpoch(json['ts']),
+      json['v'],
+      json['h'],
+      json['s']);
 
   Map<String, dynamic> toJson() => {
-        "ts": timestamp.millisecondsSinceEpoch,
-        "v": version,
-        "h": host,
-        "s": sessionId
+        'ts': timestamp.millisecondsSinceEpoch,
+        'v': version,
+        'h': host,
+        's': sessionId
       };
 }

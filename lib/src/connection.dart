@@ -15,16 +15,16 @@ class ServerError implements Exception {
 
   String get reason =>
       const {
-        "too_big":
-            "The data requested exceeds the maximum size that can be accessed with a single request.",
-        "permission_denied":
+        'too_big':
+            'The data requested exceeds the maximum size that can be accessed with a single request.',
+        'permission_denied':
             "Client doesn't have permission to access the desired data.",
-        "unavailable": "The service is unavailable"
+        'unavailable': 'The service is unavailable'
       }[code] ??
-      "Unknown Error";
+      'Unknown Error';
 
   @override
-  String toString() => "$code: $reason";
+  String toString() => '$code: $reason';
 }
 
 enum OperationEventType { overwrite, merge, listenRevoked }
@@ -36,33 +36,35 @@ class OperationEvent {
   final dynamic data;
 
   OperationEvent(this.type, this.path, this.data, this.query) {
-    if (type == OperationEventType.merge && data is! Map)
-      throw new ArgumentError.value(data, 'data', "should be a map");
+    if (type == OperationEventType.merge && data is! Map) {
+      throw ArgumentError.value(data, 'data', 'should be a map');
+    }
 
     bool _isBaseType(dynamic v) {
       if (v is num || v is bool || v is String || v == null) return true;
-      if (v is Map)
+      if (v is Map) {
         return v.keys.every((k) => k is String) && v.values.every(_isBaseType);
+      }
       return false;
     }
 
-    if (!_isBaseType(data))
-      throw new ArgumentError.value(data, 'data', "should be a base type");
+    if (!_isBaseType(data)) {
+      throw ArgumentError.value(data, 'data', 'should be a base type');
+    }
   }
 
   TreeOperation get operation {
     switch (type) {
       case OperationEventType.overwrite:
-        return new TreeOperation.overwrite(
-            path, new TreeStructuredData.fromJson(data));
+        return TreeOperation.overwrite(path, TreeStructuredData.fromJson(data));
       case OperationEventType.merge:
-        return new TreeOperation.merge(
+        return TreeOperation.merge(
             path,
-            new Map.fromIterables(
+            Map.fromIterables(
                 (data as Map).keys.map((k) => Name.parsePath(k.toString())),
                 (data as Map)
                     .values
-                    .map((v) => new TreeStructuredData.fromJson(v))));
+                    .map((v) => TreeStructuredData.fromJson(v))));
       default:
         return null;
     }
@@ -75,16 +77,16 @@ abstract class Connection {
 
   factory Connection(Uri uri) {
     switch (uri.scheme) {
-      case "http":
-        return new ProtocolConnection("${uri.host}:${uri.port ?? 80}",
-            namespace: uri.queryParameters["ns"], ssl: false);
-      case "https":
-        return new ProtocolConnection("${uri.host}:${uri.port ?? 443}",
-            namespace: uri.queryParameters["ns"], ssl: true);
-      case "mem":
-        return new MemConnection(uri.host);
+      case 'http':
+        return ProtocolConnection('${uri.host}:${uri.port ?? 80}',
+            namespace: uri.queryParameters['ns'], ssl: false);
+      case 'https':
+        return ProtocolConnection('${uri.host}:${uri.port ?? 443}',
+            namespace: uri.queryParameters['ns'], ssl: true);
+      case 'mem':
+        return MemConnection(uri.host);
       default:
-        throw new ArgumentError("No known connection for uri '$uri'.");
+        throw ArgumentError("No known connection for uri '$uri'.");
     }
   }
 
@@ -94,7 +96,7 @@ abstract class Connection {
 
   /// Generates the special server values
   Map<ServerValue, Value> get serverValues =>
-      {ServerValue.timestamp: new Value(serverTime.millisecondsSinceEpoch)};
+      {ServerValue.timestamp: Value(serverTime.millisecondsSinceEpoch)};
 
   /// Registers a listener.
   ///

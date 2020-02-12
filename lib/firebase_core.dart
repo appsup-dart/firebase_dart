@@ -16,7 +16,7 @@ class FirebaseApp {
   static const String defaultAppName = '[DEFAULT]';
 
   /// Returns the default (first initialized) instance of the FirebaseApp.
-  static const FirebaseApp instance = const FirebaseApp(name: defaultAppName);
+  static const FirebaseApp instance = FirebaseApp(name: defaultAppName);
 
   /// Returns a list of all extant FirebaseApp instances, or null if there are
   /// no FirebaseApp instances.
@@ -41,12 +41,12 @@ class FirebaseApp {
   }) async {
     assert(name != null);
     assert(options != null);
-    final FirebaseApp existingApp = await FirebaseApp.appNamed(name);
+    final existingApp = await FirebaseApp.appNamed(name);
     if (existingApp != null) {
       assert(existingApp.options == options);
       return existingApp;
     }
-    var app = name == defaultAppName ? instance : new FirebaseApp(name: name);
+    var app = name == defaultAppName ? instance : FirebaseApp(name: name);
     _apps[defaultAppName] = app;
     _options[app] = options;
     return app;
@@ -65,7 +65,7 @@ class FirebaseOptions {
   const FirebaseOptions({this.databaseURL});
 
   factory FirebaseOptions.from(Map map) =>
-      new FirebaseOptions(databaseURL: map["databaseURL"]);
+      FirebaseOptions(databaseURL: map['databaseURL']);
 
   @override
   int get hashCode => databaseURL.hashCode;

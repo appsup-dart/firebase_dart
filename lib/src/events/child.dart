@@ -12,31 +12,31 @@ abstract class ChildEvent<K> extends Event {
   ChildEvent(String type, this.childKey, this.prevChildKey) : super(type);
 
   @override
-  String toString() => "ChildEvent[$childKey $type]";
+  String toString() => 'ChildEvent[$childKey $type]';
 }
 
 class ChildAddedEvent<K, V> extends ChildEvent<K> {
   final V newValue;
 
   ChildAddedEvent(K childKey, this.newValue, K prevChildKey)
-      : super("child_added", childKey, prevChildKey);
+      : super('child_added', childKey, prevChildKey);
 }
 
 class ChildChangedEvent<K, V> extends ChildEvent<K> {
   final V newValue;
 
   ChildChangedEvent(K childKey, this.newValue, K prevChildKey)
-      : super("child_changed", childKey, prevChildKey);
+      : super('child_changed', childKey, prevChildKey);
 }
 
 class ChildMovedEvent<K, V> extends ChildEvent<K> {
   ChildMovedEvent(K childKey, K prevChildKey)
-      : super("child_moved", childKey, prevChildKey);
+      : super('child_moved', childKey, prevChildKey);
 }
 
 class ChildRemovedEvent<K, V> extends ChildEvent<K> {
   final V oldValue;
 
   ChildRemovedEvent(K childKey, this.oldValue, K prevChildKey)
-      : super("child_removed", childKey, prevChildKey);
+      : super('child_removed', childKey, prevChildKey);
 }

@@ -4,6 +4,7 @@
 
 - support more authentication methods: firebase secret, id token, access token 
 - deprecate use of `Firebase` object, replaced by `Reference` object
+- dart sdk 2.5+ compatibility
 
 ## 0.7.14
 

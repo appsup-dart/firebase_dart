@@ -14,7 +14,7 @@ class ViewCache {
   SortedMap<int, TreeOperation> pendingOperations;
 
   ViewCache(this.localVersion, this.serverVersion, [this.pendingOperations]) {
-    pendingOperations ??= new SortedMap();
+    pendingOperations ??= SortedMap();
   }
 
   IncompleteData valueForFilter(Filter<Name, TreeStructuredData> filter) {
@@ -25,21 +25,20 @@ class ViewCache {
         reversed: filter.reversed));
   }
 
-  ViewCache withFilter(Filter<Name, TreeStructuredData> filter) =>
-      new ViewCache(
-          localVersion.update(localVersion.value.withFilter(filter)),
-          serverVersion.update(serverVersion.value.withFilter(filter)),
-          new SortedMap.from(pendingOperations));
+  ViewCache withFilter(Filter<Name, TreeStructuredData> filter) => ViewCache(
+      localVersion.update(localVersion.value.withFilter(filter)),
+      serverVersion.update(serverVersion.value.withFilter(filter)),
+      SortedMap.from(pendingOperations));
 
   ViewCache child(Name c) {
-    var childPendingOperations = new SortedMap<int, TreeOperation>();
+    var childPendingOperations = SortedMap<int, TreeOperation>();
     for (var k in pendingOperations.keys) {
       var o = pendingOperations[k].operationForChild(c);
       if (o != null) {
         childPendingOperations[k] = o;
       }
     }
-    var v = new ViewCache(
+    var v = ViewCache(
       localVersion.child(c),
       serverVersion.child(c),
       childPendingOperations,
@@ -53,18 +52,18 @@ class ViewCache {
   }
 
   ViewCache updateServerVersion(IncompleteData newValue) {
-    return new ViewCache(localVersion, newValue, pendingOperations)
+    return ViewCache(localVersion, newValue, pendingOperations)
       ..recalcLocalVersion();
   }
 
   ViewCache addOperation(int writeId, Operation op) {
-    if (op == null) throw new ArgumentError("Trying to add null operation");
-    return new ViewCache(localVersion.applyOperation(op), serverVersion,
+    if (op == null) throw ArgumentError('Trying to add null operation');
+    return ViewCache(localVersion.applyOperation(op), serverVersion,
         pendingOperations.clone()..[writeId] = op);
   }
 
   ViewCache removeOperation(int writeId, bool recalc) {
-    var viewCache = new ViewCache(localVersion, serverVersion,
+    var viewCache = ViewCache(localVersion, serverVersion,
         pendingOperations.clone()..remove(writeId));
     if (recalc) viewCache.recalcLocalVersion();
     return viewCache;
@@ -82,7 +81,7 @@ class ViewCache {
         var result = serverVersion.applyOperation(operation);
         return updateServerVersion(result);
       default:
-        throw new Exception("SHOULD NEVER HAPPEN");
+        throw Exception('SHOULD NEVER HAPPEN');
     }
   }
 }

@@ -7,7 +7,7 @@ part of firebase.protocol;
 class TransportTester {
   final List<Transport> _activeTransports = [];
 
-  static final _instance = new TransportTester();
+  static final _instance = TransportTester();
 
   static Future<Null> mockConnectionLost() {
     return _instance._socketCloseAll();
@@ -31,7 +31,7 @@ class TransportTester {
   Future<Null> _resetAll() async {
     _activeTransports
         .whereType<WebSocketTransport>()
-        .forEach((t) => t._onMessage(new ResetMessage(t.host)));
+        .forEach((t) => t._onMessage(ResetMessage(t.host)));
   }
 }
 
@@ -51,8 +51,8 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
     _connect();
   }
 
-  final Completer<HandshakeInfo> _ready = new Completer();
-  final Completer<Null> _done = new Completer();
+  final Completer<HandshakeInfo> _ready = Completer();
+  final Completer<Null> _done = Completer();
 
   Future<HandshakeInfo> get ready => _ready.future;
 
@@ -73,8 +73,8 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   final Map<int, Request> _pendingRequests = {};
   final List<Completer<PongMessage>> _pings = [];
 
-  final StreamController _output = new StreamController(sync: true);
-  final StreamController<Response> _input = new StreamController(sync: true);
+  final StreamController _output = StreamController(sync: true);
+  final StreamController<Response> _input = StreamController(sync: true);
 
   Future _connect([String host]);
 
@@ -83,14 +83,14 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   void _start();
 
   Future<PongMessage> ping() {
-    _pings.add(new Completer());
-    _output.add(new PingMessage());
+    _pings.add(Completer());
+    _output.add(PingMessage());
     return _pings.last.future;
   }
 
   void _onDataMessage(DataMessage v) {
     var request = _pendingRequests.remove(v.reqNum);
-    var response = new Response(v, request);
+    var response = Response(v, request);
     if (request != null && !request._completer.isCompleted) {
       request._completer.complete(response);
     }
@@ -101,7 +101,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   void _onControlMessage(ControlMessage v) {
     if (v is HandshakeMessage) {
       _info = v.info;
-      _infoReceivedTime = new DateTime.now();
+      _infoReceivedTime = DateTime.now();
       _readyState = connected;
       _ready.complete(_info);
       _start();
@@ -110,17 +110,18 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
     } else if (v is PongMessage) {
       _pings.removeAt(0).complete(v);
     } else if (v is PingMessage) {
-      _output.add(new PongMessage());
+      _output.add(PongMessage());
     } else if (v is ShutdownMessage) {
       kill();
     }
   }
 
   void _onMessage(Message v) {
-    if (v is DataMessage)
+    if (v is DataMessage) {
       _onDataMessage(v);
-    else
+    } else {
       _onControlMessage(v);
+    }
   }
 
   Request _prepareRequest(Request request) {
@@ -139,8 +140,8 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
       _output.addStream(stream.map(_prepareRequest));
 
   @override
-  StreamSubscription<Response> listen(void onData(Response event),
-      {Function onError, void onDone(), bool cancelOnError}) {
+  StreamSubscription<Response> listen(void Function(Response event) onData,
+      {Function onError, void Function() onDone, bool cancelOnError}) {
     return _input.stream.listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
@@ -165,10 +166,10 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
 }
 
 class WebSocketTransport extends Transport {
-  static const String protocolVersion = "5";
-  static const String versionParam = "v";
-  static const String lastSessionParam = "ls";
-  static const String transportSessionParam = "s";
+  static const String protocolVersion = '5';
+  static const String versionParam = 'v';
+  static const String lastSessionParam = 'ls';
+  static const String transportSessionParam = 's';
 
   static const int maxFrameSize = 16384;
 
@@ -183,15 +184,15 @@ class WebSocketTransport extends Transport {
   @override
   void _start() {
     var stream = _output.stream.map(json.encode).expand((v) sync* {
-      _logger.fine("send $v");
+      _logger.fine('send $v');
 
-      var dataSegs = new List.generate(
+      var dataSegs = List.generate(
           (v.length / maxFrameSize).ceil(),
           (i) => v.substring(
               i * maxFrameSize, min((i + 1) * maxFrameSize, v.length)));
 
       if (dataSegs.length > 1) {
-        yield "${dataSegs.length}";
+        yield '${dataSegs.length}';
       }
       yield* dataSegs;
     });
@@ -200,7 +201,7 @@ class WebSocketTransport extends Transport {
     });
     _socket.sink.done.then((_) => _outputSubscription.cancel());
 
-    new Stream.periodic(new Duration(seconds: 45))
+    Stream.periodic(Duration(seconds: 45))
         .takeWhile((_) => readyState <= Transport.connected)
         .forEach((_) {
       if (!_output.isClosed) _output.add(0);
@@ -212,29 +213,29 @@ class WebSocketTransport extends Transport {
   @override
   Future _connect([String host]) async {
     host ??= this.host;
-    var parts = host.split(":");
+    var parts = host.split(':');
     host = parts.first;
     var port = parts.length > 1 ? int.parse(parts[1]) : null;
-    var url = new Uri(
-        scheme: ssl ? "wss" : "ws",
+    var url = Uri(
+        scheme: ssl ? 'wss' : 'ws',
         host: host,
         port: port,
         queryParameters: {
           versionParam: protocolVersion,
-          "ns": namespace,
+          'ns': namespace,
           lastSessionParam: sessionId
         },
-        path: ".ws");
-    _logger.fine("connecting to $url");
-    WebSocketChannel socket = _socket = connect(url.toString());
+        path: '.ws');
+    _logger.fine('connecting to $url');
+    var socket = _socket = connect(url.toString());
     socket.stream.map((v) {
-      _logger.fine("received $v");
+      _logger.fine('received $v');
       return v;
     }).listen(_handleMessage, onDone: () {
-      _logger.fine("WebSocket done: ${socket.closeCode} ${socket.closeReason}");
+      _logger.fine('WebSocket done: ${socket.closeCode} ${socket.closeReason}');
       close();
     }, onError: (e, tr) {
-      _logger.fine("WebSocket error: $e", e, tr);
+      _logger.fine('WebSocket error: $e', e, tr);
       close();
     });
   }
@@ -245,24 +246,23 @@ class WebSocketTransport extends Transport {
   void _handleMessage(data) {
     if (_frames != null) {
       _frames.add(data);
-      if (_frames.length == this._totalFrames) {
-        var fullMess = _frames.join("");
+      if (_frames.length == _totalFrames) {
+        var fullMess = _frames.join('');
         _frames = null;
         var message =
-            new Message.fromJson(json.decode(fullMess) as Map<String, dynamic>);
+            Message.fromJson(json.decode(fullMess) as Map<String, dynamic>);
         _onMessage(message);
       }
     } else {
       if (data.length <= 6) {
-        var frameCount = int.parse(data, onError: (_) => null);
+        var frameCount = int.tryParse(data);
         if (frameCount != null) {
           _totalFrames = frameCount;
           _frames = [];
           return;
         }
       }
-      var message =
-          new Message.fromJson(json.decode(data) as Map<String, dynamic>);
+      var message = Message.fromJson(json.decode(data) as Map<String, dynamic>);
       _onMessage(message);
     }
   }
@@ -273,7 +273,7 @@ class WebSocketTransport extends Transport {
     await _output.close();
     if (!_input.hasListener) _input.stream.listen(null);
     await _input.close();
-    _socket.sink.close();
+    await _socket.sink.close();
     _socket = null;
   }
 }

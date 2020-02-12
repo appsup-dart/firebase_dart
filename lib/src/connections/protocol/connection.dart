@@ -10,7 +10,7 @@ class ProtocolConnection extends Connection {
 
   int _nextTag = 0;
   final quiver.BiMap<int, Pair<String, QueryFilter>> _tagToQuery =
-      new quiver.BiMap();
+      quiver.BiMap();
 
   final String namespace;
   final bool ssl;
@@ -26,19 +26,19 @@ class ProtocolConnection extends Connection {
 
   @override
   DateTime get serverTime =>
-      new DateTime.now().add(_serverTimeDiff ?? const Duration());
+      DateTime.now().add(_serverTimeDiff ?? const Duration());
 
   Duration _serverTimeDiff;
 
   @override
   Future<Iterable<String>> listen(String path,
       {QueryFilter query, String hash}) async {
-    var def = new Pair(path, query);
+    var def = Pair(path, query);
     var tag = _nextTag++;
     _tagToQuery[tag] = def;
 
-    var r = new Request.listen(path,
-        query: new Query.fromFilter(query), tag: tag, hash: hash);
+    var r = Request.listen(path,
+        query: Query.fromFilter(query), tag: tag, hash: hash);
     _addListen(r);
     try {
       var body = await _request(r);
@@ -52,10 +52,9 @@ class ProtocolConnection extends Connection {
 
   @override
   Future<Null> unlisten(String path, {QueryFilter query}) async {
-    var def = new Pair(path, query);
+    var def = Pair(path, query);
     var tag = _tagToQuery.inverse.remove(def);
-    var r = new Request.unlisten(path,
-        query: new Query.fromFilter(query), tag: tag);
+    var r = Request.unlisten(path, query: Query.fromFilter(query), tag: tag);
     _removeListen(path, query);
     await _request(r);
   }
@@ -65,13 +64,13 @@ class ProtocolConnection extends Connection {
   @override
   Future<Null> put(String path, dynamic value,
       {String hash, int writeId}) async {
-    await _request(new Request.put(path, value, hash, writeId));
+    await _request(Request.put(path, value, hash, writeId));
   }
 
   @override
   Future<Null> merge(String path, Map<String, dynamic> value,
       {String hash, int writeId}) async {
-    await _request(new Request.merge(path, value, hash, writeId));
+    await _request(Request.merge(path, value, hash, writeId));
   }
 
   void _addListen(Request request) {
@@ -85,11 +84,11 @@ class ProtocolConnection extends Connection {
   }
 
   void _scheduleConnect(num timeout) {
-    assert(this._transport ==
+    assert(_transport ==
         null); //, "Scheduling a connect when we're already connected/ing?");
 
-    var future = this._establishConnectionTimer =
-        new Future.delayed(new Duration(milliseconds: timeout.floor()));
+    var future = _establishConnectionTimer =
+        Future.delayed(Duration(milliseconds: timeout.floor()));
 
     future.then((_) {
       if (future != _establishConnectionTimer) {
@@ -100,10 +99,10 @@ class ProtocolConnection extends Connection {
     });
   }
 
-  final StreamController<bool> _onConnect = new StreamController(sync: true);
+  final StreamController<bool> _onConnect = StreamController(sync: true);
   final StreamController<OperationEvent> _onDataOperation =
-      new StreamController(sync: true);
-  final StreamController<Map> _onAuth = new StreamController(sync: true);
+      StreamController(sync: true);
+  final StreamController<Map> _onAuth = StreamController(sync: true);
 
   @override
   Stream<bool> get onConnect => _onConnect.stream;
@@ -115,13 +114,12 @@ class ProtocolConnection extends Connection {
   Stream<Map> get onAuth => _onAuth.stream;
 
   void _establishConnection() {
-    _transport = new WebSocketTransport(
-        host, namespace ?? host.split(".").first, ssl, _lastSessionId);
+    _transport = WebSocketTransport(
+        host, namespace ?? host.split('.').first, ssl, _lastSessionId);
     _transport.ready.then((_) {
       _onConnect.add(true);
       _lastSessionId = _transport.info.sessionId;
-      _serverTimeDiff =
-          _transport.info.timestamp.difference(new DateTime.now());
+      _serverTimeDiff = _transport.info.timestamp.difference(DateTime.now());
       _transport.where((r) => r.message.reqNum == null).forEach((r) {
         var query =
             r.message.body.query ?? _tagToQuery[r.message.body.tag]?.value;
@@ -136,7 +134,7 @@ class ProtocolConnection extends Connection {
           case DataMessage.actionSet:
           case DataMessage.actionMerge:
           case DataMessage.actionListenRevoked:
-            var event = new OperationEvent(
+            var event = OperationEvent(
                 const {
                   DataMessage.actionSet: OperationEventType.overwrite,
                   DataMessage.actionMerge: OperationEventType.merge,
@@ -153,11 +151,11 @@ class ProtocolConnection extends Connection {
             break;
           case DataMessage.actionSecurityDebug:
             var msg = r.message.body.message;
-            _logger.fine("security debug: $msg");
+            _logger.fine('security debug: $msg');
             break;
           default:
-            throw new UnimplementedError(
-                "Cannot handle message with action ${r.message.action}: ${json.encode(r.message)} ${r.message.reqNum} ${r.request.writeId}");
+            throw UnimplementedError(
+                'Cannot handle message with action ${r.message.action}: ${json.encode(r.message)} ${r.message.reqNum} ${r.request.writeId}');
         }
       });
       _restoreState();
@@ -205,26 +203,26 @@ class ProtocolConnection extends Connection {
   FutureOr<String> _authToken;
 
   Request _createAuthRequestForToken(String token) {
-    if (token == "owner") {
+    if (token == 'owner') {
       // is simulator
-      return new Request.gauth(token);
-    } else if (token.split(".").length == 3) {
+      return Request.gauth(token);
+    } else if (token.split('.').length == 3) {
       // this is an access token or id token
       try {
         var jwt = JsonWebToken.unverified(token);
         if (jwt.claims.issuedAt != null) {
           // this is an id token
-          return new Request.auth(token);
+          return Request.auth(token);
         } else {
-          return new Request.gauth(token);
+          return Request.gauth(token);
         }
-      } catch (e, tr) {
+      } catch (e) {
         // this is an access token
-        return new Request.gauth(token);
+        return Request.gauth(token);
       }
     } else {
       // this is a database secret
-      return new Request.auth(token);
+      return Request.auth(token);
     }
   }
 
@@ -232,20 +230,20 @@ class ProtocolConnection extends Connection {
   Future<Map<String, dynamic>> auth(FutureOr<String> token) {
     _authToken = token;
     return _request(_createAuthRequestForToken(token)).then((b) {
-      return b.data["auth"];
+      return b.data['auth'];
     });
   }
 
   @override
   Future<Null> unauth() {
     _authToken = null;
-    return _request(new Request.unauth()).then((b) => null);
+    return _request(Request.unauth()).then((b) => null);
   }
 
   bool get _transportIsReady =>
       _transport != null && _transport.readyState == Transport.connected;
 
-  StreamController<FutureOr<Request>> _requests = new StreamController();
+  final StreamController<FutureOr<Request>> _requests = StreamController();
 
   void _startHandlingRequests() {
     _requests.stream.asyncMap<Request>((event) => event).forEach(_doRequest);
@@ -258,12 +256,12 @@ class ProtocolConnection extends Connection {
       if (r.message.body.status == MessageBody.statusOk) {
         return r.message.body;
       } else {
-        throw new ServerError(r.message.body.status, r.message.body.data);
+        throw ServerError(r.message.body.status, r.message.body.data);
       }
     });
   }
 
-  Future<MessageBody> _doRequest(Request request) {
+  void _doRequest(Request request) {
     switch (request.message.action) {
       case DataMessage.actionListen:
       case DataMessage.actionUnlisten:
@@ -278,17 +276,17 @@ class ProtocolConnection extends Connection {
 
   @override
   Future<Null> onDisconnectPut(String path, dynamic value) async {
-    await _request(new Request.onDisconnectPut(path, value));
+    await _request(Request.onDisconnectPut(path, value));
   }
 
   @override
   Future<Null> onDisconnectMerge(
       String path, Map<String, dynamic> childrenToMerge) async {
-    await _request(new Request.onDisconnectMerge(path, childrenToMerge));
+    await _request(Request.onDisconnectMerge(path, childrenToMerge));
   }
 
   @override
   Future<Null> onDisconnectCancel(String path) async {
-    await _request(new Request.onDisconnectCancel(path));
+    await _request(Request.onDisconnectCancel(path));
   }
 }

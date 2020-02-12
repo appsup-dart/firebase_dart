@@ -111,6 +111,6 @@ abstract class Reference implements Query {
   ///
   /// The returned [Future] will be completed after the transaction has
   /// finished.
-  Future<DataSnapshot> transaction(dynamic update(dynamic currentVal),
-      {bool applyLocally: true});
+  Future<DataSnapshot> transaction(dynamic Function(dynamic currentVal) update,
+      {bool applyLocally = true});
 }

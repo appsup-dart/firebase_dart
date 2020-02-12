@@ -4,9 +4,9 @@
 part of firebase_dart;
 
 String _signMessage(String msg, String secret) {
-  final hmac = new Hmac(sha256, secret.codeUnits);
+  final hmac = Hmac(sha256, secret.codeUnits);
   final signature = hmac.convert(msg.codeUnits);
-  return base64Url.encode(signature.bytes).replaceAll("=", "");
+  return base64Url.encode(signature.bytes).replaceAll('=', '');
 }
 
 class InvalidTokenException implements Exception {
@@ -18,7 +18,7 @@ class InvalidTokenException implements Exception {
 }
 
 class _Encoder extends Converter<FirebaseToken, String> {
-  static const Map<String, String> _defaultHeader = const {
+  static const Map<String, String> _defaultHeader = {
     'typ': 'JWT',
     'alg': 'HS256'
   };
@@ -31,11 +31,11 @@ class _Encoder extends Converter<FirebaseToken, String> {
   String convert(FirebaseToken data) {
     var encodedHeader = base64Url
         .encode(json.encode(_defaultHeader).codeUnits)
-        .replaceAll("=", "");
+        .replaceAll('=', '');
     var encodedPayload =
-        base64Url.encode(json.encode(data).codeUnits).replaceAll("=", "");
-    var msg = "$encodedHeader.$encodedPayload";
-    return "$msg.${_signMessage(msg, secret)}";
+        base64Url.encode(json.encode(data).codeUnits).replaceAll('=', '');
+    var msg = '$encodedHeader.$encodedPayload';
+    return '$msg.${_signMessage(msg, secret)}';
   }
 }
 
@@ -46,18 +46,18 @@ class _Decoder extends Converter<String, FirebaseToken> {
 
   @override
   FirebaseToken convert(String input) {
-    var parts = input.split(".");
+    var parts = input.split('.');
     var padded = parts[1] +
-        new Iterable.generate((4 - parts[1].length % 4) % 4, (i) => "=").join();
+        Iterable.generate((4 - parts[1].length % 4) % 4, (i) => '=').join();
     var payload = json.decode(utf8.decode(base64Url.decode(padded)));
 
     if (secret != null) {
-      var signature = _signMessage("${parts[0]}.${parts[1]}", secret);
+      var signature = _signMessage('${parts[0]}.${parts[1]}', secret);
       if (signature != parts[2]) {
-        throw new InvalidTokenException(input);
+        throw InvalidTokenException(input);
       }
     }
-    return new FirebaseToken.fromJson(payload as Map<String, dynamic>);
+    return FirebaseToken.fromJson(payload as Map<String, dynamic>);
   }
 }
 
@@ -67,10 +67,10 @@ class FirebaseTokenCodec extends Codec<FirebaseToken, String> {
   const FirebaseTokenCodec(this.secret);
 
   @override
-  Converter<String, FirebaseToken> get decoder => new _Decoder(secret);
+  Converter<String, FirebaseToken> get decoder => _Decoder(secret);
 
   @override
-  Converter<FirebaseToken, String> get encoder => new _Encoder(secret);
+  Converter<FirebaseToken, String> get encoder => _Encoder(secret);
 }
 
 class FirebaseToken {
@@ -84,34 +84,34 @@ class FirebaseToken {
   final bool debug;
 
   FirebaseToken(this.data,
-      {this.version: 0,
+      {this.version = 0,
       DateTime issuedAt,
       this.notBefore,
       this.expires,
       this.debug,
       this.admin})
-      : issuedAt = issuedAt ?? new DateTime.now();
+      : issuedAt = issuedAt ?? DateTime.now();
 
   factory FirebaseToken.fromJson(Map<String, dynamic> json) {
-    return new FirebaseToken(json["d"] as Map<String, dynamic>,
-        version: json["v"],
-        issuedAt: new DateTime.fromMillisecondsSinceEpoch(json["iat"]),
-        notBefore: json.containsKey("nbf")
-            ? new DateTime.fromMillisecondsSinceEpoch(json["nbf"])
+    return FirebaseToken(json['d'] as Map<String, dynamic>,
+        version: json['v'],
+        issuedAt: DateTime.fromMillisecondsSinceEpoch(json['iat']),
+        notBefore: json.containsKey('nbf')
+            ? DateTime.fromMillisecondsSinceEpoch(json['nbf'])
             : null,
-        expires: json.containsKey("exp")
-            ? new DateTime.fromMillisecondsSinceEpoch(json["exp"])
+        expires: json.containsKey('exp')
+            ? DateTime.fromMillisecondsSinceEpoch(json['exp'])
             : null,
-        debug: json["debug"] ?? false,
-        admin: json["admin"] ?? false);
+        debug: json['debug'] ?? false,
+        admin: json['admin'] ?? false);
   }
 
   Map<String, dynamic> toJson() {
-    var out = {"v": version, "iat": issuedAt.millisecondsSinceEpoch, "d": data};
-    if (notBefore != null) out["nbf"] = notBefore.millisecondsSinceEpoch;
-    if (expires != null) out["exp"] = expires.millisecondsSinceEpoch;
-    if (debug == true) out["debug"] = true;
-    if (admin == true) out["admin"] = true;
+    var out = {'v': version, 'iat': issuedAt.millisecondsSinceEpoch, 'd': data};
+    if (notBefore != null) out['nbf'] = notBefore.millisecondsSinceEpoch;
+    if (expires != null) out['exp'] = expires.millisecondsSinceEpoch;
+    if (debug == true) out['debug'] = true;
+    if (admin == true) out['admin'] = true;
 
     return out;
   }

@@ -15,13 +15,13 @@ class DataSnapshotImpl extends DataSnapshot {
   bool get exists => treeStructuredData != null && !treeStructuredData.isNil;
 
   @override
-  DataSnapshot child(String c) => new DataSnapshotImpl(
+  DataSnapshot child(String c) => DataSnapshotImpl(
       ref.child(c), treeStructuredData?.subtree(Name.parsePath(c)));
 
   @override
-  void forEach(cb(DataSnapshot snapshot)) =>
+  void forEach(Function(DataSnapshot snapshot) cb) =>
       treeStructuredData.children.forEach((key, value) =>
-          cb(new DataSnapshotImpl(ref.child(key.toString()), value)));
+          cb(DataSnapshotImpl(ref.child(key.toString()), value)));
 
   @override
   bool hasChild(String path) =>
@@ -48,33 +48,34 @@ class QueryImpl extends Query {
   final Repo _repo;
 
   QueryImpl._(this._db, this._pathSegments, this.filter)
-      : _path = _pathSegments.map(Uri.encodeComponent).join("/"),
-        _repo = new Repo(_db);
+      : _path = _pathSegments.map(Uri.encodeComponent).join('/'),
+        _repo = Repo(_db);
 
   @override
   Stream<Event> on(String eventType) =>
       _repo.createStream(ref, filter, eventType);
 
   Query _withFilter(QueryFilter filter) =>
-      new QueryImpl._(_db, _pathSegments, filter);
+      QueryImpl._(_db, _pathSegments, filter);
 
   @override
   Query orderByChild(String child) {
-    if (child == null || child.startsWith(r"$"))
-      throw new ArgumentError("'$child' is not a valid child");
+    if (child == null || child.startsWith(r'$')) {
+      throw ArgumentError("'$child' is not a valid child");
+    }
 
     return _withFilter(filter.copyWith(orderBy: child));
   }
 
   @override
-  Query orderByKey() => _withFilter(filter.copyWith(orderBy: r".key"));
+  Query orderByKey() => _withFilter(filter.copyWith(orderBy: r'.key'));
 
   @override
-  Query orderByValue() => _withFilter(filter.copyWith(orderBy: r".value"));
+  Query orderByValue() => _withFilter(filter.copyWith(orderBy: r'.value'));
 
   @override
   Query orderByPriority() =>
-      _withFilter(filter.copyWith(orderBy: r".priority"));
+      _withFilter(filter.copyWith(orderBy: r'.priority'));
 
   @override
   Query startAt(dynamic value, [String key]) =>
@@ -93,7 +94,7 @@ class QueryImpl extends Query {
       _withFilter(filter.copyWith(limit: limit, reverse: true));
 
   @override
-  Reference get ref => new FirebaseImpl(_db, _pathSegments);
+  Reference get ref => FirebaseImpl(_db, _pathSegments);
 }
 
 class ReferenceImpl extends QueryImpl with Reference {
@@ -101,7 +102,7 @@ class ReferenceImpl extends QueryImpl with Reference {
 
   ReferenceImpl(FirebaseDatabase db, List<String> path)
       : super._(db, path, const QueryFilter()) {
-    _onDisconnect = new DisconnectImpl(this);
+    _onDisconnect = DisconnectImpl(this);
   }
 
   @override
@@ -126,27 +127,27 @@ class ReferenceImpl extends QueryImpl with Reference {
 
   @override
   Future setPriority(dynamic priority) =>
-      _repo.setWithPriority("$_path/.priority", priority, null);
+      _repo.setWithPriority('$_path/.priority', priority, null);
 
   @override
-  Future<DataSnapshot> transaction(dynamic update(dynamic currentVal),
-          {bool applyLocally: true}) =>
+  Future<DataSnapshot> transaction(dynamic Function(dynamic currentVal) update,
+          {bool applyLocally = true}) =>
       _repo
           .transaction(_path, update, applyLocally)
-          .then<DataSnapshot>((v) => new DataSnapshotImpl(this, v));
+          .then<DataSnapshot>((v) => DataSnapshotImpl(this, v));
 
   @override
-  Reference child(String c) => new FirebaseImpl(_db,
-      []..addAll(_pathSegments)..addAll(c.split("/").map(Uri.decodeComponent)));
+  Reference child(String c) => FirebaseImpl(
+      _db, [..._pathSegments, ...c.split('/').map(Uri.decodeComponent)]);
 
   @override
   Reference get parent => _pathSegments.isEmpty
       ? null
-      : new FirebaseImpl(
-          _db, []..addAll(_pathSegments.sublist(0, _pathSegments.length - 1)));
+      : FirebaseImpl(
+          _db, [..._pathSegments.sublist(0, _pathSegments.length - 1)]);
 
   @override
-  Reference get root => new FirebaseImpl(_db, []);
+  Reference get root => FirebaseImpl(_db, []);
 }
 
 class FirebaseImpl extends ReferenceImpl with Firebase {

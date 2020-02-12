@@ -9,51 +9,51 @@ class Request {
   final DataMessage message;
   final int writeId;
 
-  final Completer<Response> _completer = new Completer();
+  final Completer<Response> _completer = Completer();
 
   Request(String action, MessageBody body, [this.writeId])
-      : message = new DataMessage(action, body, reqNum: nextRequestNum++);
+      : message = DataMessage(action, body, reqNum: nextRequestNum++);
 
   Request.auth(String cred)
-      : this(DataMessage.actionAuth, new MessageBody(cred: cred));
+      : this(DataMessage.actionAuth, MessageBody(cred: cred));
 
   Request.gauth(String cred)
-      : this(DataMessage.actionGauth, new MessageBody(cred: cred));
+      : this(DataMessage.actionGauth, MessageBody(cred: cred));
 
-  Request.unauth() : this(DataMessage.actionUnauth, new MessageBody());
+  Request.unauth() : this(DataMessage.actionUnauth, MessageBody());
 
   Request.listen(String path, {Query query, int tag, String hash})
       : this(DataMessage.actionListen,
-            new MessageBody(path: path, query: query, tag: tag, hash: hash));
+            MessageBody(path: path, query: query, tag: tag, hash: hash));
 
   Request.unlisten(String path, {Query query, int tag})
       : this(DataMessage.actionUnlisten,
-            new MessageBody(path: path, query: query, tag: tag));
+            MessageBody(path: path, query: query, tag: tag));
 
   Request.onDisconnectPut(String path, data)
       : this(DataMessage.actionOnDisconnectPut,
-            new MessageBody(path: path, data: data));
+            MessageBody(path: path, data: data));
 
   Request.onDisconnectMerge(String path, data)
       : this(DataMessage.actionOnDisconnectMerge,
-            new MessageBody(path: path, data: data));
+            MessageBody(path: path, data: data));
 
   Request.onDisconnectCancel(String path)
-      : this(DataMessage.actionOnDisconnectCancel, new MessageBody(path: path));
+      : this(DataMessage.actionOnDisconnectCancel, MessageBody(path: path));
 
   Request.put(String path, data, [String hash, int writeId])
       : this(DataMessage.actionPut,
-            new MessageBody(path: path, data: data, hash: hash), writeId);
+            MessageBody(path: path, data: data, hash: hash), writeId);
 
   Request.merge(String path, data, [String hash, int writeId])
       : this(DataMessage.actionMerge,
-            new MessageBody(path: path, data: data, hash: hash), writeId);
+            MessageBody(path: path, data: data, hash: hash), writeId);
 
   Request.stats(stats)
-      : this(DataMessage.actionStats, new MessageBody(stats: stats));
+      : this(DataMessage.actionStats, MessageBody(stats: stats));
 
   Future<Response> get response => _completer.future;
 
   @override
-  String toString() => "Request[${json.encode(message)}]";
+  String toString() => 'Request[${json.encode(message)}]';
 }

@@ -7,17 +7,16 @@ part of firebase_dart;
 /// can be used for reading or writing data to that database location.
 @deprecated
 abstract class Firebase implements Reference {
-  /// Construct a new Firebase reference from a full Firebase URL.
+  /// Construct a Firebase reference from a full Firebase URL.
   factory Firebase(String url) {
     var uri = Uri.parse(url);
-    return new Firebase._(
-        new FirebaseDatabase(
-            databaseURL: uri.replace(pathSegments: []).toString()),
+    return Firebase._(
+        FirebaseDatabase(databaseURL: uri.replace(pathSegments: []).toString()),
         uri.pathSegments.map(Uri.decodeComponent).toList());
   }
 
   factory Firebase._(FirebaseDatabase db, List<String> path) =>
-      new FirebaseImpl(db, path);
+      FirebaseImpl(db, path);
 
   @deprecated
   Future<Map> authWithCustomToken(String token);

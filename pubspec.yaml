@@ -5,7 +5,7 @@ author: Rik Bellens <rik.bellens@appsup.be>
 homepage: https://github.com/appsup-dart/firebase_dart
 
 environment:
-  sdk: '>=1.14.0 <3.0.0'
+  sdk: '>=2.5.0 <3.0.0'
 
 dependencies:
   quiver: '>=0.22.0 <3.0.0'
@@ -23,3 +23,4 @@ dependencies:
 
 dev_dependencies:
   test: '>=0.12.0 <2.0.0'
+  pedantic: ^1.9.0

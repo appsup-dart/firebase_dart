@@ -4,15 +4,15 @@ abstract class TreeStructuredDataOrdering extends Ordering {
   factory TreeStructuredDataOrdering(String orderBy) {
     if (orderBy == null) return null;
     switch (orderBy) {
-      case ".key":
+      case '.key':
         return const TreeStructuredDataOrdering.byKey();
-      case ".value":
+      case '.value':
         return const TreeStructuredDataOrdering.byValue();
-      case ".priority":
+      case '.priority':
         return const TreeStructuredDataOrdering.byPriority();
       default:
-        assert(!orderBy.startsWith("."));
-        return new TreeStructuredDataOrdering.byChild(orderBy);
+        assert(!orderBy.startsWith('.'));
+        return TreeStructuredDataOrdering.byChild(orderBy);
     }
   }
 
@@ -45,10 +45,10 @@ class PriorityOrdering extends TreeStructuredDataOrdering {
 
   @override
   TreeStructuredData mapValue(TreeStructuredData v) =>
-      new TreeStructuredData.leaf(v?.priority);
+      TreeStructuredData.leaf(v?.priority);
 
   @override
-  String get orderBy => ".priority";
+  String get orderBy => '.priority';
 }
 
 class ValueOrdering extends TreeStructuredDataOrdering {
@@ -56,10 +56,10 @@ class ValueOrdering extends TreeStructuredDataOrdering {
 
   @override
   TreeStructuredData mapValue(TreeStructuredData v) =>
-      new TreeStructuredData.leaf(v.value);
+      TreeStructuredData.leaf(v.value);
 
   @override
-  String get orderBy => ".value";
+  String get orderBy => '.value';
 }
 
 class KeyOrdering extends TreeStructuredDataOrdering {
@@ -69,7 +69,7 @@ class KeyOrdering extends TreeStructuredDataOrdering {
   TreeStructuredData mapValue(TreeStructuredData v) => null;
 
   @override
-  String get orderBy => ".key";
+  String get orderBy => '.key';
 }
 
 class ChildOrdering extends TreeStructuredDataOrdering {
@@ -79,8 +79,8 @@ class ChildOrdering extends TreeStructuredDataOrdering {
 
   @override
   TreeStructuredData mapValue(TreeStructuredData v) {
-    var parts = child.split("/").map((v) => new Name(v));
-    return parts.fold(v, (v, c) => v.children[c] ?? new TreeStructuredData());
+    var parts = child.split('/').map((v) => Name(v));
+    return parts.fold(v, (v, c) => v.children[c] ?? TreeStructuredData());
   }
 
   @override
@@ -89,10 +89,10 @@ class ChildOrdering extends TreeStructuredDataOrdering {
 
 class QueryFilter extends Filter<Name, TreeStructuredData> {
   const QueryFilter(
-      {KeyValueInterval validInterval: const KeyValueInterval(),
+      {KeyValueInterval validInterval = const KeyValueInterval(),
       int limit,
-      bool reversed: false,
-      TreeStructuredDataOrdering ordering:
+      bool reversed = false,
+      TreeStructuredDataOrdering ordering =
           const TreeStructuredDataOrdering.byPriority()})
       : super(
             ordering: ordering,
@@ -108,17 +108,17 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
       dynamic endAtValue) {
     if (startAtKey != null || startAtValue != null) {
       validInterval = validInterval.startAt(
-          startAtKey == null ? null : new Name(startAtKey),
+          startAtKey == null ? null : Name(startAtKey),
           startAtValue == null
               ? null
-              : new TreeStructuredData(value: new Value(startAtValue)));
+              : TreeStructuredData(value: Value(startAtValue)));
     }
     if (endAtKey != null || endAtValue != null) {
       validInterval = validInterval.endAt(
-          endAtKey == null ? null : new Name(endAtKey),
+          endAtKey == null ? null : Name(endAtKey),
           endAtValue == null
               ? null
-              : new TreeStructuredData(value: new Value(endAtValue)));
+              : TreeStructuredData(value: Value(endAtValue)));
     }
     return validInterval;
   }
@@ -141,18 +141,18 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
       dynamic endAtValue,
       int limit,
       bool reverse}) {
-    var ordering = new TreeStructuredDataOrdering(orderBy) ?? this.ordering;
+    var ordering = TreeStructuredDataOrdering(orderBy) ?? this.ordering;
     var validInterval = (ordering is KeyOrdering)
         ? _updateInterval(
             this.validInterval, startAtValue, null, endAtValue, null)
         : _updateInterval(
             this.validInterval, startAtKey, startAtValue, endAtKey, endAtValue);
 
-    return new QueryFilter(
+    return QueryFilter(
         ordering: ordering,
         validInterval: validInterval,
         limit: limit ?? this.limit,
-        reversed: reverse ?? this.reversed);
+        reversed: reverse ?? reversed);
   }
 
   bool get limits => limit != null || !validInterval.isUnlimited;
@@ -161,5 +161,5 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
 
   @override
   String toString() =>
-      "QueryFilter[orderBy: $orderBy, limit: $limit, reversed: $reversed, start: (${validInterval.start.key}, ${validInterval.start.value}), end: (${validInterval.end.key}, ${validInterval.end.value})]";
+      'QueryFilter[orderBy: $orderBy, limit: $limit, reversed: $reversed, start: (${validInterval.start.key}, ${validInterval.start.value}), end: (${validInterval.end.key}, ${validInterval.end.value})]';
 }

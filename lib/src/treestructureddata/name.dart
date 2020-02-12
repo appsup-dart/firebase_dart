@@ -17,8 +17,8 @@ class _SpecialName extends Name {
 }
 
 class Name implements Pattern, Comparable<Name> {
-  static const Name min = const _SpecialName("[MIN_NAME]");
-  static const Name max = const _SpecialName("[MAX_NAME]");
+  static const Name min = _SpecialName('[MIN_NAME]');
+  static const Name max = _SpecialName('[MAX_NAME]');
 
   final String _value;
 
@@ -49,9 +49,7 @@ class Name implements Pattern, Comparable<Name> {
 
   String asString() => _value;
 
-  static T _returnNull<T>(_) => null;
-
-  int asInt() => int.parse(_value, onError: _returnNull);
+  int asInt() => int.tryParse(_value);
 
   int get length => _value.length;
 
@@ -85,9 +83,7 @@ class Name implements Pattern, Comparable<Name> {
   }
 
   static Path<Name> parsePath(String path) {
-    return new Path<Name>.from(path
-        .split("/")
-        .where((v) => v.isNotEmpty)
-        .map<Name>((v) => new Name(v)));
+    return Path<Name>.from(
+        path.split('/').where((v) => v.isNotEmpty).map<Name>((v) => Name(v)));
   }
 }

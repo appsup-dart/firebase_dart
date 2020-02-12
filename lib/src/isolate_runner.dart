@@ -6,7 +6,7 @@ class Runners {
   static Runner _mainRunner;
 
   static Runner get mainRunner => _mainRunner ??=
-      new IsolateRunner(Isolate.current, new IsolateRunnerRemote().commandPort);
+      IsolateRunner(Isolate.current, IsolateRunnerRemote().commandPort);
 
   static void setMainRunner(Runner runner) {
     assert(_mainRunner == null);

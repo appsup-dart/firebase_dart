@@ -19,19 +19,19 @@ abstract class Query {
   Stream<Event> on(String eventType);
 
   /// Streams for 'value' events.
-  Stream<Event> get onValue => on("value");
+  Stream<Event> get onValue => on('value');
 
   /// Streams for 'child_added' events.
-  Stream<Event> get onChildAdded => on("child_added");
+  Stream<Event> get onChildAdded => on('child_added');
 
   /// Streams for 'child_moved' events.
-  Stream<Event> get onChildMoved => on("child_moved");
+  Stream<Event> get onChildMoved => on('child_moved');
 
   /// Streams for 'child_changed' events.
-  Stream<Event> get onChildChanged => on("child_changed");
+  Stream<Event> get onChildChanged => on('child_changed');
 
   /// Streams for 'child_removed' events.
-  Stream<Event> get onChildRemoved => on("child_removed");
+  Stream<Event> get onChildRemoved => on('child_removed');
 
   /// Listens for exactly one event of the specified event type, and then stops
   /// listening.

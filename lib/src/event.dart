@@ -11,7 +11,7 @@ class Event {
   EventTarget get target => _target;
 }
 
-typedef void EventListener(Event event);
+typedef EventListener = void Function(Event event);
 
 class EventTarget {
   final Map<String, Set<EventListener>> _eventRegistrations = {};
@@ -29,14 +29,18 @@ class EventTarget {
   }
 
   void addEventListener(String type, EventListener listener) {
-    _eventRegistrations.putIfAbsent(type, () => new Set()).add(listener);
+    _eventRegistrations
+        .putIfAbsent(type, () => <void Function(Event)>{})
+        .add(listener);
   }
 
   void removeEventListener(String type, EventListener listener) {
     if (listener == null) {
       _eventRegistrations.remove(type);
     } else {
-      _eventRegistrations.putIfAbsent(type, () => new Set()).remove(listener);
+      _eventRegistrations
+          .putIfAbsent(type, () => <void Function(Event)>{})
+          .remove(listener);
     }
   }
 }
