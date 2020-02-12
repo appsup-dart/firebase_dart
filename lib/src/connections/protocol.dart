@@ -4,6 +4,7 @@
 library firebase.protocol;
 
 import 'dart:async';
+import 'package:jose/jose.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:quiver/check.dart' as quiver;
 import 'package:quiver/collection.dart' as quiver;

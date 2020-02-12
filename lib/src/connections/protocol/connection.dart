@@ -201,9 +201,34 @@ class ProtocolConnection extends Connection {
 
   var _authToken;
 
+  Request _createAuthRequestForToken(String token) {
+    if (token == "owner") {
+      // is simulator
+      return new Request.gauth(token);
+    } else if (token.split(".").length == 3) {
+      // this is an access token or id token
+      try {
+        var jwt = JsonWebToken.unverified(token);
+        if (jwt.claims.issuedAt != null) {
+          // this is an id token
+          return new Request.auth(token);
+        } else {
+          return new Request.gauth(token);
+        }
+      } catch (e, tr) {
+        // this is an access token
+        return new Request.gauth(token);
+      }
+    } else {
+      // this is a database secret
+      return new Request.auth(token);
+    }
+
+  }
+
   @override
   Future<Map<String, dynamic>> auth(String token) =>
-      _request(token=="owner" ? new Request.gauth(token) : new Request.auth(token)).then((b) {
+      _request(_createAuthRequestForToken(token)).then((b) {
         _authToken = token;
         return b.data["auth"];
       });

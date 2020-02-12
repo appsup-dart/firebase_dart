@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.15
+
+- support more authentication methods: firebase secret, id token, access token 
+
 ## 0.7.14
 
 - fixed crash when receiving a merge in some situations
