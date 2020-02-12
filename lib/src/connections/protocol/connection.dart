@@ -18,6 +18,7 @@ class ProtocolConnection extends Connection {
   ProtocolConnection(String host, {this.namespace, this.ssl}) : super.base(host) {
     quiver.checkArgument(host != null && host.isNotEmpty);
     _scheduleConnect(0);
+    _startHandlingRequests();
   }
 
   final Map<String, Map<QueryFilter, Request>> _listens = {};
@@ -172,6 +173,7 @@ class ProtocolConnection extends Connection {
 
   @override
   Future<Null> close() async {
+    await _requests.close();
     await _onDataOperation.close();
     await _onAuth.close();
     await _onConnect.close();
@@ -199,7 +201,7 @@ class ProtocolConnection extends Connection {
     });
   }
 
-  var _authToken;
+  FutureOr<String> _authToken;
 
   Request _createAuthRequestForToken(String token) {
     if (token == "owner") {
@@ -227,11 +229,13 @@ class ProtocolConnection extends Connection {
   }
 
   @override
-  Future<Map<String, dynamic>> auth(String token) =>
-      _request(_createAuthRequestForToken(token)).then((b) {
-        _authToken = token;
-        return b.data["auth"];
-      });
+  Future<Map<String, dynamic>> auth(FutureOr<String> token) {
+    _authToken = token;
+    return _request(_createAuthRequestForToken(token)).then((b) {
+      return b.data["auth"];
+    });
+  }
+
 
   @override
   Future<Null> unauth() {
@@ -242,7 +246,25 @@ class ProtocolConnection extends Connection {
   bool get _transportIsReady =>
       _transport != null && _transport.readyState == Transport.connected;
 
-  Future<MessageBody> _request(Request request) {
+  StreamController<FutureOr<Request>> _requests = new StreamController();
+
+  void _startHandlingRequests() {
+    _requests.stream.asyncMap<Request>((event) => event).forEach(_doRequest);
+  }
+
+  Future<MessageBody> _request(FutureOr<Request> request) async {
+    _requests.add(request);
+    return (await request).response.then<MessageBody>((r) {
+      _outstandingRequests.remove(request);
+      if (r.message.body.status == MessageBody.statusOk) {
+        return r.message.body;
+      } else {
+        throw new ServerError(r.message.body.status, r.message.body.data);
+      }
+    });
+  }
+
+  Future<MessageBody> _doRequest(Request request) {
     switch (request.message.action) {
       case DataMessage.actionListen:
       case DataMessage.actionUnlisten:
@@ -253,14 +275,6 @@ class ProtocolConnection extends Connection {
     if (_transportIsReady) {
       _transport.add(request);
     }
-    return request.response.then<MessageBody>((r) {
-      _outstandingRequests.remove(request);
-      if (r.message.body.status == MessageBody.statusOk) {
-        return r.message.body;
-      } else {
-        throw new ServerError(r.message.body.status, r.message.body.data);
-      }
-    });
   }
 
   @override

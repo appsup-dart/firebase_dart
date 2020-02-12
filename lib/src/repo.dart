@@ -84,7 +84,7 @@ class Repo {
   ///
   /// Returns a future that completes with the auth data on success, or fails
   /// otherwise.
-  Future<Map> auth(String token) async {
+  Future<Map> auth(FutureOr<String> token) async {
     var auth = await _connection.auth(token);
     _onAuth.add(auth);
     _authData = auth;
