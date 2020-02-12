@@ -229,7 +229,8 @@ class ProtocolConnection extends Connection {
   @override
   Future<Map<String, dynamic>> auth(FutureOr<String> token) {
     _authToken = token;
-    return _request(_createAuthRequestForToken(token)).then((b) {
+    return _request(Future.value(token).then(_createAuthRequestForToken))
+        .then((b) {
       return b.data['auth'];
     });
   }

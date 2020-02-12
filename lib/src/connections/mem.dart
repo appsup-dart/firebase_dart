@@ -169,7 +169,7 @@ class MemConnection extends Connection {
   DateTime get serverTime => DateTime.now();
 
   @override
-  Future<Map> auth(String token) async {
+  Future<Map> auth(FutureOr<String> token) async {
     var t = FirebaseTokenCodec(null).decode(token);
     return t.data;
   }

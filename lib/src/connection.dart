@@ -130,7 +130,7 @@ abstract class Connection {
   Future<Null> close();
 
   /// Authenticates with the token.
-  Future<Map> auth(String token);
+  Future<Map> auth(FutureOr<String> token);
 
   /// Unauthenticates.
   Future<Null> unauth();
