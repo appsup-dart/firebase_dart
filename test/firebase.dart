@@ -322,14 +322,15 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await ref.child('text1/hello').set('world');
 
-      expect(await ref.get(),
-          {"text1": {'hello': 'world'}, "text2": "hello2", "text3": "hello3"});
+      expect(await ref.get(), {
+        "text1": {'hello': 'world'},
+        "text2": "hello2",
+        "text3": "hello3"
+      });
 
       await ref.update({'text1/hello': null});
 
-      expect(await ref.get(),
-          {"text2": "hello2", "text3": "hello3"});
-
+      expect(await ref.get(), {"text2": "hello2", "text3": "hello3"});
     });
 
     test('Push', () async {
@@ -1001,7 +1002,6 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('Bugfix: crash when receiving merge', () async {
-
       var ref = new Firebase("${testUrl}test").child("some/path");
 
       ref.parent.orderByKey().equalTo('path').onValue.listen(print);
@@ -1009,11 +1009,8 @@ void testsWith(Map<String, dynamic> secrets) {
       await ref.set({"child1": "v", "child2": 3});
 
       await ref.update({"hello": "world"});
-
-
     });
   });
-
 }
 
 Future wait(int millis) async =>

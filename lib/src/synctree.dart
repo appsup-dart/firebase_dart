@@ -436,8 +436,8 @@ class SyncTree {
         if (filter != null &&
             (childOp.nodeOperation is Overwrite) &&
             (childOp.nodeOperation as Overwrite).value.isNil) continue;
-        _applyOperationToSyncPoints(tree.children[k], null,
-            childOp, type, writeId, path.child(k));
+        _applyOperationToSyncPoints(
+            tree.children[k], null, childOp, type, writeId, path.child(k));
       }
       return;
     }

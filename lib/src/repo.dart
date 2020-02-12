@@ -131,10 +131,11 @@ class Repo {
     if (value.isNotEmpty) {
       path = _preparePath(path);
       var serverValues = _connection.serverValues;
-      var changedChildren = new Map<Path<Name>, TreeStructuredData>.fromIterables(
-          value.keys.map<Path<Name>>((c) => Name.parsePath(c)),
-          value.values.map<TreeStructuredData>(
-                  (v) => ServerValue.resolve(new TreeStructuredData.fromJson(v, null), serverValues)));
+      var changedChildren =
+          new Map<Path<Name>, TreeStructuredData>.fromIterables(
+              value.keys.map<Path<Name>>((c) => Name.parsePath(c)),
+              value.values.map<TreeStructuredData>((v) => ServerValue.resolve(
+                  new TreeStructuredData.fromJson(v, null), serverValues)));
       int writeId = _nextWriteId++;
       _syncTree.applyUserMerge(Name.parsePath(path), changedChildren, writeId);
       try {

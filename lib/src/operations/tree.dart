@@ -21,7 +21,8 @@ class TreeOperation extends Operation {
     return new TreeOperation(path, new Overwrite(value));
   }
 
-  TreeOperation.merge(Path<Name> path, Map<Path<Name>, TreeStructuredData> children)
+  TreeOperation.merge(
+      Path<Name> path, Map<Path<Name>, TreeStructuredData> children)
       : this(path, new Merge(children));
 
   factory TreeOperation.ack(Path<Name> path, bool success) =>
@@ -86,17 +87,21 @@ class Merge extends Operation {
   final List<TreeOperation> overwrites;
 
   Merge._(this.overwrites);
-  Merge(Map<Path<Name>, TreeStructuredData> children) : this._(
-      children.keys.map((p)=>new TreeOperation.overwrite(p, children[p])).toList());
+  Merge(Map<Path<Name>, TreeStructuredData> children)
+      : this._(children.keys
+            .map((p) => new TreeOperation.overwrite(p, children[p]))
+            .toList());
 
   @override
   TreeStructuredData apply(TreeStructuredData value) {
     // first do remove operations then set operations, otherwise filtered views
     // might remove some values
-    var removeOperations = overwrites.where((t)=>(t.nodeOperation as Overwrite).value.isNil);
-    var setOperations = overwrites.where((t)=>!(t.nodeOperation as Overwrite).value.isNil);
-    var v = removeOperations.fold(value, (v,o)=>o.apply(v));
-    v = setOperations.fold(v, (v,o)=>o.apply(v));
+    var removeOperations =
+        overwrites.where((t) => (t.nodeOperation as Overwrite).value.isNil);
+    var setOperations =
+        overwrites.where((t) => !(t.nodeOperation as Overwrite).value.isNil);
+    var v = removeOperations.fold(value, (v, o) => o.apply(v));
+    v = setOperations.fold(v, (v, o) => o.apply(v));
     return v;
   }
 
@@ -106,7 +111,8 @@ class Merge extends Operation {
 
   @override
   Operation operationForChild(Name key) {
-    var o = overwrites.map((o)=>o.operationForChild(key)).where((o)=>o!=null);
+    var o =
+        overwrites.map((o) => o.operationForChild(key)).where((o) => o != null);
     if (o.isEmpty) return null;
     return new Merge._(o.toList());
   }

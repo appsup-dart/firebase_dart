@@ -36,15 +36,16 @@ class OperationEvent {
   final dynamic data;
 
   OperationEvent(this.type, this.path, this.data, this.query) {
-    if (type==OperationEventType.merge&&data is! Map)
+    if (type == OperationEventType.merge && data is! Map)
       throw new ArgumentError.value(data, 'data', "should be a map");
-    
+
     bool _isBaseType(dynamic v) {
-      if (v is num||v is bool||v is String||v==null) return true;
-      if (v is Map) return v.keys.every((k)=>k is String)&&v.values.every(_isBaseType);
+      if (v is num || v is bool || v is String || v == null) return true;
+      if (v is Map)
+        return v.keys.every((k) => k is String) && v.values.every(_isBaseType);
       return false;
     }
-    
+
     if (!_isBaseType(data))
       throw new ArgumentError.value(data, 'data', "should be a base type");
   }
@@ -52,13 +53,16 @@ class OperationEvent {
   TreeOperation get operation {
     switch (type) {
       case OperationEventType.overwrite:
-        return new TreeOperation.overwrite(path, new TreeStructuredData.fromJson(data));
+        return new TreeOperation.overwrite(
+            path, new TreeStructuredData.fromJson(data));
       case OperationEventType.merge:
-        return new TreeOperation.merge(path,
+        return new TreeOperation.merge(
+            path,
             new Map.fromIterables(
-                (data as Map).keys.map((k)=>Name.parsePath(k.toString())),
-                (data as Map).values.map((v)=>new TreeStructuredData.fromJson(v))
-            ));
+                (data as Map).keys.map((k) => Name.parsePath(k.toString())),
+                (data as Map)
+                    .values
+                    .map((v) => new TreeStructuredData.fromJson(v))));
       default:
         return null;
     }
@@ -72,9 +76,11 @@ abstract class Connection {
   factory Connection(Uri uri) {
     switch (uri.scheme) {
       case "http":
-        return new ProtocolConnection("${uri.host}:${uri.port ?? 80}", namespace: uri.queryParameters["ns"], ssl: false);
+        return new ProtocolConnection("${uri.host}:${uri.port ?? 80}",
+            namespace: uri.queryParameters["ns"], ssl: false);
       case "https":
-        return new ProtocolConnection("${uri.host}:${uri.port ?? 443}", namespace: uri.queryParameters["ns"], ssl: true);
+        return new ProtocolConnection("${uri.host}:${uri.port ?? 443}",
+            namespace: uri.queryParameters["ns"], ssl: true);
       case "mem":
         return new MemConnection(uri.host);
       default:
@@ -103,7 +109,8 @@ abstract class Connection {
   Future<Null> put(String path, dynamic value, {String hash, int writeId});
 
   /// Merges children at a particular path.
-  Future<Null> merge(String path, Map<String, dynamic> value, {String hash, int writeId});
+  Future<Null> merge(String path, Map<String, dynamic> value,
+      {String hash, int writeId});
 
   /// Stream of connect events.
   Stream<bool> get onConnect;

@@ -49,9 +49,7 @@ class SingleInstanceBackend {
     await new Future.microtask(() => null);
   }
 
-  static Future apply(TreeOperation operation) =>
-      _applyOnInstance(operation);
-
+  static Future apply(TreeOperation operation) => _applyOnInstance(operation);
 }
 
 class MemConnection extends Connection {
@@ -121,16 +119,15 @@ class MemConnection extends Connection {
   }
 
   @override
-  Future<Null> merge(String path, Map<String,dynamic> value,
+  Future<Null> merge(String path, Map<String, dynamic> value,
       {String hash, int writeId}) async {
     var p = Name.parsePath(path);
     // TODO check hash
     syncTree.applyServerOperation(
         new TreeOperation.merge(
-            p, new Map.fromIterables(
-            value.keys.map((k)=>Name.parsePath(k)),
-            value.values.map((v)=>new TreeStructuredData.fromJson(v))
-        )),
+            p,
+            new Map.fromIterables(value.keys.map((k) => Name.parsePath(k)),
+                value.values.map((v) => new TreeStructuredData.fromJson(v)))),
         null);
   }
 

@@ -174,7 +174,8 @@ class WebSocketTransport extends Transport {
 
   final bool ssl;
 
-  WebSocketTransport(String host, String namespace, this.ssl, [String sessionId])
+  WebSocketTransport(String host, String namespace, this.ssl,
+      [String sessionId])
       : super(host, namespace, sessionId);
 
   StreamSubscription _outputSubscription;

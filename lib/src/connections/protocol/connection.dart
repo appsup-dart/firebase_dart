@@ -15,7 +15,8 @@ class ProtocolConnection extends Connection {
   final String namespace;
   final bool ssl;
 
-  ProtocolConnection(String host, {this.namespace, this.ssl}) : super.base(host) {
+  ProtocolConnection(String host, {this.namespace, this.ssl})
+      : super.base(host) {
     quiver.checkArgument(host != null && host.isNotEmpty);
     _scheduleConnect(0);
     _startHandlingRequests();
@@ -68,7 +69,7 @@ class ProtocolConnection extends Connection {
   }
 
   @override
-  Future<Null> merge(String path, Map<String,dynamic> value,
+  Future<Null> merge(String path, Map<String, dynamic> value,
       {String hash, int writeId}) async {
     await _request(new Request.merge(path, value, hash, writeId));
   }
@@ -114,8 +115,8 @@ class ProtocolConnection extends Connection {
   Stream<Map> get onAuth => _onAuth.stream;
 
   void _establishConnection() {
-    _transport =
-        new WebSocketTransport(host, namespace ?? host.split(".").first, ssl, _lastSessionId);
+    _transport = new WebSocketTransport(
+        host, namespace ?? host.split(".").first, ssl, _lastSessionId);
     _transport.ready.then((_) {
       _onConnect.add(true);
       _lastSessionId = _transport.info.sessionId;
@@ -225,7 +226,6 @@ class ProtocolConnection extends Connection {
       // this is a database secret
       return new Request.auth(token);
     }
-
   }
 
   @override
@@ -235,7 +235,6 @@ class ProtocolConnection extends Connection {
       return b.data["auth"];
     });
   }
-
 
   @override
   Future<Null> unauth() {
