@@ -220,6 +220,9 @@ class ProtocolConnection extends Connection {
         // this is an access token
         return Request.gauth(token);
       }
+    } else if (token.split('.').length == 3) {
+      // this is an access token
+      return Request.gauth(token);
     } else {
       // this is a database secret
       return Request.auth(token);
