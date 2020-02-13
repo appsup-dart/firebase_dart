@@ -220,7 +220,7 @@ class ProtocolConnection extends Connection {
         // this is an access token
         return Request.gauth(token);
       }
-    } else if (token.split('.').length == 3) {
+    } else if (token.split('.').length == 2) {
       // this is an access token
       return Request.gauth(token);
     } else {
