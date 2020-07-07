@@ -2,8 +2,8 @@
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
 import 'package:test/test.dart';
-import 'package:firebase_dart/src/database/firebase.dart';
-import 'package:firebase_dart/src/database/repo.dart';
+import 'package:firebase_dart/database.dart';
+import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/core.dart' hide Firebase;
 import 'package:firebase_dart/core.dart' as core;
 import 'package:logging/logging.dart';
@@ -14,7 +14,7 @@ import 'secrets.dart'
     if (dart.library.html) 'secrets.dart'
     if (dart.library.io) 'secrets_io.dart' as s;
 import 'package:dart2_constant/convert.dart';
-import 'package:firebase_dart/src/database/connections/protocol.dart';
+import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 
 void main() {
   StreamSubscription logSubscription;

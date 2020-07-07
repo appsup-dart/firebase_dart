@@ -6,7 +6,7 @@ import '../operations/tree.dart';
 import '../synctree.dart';
 import '../repo.dart';
 import '../events/value.dart';
-import '../firebase.dart' show FirebaseTokenCodec;
+import '../../../database.dart' show FirebaseTokenCodec;
 
 class _Registrar extends RemoteListenerRegistrar {
   @override

@@ -1,31 +1,38 @@
-// Copyright (c) 2015, Rik Bellens. All rights reserved. Use of this source code
+// Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-library firebase_dart;
+part of firebase_dart;
 
-import 'dart:async';
-import 'dart:convert' show Converter, Codec;
-import 'package:crypto/crypto.dart';
-import 'dart:collection';
-import 'firebase_impl.dart';
-import 'package:quiver/core.dart' as quiver;
-import 'package:dart2_constant/convert.dart';
+/// A Firebase reference represents a particular location in your database and
+/// can be used for reading or writing data to that database location.
+@deprecated
+abstract class Firebase implements Reference {
+  /// Construct a Firebase reference from a full Firebase URL.
+  factory Firebase(String url) {
+    var uri = Uri.parse(url);
+    return Firebase._(
+        FirebaseDatabase(databaseURL: uri.replace(pathSegments: []).toString()),
+        uri.pathSegments.map(Uri.decodeComponent).toList());
+  }
 
-import 'package:firebase_dart/core.dart';
+  factory Firebase._(FirebaseDatabase db, List<String> path) =>
+      FirebaseImpl(db, path);
 
-part 'firebase/datasnapshot.dart';
+  @deprecated
+  Future<Map> authWithCustomToken(String token);
 
-part 'firebase/event.dart';
+  /// Authenticates a Firebase client using an authentication token or Firebase
+  /// Secret.
+  /// Takes a single token as an argument and returns a Future that will be
+  /// resolved when the authentication succeeds (or fails).
+  Future<Map> authenticate(FutureOr<String> token);
 
-part 'firebase/firebase.dart';
+  /// Synchronously retrieves the current authentication state of the client.
+  dynamic get auth;
 
-part 'firebase/query.dart';
+  /// Listens for changes to the client's authentication state.
+  Stream<Map> get onAuth;
 
-part 'firebase/disconnect.dart';
-
-part 'firebase/token.dart';
-
-part 'firebase/server_value.dart';
-
-part 'firebase/database.dart';
-part 'firebase/reference.dart';
+  /// Unauthenticates a Firebase client (i.e. logs out).
+  Future unauth();
+}

@@ -1,4 +1,4 @@
-import 'package:firebase_dart/firebase_dart.dart';
+import 'package:firebase_dart/database.dart';
 
 void main() {
   var ref = Firebase('https://n6ufdauwqsdfmp.firebaseio-demo.com/');

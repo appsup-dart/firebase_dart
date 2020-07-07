@@ -5,7 +5,7 @@ import 'connection.dart';
 import 'dart:async';
 import 'treestructureddata.dart';
 import 'synctree.dart';
-import 'firebase.dart' as firebase;
+import '../../database.dart' as firebase;
 import 'firebase_impl.dart' as firebase;
 import 'events/value.dart';
 import 'events/child.dart';

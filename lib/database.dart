@@ -3,6 +3,6 @@
 
 /// A pure Dart implementation of the Firebase client
 ///
-library firebase_dart;
+library firebase_database;
 
-export 'src/database/firebase.dart';
+export 'src/database.dart';
