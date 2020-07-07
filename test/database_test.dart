@@ -4,7 +4,8 @@
 import 'package:test/test.dart';
 import 'package:firebase_dart/src/database/firebase.dart';
 import 'package:firebase_dart/src/database/repo.dart';
-import 'package:firebase_dart/firebase_core.dart';
+import 'package:firebase_dart/core.dart' hide Firebase;
+import 'package:firebase_dart/core.dart' as core;
 import 'package:logging/logging.dart';
 import 'dart:math';
 import 'dart:async';
@@ -39,18 +40,32 @@ void testsWith(Map<String, dynamic> secrets) {
 
   Firebase ref, ref2;
 
+  FirebaseApp app1, app2, appAlt1, appAlt2;
+
+  setUpAll(() async {
+    app1 = await core.Firebase.initializeApp(name: 'app1');
+    app2 = await core.Firebase.initializeApp(name: 'app2');
+    appAlt1 = await core.Firebase.initializeApp(name: 'alt1');
+    appAlt2 = await core.Firebase.initializeApp(name: 'alt2');
+  });
+
+  tearDownAll(() async {
+    await app1.delete();
+    await app2.delete();
+    await appAlt1.delete();
+    await appAlt2.delete();
+  });
+
   group('Recover from connection loss', () {
     Future<void> connectionLostTests(
         FutureOr<void> Function() connectionDestroyer) async {
-      var ref =
-          FirebaseDatabase(app: FirebaseApp(name: 'app1'), databaseURL: testUrl)
-              .reference()
-              .child('test');
+      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test');
 
-      var ref2 =
-          FirebaseDatabase(app: FirebaseApp(name: 'app2'), databaseURL: testUrl)
-              .reference()
-              .child('test');
+      var ref2 = FirebaseDatabase(app: app2, databaseURL: testUrl)
+          .reference()
+          .child('test');
 
       await ref2.set('hello');
       await wait(200);
@@ -683,10 +698,9 @@ void testsWith(Map<String, dynamic> secrets) {
       });
     });
     test('Order after remove', () async {
-      var iref =
-          FirebaseDatabase(app: FirebaseApp(name: 'alt2'), databaseURL: testUrl)
-              .reference()
-              .child(ref.url.path);
+      var iref = FirebaseDatabase(app: appAlt2, databaseURL: testUrl)
+          .reference()
+          .child(ref.url.path);
 
       await iref.set({
         'text2': {'order': 'b'},
@@ -802,12 +816,11 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Complex operations', () {
     Firebase iref;
-    setUp(() {
+    setUp(() async {
       ref = Firebase('${testUrl}test/complex');
-      iref =
-          FirebaseDatabase(app: FirebaseApp(name: 'alt'), databaseURL: testUrl)
-              .reference()
-              .child('test/complex');
+      iref = FirebaseDatabase(app: appAlt1, databaseURL: testUrl)
+          .reference()
+          .child('test/complex');
     });
 
     test('Remove out of view', () async {

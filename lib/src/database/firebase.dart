@@ -11,7 +11,7 @@ import 'firebase_impl.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:dart2_constant/convert.dart';
 
-import 'package:firebase_dart/firebase_core.dart';
+import 'package:firebase_dart/core.dart';
 
 part 'firebase/datasnapshot.dart';
 
