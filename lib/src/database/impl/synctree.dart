@@ -78,7 +78,7 @@ class MasterView {
 
     var events = const TreeEventGenerator().generateEvents(type,
         IncompleteData(TreeStructuredData()), _data.valueForFilter(filter));
-    events.forEach((e) => observers[filter].dispatchEvent(e));
+    events.where((e) => e.type == type).forEach((e) => listener(e));
     return true;
   }
 

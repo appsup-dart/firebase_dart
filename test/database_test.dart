@@ -1021,6 +1021,30 @@ void testsWith(Map<String, dynamic> secrets) {
       await ref.update({'hello': 'world'});
     });
   });
+
+  group('Bugs', () {
+    test('Initial events should not be dispatched to existing observers',
+        () async {
+      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/bugs/duplicate-events');
+
+      await ref.set('hello');
+      var completer = Completer();
+
+      // register an observer
+      ref.onValue.listen((v) {
+        // this throws an error when executed multiple times
+        completer.complete(v);
+      });
+
+      // wait until first event received
+      await completer.future;
+
+      // register a new observer -> should not trigger an event for the original observer
+      await ref.get();
+    });
+  });
 }
 
 Future wait(int millis) async => Future.delayed(Duration(milliseconds: millis));
