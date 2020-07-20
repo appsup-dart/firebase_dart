@@ -4,6 +4,7 @@
 part of firebase_dart;
 
 /// A [DataSnapshot] contains data from a Firebase database location.
+///
 /// Any time you read data from a Firebase database, you receive the data as a
 /// DataSnapshot.
 ///
@@ -22,7 +23,7 @@ abstract class DataSnapshot {
   /// Get the Dart Primitive, Map or List representation of the DataSnapshot.
   /// The value may be null, indicating that the snapshot is empty and contains
   /// no data.
-  dynamic get val;
+  dynamic get value;
 
   /// Returns true if this DataSnapshot contains any data.
   /// It is slightly more efficient than using snapshot.val() !== null.

@@ -72,7 +72,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
       var f = ref.onValue
           .map((v) {
-            return v.snapshot.val;
+            return v.snapshot.value;
           })
           .take(2)
           .toList();
@@ -156,7 +156,7 @@ void testsWith(Map<String, dynamic> secrets) {
         return;
       }
       ref = ref.child('test-protected');
-      ref.onValue.listen((e) => print(e.snapshot.val));
+      ref.onValue.listen((e) => print(e.snapshot.value));
       await ref.authWithCustomToken(token);
       await ref.set('hello world');
       expect(await ref.get(), 'hello world');
@@ -186,27 +186,27 @@ void testsWith(Map<String, dynamic> secrets) {
       var s = e.snapshot;
       expect(s.key, 'snapshot');
       expect(s.exists, true);
-      expect(s.val, {'hello': 'world'});
+      expect(s.value, {'hello': 'world'});
 
       s = s.child('hello');
       expect(s.key, 'hello');
       expect(s.exists, true);
-      expect(s.val, 'world');
+      expect(s.value, 'world');
 
       s = s.child('does not exist');
       expect(s.key, 'does not exist');
       expect(s.exists, false);
-      expect(s.val, null);
+      expect(s.value, null);
 
       s = s.child('also does not exist');
       expect(s.key, 'also does not exist');
       expect(s.exists, false);
-      expect(s.val, null);
+      expect(s.value, null);
 
       s = s.child('also does not exist');
       expect(s.key, 'also does not exist');
       expect(s.exists, false);
-      expect(s.val, null);
+      expect(s.value, null);
     });
   });
 
@@ -250,8 +250,8 @@ void testsWith(Map<String, dynamic> secrets) {
 
       var onValue = ref.onValue;
 
-      expect((await onValue.first).snapshot.val, 'hello world');
-      expect((await onValue.first).snapshot.val, 'hello world');
+      expect((await onValue.first).snapshot.value, 'hello world');
+      expect((await onValue.first).snapshot.value, 'hello world');
     });
 
     test('Child added', () async {
@@ -395,7 +395,7 @@ void testsWith(Map<String, dynamic> secrets) {
       await ref.set(ServerValue.timestamp);
 
       await Future.delayed(Duration(seconds: 1));
-      var values = events.map((e) => e.snapshot.val).toList();
+      var values = events.map((e) => e.snapshot.value).toList();
       print(values);
       expect(values.length, 3);
       expect(values[0], null);
@@ -435,7 +435,7 @@ void testsWith(Map<String, dynamic> secrets) {
     test('Counter', () async {
       await ref.set(0);
 
-      ref.onValue.listen((e) => print('onValue ${e.snapshot.val}'));
+      ref.onValue.listen((e) => print('onValue ${e.snapshot.value}'));
       await ref.onValue.first;
       var f1 = Stream.periodic(Duration(milliseconds: 10))
           .take(10)
@@ -715,7 +715,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .startAt('b')
           .limitToFirst(1)
           .onValue
-          .map((e) => e.snapshot.val?.keys?.single)
+          .map((e) => e.snapshot.value?.keys?.single)
           .where((v) =>
               v !=
               null) // returns null first when has index on order otherwise not
@@ -832,7 +832,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .orderByKey()
           .limitToFirst(2)
           .onValue
-          .map((e) => e.snapshot.val?.keys?.first)
+          .map((e) => e.snapshot.value?.keys?.first)
           .take(4)
           .toList();
 
@@ -854,7 +854,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .startAt('text2')
           .limitToFirst(1)
           .onValue
-          .expand((e) => e.snapshot.val?.values ?? [])
+          .expand((e) => e.snapshot.value?.values ?? [])
           .take(2)
           .toList();
 
@@ -874,7 +874,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .orderByKey()
           .limitToFirst(2)
           .onValue
-          .map((e) => e.snapshot.val)
+          .map((e) => e.snapshot.value)
           .listen(print);
 
       await wait(500);
@@ -884,10 +884,10 @@ void testsWith(Map<String, dynamic> secrets) {
           .child('text2')
           .onValue
           .map((v) {
-            print(v.snapshot.val);
+            print(v.snapshot.value);
             return v;
           })
-          .map((e) => e.snapshot.val)
+          .map((e) => e.snapshot.value)
           .take(3)
           .toList();
 
@@ -927,7 +927,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .startAt('b')
           .limitToFirst(1)
           .onValue
-          .map((e) => e.snapshot.val?.keys?.first)
+          .map((e) => e.snapshot.value?.keys?.first)
           .take(2)
           .toList();
 
@@ -959,7 +959,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .child('child2')
           .child('b')
           .onValue
-          .map((e) => e.snapshot.val)
+          .map((e) => e.snapshot.value)
           .take(3)
           .toList();
 
@@ -976,7 +976,7 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('with canceled parent', () async {
-      var sub = ref.root.onValue.listen((v) => print(v.snapshot.val),
+      var sub = ref.root.onValue.listen((v) => print(v.snapshot.value),
           onError: (e) => print('error $e'));
       await wait(400);
 
@@ -998,7 +998,7 @@ void testsWith(Map<String, dynamic> secrets) {
       ref
           .child('cars')
           .onValue
-          .listen((e) => print('on value ${e.snapshot.val}'));
+          .listen((e) => print('on value ${e.snapshot.value}'));
 
       var data = {
         'cars': {

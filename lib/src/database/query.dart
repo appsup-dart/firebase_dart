@@ -42,7 +42,7 @@ abstract class Query {
   Future<DataSnapshot> get onceValue => once('value');
 
   /// Convenient method to get the value for this query.
-  Future get() => onceValue.then((v) => v.val);
+  Future get() => onceValue.then((v) => v.value);
 
   /// Generates a new [Query] object ordered by the specified child key.
   Query orderByChild(String child);

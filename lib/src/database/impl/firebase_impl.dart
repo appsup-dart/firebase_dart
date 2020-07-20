@@ -9,7 +9,7 @@ class DataSnapshotImpl extends DataSnapshot {
   DataSnapshotImpl(DatabaseReference ref, this.treeStructuredData) : super(ref);
 
   @override
-  dynamic get val => treeStructuredData?.toJson();
+  dynamic get value => treeStructuredData?.toJson();
 
   @override
   bool get exists => treeStructuredData != null && !treeStructuredData.isNil;
