@@ -141,13 +141,13 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
       _db, [..._pathSegments, ...c.split('/').map(Uri.decodeComponent)]);
 
   @override
-  DatabaseReference get parent => _pathSegments.isEmpty
+  DatabaseReference parent() => _pathSegments.isEmpty
       ? null
       : FirebaseImpl(
           _db, [..._pathSegments.sublist(0, _pathSegments.length - 1)]);
 
   @override
-  DatabaseReference get root => FirebaseImpl(_db, []);
+  DatabaseReference root() => FirebaseImpl(_db, []);
 }
 
 class FirebaseImpl extends ReferenceImpl with Firebase {

@@ -108,12 +108,12 @@ void testsWith(Map<String, dynamic> secrets) {
       expect(ref2.child('object/hello').url.path, '/test/object/hello');
     });
     test('parent', () {
-      expect(ref.child('test').parent.key, null);
-      expect(ref.child('test/hello').parent.key, 'test');
+      expect(ref.child('test').parent().key, null);
+      expect(ref.child('test/hello').parent().key, 'test');
     });
     test('root', () {
-      expect(ref.child('test').root.key, null);
-      expect(ref.child('test/hello').root.key, null);
+      expect(ref.child('test').root().key, null);
+      expect(ref.child('test/hello').root().key, null);
     });
   });
   group('Authenticate', () {
@@ -976,7 +976,7 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('with canceled parent', () async {
-      var sub = ref.root.onValue.listen((v) => print(v.snapshot.value),
+      var sub = ref.root().onValue.listen((v) => print(v.snapshot.value),
           onError: (e) => print('error $e'));
       await wait(400);
 
@@ -1014,7 +1014,7 @@ void testsWith(Map<String, dynamic> secrets) {
     test('Bugfix: crash when receiving merge', () async {
       var ref = Firebase('${testUrl}test').child('some/path');
 
-      ref.parent.orderByKey().equalTo('path').onValue.listen(print);
+      ref.parent().orderByKey().equalTo('path').onValue.listen(print);
       ref.child('child1').onValue.listen(print);
       await ref.set({'child1': 'v', 'child2': 3});
 

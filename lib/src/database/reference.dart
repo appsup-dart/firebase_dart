@@ -21,13 +21,14 @@ abstract class DatabaseReference implements Query {
   /// deeper slash separated path (e.g. 'fred/name/first').
   DatabaseReference child(String c);
 
-  /// Get a Firebase reference for the parent location. If this instance refers
-  /// to the root of your Firebase, it has no parent, and therefore parent
-  /// will return null.
-  DatabaseReference get parent;
+  /// Gets a DatabaseReference for the parent location.
+  ///
+  /// If this instance refers to the root of your Firebase Database, it has no
+  /// parent, and therefore parent() will return null.
+  DatabaseReference parent();
 
-  /// Returns a Firebase reference to the root of the Firebase.
-  DatabaseReference get root;
+  /// Gets a DatabaseReference for the root location.
+  DatabaseReference root();
 
   /// Gets the last token in a Firebase Database location (e.g. ‘fred’ in
   /// https://SampleChat.firebaseIO-demo.com/users/fred)
