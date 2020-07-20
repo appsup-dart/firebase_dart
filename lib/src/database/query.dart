@@ -96,5 +96,5 @@ abstract class Query {
 
   /// Queries are attached to a location in your Firebase. This method will
   /// return a Firebase reference to that location.
-  Reference get ref;
+  DatabaseReference get ref;
 }

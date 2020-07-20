@@ -6,7 +6,7 @@ import 'dart:async';
 class DataSnapshotImpl extends DataSnapshot {
   final TreeStructuredData treeStructuredData;
 
-  DataSnapshotImpl(Reference ref, this.treeStructuredData) : super(ref);
+  DataSnapshotImpl(DatabaseReference ref, this.treeStructuredData) : super(ref);
 
   @override
   dynamic get val => treeStructuredData?.toJson();
@@ -94,10 +94,10 @@ class QueryImpl extends Query {
       _withFilter(filter.copyWith(limit: limit, reverse: true));
 
   @override
-  Reference get ref => FirebaseImpl(_db, _pathSegments);
+  DatabaseReference get ref => FirebaseImpl(_db, _pathSegments);
 }
 
-class ReferenceImpl extends QueryImpl with Reference {
+class ReferenceImpl extends QueryImpl with DatabaseReference {
   Disconnect _onDisconnect;
 
   ReferenceImpl(FirebaseDatabase db, List<String> path)
@@ -118,8 +118,8 @@ class ReferenceImpl extends QueryImpl with Reference {
   Future update(Map<String, dynamic> value) => _repo.update(_path, value);
 
   @override
-  Future<Reference> push(dynamic value) =>
-      _repo.push(_path, value).then<Reference>((n) => child(n));
+  Future<DatabaseReference> push(dynamic value) =>
+      _repo.push(_path, value).then<DatabaseReference>((n) => child(n));
 
   @override
   Future<Null> setWithPriority(dynamic value, dynamic priority) =>
@@ -137,17 +137,17 @@ class ReferenceImpl extends QueryImpl with Reference {
           .then<DataSnapshot>((v) => DataSnapshotImpl(this, v));
 
   @override
-  Reference child(String c) => FirebaseImpl(
+  DatabaseReference child(String c) => FirebaseImpl(
       _db, [..._pathSegments, ...c.split('/').map(Uri.decodeComponent)]);
 
   @override
-  Reference get parent => _pathSegments.isEmpty
+  DatabaseReference get parent => _pathSegments.isEmpty
       ? null
       : FirebaseImpl(
           _db, [..._pathSegments.sublist(0, _pathSegments.length - 1)]);
 
   @override
-  Reference get root => FirebaseImpl(_db, []);
+  DatabaseReference get root => FirebaseImpl(_db, []);
 }
 
 class FirebaseImpl extends ReferenceImpl with Firebase {

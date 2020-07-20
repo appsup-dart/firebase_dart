@@ -6,7 +6,7 @@ part of firebase_dart;
 /// A Firebase reference represents a particular location in your database and
 /// can be used for reading or writing data to that database location.
 @deprecated
-abstract class Firebase implements Reference {
+abstract class Firebase implements DatabaseReference {
   /// Construct a Firebase reference from a full Firebase URL.
   factory Firebase(String url) {
     var uri = Uri.parse(url);

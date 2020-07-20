@@ -194,7 +194,7 @@ class Repo {
 
   /// Helper function to create a stream for a particular event type.
   Stream<firebase.Event> createStream(
-      firebase.Reference ref, QueryFilter filter, String type) {
+      firebase.DatabaseReference ref, QueryFilter filter, String type) {
     return _Stream(() => StreamFactory(this, ref, filter, type)());
   }
 
@@ -284,7 +284,7 @@ class _Stream<T> extends Stream<T> {
 
 class StreamFactory {
   final Repo repo;
-  final firebase.Reference ref;
+  final firebase.DatabaseReference ref;
   final QueryFilter filter;
   final String type;
 
