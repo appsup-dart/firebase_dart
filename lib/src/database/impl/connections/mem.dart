@@ -151,12 +151,10 @@ class MemConnection extends Connection {
       {String hash, int writeId}) async {
     var p = Name.parsePath(path);
     // TODO check hash
-    syncTree.applyServerOperation(
-        TreeOperation.merge(
-            p,
-            Map.fromIterables(value.keys.map((k) => Name.parsePath(k)),
-                value.values.map((v) => TreeStructuredData.fromJson(v)))),
-        null);
+    await SingleInstanceBackend.apply(TreeOperation.merge(
+        p,
+        Map.fromIterables(value.keys.map((k) => Name.parsePath(k)),
+            value.values.map((v) => TreeStructuredData.fromJson(v)))));
   }
 
   @override

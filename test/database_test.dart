@@ -1071,6 +1071,31 @@ void testsWith(Map<String, dynamic> secrets) {
       var v3 = await ref3.get();
       expect(v3, v1);
     });
+
+    test('merge in mem', () async {
+      // create a reference with a dedicated connection
+      var ref1 = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/bugs/merge');
+
+      // create another reference with another connection
+      var ref2 = FirebaseDatabase(app: app2, databaseURL: testUrl)
+          .reference()
+          .child('test/bugs/merge');
+
+      var v = {'hello': 'world', 'hi': 'everyone'};
+      await ref1.update(v);
+
+      expect(await ref1.get(), v);
+      expect(await ref2.get(), v);
+
+      // a third connection should also have the same value
+      var ref3 = FirebaseDatabase(app: appAlt1, databaseURL: testUrl)
+          .reference()
+          .child('test/bugs/merge');
+      var v3 = await ref3.get();
+      expect(v3, v);
+    });
   });
 }
 
