@@ -1044,6 +1044,33 @@ void testsWith(Map<String, dynamic> secrets) {
       // register a new observer -> should not trigger an event for the original observer
       await ref.get();
     });
+
+    test('Server values should resolve once', () async {
+      // create a reference with a dedicated connection
+      var ref1 = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/bugs/duplicate-server-values-write');
+
+      // create another reference with another connection
+      var ref2 = FirebaseDatabase(app: app2, databaseURL: testUrl)
+          .reference()
+          .child('test/bugs/duplicate-server-values-write');
+
+      // set a server value
+      await ref1.set(ServerValue.timestamp);
+
+      var v1 = await ref1.get();
+      var v2 = await ref2.get();
+      // the server value should resolve to the same value
+      expect(v1, v2);
+
+      // a third connection should also have the same value
+      var ref3 = FirebaseDatabase(app: appAlt1, databaseURL: testUrl)
+          .reference()
+          .child('test/bugs/duplicate-server-values-write');
+      var v3 = await ref3.get();
+      expect(v3, v1);
+    });
   });
 }
 

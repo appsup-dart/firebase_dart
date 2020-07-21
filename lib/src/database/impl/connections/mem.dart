@@ -1,3 +1,5 @@
+import 'package:firebase_dart/src/database/impl/data_observer.dart';
+
 import '../connection.dart';
 import 'dart:async';
 import '../tree.dart';
@@ -41,12 +43,39 @@ class SingleInstanceBackend {
     yield* _instance._stream;
   }
 
+  /// Generates the special server values
+  Map<ServerValue, Value> get _serverValues =>
+      {ServerValue.timestamp: Value(DateTime.now().millisecondsSinceEpoch)};
+
   Future<Null> _apply(TreeOperation operation) async {
+    operation = _resolveTreeOperation(operation, _serverValues);
     data = operation.apply(data);
     for (var c in controllers) {
       c.add(operation);
     }
     await Future.microtask(() => null);
+  }
+
+  Operation _resolveNodeOperation(
+      Operation operation, Map<ServerValue, Value> serverValues) {
+    if (operation is Overwrite) {
+      return Overwrite(ServerValue.resolve(operation.value, serverValues));
+    }
+    if (operation is Merge) {
+      return Merge(Map.fromIterables(
+          operation.overwrites.map((o) => o.path),
+          operation.overwrites.map((o) => ServerValue.resolve(
+              (o.nodeOperation as Overwrite).value, serverValues))));
+    }
+    return operation;
+  }
+
+  TreeOperation _resolveTreeOperation(
+      TreeOperation operation, Map<ServerValue, Value> serverValues) {
+    var nodeOperation =
+        _resolveNodeOperation(operation.nodeOperation, serverValues);
+    if (nodeOperation == operation.nodeOperation) return operation;
+    return TreeOperation(operation.path, nodeOperation);
   }
 
   static Future apply(TreeOperation operation) => _applyOnInstance(operation);
