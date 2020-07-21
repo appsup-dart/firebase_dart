@@ -112,21 +112,18 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
   Uri get url => _repo.url.replace(path: _path);
 
   @override
-  Future set(dynamic value) => _repo.setWithPriority(_path, value, null);
+  Future<void> set(dynamic value, {dynamic priority}) =>
+      _repo.setWithPriority(_path, value, priority);
 
   @override
-  Future update(Map<String, dynamic> value) => _repo.update(_path, value);
+  Future<void> update(Map<String, dynamic> value) => _repo.update(_path, value);
 
   @override
   Future<DatabaseReference> push(dynamic value) =>
       _repo.push(_path, value).then<DatabaseReference>((n) => child(n));
 
   @override
-  Future<Null> setWithPriority(dynamic value, dynamic priority) =>
-      _repo.setWithPriority(_path, value, priority);
-
-  @override
-  Future setPriority(dynamic priority) =>
+  Future<void> setPriority(dynamic priority) =>
       _repo.setWithPriority('$_path/.priority', priority, null);
 
   @override

@@ -105,7 +105,7 @@ class Repo {
   ///
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
-  Future<Null> setWithPriority(
+  Future<void> setWithPriority(
       String path, dynamic value, dynamic priority) async {
     path = _preparePath(path);
     var newValue = TreeStructuredData.fromJson(value, priority);
@@ -126,7 +126,7 @@ class Repo {
   ///
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
-  Future update(String path, Map<String, dynamic> value) async {
+  Future<void> update(String path, Map<String, dynamic> value) async {
     if (value.isNotEmpty) {
       path = _preparePath(path);
       var serverValues = _connection.serverValues;

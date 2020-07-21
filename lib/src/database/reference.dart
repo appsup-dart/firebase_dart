@@ -54,7 +54,7 @@ abstract class DatabaseReference implements Query {
   ///
   /// A single set() will generate a single onValue event at the location where
   /// the set() was performed.
-  Future set(dynamic value);
+  Future<void> set(dynamic value, {dynamic priority});
 
   /// Write the enumerated children to this Firebase location. This will only
   /// overwrite the children enumerated in the 'value' parameter and will leave
@@ -62,7 +62,7 @@ abstract class DatabaseReference implements Query {
   ///
   /// The returned Future will be complete when the synchronization has
   /// completed with the Firebase servers.
-  Future update(Map<String, dynamic> value);
+  Future<void> update(Map<String, dynamic> value);
 
   /// Remove the data at this Firebase location. Any data at child locations
   /// will also be deleted.
@@ -72,7 +72,7 @@ abstract class DatabaseReference implements Query {
   /// Synchronization of the delete to the Firebase servers will also be
   /// started, and the Future returned by this method will complete after the
   /// synchronization has finished.
-  Future remove() => set(null);
+  Future<void> remove() => set(null);
 
   /// Push generates a new child location using a unique name and returns a
   /// Firebase reference to it. This is useful when the children of a Firebase
@@ -82,27 +82,31 @@ abstract class DatabaseReference implements Query {
   /// timestamp so that the resulting list will be chronologically sorted.
   Future<DatabaseReference> push(dynamic value);
 
-  /// Write data to a Firebase location, like set(), but also specify the
-  /// priority for that data. Identical to doing a set() followed by a
-  /// setPriority(), except it is combined into a single atomic operation to
-  /// ensure the data is ordered correctly from the start.
+  /// Sets a priority for the data at this Firebase Database location.
   ///
-  /// Returns a Future which will complete when the data has been synchronized
-  /// with Firebase.
-  Future<Null> setWithPriority(dynamic value, dynamic priority);
-
-  /// Set a priority for the data at this Firebase location. A priority can
-  /// be either a number or a string and is used to provide a custom ordering
-  /// for the children at a location. If no priorities are specified, the
-  /// children are ordered by name. This ordering affects the enumeration
-  /// order of DataSnapshot.forEach(), as well as the prevChildName parameter
-  /// passed to the onChildAdded and onChildMoved event handlers.
+  /// Priorities can be used to provide a custom ordering for the children at a
+  /// location (if no priorities are specified, the children are ordered by
+  /// key).
   ///
-  /// You cannot set a priority on an empty location. For this reason,
-  /// setWithPriority() should be used when setting initial data with a
-  /// specific priority, and this function should be used when updating the
-  /// priority of existing data.
-  Future setPriority(dynamic priority);
+  /// You cannot set a priority on an empty location. For this reason
+  /// set() should be used when setting initial data with a specific priority
+  /// and setPriority() should be used when updating the priority of existing
+  /// data.
+  ///
+  /// Children are sorted based on this priority using the following rules:
+  ///
+  /// Children with no priority come first. Children with a number as their
+  /// priority come next. They are sorted numerically by priority (small to
+  /// large). Children with a string as their priority come last. They are
+  /// sorted lexicographically by priority. Whenever two children have the same
+  /// priority (including no priority), they are sorted by key. Numeric keys
+  /// come first (sorted numerically), followed by the remaining keys (sorted
+  /// lexicographically).
+  ///
+  /// Note that priorities are parsed and ordered as IEEE 754 double-precision
+  /// floating-point numbers. Keys are always stored as strings and are treated
+  /// as numbers only when they can be parsed as a 32-bit integer.
+  Future<void> setPriority(dynamic priority);
 
   /// Atomically modify the data at this location. Unlike a normal set(), which
   /// just overwrites the data regardless of its previous value, transaction()
