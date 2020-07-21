@@ -17,8 +17,6 @@ part 'database/datasnapshot.dart';
 
 part 'database/event.dart';
 
-part 'database/firebase.dart';
-
 part 'database/query.dart';
 
 part 'database/disconnect.dart';

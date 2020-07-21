@@ -94,7 +94,7 @@ class QueryImpl extends Query {
       _withFilter(filter.copyWith(limit: limit, reverse: true));
 
   @override
-  DatabaseReference get ref => FirebaseImpl(_db, _pathSegments);
+  DatabaseReference get ref => ReferenceImpl(_db, _pathSegments);
 }
 
 class ReferenceImpl extends QueryImpl with DatabaseReference {
@@ -137,36 +137,31 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
           .then<DataSnapshot>((v) => DataSnapshotImpl(this, v));
 
   @override
-  DatabaseReference child(String c) => FirebaseImpl(
+  DatabaseReference child(String c) => ReferenceImpl(
       _db, [..._pathSegments, ...c.split('/').map(Uri.decodeComponent)]);
 
   @override
   DatabaseReference parent() => _pathSegments.isEmpty
       ? null
-      : FirebaseImpl(
+      : ReferenceImpl(
           _db, [..._pathSegments.sublist(0, _pathSegments.length - 1)]);
 
   @override
-  DatabaseReference root() => FirebaseImpl(_db, []);
+  DatabaseReference root() => ReferenceImpl(_db, []);
 }
 
-class FirebaseImpl extends ReferenceImpl with Firebase {
-  FirebaseImpl(FirebaseDatabase db, List<String> path) : super(db, path);
+extension LegacyAuthExtension on DatabaseReference {
+  Repo get repo => (this as ReferenceImpl)._repo;
 
-  @override
   Future<Map> authWithCustomToken(String token) => authenticate(token);
 
-  @override
-  dynamic get auth => _repo.authData;
+  dynamic get auth => repo.authData;
 
-  @override
-  Stream<Map> get onAuth => _repo.onAuth;
+  Stream<Map> get onAuth => repo.onAuth;
 
-  @override
-  Future unauth() => _repo.unauth();
+  Future unauth() => repo.unauth();
 
-  @override
-  Future<Map> authenticate(FutureOr<String> token) => _repo.auth(token);
+  Future<Map> authenticate(FutureOr<String> token) => repo.auth(token);
 }
 
 class DisconnectImpl extends Disconnect {

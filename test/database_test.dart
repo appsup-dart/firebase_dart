@@ -1,6 +1,8 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
+import 'package:firebase_dart/src/database/impl/treestructureddata.dart'
+    show Name;
 import 'package:test/test.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
@@ -15,6 +17,7 @@ import 'secrets.dart'
     if (dart.library.io) 'secrets_io.dart' as s;
 import 'package:dart2_constant/convert.dart';
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
+import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 
 void main() {
   StreamSubscription logSubscription;
@@ -38,7 +41,7 @@ void main() {
 void testsWith(Map<String, dynamic> secrets) {
   var testUrl = '${secrets['host']}';
 
-  Firebase ref, ref2;
+  DatabaseReference ref, ref2;
 
   FirebaseApp app1, app2, appAlt1, appAlt2;
 
@@ -94,8 +97,8 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Reference location', () {
     setUp(() {
-      ref = Firebase('${testUrl}');
-      ref2 = Firebase('${testUrl}test');
+      ref = FirebaseDatabase(app: app1, databaseURL: testUrl).reference();
+      ref2 = ref.child('test');
     });
 
     test('child', () {
@@ -132,7 +135,7 @@ void testsWith(Map<String, dynamic> secrets) {
       var codec = FirebaseTokenCodec(secret);
       token = codec.encode(FirebaseToken(authData));
 
-      ref = Firebase(host);
+      ref = FirebaseDatabase(app: app1, databaseURL: host).reference();
     });
 
     test('auth', () async {
@@ -174,8 +177,10 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Snapshot', () {
     setUp(() {
-      ref = Firebase('${testUrl}test/snapshot');
-      print('ref setup');
+      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test')
+          .child('snapshot');
     });
 
     test('Child', () async {
@@ -212,7 +217,10 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Listen', () {
     setUp(() {
-      ref = Firebase('${testUrl}test/listen');
+      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test')
+          .child('listen');
     });
 
     test('Initial value', () async {
@@ -317,7 +325,10 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Push/Merge/Remove', () {
     setUp(() {
-      ref = Firebase('${testUrl}test/push-merge-remove');
+      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test')
+          .child('push-merge-remove');
     });
 
     test('Remove', () async {
@@ -358,14 +369,16 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Special characters', () {
     setUp(() {
-      ref = Firebase('${testUrl}test/special-chars');
+      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test')
+          .child('special-chars');
     });
 
     test('colon', () async {
       await ref.child('users').child('facebook:12345').set({'name': 'me'});
 
-      expect(
-          await Firebase('${ref.url}/users/facebook:12345/name').get(), 'me');
+      expect(await ref.child('users/facebook:12345/name').get(), 'me');
     });
 
     test('spaces', () async {
@@ -384,8 +397,9 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('ServerValue', () {
     test('timestamp', () async {
-      var ref = Firebase('${testUrl}test/server-values/timestamp');
-
+      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/server-values/timestamp');
       await ref.set(null);
       var events = <Event>[];
       ref.onValue.listen(events.add);
@@ -412,7 +426,9 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('transaction', () async {
-      var ref = Firebase('${testUrl}test/server-values/transaction');
+      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/server-values/transaction');
       await ref.set('hello');
 
       await Stream.periodic(Duration(milliseconds: 10)).take(10).forEach((_) {
@@ -429,7 +445,9 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Transaction', () {
     setUp(() {
-      ref = Firebase('${testUrl}test/transactions');
+      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/transactions');
     });
 
     test('Counter', () async {
@@ -511,8 +529,10 @@ void testsWith(Map<String, dynamic> secrets) {
   group('OnDisconnect', () {
     Repo repo;
     setUp(() {
-      ref = Firebase('${testUrl}test/disconnect');
-      repo = Repo(FirebaseDatabase(databaseURL: testUrl));
+      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/disconnect');
+      repo = Repo(FirebaseDatabase(app: app1, databaseURL: testUrl));
     });
 
     test('put', () async {
@@ -555,7 +575,9 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Query', () {
     setUp(() {
-      ref = Firebase('${testUrl}test/query');
+      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/query');
     });
 
     test('Limit', () async {
@@ -595,7 +617,9 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('Order by key', () async {
-      var ref = Firebase('${testUrl}test/query-key');
+      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/query-key');
       await ref.set({'text2': 'b', 'text1': 'c', 'text3': 'a'});
 
       var q = ref.orderByKey();
@@ -791,7 +815,9 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('multiple frames', () {
     setUp(() {
-      ref = Firebase('${testUrl}test/frames');
+      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/frames');
     });
 
     test('Receive large value', () async {
@@ -815,9 +841,11 @@ void testsWith(Map<String, dynamic> secrets) {
   });
 
   group('Complex operations', () {
-    Firebase iref;
+    DatabaseReference iref;
     setUp(() async {
-      ref = Firebase('${testUrl}test/complex');
+      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/complex');
       iref = FirebaseDatabase(app: appAlt1, databaseURL: testUrl)
           .reference()
           .child('test/complex');
@@ -992,9 +1020,10 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('Listen, set parent and get child', () async {
-      String testUrl = '${s.secrets['host']}';
-      var ref = Firebase('${testUrl}test');
-
+      var testUrl = '${s.secrets['host']}';
+      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test');
       ref
           .child('cars')
           .onValue
@@ -1012,7 +1041,10 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('Bugfix: crash when receiving merge', () async {
-      var ref = Firebase('${testUrl}test').child('some/path');
+      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test')
+          .child('some/path');
 
       ref.parent().orderByKey().equalTo('path').onValue.listen(print);
       ref.child('child1').onValue.listen(print);

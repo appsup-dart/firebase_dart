@@ -9,9 +9,6 @@ part of firebase_dart;
 /// (ie. `onChildAdded`), write data (ie. `setValue`), and to create new
 /// `DatabaseReference`s (ie. `child`).
 abstract class DatabaseReference implements Query {
-  /// Construct a new Firebase reference from a full Firebase URL.
-  factory DatabaseReference(String url) => Firebase(url);
-
   /// Getter for onDisconnect.
   Disconnect get onDisconnect;
 

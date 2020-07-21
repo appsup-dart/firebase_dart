@@ -21,7 +21,7 @@ class FirebaseDatabase {
       : databaseURL = _normalizeUrl(databaseURL);
 
   /// Gets a DatabaseReference for the root of your Firebase Database.
-  DatabaseReference reference() => Firebase._(this, <String>[]);
+  DatabaseReference reference() => ReferenceImpl(this, <String>[]);
 
   @override
   int get hashCode => quiver.hash2(databaseURL, app);
