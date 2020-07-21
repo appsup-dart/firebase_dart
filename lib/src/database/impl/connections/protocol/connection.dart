@@ -260,7 +260,7 @@ class ProtocolConnection extends Connection {
       if (r.message.body.status == MessageBody.statusOk) {
         return r.message.body;
       } else {
-        throw ServerError(r.message.body.status, r.message.body.data);
+        throwServerError(r.message.body.status, r.message.body.data);
       }
     });
   }

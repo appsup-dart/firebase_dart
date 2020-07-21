@@ -27,3 +27,4 @@ part 'database/server_value.dart';
 
 part 'database/database.dart';
 part 'database/reference.dart';
+part 'database/exception.dart';

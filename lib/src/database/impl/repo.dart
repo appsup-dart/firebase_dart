@@ -1,6 +1,8 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
+import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
+
 import 'connection.dart';
 import 'dart:async';
 import 'treestructureddata.dart';
@@ -117,7 +119,7 @@ class Repo {
       await _connection.put(path, newValue.toJson(true), writeId: writeId);
       await Future.microtask(
           () => _syncTree.applyAck(Name.parsePath(path), writeId, true));
-    } on ServerError {
+    } on FirebaseDatabaseException {
       _syncTree.applyAck(Name.parsePath(path), writeId, false);
     }
   }
@@ -140,7 +142,7 @@ class Repo {
         await _connection.merge(path, value, writeId: writeId);
         await Future.microtask(
             () => _syncTree.applyAck(Name.parsePath(path), writeId, true));
-      } on ServerError {
+      } on firebase.FirebaseDatabaseException {
         _syncTree.applyAck(Name.parsePath(path), writeId, false);
       }
     }
@@ -635,7 +637,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
               .put(path.join('/'), output.toJson(true), hash: latestHash);
           complete();
           return false;
-        } on ServerError catch (e) {
+        } on firebase.FirebaseDatabaseException catch (e) {
           if (e.code == 'datastale') {
             stale();
           } else {

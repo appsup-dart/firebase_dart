@@ -1,6 +1,8 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
+import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
+
 import 'event.dart';
 import 'data_observer.dart';
 import 'treestructureddata.dart';
@@ -10,7 +12,6 @@ import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
 import 'dart:async';
 import 'package:logging/logging.dart';
-import 'connection.dart';
 
 final _logger = Logger('firebase-synctree');
 
@@ -346,7 +347,7 @@ class SyncTree {
                 } else {
                   throw e;
                 }
-              }, test: (e) => e is ServerError);
+              }, test: (e) => e is FirebaseDatabaseException);
             }));
   }
 

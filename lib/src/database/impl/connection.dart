@@ -1,30 +1,18 @@
 library firebase.connection;
 
 import 'dart:async';
+import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
+import 'package:meta/meta.dart';
+
 import 'tree.dart';
 import 'treestructureddata.dart';
 import 'operations/tree.dart';
 import 'connections/protocol.dart';
 import 'connections/mem.dart';
 
-class ServerError implements Exception {
-  final String code;
-  final String message;
-
-  ServerError(this.code, this.message);
-
-  String get reason =>
-      const {
-        'too_big':
-            'The data requested exceeds the maximum size that can be accessed with a single request.',
-        'permission_denied':
-            "Client doesn't have permission to access the desired data.",
-        'unavailable': 'The service is unavailable'
-      }[code] ??
-      'Unknown Error';
-
-  @override
-  String toString() => '$code: $reason';
+@alwaysThrows
+void throwServerError(String status, String details) {
+  throw FirebaseDatabaseException(code: status, details: details);
 }
 
 enum OperationEventType { overwrite, merge, listenRevoked }
