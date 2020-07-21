@@ -362,7 +362,8 @@ void testsWith(Map<String, dynamic> secrets) {
     test('Push', () async {
       await ref.set({'text1': 'hello1'});
       expect(await ref.get(), {'text1': 'hello1'});
-      var childRef = await ref.push('hello2');
+      var childRef = ref.push();
+      await childRef.set('hello2');
       expect(await childRef.get(), 'hello2');
     });
   });

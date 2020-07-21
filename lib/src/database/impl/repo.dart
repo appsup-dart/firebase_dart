@@ -146,18 +146,9 @@ class Repo {
     }
   }
 
-  /// Adds [value] to the location [path] for which a unique id is generated.
-  ///
-  /// Returns a future that completes with the generated key when the data has
-  /// been written to the server and fails when data could not be written.
-  Future push(String path, dynamic value) async {
-    path = _preparePath(path);
-    var name = pushIds.next(_connection.serverTime);
-    var pushedPath = '$path/$name';
-    if (value != null) {
-      await setWithPriority(pushedPath, value, null);
-    }
-    return name;
+  /// Generates a unique id.
+  String generateId() {
+    return pushIds.next(_connection.serverTime);
   }
 
   /// Listens to changes of [type] at location [path] for data matching [filter].

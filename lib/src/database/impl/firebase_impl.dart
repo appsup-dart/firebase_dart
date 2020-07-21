@@ -119,8 +119,7 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
   Future<void> update(Map<String, dynamic> value) => _repo.update(_path, value);
 
   @override
-  Future<DatabaseReference> push(dynamic value) =>
-      _repo.push(_path, value).then<DatabaseReference>((n) => child(n));
+  DatabaseReference push() => child(_repo.generateId());
 
   @override
   Future<void> setPriority(dynamic priority) =>
