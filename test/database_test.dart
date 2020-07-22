@@ -1152,6 +1152,57 @@ void testsWith(Map<String, dynamic> secrets) {
       await s.cancel();
     });
   });
+
+  group('Tests from firebase-android-sdk', () {
+    group('Transaction', () {
+      test('new value is immediately visible', () async {
+        var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+            .reference()
+            .child('test/transaction/foo');
+
+        var r = await ref.runTransaction((currentData) {
+          return currentData..value = 42;
+        });
+
+        expect(r.committed, true);
+        expect(r.error, isNull);
+
+        expect(await ref.get(), 42);
+      });
+
+      test('event is raised for new value', () async {
+        var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+            .reference()
+            .child('test/transaction/foo2');
+
+        await ref.set(null);
+
+        var l = [];
+        var s = ref.onValue.listen((v) => l.add(v.snapshot.value));
+
+        await ref.get();
+
+        await ref.runTransaction((currentData) {
+          return currentData..value = 42;
+        });
+
+        await ref.get();
+        expect(l, [null, 42]);
+        await s.cancel();
+      });
+      test('aborted transaction sets commited to false', () async {
+        var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+            .reference()
+            .child('test/transaction/foo3');
+        await ref.set(null);
+        var r = await ref.runTransaction((currentData) => null);
+
+        expect(r.error, isNull);
+        expect(r.committed, isFalse);
+        expect(r.dataSnapshot, isNull);
+      });
+    });
+  });
 }
 
 Future wait(int millis) async => Future.delayed(Duration(milliseconds: millis));

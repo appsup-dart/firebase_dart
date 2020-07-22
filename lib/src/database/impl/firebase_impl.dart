@@ -131,18 +131,15 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
       {Duration timeout = const Duration(seconds: 5),
       bool fireLocalEvents = true}) async {
     try {
-      var v = await _repo.transaction(_path, (v) {
-        var data = MutableData(key, v);
-        var newData = transactionHandler(data);
-        if (newData == null) {
-          throw 'abort';
-        }
-        return newData.value;
-      }, fireLocalEvents);
+      var v =
+          await _repo.transaction(_path, transactionHandler, fireLocalEvents);
+      if (v == null) {
+        return TransactionResultImpl.abort();
+      }
       var s = DataSnapshotImpl(this, v);
-      return TransactionResultImpl(dataSnapshot: s);
+      return TransactionResultImpl.success(s);
     } on FirebaseDatabaseException catch (e) {
-      return TransactionResultImpl(error: e);
+      return TransactionResultImpl.error(e);
     }
   }
 
@@ -200,4 +197,11 @@ class TransactionResultImpl implements TransactionResult {
   final DataSnapshot dataSnapshot;
 
   const TransactionResultImpl({this.error, this.committed, this.dataSnapshot});
+
+  const TransactionResultImpl.success(DataSnapshot snapshot)
+      : this(dataSnapshot: snapshot, committed: true);
+
+  const TransactionResultImpl.error(FirebaseDatabaseException error)
+      : this(error: error, committed: false);
+  const TransactionResultImpl.abort() : this(committed: false);
 }

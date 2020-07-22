@@ -1,7 +1,8 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
+import 'package:firebase_dart/database.dart'
+    show FirebaseDatabaseException, MutableData, TransactionHandler;
 
 import 'connection.dart';
 import 'dart:async';
@@ -192,7 +193,7 @@ class Repo {
   }
 
   Future<TreeStructuredData> transaction(
-          String path, Function update, bool applyLocally) =>
+          String path, TransactionHandler update, bool applyLocally) =>
       _transactions.startTransaction(
           Name.parsePath(_preparePath(path)), update, applyLocally);
 
@@ -385,7 +386,7 @@ enum TransactionStatus { run, sent, completed, sentNeedsAbort }
 
 class Transaction implements Comparable<Transaction> {
   final Path<Name> path;
-  final Function update;
+  final TransactionHandler update;
   final bool applyLocally;
   final Repo repo;
   final int order;
@@ -435,23 +436,32 @@ class Transaction implements Comparable<Transaction> {
     }
 
     currentInputSnapshot = currentState;
+    var data = MutableData(
+        path.isEmpty ? null : path.last.toString(), currentState.toJson());
+
     try {
-      var newVal = update(currentState.toJson());
-
-      status = TransactionStatus.run;
-
-      var newNode = TreeStructuredData.fromJson(newVal, currentState.priority);
-      currentOutputSnapshotRaw = newNode;
-      currentOutputSnapshotResolved =
-          ServerValue.resolve(newNode, repo._connection.serverValues);
-      currentWriteId = repo._nextWriteId++;
-
-      if (applyLocally) {
-        repo._syncTree.applyUserOverwrite(
-            path, currentOutputSnapshotResolved, currentWriteId);
-      }
+      data = update(data);
     } catch (e) {
-      fail(e);
+      fail(FirebaseDatabaseException.userCodeException());
+      return;
+    }
+
+    if (data == null) {
+      fail(null);
+      return;
+    }
+    status = TransactionStatus.run;
+
+    var newNode =
+        TreeStructuredData.fromJson(data.value, currentState.priority);
+    currentOutputSnapshotRaw = newNode;
+    currentOutputSnapshotResolved =
+        ServerValue.resolve(newNode, repo._connection.serverValues);
+    currentWriteId = repo._nextWriteId++;
+
+    if (applyLocally) {
+      repo._syncTree.applyUserOverwrite(
+          path, currentOutputSnapshotResolved, currentWriteId);
     }
   }
 
@@ -462,7 +472,12 @@ class Transaction implements Comparable<Transaction> {
     if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, false);
     status = TransactionStatus.completed;
 
-    completer.completeError(e);
+    if (e == null) {
+      // aborted by user
+      completer.complete(null);
+    } else {
+      completer.completeError(e);
+    }
   }
 
   void stale() {
@@ -532,8 +547,8 @@ class TransactionsTree {
 
   TransactionsTree(this.repo);
 
-  Future<TreeStructuredData> startTransaction(
-      Path<Name> path, Function transactionUpdate, bool applyLocally) {
+  Future<TreeStructuredData> startTransaction(Path<Name> path,
+      TransactionHandler transactionUpdate, bool applyLocally) {
     var transaction = Transaction(repo, path, transactionUpdate, applyLocally);
     var node = root.subtree(path, (a, b) => TransactionsNode());
 
