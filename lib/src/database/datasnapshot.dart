@@ -63,3 +63,13 @@ abstract class DataSnapshot {
   /// suitable for backing up your data.
   dynamic exportVal();
 }
+
+class MutableData {
+  /// The key of the location that generated this MutableData.
+  final String key;
+
+  /// Returns the mutable contents of this MutableData as native types.
+  dynamic value;
+
+  MutableData(this.key, this.value);
+}

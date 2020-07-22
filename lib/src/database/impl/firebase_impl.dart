@@ -126,11 +126,25 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
       _repo.setWithPriority('$_path/.priority', priority, null);
 
   @override
-  Future<DataSnapshot> transaction(dynamic Function(dynamic currentVal) update,
-          {bool applyLocally = true}) =>
-      _repo
-          .transaction(_path, update, applyLocally)
-          .then<DataSnapshot>((v) => DataSnapshotImpl(this, v));
+  Future<TransactionResult> runTransaction(
+      TransactionHandler transactionHandler,
+      {Duration timeout = const Duration(seconds: 5),
+      bool fireLocalEvents = true}) async {
+    try {
+      var v = await _repo.transaction(_path, (v) {
+        var data = MutableData(key, v);
+        var newData = transactionHandler(data);
+        if (newData == null) {
+          throw 'abort';
+        }
+        return newData.value;
+      }, fireLocalEvents);
+      var s = DataSnapshotImpl(this, v);
+      return TransactionResultImpl(dataSnapshot: s);
+    } on FirebaseDatabaseException catch (e) {
+      return TransactionResultImpl(error: e);
+    }
+  }
 
   @override
   DatabaseReference child(String c) => ReferenceImpl(
@@ -175,4 +189,15 @@ class DisconnectImpl extends Disconnect {
 
   @override
   Future cancel() => _ref._repo.onDisconnectCancel(_ref._path);
+}
+
+class TransactionResultImpl implements TransactionResult {
+  @override
+  final FirebaseDatabaseException error;
+  @override
+  final bool committed;
+  @override
+  final DataSnapshot dataSnapshot;
+
+  const TransactionResultImpl({this.error, this.committed, this.dataSnapshot});
 }

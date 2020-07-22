@@ -125,6 +125,23 @@ abstract class DatabaseReference implements Query {
   ///
   /// The returned [Future] will be completed after the transaction has
   /// finished.
-  Future<DataSnapshot> transaction(dynamic Function(dynamic currentVal) update,
-      {bool applyLocally = true});
+  Future<TransactionResult> runTransaction(
+      TransactionHandler transactionHandler,
+      {Duration timeout = const Duration(seconds: 5),
+      bool fireLocalEvents = true});
+}
+
+typedef TransactionHandler = MutableData Function(MutableData mutableData);
+
+/// The results of the transaction.
+abstract class TransactionResult {
+  /// null if no errors occurred, otherwise it contains the error
+  FirebaseDatabaseException get error;
+
+  /// True if the transaction successfully completed, false if it was aborted or
+  /// an error occurred
+  bool get committed;
+
+  /// The current data at the location or null if an error occurred
+  DataSnapshot get dataSnapshot;
 }

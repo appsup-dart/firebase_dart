@@ -396,7 +396,7 @@ class Transaction implements Comparable<Transaction> {
   static const int maxRetries = 25;
 
   int retryCount = 0;
-  String abortReason;
+  FirebaseDatabaseException abortReason;
   int currentWriteId;
   TreeStructuredData currentInputSnapshot;
   TreeStructuredData currentOutputSnapshotRaw;
@@ -430,7 +430,7 @@ class Transaction implements Comparable<Transaction> {
   void run(TreeStructuredData currentState) {
     assert(status == null);
     if (retryCount >= maxRetries) {
-      fail(Exception('maxretries'));
+      fail(FirebaseDatabaseException.maxRetries());
       return;
     }
 
@@ -455,7 +455,7 @@ class Transaction implements Comparable<Transaction> {
     }
   }
 
-  void fail(dynamic e) {
+  void fail(FirebaseDatabaseException e) {
     _unwatch();
     currentOutputSnapshotRaw = null;
     currentOutputSnapshotResolved = null;
@@ -476,7 +476,7 @@ class Transaction implements Comparable<Transaction> {
     retryCount++;
   }
 
-  void abort(String reason) {
+  void abort(FirebaseDatabaseException reason) {
     switch (status) {
       case TransactionStatus.sentNeedsAbort:
         break;
@@ -485,7 +485,7 @@ class Transaction implements Comparable<Transaction> {
         abortReason = reason;
         break;
       case TransactionStatus.run:
-        fail(Exception(reason));
+        fail(reason);
         break;
       default:
         throw StateError('Unable to abort transaction in state $status');
@@ -601,9 +601,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
 
   /// Fails aborted transactions and resets other sent transactions
   void stale() {
-    value
-        .where((t) => t.isAborted)
-        .forEach((m) => m.fail(Exception(m.abortReason)));
+    value.where((t) => t.isAborted).forEach((m) => m.fail(m.abortReason));
     value.where((t) => !t.isAborted).forEach((m) => m.stale());
     value =
         value.where((t) => t.status != TransactionStatus.completed).toList();
@@ -611,7 +609,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
   }
 
   /// Fails all sent transactions
-  void fail(dynamic e) {
+  void fail(FirebaseDatabaseException e) {
     value.where((t) => t.isSent).forEach((m) => m.fail(e));
     value =
         value.where((t) => t.status != TransactionStatus.completed).toList();
@@ -711,7 +709,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
 
   void abort() {
     for (var txn in value) {
-      txn.abort('set');
+      txn.abort(FirebaseDatabaseException.overriddenBySet());
     }
     value = value.where((t) => !t.isComplete).toList();
   }

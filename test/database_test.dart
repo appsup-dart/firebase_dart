@@ -431,8 +431,8 @@ void testsWith(Map<String, dynamic> secrets) {
       await ref.set('hello');
 
       await Stream.periodic(Duration(milliseconds: 10)).take(10).forEach((_) {
-        ref.transaction((v) {
-          return ServerValue.timestamp;
+        ref.runTransaction((v) {
+          return v..value = ServerValue.timestamp;
         });
       });
 
@@ -456,11 +456,11 @@ void testsWith(Map<String, dynamic> secrets) {
       await ref.onValue.first;
       var f1 = Stream.periodic(Duration(milliseconds: 10))
           .take(10)
-          .map((i) => ref.transaction((v) => (v ?? 0) + 1))
+          .map((i) => ref.runTransaction((v) => v..value = (v.value ?? 0) + 1))
           .toList();
       var f2 = Stream.periodic(Duration(milliseconds: 50))
           .take(10)
-          .map((i) => ref.transaction((v) => (v ?? 0) + 1))
+          .map((i) => ref.runTransaction((v) => v..value = (v.value ?? 0) + 1))
           .toList();
 
       await Future.wait((await f1)..addAll(await f2));
@@ -473,24 +473,27 @@ void testsWith(Map<String, dynamic> secrets) {
 
       var f1 = Stream.periodic(Duration(milliseconds: 10))
           .take(10)
-          .map(
-              (i) => ref.child('object/count').transaction((v) => (v ?? 0) + 1))
+          .map((i) => ref
+              .child('object/count')
+              .runTransaction((v) => v..value = (v.value ?? 0) + 1))
           .toList();
       var f2 = Stream.periodic(Duration(milliseconds: 50))
           .take(10)
-          .map((i) => ref.transaction((v) {
-                v ??= {};
-                v.putIfAbsent('object', () => {}).putIfAbsent('count', () => 0);
-                v['object']['count']++;
+          .map((i) => ref.runTransaction((v) {
+                v.value ??= {};
+                v.value
+                    .putIfAbsent('object', () => {})
+                    .putIfAbsent('count', () => 0);
+                v.value['object']['count']++;
                 return v;
               }))
           .toList();
       var f3 = Stream.periodic(Duration(milliseconds: 30))
           .take(10)
-          .map((i) => ref.child('object').transaction((v) {
-                v ??= {};
-                v.putIfAbsent('count', () => 0);
-                v['count']++;
+          .map((i) => ref.child('object').runTransaction((v) {
+                v.value ??= {};
+                v.value.putIfAbsent('count', () => 0);
+                v.value['count']++;
                 return v;
               }))
           .toList();
@@ -505,15 +508,18 @@ void testsWith(Map<String, dynamic> secrets) {
 
       var futures = <Future>[];
       for (var i = 0; i < 10; i++) {
-        futures.add(ref.child('object/count').transaction((v) => (v ?? 0) + 1));
+        futures.add(ref.child('object/count').runTransaction((v) {
+          print('run $i ${v.value}');
+          return v..value = (v.value ?? 0) + 1;
+        }));
       }
       for (var i = 0; i < 10; i++) {
-        futures.add(ref.child('object').transaction((v) {
-          v ??= {};
-          v.putIfAbsent('count', () => 0);
-          v['count']++;
+        futures.add(ref.child('object').runTransaction((v) {
+          v.value ??= {};
+          v.value.putIfAbsent('count', () => 0);
+          v.value['count']++;
           return v;
-        }).catchError((_) {}));
+        }));
       }
       futures.add(ref.child('object/test').set('hello'));
 
