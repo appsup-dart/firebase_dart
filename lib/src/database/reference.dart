@@ -110,12 +110,12 @@ abstract class DatabaseReference implements Query {
   Future<void> setPriority(dynamic priority);
 
   /// Atomically modify the data at this location. Unlike a normal set(), which
-  /// just overwrites the data regardless of its previous value, transaction()
+  /// just overwrites the data regardless of its previous value, runTransaction()
   /// is used to modify the existing value to a new value, ensuring there are
   /// no conflicts with other clients writing to the same location at the same
   /// time.
   ///
-  /// To accomplish this, you pass [transaction] an update function which is
+  /// To accomplish this, you pass [runTransaction] an update function which is
   /// used to transform the current value into a new value. If another client
   /// writes to the location before your new value is successfully written,
   /// your update function will be called again with the new current value, and

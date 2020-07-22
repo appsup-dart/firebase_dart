@@ -3,13 +3,8 @@
 
 part of firebase_dart;
 
-/// An Event is an object that is provided by every Stream on the query
-/// object.
-///
-/// It is simply a wrapper for a tuple of DataSnapshot and PrevChild.
-/// Some events (like added, moved or changed) have a prevChild argument
-/// that is the name of the object that is before the object referred by the
-/// event in priority order.
+/// `Event` encapsulates a DataSnapshot and possibly also the key of its
+/// previous sibling, which can be used to order the snapshots.
 class Event {
   /// The [DataSnapshot] representing the new value.
   final DataSnapshot snapshot;
