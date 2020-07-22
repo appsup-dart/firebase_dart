@@ -1133,6 +1133,24 @@ void testsWith(Map<String, dynamic> secrets) {
       var v3 = await ref3.get();
       expect(v3, v);
     });
+
+    test('Should receive server value then ack', () async {
+      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/bugs/ack');
+
+      await ref.set(null);
+
+      var l = [];
+      var s = ref.onValue.listen((v) => l.add(v.snapshot.value));
+
+      await ref.get();
+      await ref.runTransaction((v) => v..value = 42);
+      await ref.get();
+      expect(l, [null, 42]);
+
+      await s.cancel();
+    });
   });
 }
 

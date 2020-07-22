@@ -155,6 +155,8 @@ class MemConnection extends Connection {
         p,
         Map.fromIterables(value.keys.map((k) => Name.parsePath(k)),
             value.values.map((v) => TreeStructuredData.fromJson(v)))));
+    await Future.microtask(
+        () => null); // make sure events are delivered before returning
   }
 
   @override
@@ -162,9 +164,11 @@ class MemConnection extends Connection {
       {String hash, int writeId}) async {
     var p = Name.parsePath(path);
 
+    // TODO check hash
     await SingleInstanceBackend.apply(
         TreeOperation.overwrite(p, TreeStructuredData.fromJson(value)));
-    // TODO check hash
+    await Future.microtask(
+        () => null); // make sure events are delivered before returning
   }
 
   final StreamController<bool> _onConnectController = StreamController();
