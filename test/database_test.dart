@@ -1154,6 +1154,54 @@ void testsWith(Map<String, dynamic> secrets) {
   });
 
   group('Tests from firebase-android-sdk', () {
+    group('FirebaseDatabase', () {
+      core.FirebaseApp app;
+      setUp(() async {
+        app = await core.Firebase.initializeApp(
+            options: FirebaseOptions(
+                apiKey: 'apikey',
+                appId: 'appid',
+                messagingSenderId: 'messagingSenderId',
+                projectId: 'projectId',
+                databaseURL: null));
+      });
+
+      tearDown(() async {
+        await app.delete();
+      });
+      test('get database for invalid urls', () async {
+        expect(() => FirebaseDatabase(app: app, databaseURL: null),
+            throwsArgumentError);
+        expect(() => FirebaseDatabase(app: app, databaseURL: 'not-a-url'),
+            throwsArgumentError);
+        expect(
+            () => FirebaseDatabase(
+                app: app,
+                databaseURL: 'http://x.fblocal.com:9000/paths/are/not/allowed'),
+            throwsArgumentError);
+      });
+      test('reference equality for database', () async {
+        var db1 = FirebaseDatabase(app: app1, databaseURL: testUrl);
+        var db2 = FirebaseDatabase(app: app2, databaseURL: testUrl);
+        var altDb = FirebaseDatabase(app: appAlt1, databaseURL: testUrl);
+
+        var testRef1 = db1.reference();
+        var testRef2 = db1.reference().child('foo');
+        var testRef3 = altDb.reference();
+
+        var testRef5 = db2.reference();
+        var testRef6 = db2.reference();
+
+        // Referential equality
+        expect(testRef2.database, testRef1.database);
+        expect(testRef3.database, isNot(testRef1.database));
+        expect(testRef5.database, isNot(testRef1.database));
+        expect(testRef6.database, isNot(testRef1.database));
+
+        // Same config yields same firebase
+        expect(testRef6.database, testRef5.database);
+      });
+    });
     group('Transaction', () {
       test('new value is immediately visible', () async {
         var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
@@ -1204,5 +1252,8 @@ void testsWith(Map<String, dynamic> secrets) {
     });
   });
 }
+
+Matcher throwsFirebaseDatabaseException() =>
+    throwsA(TypeMatcher<FirebaseDatabaseException>());
 
 Future wait(int millis) async => Future.delayed(Duration(milliseconds: millis));

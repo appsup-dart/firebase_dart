@@ -33,4 +33,18 @@ class FirebaseDatabase {
       other.databaseURL == databaseURL;
 }
 
-String _normalizeUrl(String url) => Uri.parse(url).replace(path: '').toString();
+String _normalizeUrl(String url) {
+  if (url == null) {
+    throw ArgumentError.notNull('databaseURL');
+  }
+  var uri = Uri.parse(url);
+
+  if (!['http', 'https', 'mem'].contains(uri.scheme)) {
+    throw ArgumentError.value(
+        url, 'databaseURL', 'Only http, https or mem scheme allowed');
+  }
+  if (uri.pathSegments.isNotEmpty) {
+    throw ArgumentError.value(url, 'databaseURL', 'Paths are not allowed');
+  }
+  return Uri.parse(url).replace(path: '').toString();
+}

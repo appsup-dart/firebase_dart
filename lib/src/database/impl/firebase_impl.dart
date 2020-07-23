@@ -40,6 +40,10 @@ class DataSnapshotImpl extends DataSnapshot {
   dynamic exportVal() => treeStructuredData.toJson(true);
 }
 
+extension QueryExtensionForTesting on Query {
+  FirebaseDatabase get database => (this as QueryImpl)._db;
+}
+
 class QueryImpl extends Query {
   final List<String> _pathSegments;
   final String _path;
