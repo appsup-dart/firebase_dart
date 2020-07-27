@@ -30,30 +30,29 @@ class SingleInstanceBackend {
   final List<StreamController<TreeOperation>> controllers = [];
 
   Stream<TreeOperation> get _stream {
-    var controller = StreamController<TreeOperation>();
+    // should be sync, to ensure that changes are delivered before the future
+    // returned by apply completes.
+    var controller = StreamController<TreeOperation>(sync: true);
     controllers.add(controller);
     controller.add(TreeOperation.overwrite(Name.parsePath(''), data));
     return controller.stream;
   }
 
-  static Future<Null> _applyOnInstance(TreeOperation operation) =>
+  static Future<void> _applyOnInstance(TreeOperation operation) =>
       _instance._apply(operation);
 
-  static Stream<TreeOperation> get stream async* {
-    yield* _instance._stream;
-  }
+  static Stream<TreeOperation> get stream => _instance._stream;
 
   /// Generates the special server values
   Map<ServerValue, Value> get _serverValues =>
       {ServerValue.timestamp: Value(DateTime.now().millisecondsSinceEpoch)};
 
-  Future<Null> _apply(TreeOperation operation) async {
+  Future<void> _apply(TreeOperation operation) async {
     operation = _resolveTreeOperation(operation, _serverValues);
     data = operation.apply(data);
     for (var c in controllers) {
       c.add(operation);
     }
-    await Future.microtask(() => null);
   }
 
   Operation _resolveNodeOperation(
@@ -78,7 +77,13 @@ class SingleInstanceBackend {
     return TreeOperation(operation.path, nodeOperation);
   }
 
-  static Future apply(TreeOperation operation) => _applyOnInstance(operation);
+  /// Applies the operation
+  ///
+  /// The returned future resolves after all changes are delivered to
+  /// connections listening for changes. If not, an ack could be delivered
+  /// before a connection received a server update.
+  static Future<void> apply(TreeOperation operation) =>
+      _applyOnInstance(operation);
 }
 
 class MemConnection extends Connection {
@@ -155,8 +160,6 @@ class MemConnection extends Connection {
         p,
         Map.fromIterables(value.keys.map((k) => Name.parsePath(k)),
             value.values.map((v) => TreeStructuredData.fromJson(v)))));
-    await Future.microtask(
-        () => null); // make sure events are delivered before returning
   }
 
   @override
@@ -167,8 +170,6 @@ class MemConnection extends Connection {
     // TODO check hash
     await SingleInstanceBackend.apply(
         TreeOperation.overwrite(p, TreeStructuredData.fromJson(value)));
-    await Future.microtask(
-        () => null); // make sure events are delivered before returning
   }
 
   final StreamController<bool> _onConnectController = StreamController();

@@ -1151,6 +1151,33 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await s.cancel();
     });
+    test('Should receive server value then ack: bis', () async {
+      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
+          .reference()
+          .child('test/bugs/ack');
+      await ref.set(null);
+
+      var events = <String>[];
+
+      ref.onChildAdded.map((e) => 'add ${e.snapshot.value}').listen(events.add);
+      ref.onChildRemoved
+          .map((e) => 'remove ${e.snapshot.value}')
+          .listen(events.add);
+      await Future.wait([
+        ref.push().set('test-value-1'),
+        ref.push().set('test-value-2'),
+        ref.push().set('test-value-3'),
+        ref.push().set('test-value-4'),
+        wait(100),
+      ]);
+
+      expect(events, [
+        'add test-value-1',
+        'add test-value-2',
+        'add test-value-3',
+        'add test-value-4',
+      ]);
+    });
   });
 
   group('Tests from firebase-android-sdk', () {
