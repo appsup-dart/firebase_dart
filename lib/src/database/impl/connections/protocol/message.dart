@@ -4,14 +4,20 @@
 part of firebase.protocol;
 
 abstract class Message {
+  factory Message.fromJson(Map<String, dynamic> json) = _JsonMessage.fromJson;
+
+  dynamic toJson();
+}
+
+abstract class _JsonMessage implements Message {
   static const String typeData = 'd';
   static const String typeControl = 'c';
   static const String messageType = 't';
   static const String messageData = 'd';
 
-  Message();
+  _JsonMessage();
 
-  factory Message.fromJson(Map<String, dynamic> json) {
+  factory _JsonMessage.fromJson(Map<String, dynamic> json) {
     var layer = json[messageType];
     switch (layer) {
       case typeData:
@@ -31,7 +37,12 @@ abstract class Message {
   Map<String, dynamic> get _payloadJson;
 }
 
-class DataMessage extends Message {
+class KeepAliveMessage implements Message {
+  @override
+  dynamic toJson() => 0;
+}
+
+class DataMessage extends _JsonMessage {
   static const String actionListen = 'q';
   static const String actionUnlisten = 'n';
   static const String actionOnDisconnectPut = 'o';
@@ -57,7 +68,7 @@ class DataMessage extends Message {
   DataMessage(this.action, this.body, {this.error, this.reqNum});
 
   factory DataMessage.fromJson(Map<String, dynamic> json) {
-    var data = json[Message.messageData];
+    var data = json[_JsonMessage.messageData];
     return DataMessage(
         data['a'], MessageBody.fromJson(data['b'] as Map<String, dynamic>),
         reqNum: data['r'], error: data['error']);
@@ -236,7 +247,7 @@ class MessageBody {
   }
 }
 
-abstract class ControlMessage extends Message {
+abstract class ControlMessage extends _JsonMessage {
   static const String typeHandshake = 'h';
   static const String typeEndTransmission = 'n';
   static const String typeControlShutdown = 's';
@@ -248,15 +259,15 @@ abstract class ControlMessage extends Message {
   ControlMessage();
 
   factory ControlMessage.fromJson(Map<String, dynamic> json) {
-    var data = json[Message.messageData];
-    var cmd = data[Message.messageType];
+    var data = json[_JsonMessage.messageData];
+    var cmd = data[_JsonMessage.messageType];
     switch (cmd) {
       case typeHandshake:
         return HandshakeMessage.fromJson(json);
       case typeEndTransmission:
         throw UnimplementedError('Received control message: $json');
       case typeControlShutdown:
-        return ShutdownMessage(data[Message.messageData]);
+        return ShutdownMessage(data[_JsonMessage.messageData]);
       case typeControlReset:
         return ResetMessage.fromJson(json);
       case typeControlError:
@@ -277,7 +288,7 @@ abstract class ControlMessage extends Message {
 
   @override
   Map<String, dynamic> get _payloadJson =>
-      {Message.messageType: type, Message.messageData: jsonData};
+      {_JsonMessage.messageType: type, _JsonMessage.messageData: jsonData};
 }
 
 class PingMessage extends ControlMessage {
@@ -302,8 +313,8 @@ class ResetMessage extends ControlMessage {
   ResetMessage(this.host);
 
   factory ResetMessage.fromJson(Map<String, dynamic> json) {
-    var data = json[Message.messageData];
-    return ResetMessage(data[Message.messageData]);
+    var data = json[_JsonMessage.messageData];
+    return ResetMessage(data[_JsonMessage.messageData]);
   }
 
   @override
@@ -331,7 +342,7 @@ class HandshakeMessage extends ControlMessage {
   HandshakeMessage(this.info);
 
   factory HandshakeMessage.fromJson(Map<String, dynamic> json) {
-    var handshake = json[Message.messageData][Message.messageData];
+    var handshake = json[_JsonMessage.messageData][_JsonMessage.messageData];
     return HandshakeMessage(
         HandshakeInfo.fromJson(handshake as Map<String, dynamic>));
   }

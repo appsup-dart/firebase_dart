@@ -73,7 +73,8 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   final Map<int, Request> _pendingRequests = {};
   final List<Completer<PongMessage>> _pings = [];
 
-  final StreamController _output = StreamController(sync: true);
+  final StreamController<FutureOr<Message>> _output =
+      StreamController(sync: true);
   final StreamController<Response> _input = StreamController(sync: true);
 
   Future _connect([String host]);
@@ -125,7 +126,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
   }
 
   Request _prepareRequest(Request request) {
-    return _pendingRequests[request.message.reqNum] = request;
+    return _pendingRequests[request.reqNum] = request;
   }
 
   @override
@@ -137,7 +138,7 @@ abstract class Transport extends Stream<Response> with StreamSink<Request> {
 
   @override
   Future addStream(Stream<Request> stream) =>
-      _output.addStream(stream.map(_prepareRequest));
+      throw UnsupportedError('Adding stream to transport not supported');
 
   @override
   StreamSubscription<Response> listen(void Function(Response event) onData,
@@ -183,7 +184,8 @@ class WebSocketTransport extends Transport {
 
   @override
   void _start() {
-    var stream = _output.stream.map(json.encode).expand((v) sync* {
+    var stream =
+        _output.stream.asyncMap((v) => v).map(json.encode).expand((v) sync* {
       _logger.fine('send $v');
 
       var dataSegs = List.generate(
@@ -204,7 +206,7 @@ class WebSocketTransport extends Transport {
     Stream.periodic(Duration(seconds: 45))
         .takeWhile((_) => readyState <= Transport.connected)
         .forEach((_) {
-      if (!_output.isClosed) _output.add(0);
+      if (!_output.isClosed) _output.add(KeepAliveMessage());
     });
   }
 

@@ -6,19 +6,52 @@ part of firebase.protocol;
 class Request {
   static int nextRequestNum = 0;
 
-  final DataMessage message;
+  final FutureOr<DataMessage> message;
   final int writeId;
+  final int reqNum;
 
   final Completer<Response> _completer = Completer();
 
   Request(String action, MessageBody body, [this.writeId])
-      : message = DataMessage(action, body, reqNum: nextRequestNum++);
+      : reqNum = nextRequestNum,
+        message = DataMessage(action, body, reqNum: nextRequestNum++);
 
-  Request.auth(String cred)
-      : this(DataMessage.actionAuth, MessageBody(cred: cred));
+  Request.auth(FutureOr<String> cred)
+      : reqNum = nextRequestNum,
+        message = Future.value(nextRequestNum++).then((reqNum) async {
+          var token = await cred;
+          return DataMessage(
+              _actionFromAuthToken(token), MessageBody(cred: token),
+              reqNum: reqNum);
+        }),
+        writeId = null;
 
-  Request.gauth(String cred)
-      : this(DataMessage.actionGauth, MessageBody(cred: cred));
+  static String _actionFromAuthToken(String token) {
+    if (token == 'owner') {
+      // is simulator
+      return DataMessage.actionGauth;
+    } else if (token.split('.').length == 3) {
+      // this is an access token or id token
+      try {
+        var jwt = JsonWebToken.unverified(token);
+        if (jwt.claims.issuedAt != null) {
+          // this is an id token
+          return DataMessage.actionAuth;
+        } else {
+          return DataMessage.actionGauth;
+        }
+      } catch (e) {
+        // this is an access token
+        return DataMessage.actionGauth;
+      }
+    } else if (token.split('.').length == 2) {
+      // this is an access token
+      return DataMessage.actionGauth;
+    } else {
+      // this is a database secret
+      return DataMessage.actionAuth;
+    }
+  }
 
   Request.unauth() : this(DataMessage.actionUnauth, MessageBody());
 

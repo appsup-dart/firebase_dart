@@ -19,10 +19,9 @@ class ProtocolConnection extends Connection {
       : super.base(host) {
     quiver.checkArgument(host != null && host.isNotEmpty);
     _scheduleConnect(0);
-    _startHandlingRequests();
   }
 
-  final Map<String, Map<QueryFilter, Request>> _listens = {};
+  final List<Request> _listens = [];
 
   @override
   DateTime get serverTime =>
@@ -74,13 +73,13 @@ class ProtocolConnection extends Connection {
   }
 
   void _addListen(Request request) {
-    var path = request.message.body.path;
-    var query = request.message.body.query;
-    _listens.putIfAbsent(path, () => {})[query.toFilter()] = request;
+    _listens.add(request);
   }
 
   void _removeListen(String path, QueryFilter query) {
-    _listens.putIfAbsent(path, () => {}).remove(query);
+    _listens.removeWhere((element) =>
+        (element.message as DataMessage).body.path == path &&
+        (element.message as DataMessage).body.query.toFilter() == query);
   }
 
   void _scheduleConnect(num timeout) {
@@ -172,7 +171,6 @@ class ProtocolConnection extends Connection {
 
   @override
   Future<Null> close() async {
-    await _requests.close();
     await _onDataOperation.close();
     await _onAuth.close();
     await _onConnect.close();
@@ -188,11 +186,9 @@ class ProtocolConnection extends Connection {
     }
 
     // listens
-    _listens.forEach((path, list) {
-      list.forEach((query, request) {
-        _transport.add(request);
-      });
-    });
+    for (var r in _listens) {
+      _transport.add(r);
+    }
 
     // requests
     _outstandingRequests.forEach((r) {
@@ -202,38 +198,10 @@ class ProtocolConnection extends Connection {
 
   FutureOr<String> _authToken;
 
-  Request _createAuthRequestForToken(String token) {
-    if (token == 'owner') {
-      // is simulator
-      return Request.gauth(token);
-    } else if (token.split('.').length == 3) {
-      // this is an access token or id token
-      try {
-        var jwt = JsonWebToken.unverified(token);
-        if (jwt.claims.issuedAt != null) {
-          // this is an id token
-          return Request.auth(token);
-        } else {
-          return Request.gauth(token);
-        }
-      } catch (e) {
-        // this is an access token
-        return Request.gauth(token);
-      }
-    } else if (token.split('.').length == 2) {
-      // this is an access token
-      return Request.gauth(token);
-    } else {
-      // this is a database secret
-      return Request.auth(token);
-    }
-  }
-
   @override
   Future<Map<String, dynamic>> auth(FutureOr<String> token) {
     _authToken = token;
-    return _request(Future.value(token).then(_createAuthRequestForToken))
-        .then((b) {
+    return _request(Request.auth(token)).then((b) {
       return b.data['auth'];
     });
   }
@@ -247,14 +215,20 @@ class ProtocolConnection extends Connection {
   bool get _transportIsReady =>
       _transport != null && _transport.readyState == Transport.connected;
 
-  final StreamController<FutureOr<Request>> _requests = StreamController();
-
-  void _startHandlingRequests() {
-    _requests.stream.asyncMap<Request>((event) => event).forEach(_doRequest);
-  }
-
-  Future<MessageBody> _request(FutureOr<Request> request) async {
-    _requests.add(request);
+  Future<MessageBody> _request(Request request) async {
+    var message = request.message;
+    if (message is DataMessage) {
+      switch (message.action) {
+        case DataMessage.actionListen:
+        case DataMessage.actionUnlisten:
+          break;
+        default:
+          _outstandingRequests.add(request);
+      }
+    }
+    if (_transportIsReady) {
+      _transport.add(request);
+    }
     return (await request).response.then<MessageBody>((r) {
       _outstandingRequests.remove(request);
       if (r.message.body.status == MessageBody.statusOk) {
@@ -263,19 +237,6 @@ class ProtocolConnection extends Connection {
         throwServerError(r.message.body.status, r.message.body.data);
       }
     });
-  }
-
-  void _doRequest(Request request) {
-    switch (request.message.action) {
-      case DataMessage.actionListen:
-      case DataMessage.actionUnlisten:
-        break;
-      default:
-        _outstandingRequests.add(request);
-    }
-    if (_transportIsReady) {
-      _transport.add(request);
-    }
   }
 
   @override
