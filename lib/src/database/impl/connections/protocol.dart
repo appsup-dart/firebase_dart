@@ -29,6 +29,6 @@ part 'protocol/transport.dart';
 
 part 'protocol/message.dart';
 
-part 'protocol/connection.dart';
+part 'protocol/protocol_connection.dart';
 
 final _logger = Logger('firebase-connection');

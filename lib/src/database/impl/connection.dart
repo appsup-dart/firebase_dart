@@ -60,10 +60,15 @@ class OperationEvent {
 }
 
 /// Handles the connection to a remote database.
-abstract class Connection {
+///
+/// A [PersistentConnection] reconnects to the server whenever the connection is
+/// lost and will restore the state (i.e. the registered listeners, the
+/// authentication credentials and on disconnect writes) and reattempt any
+/// outstanding writes.
+abstract class PersistentConnection {
   final String host;
 
-  factory Connection(Uri uri) {
+  factory PersistentConnection(Uri uri) {
     switch (uri.scheme) {
       case 'http':
         return ProtocolConnection('${uri.host}:${uri.port ?? 80}',
@@ -78,7 +83,7 @@ abstract class Connection {
     }
   }
 
-  Connection.base(this.host);
+  PersistentConnection.base(this.host);
 
   DateTime get serverTime;
 

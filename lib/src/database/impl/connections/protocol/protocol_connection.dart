@@ -3,7 +3,7 @@
 
 part of firebase.protocol;
 
-class ProtocolConnection extends Connection {
+class ProtocolConnection extends PersistentConnection {
   Transport _transport;
   Future _establishConnectionTimer;
   String _lastSessionId;

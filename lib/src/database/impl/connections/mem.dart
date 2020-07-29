@@ -86,7 +86,7 @@ class SingleInstanceBackend {
       _applyOnInstance(operation);
 }
 
-class MemConnection extends Connection {
+class MemConnection extends PersistentConnection {
   MemConnection(String host)
       : syncTree = SyncTree('', _Registrar()),
         super.base(host) {

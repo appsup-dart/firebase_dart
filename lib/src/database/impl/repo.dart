@@ -22,7 +22,7 @@ import 'package:sortedmap/sortedmap.dart';
 final _logger = Logger('firebase-repo');
 
 class Repo {
-  final Connection _connection;
+  final PersistentConnection _connection;
   final Uri url;
 
   static final Map<firebase.FirebaseDatabase, Repo> _repos = {};
@@ -37,7 +37,7 @@ class Repo {
 
   factory Repo(firebase.FirebaseDatabase db) {
     var url = Uri.parse(db.databaseURL ?? db.app.options.databaseURL);
-    return _repos.putIfAbsent(db, () => Repo._(url, Connection(url)));
+    return _repos.putIfAbsent(db, () => Repo._(url, PersistentConnection(url)));
   }
 
   Repo._(this.url, this._connection)
@@ -239,7 +239,7 @@ class Repo {
 }
 
 class RemoteListeners extends RemoteListenerRegistrar {
-  final Connection connection;
+  final PersistentConnection connection;
 
   RemoteListeners(this.connection);
 
