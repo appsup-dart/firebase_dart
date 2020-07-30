@@ -172,7 +172,7 @@ extension LegacyAuthExtension on DatabaseReference {
 
   Future unauth() => repo.unauth();
 
-  Future<Map> authenticate(FutureOr<String> token) => repo.auth(token);
+  Future<Map> authenticate(String token) => repo.auth(token);
 }
 
 class DisconnectImpl extends Disconnect {

@@ -77,8 +77,8 @@ class Connection {
         _logger.fine(() => 'Sending data: ${json.encode(request.message)}');
       }
 
-      if (request._reqNum != null) {
-        _pendingRequests[request._reqNum] = request;
+      if (request.message.reqNum != null) {
+        _pendingRequests[request.message.reqNum] = request;
       }
       _outputSink.add(request.message);
     }

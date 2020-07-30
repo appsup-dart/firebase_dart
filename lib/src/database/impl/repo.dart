@@ -96,8 +96,8 @@ class Repo {
   ///
   /// Returns a future that completes with the auth data on success, or fails
   /// otherwise.
-  Future<Map> auth(FutureOr<String> token) async {
-    var auth = await _connection.auth(token).then((v) {
+  Future<Map> auth(String token) async {
+    var auth = await _connection.refreshAuthToken(token).then((v) {
       return v;
     });
     _onAuth.add(auth);
@@ -108,7 +108,7 @@ class Repo {
   /// Unauthenticates.
   ///
   /// Returns a future that completes on success, or fails otherwise.
-  Future unauth() => _connection.unauth().then((_) {
+  Future unauth() => _connection.refreshAuthToken(null).then((_) {
         _onAuth.add(null);
         _authData = null;
       });

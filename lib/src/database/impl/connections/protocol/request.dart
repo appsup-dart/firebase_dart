@@ -8,25 +8,17 @@ class Request {
   static int nextRequestNum = 0;
 
   /// The message to be sent
-  final FutureOr<DataMessage> message;
-
-  /// The request number
-  final int _reqNum;
+  final DataMessage message;
 
   final Completer<Response> _completer = Completer();
 
   Request(String action, MessageBody body)
-      : _reqNum = nextRequestNum,
-        message = DataMessage(action, body, reqNum: nextRequestNum++);
+      : message = DataMessage(action, body, reqNum: nextRequestNum++);
 
-  Request.auth(FutureOr<String> cred)
-      : _reqNum = nextRequestNum,
-        message = Future.value(nextRequestNum++).then((reqNum) async {
-          var token = await cred;
-          return DataMessage(
-              _actionFromAuthToken(token), MessageBody(cred: token),
-              reqNum: reqNum);
-        });
+  Request.auth(String cred)
+      : message = DataMessage(
+            _actionFromAuthToken(cred), MessageBody(cred: cred),
+            reqNum: nextRequestNum++);
 
   static String _actionFromAuthToken(String token) {
     if (token == 'owner') {

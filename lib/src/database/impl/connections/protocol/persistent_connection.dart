@@ -231,16 +231,15 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<Map<String, dynamic>> auth(FutureOr<String> token) async {
-    _authRequest = Request.auth(token);
-    var b = await _request(_authRequest);
-    return b.data['auth'];
-  }
-
-  @override
-  Future<Null> unauth() {
-    _authRequest = null;
-    return _request(Request.unauth()).then((b) => null);
+  Future<Map<String, dynamic>> refreshAuthToken(String token) async {
+    if (token == null) {
+      _authRequest = null;
+      return _request(Request.unauth()).then((b) => null);
+    } else {
+      _authRequest = Request.auth(token);
+      var b = await _request(_authRequest);
+      return b.data['auth'];
+    }
   }
 
   @override

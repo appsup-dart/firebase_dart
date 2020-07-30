@@ -200,13 +200,11 @@ class MemConnection extends PersistentConnection {
   DateTime get serverTime => DateTime.now();
 
   @override
-  Future<Map> auth(FutureOr<String> token) async {
+  Future<Map> refreshAuthToken(String token) async {
+    if (token == null) return null;
     var t = FirebaseTokenCodec(null).decode(token);
     return t.data;
   }
-
-  @override
-  Future<Null> unauth() async {}
 
   final StreamController<Map> _onAuth = StreamController(sync: true);
   final StreamController<OperationEvent> _onDataOperation =

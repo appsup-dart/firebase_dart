@@ -108,10 +108,7 @@ abstract class PersistentConnection {
   // auth
 
   /// Authenticates with the token.
-  Future<Map> auth(FutureOr<String> token);
-
-  /// Unauthenticates.
-  Future<Null> unauth();
+  Future<Map> refreshAuthToken(String token);
 
   // listens
 
