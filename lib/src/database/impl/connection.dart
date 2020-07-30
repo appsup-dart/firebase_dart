@@ -101,6 +101,8 @@ abstract class PersistentConnection {
   /// Merges children at a particular path.
   Future<Null> merge(String path, Map<String, dynamic> value, {String hash});
 
+  void purgeOutstandingWrites();
+
   /// Stream of connect events.
   Stream<bool> get onConnect;
 
@@ -150,4 +152,10 @@ abstract class PersistentConnection {
   bool isInterrupted(String reason);
 }
 
-enum ConnectionState { connecting, connected, disconnected, gettingToken }
+enum ConnectionState {
+  connecting,
+  authenticating,
+  connected,
+  disconnected,
+  gettingToken
+}

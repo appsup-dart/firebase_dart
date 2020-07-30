@@ -64,12 +64,14 @@ class PersistentConnectionImpl extends PersistentConnection
   @override
   Future<Null> put(String path, dynamic value, {String hash}) async {
     await _request(Request.put(path, value, hash));
+    _lastWriteTimestamp = DateTime.now();
   }
 
   @override
   Future<Null> merge(String path, Map<String, dynamic> value,
       {String hash}) async {
     await _request(Request.merge(path, value, hash));
+    _lastWriteTimestamp = DateTime.now();
   }
 
   void _addListen(Request request) {
@@ -404,5 +406,65 @@ class PersistentConnectionImpl extends PersistentConnection
 */
     _connectionState = ConnectionState.connecting;
     _connection = Connection(url: _url, delegate: this)..open();
+  }
+
+  @override
+  void purgeOutstandingWrites() {
+    for (var request in _outstandingRequests) {
+      request._completer
+          .completeError(FirebaseDatabaseException.writeCanceled());
+    }
+    _outstandingRequests.clear();
+
+    // Only if we are not connected can we reliably determine that we don't have onDisconnects
+    // (outstanding) anymore. Otherwise we leave the flag untouched.
+    if (!_connected()) {
+//TODO      this.hasOnDisconnects = false;
+    }
+    _doIdleCheck();
+  }
+
+  bool _connected() {
+    return connectionState == ConnectionState.authenticating ||
+        connectionState == ConnectionState.connected;
+  }
+
+  Timer _inactivityTimer;
+
+  void _doIdleCheck() {
+    if (_isIdle()) {
+      if (_inactivityTimer != null) {
+        _inactivityTimer.cancel();
+      }
+
+      _inactivityTimer = Timer(_idleTimeout, () {
+        _inactivityTimer = null;
+        if (_idleHasTimedOut()) {
+          interrupt(_idleInterruptReason);
+        } else {
+          _doIdleCheck();
+        }
+      });
+    } else if (isInterrupted(_idleInterruptReason)) {
+      assert(!_isIdle());
+      resume(_idleInterruptReason);
+    }
+  }
+
+  DateTime _lastWriteTimestamp = DateTime.fromMillisecondsSinceEpoch(0);
+
+  static const _idleInterruptReason = 'connection_idle';
+  static const _idleTimeout = Duration(minutes: 1);
+
+  bool _isIdle() =>
+      _listens.isEmpty
+      //TODO && this.requestCBHash.isEmpty()
+      //TODO && !this.hasOnDisconnects
+      &&
+      _outstandingRequests.isEmpty;
+
+  bool _idleHasTimedOut() {
+    return _isIdle() &&
+        DateTime.now().isAfter(_lastWriteTimestamp.add(_idleTimeout));
   }
 }

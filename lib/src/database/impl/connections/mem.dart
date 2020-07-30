@@ -253,4 +253,9 @@ class MemConnection extends PersistentConnection {
   void shutdown() {
     // TODO: implement shutdown
   }
+
+  @override
+  void purgeOutstandingWrites() {
+    // TODO: implement purgeOutstandingWrites
+  }
 }
