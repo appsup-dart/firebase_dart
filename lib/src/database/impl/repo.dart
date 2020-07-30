@@ -38,7 +38,8 @@ class Repo {
 
   factory Repo(firebase.FirebaseDatabase db) {
     var url = Uri.parse(db.databaseURL ?? db.app.options.databaseURL);
-    return _repos.putIfAbsent(db, () => Repo._(url, PersistentConnection(url)));
+    return _repos.putIfAbsent(
+        db, () => Repo._(url, PersistentConnection(url)..initialize()));
   }
 
   Repo._(this.url, this._connection)
@@ -72,6 +73,14 @@ class Repo {
   Future close() async {
     await _onAuth.close();
     await _connection.close();
+  }
+
+  void interrupt() {
+    _connection.interrupt('repo_interrupt');
+  }
+
+  void resume() {
+    _connection.resume('repo_interrupt');
   }
 
   /// The current authData

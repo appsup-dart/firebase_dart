@@ -227,4 +227,30 @@ class MemConnection extends PersistentConnection {
   void mockResetMessage() {
     // TODO: implement mockResetMessage
   }
+
+  @override
+  void initialize() {
+    // TODO: implement initialize
+  }
+
+  @override
+  void interrupt(String reason) {
+    // TODO: implement interrupt
+  }
+
+  @override
+  bool isInterrupted(String reason) {
+    // TODO: implement isInterrupted
+    throw UnimplementedError();
+  }
+
+  @override
+  void resume(String reason) {
+    // TODO: implement resume
+  }
+
+  @override
+  void shutdown() {
+    // TODO: implement shutdown
+  }
 }

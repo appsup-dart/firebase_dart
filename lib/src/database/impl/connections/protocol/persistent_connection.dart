@@ -5,9 +5,10 @@ part of firebase.protocol;
 
 class PersistentConnectionImpl extends PersistentConnection
     implements ConnectionDelegate {
+  final RetryHelper _retryHelper = RetryHelper();
+
   Connection _connection;
   Uri _url;
-  Future _establishConnectionTimer;
 
   int _nextTag = 0;
   final quiver.BiMap<int, Pair<String, QueryFilter>> _tagToQuery =
@@ -19,9 +20,7 @@ class PersistentConnectionImpl extends PersistentConnection
           ...url.queryParameters,
           'v': '5',
         }),
-        super.base() {
-    _scheduleConnect(0);
-  }
+        super.base();
 
   final List<Request> _listens = [];
 
@@ -83,22 +82,6 @@ class PersistentConnectionImpl extends PersistentConnection
         (element.message as DataMessage).body.query.toFilter() == query);
   }
 
-  void _scheduleConnect(num timeout) {
-    assert(_connection ==
-        null); //, "Scheduling a connect when we're already connected/ing?");
-
-    var future = _establishConnectionTimer =
-        Future.delayed(Duration(milliseconds: timeout.floor()));
-
-    future.then((_) {
-      if (future != _establishConnectionTimer) {
-        return;
-      }
-      _establishConnectionTimer = null;
-      _establishConnection();
-    });
-  }
-
   final StreamController<bool> _onConnect = StreamController(sync: true);
   final StreamController<OperationEvent> _onDataOperation =
       StreamController(sync: true);
@@ -112,10 +95,6 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Stream<Map> get onAuth => _onAuth.stream;
-
-  void _establishConnection() {
-    _connection = Connection(url: _url, delegate: this)..open();
-  }
 
   @override
   Future<void> disconnect() async => _connection.close();
@@ -249,13 +228,35 @@ class PersistentConnectionImpl extends PersistentConnection
     }
   }
 
+  DateTime _lastConnectionEstablishedTime;
+
   @override
   void onDisconnect(DisconnectReason reason) {
-    _onConnect.add(false);
+    _logger.fine('Got on disconnect due to $reason');
+    _connectionState = ConnectionState.disconnected;
     _connection = null;
-//TODO    if (reason == DisconnectReason.serverReset) {
-    _scheduleConnect(1000);
-//    }
+    //TODO this.hasOnDisconnects = false;
+    //TODO requestCBHash.clear();
+    //TODO cancelSentTransactions();
+    if (_shouldReconnect()) {
+      bool lastConnectionWasSuccessful;
+      if (_lastConnectionEstablishedTime != null) {
+        var timeSinceLastConnectSucceeded =
+            DateTime.now().difference(_lastConnectionEstablishedTime);
+        lastConnectionWasSuccessful =
+            timeSinceLastConnectSucceeded > Duration(seconds: 30);
+      } else {
+        lastConnectionWasSuccessful = false;
+      }
+      if (reason == DisconnectReason.serverReset ||
+          lastConnectionWasSuccessful) {
+        _retryHelper.signalSuccess();
+      }
+      _tryScheduleReconnect();
+    }
+    _lastConnectionEstablishedTime = null;
+
+    _onConnect.add(false);
   }
 
   @override
@@ -280,5 +281,128 @@ class PersistentConnectionImpl extends PersistentConnection
   @override
   void mockResetMessage() {
     _connection._onMessage(ResetMessage(_url.host));
+  }
+
+  @override
+  void initialize() {
+    _tryScheduleReconnect();
+  }
+
+  @override
+  void shutdown() {
+    interrupt('shutdown');
+  }
+
+  final Set<String> _interruptReasons = {};
+
+  ConnectionState _connectionState = ConnectionState.disconnected;
+
+  @override
+  void interrupt(String reason) {
+    _logger.fine('Connection interrupted for: $reason');
+    _interruptReasons.add(reason);
+
+    if (_connection != null) {
+      // Will call onDisconnect and set the connection state to Disconnected
+      _connection.close();
+      _connection = null;
+    } else {
+      _retryHelper.cancel();
+      _connectionState = ConnectionState.disconnected;
+    }
+    // Reset timeouts
+    _retryHelper.signalSuccess();
+  }
+
+  @override
+  bool isInterrupted(String reason) => _interruptReasons.contains(reason);
+
+  @override
+  void resume(String reason) {
+    _logger.fine('Connection no longer interrupted for: $reason');
+
+    _interruptReasons.remove(reason);
+
+    if (_shouldReconnect() && connectionState == ConnectionState.disconnected) {
+      _tryScheduleReconnect();
+    }
+  }
+
+  ConnectionState get connectionState => _connectionState;
+
+  bool _shouldReconnect() => _interruptReasons.isEmpty;
+
+  void _tryScheduleReconnect() {
+    if (_shouldReconnect()) {
+      assert(connectionState == ConnectionState.disconnected,
+          'Not in disconnected state: $connectionState');
+      _logger.fine('Scheduling connection attempt');
+/*TODO
+      final forceRefresh = this.forceAuthTokenRefresh;
+      this.forceAuthTokenRefresh = false;
+*/
+      _retryHelper.retry(() async {
+        _logger.fine('Trying to fetch auth token');
+        assert(
+          connectionState == ConnectionState.disconnected,
+          'Not in disconnected state: $connectionState',
+        );
+/* TODO
+        _connectionState = ConnectionState.gettingToken;
+        currentGetTokenAttempt++;
+        final thisGetTokenAttempt = currentGetTokenAttempt;
+        var token;
+        try {
+          token = await authTokenProvider.getToken(forceRefresh);
+        } catch (error) {
+          if (thisGetTokenAttempt == currentGetTokenAttempt) {
+            _connectionState = ConnectionState.disconnected;
+            _logger.fine('Error fetching token: $error');
+            _tryScheduleReconnect();
+          } else {
+            _logger.fine(
+                'Ignoring getToken error, because this was not the latest attempt.');
+          }
+        }
+        if (thisGetTokenAttempt == currentGetTokenAttempt) {
+          // Someone could have interrupted us while fetching the token,
+          // marking the connection as Disconnected
+          if (connectionState == ConnectionState.gettingToken) {
+            _logger.fine('Successfully fetched token, opening connection');
+*/
+        _openNetworkConnection(/*token*/);
+/*TODO
+          } else {
+            assert(
+              connectionState == ConnectionState.disconnected,
+              'Expected connection state disconnected, but was $connectionState',
+            );
+            _logger.fine('Not opening connection after token refresh, '
+                'because connection was set to disconnected');
+          }
+        } else {
+          _logger.fine(
+              'Ignoring getToken result, because this was not the latest attempt.');
+        }
+*/
+      });
+    }
+  }
+
+  void _openNetworkConnection(/*String token*/) {
+/*
+    assert(
+        connectionState == ConnectionState.gettingToken,
+        'Trying to open network connection while in the wrong state: $connectionState',
+        );
+    // User might have logged out. Positive auth status is handled after authenticating with
+    // the server
+    if (token == null) {
+      delegate.onAuthStatus(false);
+    }
+    authToken = token;
+*/
+    _connectionState = ConnectionState.connecting;
+    _connection = Connection(url: _url, delegate: this)..open();
   }
 }

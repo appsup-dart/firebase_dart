@@ -134,4 +134,20 @@ abstract class PersistentConnection {
 
   void mockConnectionLost();
   void mockResetMessage();
+
+  // Lifecycle
+
+  void initialize();
+
+  void shutdown();
+
+  // Connection management
+
+  void interrupt(String reason);
+
+  void resume(String reason);
+
+  bool isInterrupted(String reason);
 }
+
+enum ConnectionState { connecting, connected, disconnected, gettingToken }

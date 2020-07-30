@@ -174,5 +174,3 @@ abstract class ConnectionDelegate {
 }
 
 enum DisconnectReason { serverReset, other }
-
-enum ConnectionState { connecting, connected, disconnected }
