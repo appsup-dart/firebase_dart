@@ -4,22 +4,23 @@
 library firebase.protocol;
 
 import 'dart:async';
+import 'dart:convert';
+import 'package:async/async.dart';
 import 'package:jose/jose.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:quiver/check.dart' as quiver;
 import 'package:quiver/collection.dart' as quiver;
 import 'package:logging/logging.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'protocol/websocket.dart'
     if (dart.library.html) 'protocol/websocket_html.dart'
-    if (dart.library.io) 'protocol/websocket_io.dart';
+    if (dart.library.io) 'protocol/websocket_io.dart' as websocket;
 import 'dart:math';
 import '../treestructureddata.dart';
 import 'package:sortedmap/sortedmap.dart';
 import '../connection.dart';
 import 'package:dart2_constant/convert.dart';
-import 'package:meta/meta.dart';
+import 'package:stream_channel/stream_channel.dart';
 
 part 'protocol/request.dart';
 
@@ -29,6 +30,8 @@ part 'protocol/transport.dart';
 
 part 'protocol/message.dart';
 
-part 'protocol/protocol_connection.dart';
+part 'protocol/persistent_connection.dart';
+part 'protocol/connection.dart';
+part 'protocol/frames.dart';
 
 final _logger = Logger('firebase-connection');

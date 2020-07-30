@@ -14,7 +14,6 @@ import 'secrets.dart'
     if (dart.library.html) 'secrets.dart'
     if (dart.library.io) 'secrets_io.dart' as s;
 import 'package:dart2_constant/convert.dart';
-import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 
 void main() {
@@ -59,14 +58,13 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Recover from connection loss', () {
     Future<void> connectionLostTests(
-        FutureOr<void> Function() connectionDestroyer) async {
-      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test');
+        FutureOr<void> Function(FirebaseDatabase db)
+            connectionDestroyer) async {
+      var db = FirebaseDatabase(app: app1, databaseURL: testUrl);
+      var ref = db.reference().child('test');
 
-      var ref2 = FirebaseDatabase(app: app2, databaseURL: testUrl)
-          .reference()
-          .child('test');
+      var db2 = FirebaseDatabase(app: app2, databaseURL: testUrl);
+      var ref2 = db2.reference().child('test');
 
       await ref2.set('hello');
       await wait(200);
@@ -80,7 +78,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await wait(200);
 
-      await connectionDestroyer();
+      await connectionDestroyer(db);
 
       await ref2.set('world');
 
@@ -88,9 +86,9 @@ void testsWith(Map<String, dynamic> secrets) {
     }
 
     test('Recover when internet connection broken',
-        () => connectionLostTests(() => TransportTester.mockConnectionLost()));
+        () => connectionLostTests((db) => Repo(db).mockConnectionLost()));
     test('Recover when reset message received',
-        () => connectionLostTests(() => TransportTester.mockResetMessage()));
+        () => connectionLostTests((db) => Repo(db).mockResetMessage()));
   });
 
   group('Reference location', () {

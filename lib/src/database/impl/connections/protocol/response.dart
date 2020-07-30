@@ -3,13 +3,16 @@
 
 part of firebase.protocol;
 
+/// A response received from the server
 class Response {
+  /// The message
   final DataMessage message;
 
   final Request _request;
 
   Response(this.message, this._request);
 
+  /// The request for this response
   Request get request => _request;
 
   @override

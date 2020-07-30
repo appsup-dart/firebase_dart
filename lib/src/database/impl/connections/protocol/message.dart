@@ -3,21 +3,27 @@
 
 part of firebase.protocol;
 
+/// Represents a message to be sent over a communication channel
 abstract class Message {
-  factory Message.fromJson(Map<String, dynamic> json) = _JsonMessage.fromJson;
+  factory Message.fromJson(Map<String, dynamic> json) =
+      _JsonObjectMessage.fromJson;
 
   dynamic toJson();
 }
 
-abstract class _JsonMessage implements Message {
+/// A message that is structured as a JSON-object
+///
+/// All normal messages are of this type. Only the keep-alive message is not of
+/// this type.
+abstract class _JsonObjectMessage implements Message {
   static const String typeData = 'd';
   static const String typeControl = 'c';
   static const String messageType = 't';
   static const String messageData = 'd';
 
-  _JsonMessage();
+  _JsonObjectMessage();
 
-  factory _JsonMessage.fromJson(Map<String, dynamic> json) {
+  factory _JsonObjectMessage.fromJson(Map<String, dynamic> json) {
     var layer = json[messageType];
     switch (layer) {
       case typeData:
@@ -29,6 +35,7 @@ abstract class _JsonMessage implements Message {
     }
   }
 
+  @override
   Map<String, dynamic> toJson() => {
         messageType: this is ControlMessage ? typeControl : typeData,
         messageData: _payloadJson
@@ -37,12 +44,16 @@ abstract class _JsonMessage implements Message {
   Map<String, dynamic> get _payloadJson;
 }
 
+/// A simple message send to the backend to keep the connection alive
 class KeepAliveMessage implements Message {
   @override
   dynamic toJson() => 0;
 }
 
-class DataMessage extends _JsonMessage {
+/// A message that is not meant for controlling the connection, but contains
+/// actual meaningful data
+class DataMessage extends _JsonObjectMessage {
+  // send
   static const String actionListen = 'q';
   static const String actionUnlisten = 'n';
   static const String actionOnDisconnectPut = 'o';
@@ -55,36 +66,46 @@ class DataMessage extends _JsonMessage {
   static const String actionGauth = 'gauth';
   static const String actionUnauth = 'unauth';
 
+  // receive
   static const String actionSet = 'd';
   static const String actionListenRevoked = 'c';
   static const String actionAuthRevoked = 'ac';
   static const String actionSecurityDebug = 'sd';
 
+  /// The action to be performed
   final String action;
+
+  /// A request number
+  ///
+  /// This number links requests sent to the server to responses received from
+  /// the server.
   final int reqNum;
+
+  /// The body
   final MessageBody body;
+
+  /// Contains an error in case the request could not be executed
   final String error;
 
   DataMessage(this.action, this.body, {this.error, this.reqNum});
 
   factory DataMessage.fromJson(Map<String, dynamic> json) {
-    var data = json[_JsonMessage.messageData];
+    var data = json[_JsonObjectMessage.messageData];
     return DataMessage(
         data['a'], MessageBody.fromJson(data['b'] as Map<String, dynamic>),
         reqNum: data['r'], error: data['error']);
   }
 
   @override
-  Map<String, dynamic> get _payloadJson {
-    var json = <String, dynamic>{};
-    if (action != null) json['a'] = action;
-    if (body != null) json['b'] = body;
-    if (reqNum != null) json['r'] = reqNum;
-    if (error != null) json['error'] = error;
-    return json;
-  }
+  Map<String, dynamic> get _payloadJson => {
+        if (action != null) 'a': action,
+        if (body != null) 'b': body,
+        if (reqNum != null) 'r': reqNum,
+        if (error != null) 'error': error,
+      };
 }
 
+/// Represents a query definition
 class Query {
   static const String indexStartValue = 'sp';
   static const String indexStartName = 'sn';
@@ -188,6 +209,7 @@ class Query {
   }
 }
 
+/// The body of a message
 class MessageBody {
   static const String statusOk = 'ok';
 
@@ -247,7 +269,8 @@ class MessageBody {
   }
 }
 
-abstract class ControlMessage extends _JsonMessage {
+/// A message to control the connection
+abstract class ControlMessage extends _JsonObjectMessage {
   static const String typeHandshake = 'h';
   static const String typeEndTransmission = 'n';
   static const String typeControlShutdown = 's';
@@ -259,19 +282,18 @@ abstract class ControlMessage extends _JsonMessage {
   ControlMessage();
 
   factory ControlMessage.fromJson(Map<String, dynamic> json) {
-    var data = json[_JsonMessage.messageData];
-    var cmd = data[_JsonMessage.messageType];
+    var data = json[_JsonObjectMessage.messageData];
+    var cmd = data[_JsonObjectMessage.messageType];
     switch (cmd) {
       case typeHandshake:
         return HandshakeMessage.fromJson(json);
       case typeEndTransmission:
         throw UnimplementedError('Received control message: $json');
       case typeControlShutdown:
-        return ShutdownMessage(data[_JsonMessage.messageData]);
+        return ShutdownMessage(data[_JsonObjectMessage.messageData]);
       case typeControlReset:
         return ResetMessage.fromJson(json);
       case typeControlError:
-        print(json);
         throw UnimplementedError('Received control message: $json');
       case typeControlPing:
         return PingMessage();
@@ -287,10 +309,13 @@ abstract class ControlMessage extends _JsonMessage {
   dynamic get jsonData;
 
   @override
-  Map<String, dynamic> get _payloadJson =>
-      {_JsonMessage.messageType: type, _JsonMessage.messageData: jsonData};
+  Map<String, dynamic> get _payloadJson => {
+        _JsonObjectMessage.messageType: type,
+        _JsonObjectMessage.messageData: jsonData
+      };
 }
 
+/// A ping message
 class PingMessage extends ControlMessage {
   @override
   String get type => ControlMessage.typeControlPing;
@@ -299,6 +324,7 @@ class PingMessage extends ControlMessage {
   Map<String, dynamic> get jsonData => {};
 }
 
+/// A pong message, the response of a ping message
 class PongMessage extends ControlMessage {
   @override
   String get type => ControlMessage.typeControlPong;
@@ -307,14 +333,16 @@ class PongMessage extends ControlMessage {
   Map<String, dynamic> get jsonData => {};
 }
 
+/// Message sent by the server when the client should reconnect
 class ResetMessage extends ControlMessage {
+  /// The host to reconnect to
   final String host;
 
   ResetMessage(this.host);
 
   factory ResetMessage.fromJson(Map<String, dynamic> json) {
-    var data = json[_JsonMessage.messageData];
-    return ResetMessage(data[_JsonMessage.messageData]);
+    var data = json[_JsonObjectMessage.messageData];
+    return ResetMessage(data[_JsonObjectMessage.messageData]);
   }
 
   @override
@@ -324,7 +352,9 @@ class ResetMessage extends ControlMessage {
   String get jsonData => host;
 }
 
+/// Message sent by the server when the client should shut down
 class ShutdownMessage extends ControlMessage {
+  /// The reason of this request
   final String reason;
 
   ShutdownMessage(this.reason);
@@ -336,13 +366,16 @@ class ShutdownMessage extends ControlMessage {
   String get type => ControlMessage.typeControlShutdown;
 }
 
+/// The initial message sent by the server
 class HandshakeMessage extends ControlMessage {
+  /// The handshake information
   final HandshakeInfo info;
 
   HandshakeMessage(this.info);
 
   factory HandshakeMessage.fromJson(Map<String, dynamic> json) {
-    var handshake = json[_JsonMessage.messageData][_JsonMessage.messageData];
+    var handshake =
+        json[_JsonObjectMessage.messageData][_JsonObjectMessage.messageData];
     return HandshakeMessage(
         HandshakeInfo.fromJson(handshake as Map<String, dynamic>));
   }
@@ -354,10 +387,18 @@ class HandshakeMessage extends ControlMessage {
   HandshakeInfo get jsonData => info;
 }
 
+/// Information received on handshake
 class HandshakeInfo {
+  /// The current time of the server
   final DateTime timestamp;
+
+  /// Version
   final String version;
+
+  /// Host
   final String host;
+
+  /// The session id
   final String sessionId;
 
   HandshakeInfo(this.timestamp, this.version, this.host, this.sessionId);
@@ -374,4 +415,22 @@ class HandshakeInfo {
         'h': host,
         's': sessionId
       };
+}
+
+/// Transforms a channel of json like dart objects to [Message] objects
+final messageChannelTransformer = const _MessageChannelTransformer();
+
+class _MessageChannelTransformer
+    implements StreamChannelTransformer<Message, Object> {
+  const _MessageChannelTransformer();
+
+  @override
+  StreamChannel<Message> bind(StreamChannel<Object> channel) {
+    var stream = channel.stream.map<Message>((v) => Message.fromJson(v));
+    var sink = StreamSinkTransformer<Message, Object>.fromHandlers(
+        handleData: (data, sink) {
+      sink.add(data.toJson());
+    }).bind(channel.sink);
+    return StreamChannel.withCloseGuarantee(stream, sink);
+  }
 }

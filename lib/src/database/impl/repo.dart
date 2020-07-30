@@ -3,6 +3,7 @@
 
 import 'package:firebase_dart/database.dart'
     show FirebaseDatabaseException, MutableData, TransactionHandler;
+import 'package:meta/meta.dart';
 
 import 'connection.dart';
 import 'dart:async';
@@ -87,7 +88,9 @@ class Repo {
   /// Returns a future that completes with the auth data on success, or fails
   /// otherwise.
   Future<Map> auth(FutureOr<String> token) async {
-    var auth = await _connection.auth(token);
+    var auth = await _connection.auth(token).then((v) {
+      return v;
+    });
     _onAuth.add(auth);
     _authData = auth;
     return auth;
@@ -117,7 +120,7 @@ class Repo {
         ServerValue.resolve(newValue, _connection.serverValues), writeId);
     _transactions.abort(Name.parsePath(path));
     try {
-      await _connection.put(path, newValue.toJson(true), writeId: writeId);
+      await _connection.put(path, newValue.toJson(true));
       await Future.microtask(
           () => _syncTree.applyAck(Name.parsePath(path), writeId, true));
     } on FirebaseDatabaseException {
@@ -140,7 +143,7 @@ class Repo {
       var writeId = _nextWriteId++;
       _syncTree.applyUserMerge(Name.parsePath(path), changedChildren, writeId);
       try {
-        await _connection.merge(path, value, writeId: writeId);
+        await _connection.merge(path, value);
         await Future.microtask(
             () => _syncTree.applyAck(Name.parsePath(path), writeId, true));
       } on firebase.FirebaseDatabaseException {
@@ -236,6 +239,12 @@ class Repo {
     _onDisconnect.children.clear();
     _onDisconnect.value = null;
   }
+
+  @visibleForTesting
+  void mockConnectionLost() => _connection.mockConnectionLost();
+
+  @visibleForTesting
+  void mockResetMessage() => _connection.mockResetMessage();
 }
 
 class RemoteListeners extends RemoteListenerRegistrar {

@@ -3,21 +3,23 @@
 
 part of firebase.protocol;
 
-class ProtocolConnection extends PersistentConnection {
-  Transport _transport;
+class PersistentConnectionImpl extends PersistentConnection
+    implements ConnectionDelegate {
+  Connection _connection;
+  Uri _url;
   Future _establishConnectionTimer;
-  String _lastSessionId;
 
   int _nextTag = 0;
   final quiver.BiMap<int, Pair<String, QueryFilter>> _tagToQuery =
       quiver.BiMap();
 
-  final String namespace;
-  final bool ssl;
-
-  ProtocolConnection(String host, {this.namespace, this.ssl})
-      : super.base(host) {
-    quiver.checkArgument(host != null && host.isNotEmpty);
+  PersistentConnectionImpl(Uri url)
+      : _url = url.replace(queryParameters: {
+          'ns': url.host.split('.').first,
+          ...url.queryParameters,
+          'v': '5',
+        }),
+        super.base() {
     _scheduleConnect(0);
   }
 
@@ -61,15 +63,14 @@ class ProtocolConnection extends PersistentConnection {
   final List<Request> _outstandingRequests = [];
 
   @override
-  Future<Null> put(String path, dynamic value,
-      {String hash, int writeId}) async {
-    await _request(Request.put(path, value, hash, writeId));
+  Future<Null> put(String path, dynamic value, {String hash}) async {
+    await _request(Request.put(path, value, hash));
   }
 
   @override
   Future<Null> merge(String path, Map<String, dynamic> value,
-      {String hash, int writeId}) async {
-    await _request(Request.merge(path, value, hash, writeId));
+      {String hash}) async {
+    await _request(Request.merge(path, value, hash));
   }
 
   void _addListen(Request request) {
@@ -83,7 +84,7 @@ class ProtocolConnection extends PersistentConnection {
   }
 
   void _scheduleConnect(num timeout) {
-    assert(_transport ==
+    assert(_connection ==
         null); //, "Scheduling a connect when we're already connected/ing?");
 
     var future = _establishConnectionTimer =
@@ -113,61 +114,11 @@ class ProtocolConnection extends PersistentConnection {
   Stream<Map> get onAuth => _onAuth.stream;
 
   void _establishConnection() {
-    _transport = WebSocketTransport(
-        host, namespace ?? host.split('.').first, ssl, _lastSessionId);
-    _transport.ready.then((_) {
-      _onConnect.add(true);
-      _lastSessionId = _transport.info.sessionId;
-      _serverTimeDiff = _transport.info.timestamp.difference(DateTime.now());
-      _transport.where((r) => r.message.reqNum == null).forEach((r) {
-        var query =
-            r.message.body.query ?? _tagToQuery[r.message.body.tag]?.value;
-        if (query == null && r.message.body.tag != null) {
-          // not listening any more.
-          return;
-        }
-        var path = r.message.body.path == null
-            ? null
-            : Name.parsePath(r.message.body.path);
-        switch (r.message.action) {
-          case DataMessage.actionSet:
-          case DataMessage.actionMerge:
-          case DataMessage.actionListenRevoked:
-            var event = OperationEvent(
-                const {
-                  DataMessage.actionSet: OperationEventType.overwrite,
-                  DataMessage.actionMerge: OperationEventType.merge,
-                  DataMessage.actionListenRevoked:
-                      OperationEventType.listenRevoked,
-                }[r.message.action],
-                path,
-                r.message.body.data,
-                query);
-            _onDataOperation.add(event);
-            break;
-          case DataMessage.actionAuthRevoked:
-            _onAuth.add(null);
-            break;
-          case DataMessage.actionSecurityDebug:
-            var msg = r.message.body.message;
-            _logger.fine('security debug: $msg');
-            break;
-          default:
-            throw UnimplementedError(
-                'Cannot handle message with action ${r.message.action}: ${json.encode(r.message)} ${r.message.reqNum} ${r.request.writeId}');
-        }
-      });
-      _restoreState();
-    });
-    _transport.done.then((_) {
-      _onConnect.add(false);
-      _transport = null;
-      if (!_onDataOperation.isClosed) _scheduleConnect(1000);
-    });
+    _connection = Connection(url: _url, delegate: this)..open();
   }
 
   @override
-  Future<Null> disconnect() => _transport.close();
+  Future<void> disconnect() async => _connection.close();
 
   @override
   Future<Null> close() async {
@@ -178,42 +129,41 @@ class ProtocolConnection extends PersistentConnection {
   }
 
   Future _restoreState() async {
-    if (_transport.readyState != Transport.connected) return;
+    if (_connection.state != ConnectionState.connected) return;
 
     // auth
-    if (_authToken != null) {
-      await auth(_authToken);
+    if (_authRequest != null) {
+      await _request(_authRequest);
     }
 
     // listens
     for (var r in _listens) {
-      _transport.add(r);
+      _connection.sendRequest(r);
     }
 
     // requests
     _outstandingRequests.forEach((r) {
-      _transport.add(r);
+      _connection.sendRequest(r);
     });
   }
 
-  FutureOr<String> _authToken;
+  Request _authRequest;
 
   @override
-  Future<Map<String, dynamic>> auth(FutureOr<String> token) {
-    _authToken = token;
-    return _request(Request.auth(token)).then((b) {
-      return b.data['auth'];
-    });
+  Future<Map<String, dynamic>> auth(FutureOr<String> token) async {
+    _authRequest = Request.auth(token);
+    var b = await _request(_authRequest);
+    return b.data['auth'];
   }
 
   @override
   Future<Null> unauth() {
-    _authToken = null;
+    _authRequest = null;
     return _request(Request.unauth()).then((b) => null);
   }
 
   bool get _transportIsReady =>
-      _transport != null && _transport.readyState == Transport.connected;
+      _connection != null && _connection.state == ConnectionState.connected;
 
   Future<MessageBody> _request(Request request) async {
     var message = request.message;
@@ -227,7 +177,7 @@ class ProtocolConnection extends PersistentConnection {
       }
     }
     if (_transportIsReady) {
-      _transport.add(request);
+      _connection.sendRequest(request);
     }
     return (await request).response.then<MessageBody>((r) {
       _outstandingRequests.remove(request);
@@ -253,5 +203,82 @@ class ProtocolConnection extends PersistentConnection {
   @override
   Future<Null> onDisconnectCancel(String path) async {
     await _request(Request.onDisconnectCancel(path));
+  }
+
+  // ConnectionDelegate interface
+
+  @override
+  void onCacheHost(String host) {
+    _url = _url.replace(host: host);
+  }
+
+  @override
+  void onDataMessage(DataMessage message) {
+    var query = message.body.query ?? _tagToQuery[message.body.tag]?.value;
+    if (query == null && message.body.tag != null) {
+      // not listening any more.
+      return;
+    }
+    var path =
+        message.body.path == null ? null : Name.parsePath(message.body.path);
+    switch (message.action) {
+      case DataMessage.actionSet:
+      case DataMessage.actionMerge:
+      case DataMessage.actionListenRevoked:
+        var event = OperationEvent(
+            const {
+              DataMessage.actionSet: OperationEventType.overwrite,
+              DataMessage.actionMerge: OperationEventType.merge,
+              DataMessage.actionListenRevoked: OperationEventType.listenRevoked,
+            }[message.action],
+            path,
+            message.body.data,
+            query);
+        _onDataOperation.add(event);
+        break;
+      case DataMessage.actionAuthRevoked:
+        _onAuth.add(null);
+        break;
+      case DataMessage.actionSecurityDebug:
+        var msg = message.body.message;
+        _logger.fine('security debug: $msg');
+        break;
+      default:
+        throw UnimplementedError(
+            'Cannot handle message with action ${message.action}: ${json.encode(message)}');
+    }
+  }
+
+  @override
+  void onDisconnect(DisconnectReason reason) {
+    _onConnect.add(false);
+    _connection = null;
+//TODO    if (reason == DisconnectReason.serverReset) {
+    _scheduleConnect(1000);
+//    }
+  }
+
+  @override
+  void onKill(String reason) {
+    // TODO: implement onKill
+  }
+
+  @override
+  void onReady(DateTime timestamp, String sessionId) {
+    _onConnect.add(true);
+    _url = _url
+        .replace(queryParameters: {..._url.queryParameters, 'ls': sessionId});
+    _serverTimeDiff = timestamp.difference(DateTime.now());
+    _restoreState();
+  }
+
+  @override
+  void mockConnectionLost() {
+    _connection.transport.close();
+  }
+
+  @override
+  void mockResetMessage() {
+    _connection._onMessage(ResetMessage(_url.host));
   }
 }

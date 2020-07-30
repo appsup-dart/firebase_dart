@@ -3,28 +3,30 @@
 
 part of firebase.protocol;
 
+/// A request to be sent to the server
 class Request {
   static int nextRequestNum = 0;
 
+  /// The message to be sent
   final FutureOr<DataMessage> message;
-  final int writeId;
-  final int reqNum;
+
+  /// The request number
+  final int _reqNum;
 
   final Completer<Response> _completer = Completer();
 
-  Request(String action, MessageBody body, [this.writeId])
-      : reqNum = nextRequestNum,
+  Request(String action, MessageBody body)
+      : _reqNum = nextRequestNum,
         message = DataMessage(action, body, reqNum: nextRequestNum++);
 
   Request.auth(FutureOr<String> cred)
-      : reqNum = nextRequestNum,
+      : _reqNum = nextRequestNum,
         message = Future.value(nextRequestNum++).then((reqNum) async {
           var token = await cred;
           return DataMessage(
               _actionFromAuthToken(token), MessageBody(cred: token),
               reqNum: reqNum);
-        }),
-        writeId = null;
+        });
 
   static String _actionFromAuthToken(String token) {
     if (token == 'owner') {
@@ -74,19 +76,21 @@ class Request {
   Request.onDisconnectCancel(String path)
       : this(DataMessage.actionOnDisconnectCancel, MessageBody(path: path));
 
-  Request.put(String path, data, [String hash, int writeId])
+  Request.put(String path, data, [String hash])
       : this(DataMessage.actionPut,
-            MessageBody(path: path, data: data, hash: hash), writeId);
+            MessageBody(path: path, data: data, hash: hash));
 
-  Request.merge(String path, data, [String hash, int writeId])
+  Request.merge(String path, data, [String hash])
       : this(DataMessage.actionMerge,
-            MessageBody(path: path, data: data, hash: hash), writeId);
+            MessageBody(path: path, data: data, hash: hash));
 
   Request.stats(stats)
       : this(DataMessage.actionStats, MessageBody(stats: stats));
 
+  /// The response for this request
   Future<Response> get response => _completer.future;
 
   @override
-  String toString() => 'Request[${json.encode(message)}]';
+  String toString() =>
+      'Request[${message is Future ? '' : json.encode(message)}]';
 }

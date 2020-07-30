@@ -66,16 +66,11 @@ class OperationEvent {
 /// authentication credentials and on disconnect writes) and reattempt any
 /// outstanding writes.
 abstract class PersistentConnection {
-  final String host;
-
   factory PersistentConnection(Uri uri) {
     switch (uri.scheme) {
       case 'http':
-        return ProtocolConnection('${uri.host}:${uri.port ?? 80}',
-            namespace: uri.queryParameters['ns'], ssl: false);
       case 'https':
-        return ProtocolConnection('${uri.host}:${uri.port ?? 443}',
-            namespace: uri.queryParameters['ns'], ssl: true);
+        return PersistentConnectionImpl(uri);
       case 'mem':
         return MemConnection(uri.host);
       default:
@@ -83,7 +78,7 @@ abstract class PersistentConnection {
     }
   }
 
-  PersistentConnection.base(this.host);
+  PersistentConnection.base();
 
   DateTime get serverTime;
 
@@ -101,11 +96,10 @@ abstract class PersistentConnection {
   Future<Null> unlisten(String path, {QueryFilter query});
 
   /// Overwrites some value at a particular path.
-  Future<Null> put(String path, dynamic value, {String hash, int writeId});
+  Future<Null> put(String path, dynamic value, {String hash});
 
   /// Merges children at a particular path.
-  Future<Null> merge(String path, Map<String, dynamic> value,
-      {String hash, int writeId});
+  Future<Null> merge(String path, Map<String, dynamic> value, {String hash});
 
   /// Stream of connect events.
   Stream<bool> get onConnect;
@@ -117,10 +111,10 @@ abstract class PersistentConnection {
   Stream<Map> get onAuth;
 
   /// Trigger a disconnection.
-  Future<Null> disconnect();
+  Future<void> disconnect();
 
   /// Closes the connection.
-  Future<Null> close();
+  Future<void> close();
 
   /// Authenticates with the token.
   Future<Map> auth(FutureOr<String> token);
@@ -137,4 +131,7 @@ abstract class PersistentConnection {
 
   /// Registers an onDisconnectCancel
   Future<Null> onDisconnectCancel(String path);
+
+  void mockConnectionLost();
+  void mockResetMessage();
 }

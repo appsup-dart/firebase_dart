@@ -89,7 +89,7 @@ class SingleInstanceBackend {
 class MemConnection extends PersistentConnection {
   MemConnection(String host)
       : syncTree = SyncTree('', _Registrar()),
-        super.base(host) {
+        super.base() {
     SingleInstanceBackend.stream.listen((op) {
       syncTree.applyServerOperation(op, null);
     });
@@ -153,7 +153,7 @@ class MemConnection extends PersistentConnection {
 
   @override
   Future<Null> merge(String path, Map<String, dynamic> value,
-      {String hash, int writeId}) async {
+      {String hash}) async {
     var p = Name.parsePath(path);
     // TODO check hash
     await SingleInstanceBackend.apply(TreeOperation.merge(
@@ -163,8 +163,7 @@ class MemConnection extends PersistentConnection {
   }
 
   @override
-  Future<Null> put(String path, dynamic value,
-      {String hash, int writeId}) async {
+  Future<Null> put(String path, dynamic value, {String hash}) async {
     var p = Name.parsePath(path);
 
     // TODO check hash
@@ -218,4 +217,14 @@ class MemConnection extends PersistentConnection {
 
   @override
   Stream<OperationEvent> get onDataOperation => _onDataOperation.stream;
+
+  @override
+  void mockConnectionLost() {
+    // TODO: implement mockConnectionLost
+  }
+
+  @override
+  void mockResetMessage() {
+    // TODO: implement mockResetMessage
+  }
 }
