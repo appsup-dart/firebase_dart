@@ -58,11 +58,15 @@ class PersistentConnectionImpl extends PersistentConnection
   // ConnectionDelegate methods
   @override
   void onReady(DateTime timestamp, String sessionId) {
-    _onConnect.add(true);
+    _logger.fine('onReady');
+    _lastConnectionEstablishedTime = DateTime.now();
+    _serverTimeDiff = timestamp.difference(DateTime.now());
+
+    _restoreState();
     _url = _url
         .replace(queryParameters: {..._url.queryParameters, 'ls': sessionId});
-    _serverTimeDiff = timestamp.difference(DateTime.now());
-    _restoreState();
+
+    _onConnect.add(true);
   }
 
   @override
@@ -113,7 +117,6 @@ class PersistentConnectionImpl extends PersistentConnection
     _connectionState = ConnectionState.disconnected;
     _connection = null;
     //TODO this.hasOnDisconnects = false;
-    //TODO requestCBHash.clear();
     //TODO cancelSentTransactions();
     if (_shouldReconnect()) {
       bool lastConnectionWasSuccessful;
@@ -157,6 +160,7 @@ class PersistentConnectionImpl extends PersistentConnection
     var r = Request.listen(path,
         query: Query.fromFilter(query), tag: tag, hash: hash);
     _addListen(r);
+    _doIdleCheck();
     try {
       var body = await _request(r);
       return body.warnings ?? [];
@@ -174,19 +178,34 @@ class PersistentConnectionImpl extends PersistentConnection
     var r = Request.unlisten(path, query: Query.fromFilter(query), tag: tag);
     _removeListen(path, query);
     await _request(r);
+    _doIdleCheck();
   }
 
   @override
   Future<Null> put(String path, dynamic value, {String hash}) async {
-    await _request(Request.put(path, value, hash));
-    _lastWriteTimestamp = DateTime.now();
+    await _putInternal(Request.put(path, value, hash));
   }
 
   @override
   Future<Null> merge(String path, Map<String, dynamic> value,
       {String hash}) async {
-    await _request(Request.merge(path, value, hash));
-    _lastWriteTimestamp = DateTime.now();
+    await _putInternal(Request.merge(path, value, hash));
+  }
+
+  @override
+  void purgeOutstandingWrites() {
+    for (var request in _outstandingRequests) {
+      request._completer
+          .completeError(FirebaseDatabaseException.writeCanceled());
+    }
+    _outstandingRequests.clear();
+
+    // Only if we are not connected can we reliably determine that we don't have onDisconnects
+    // (outstanding) anymore. Otherwise we leave the flag untouched.
+    if (!_connected()) {
+//TODO      this.hasOnDisconnects = false;
+    }
+    _doIdleCheck();
   }
 
   @override
@@ -224,18 +243,26 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Future<Null> onDisconnectPut(String path, dynamic value) async {
+    //TODO this.hasOnDisconnects = true;
     await _request(Request.onDisconnectPut(path, value));
+    _doIdleCheck();
   }
 
   @override
   Future<Null> onDisconnectMerge(
       String path, Map<String, dynamic> childrenToMerge) async {
+    //TODO this.hasOnDisconnects = true;
     await _request(Request.onDisconnectMerge(path, childrenToMerge));
+    _doIdleCheck();
   }
 
   @override
   Future<Null> onDisconnectCancel(String path) async {
+    // We do not mark hasOnDisconnects true here, because we only are removing disconnects.
+    // However, we can also not reliably determine whether we had onDisconnects, so we can't
+    // and do not reset the flag.
     await _request(Request.onDisconnectCancel(path));
+    _doIdleCheck();
   }
 
   @override
@@ -246,6 +273,43 @@ class PersistentConnectionImpl extends PersistentConnection
   @override
   void shutdown() {
     interrupt('shutdown');
+  }
+
+  @override
+  void interrupt(String reason) {
+    _logger.fine('Connection interrupted for: $reason');
+    _interruptReasons.add(reason);
+
+    if (_connection != null) {
+      // Will call onDisconnect and set the connection state to Disconnected
+      _connection.close();
+      _connection = null;
+    } else {
+      _retryHelper.cancel();
+      _connectionState = ConnectionState.disconnected;
+    }
+    // Reset timeouts
+    _retryHelper.signalSuccess();
+  }
+
+  @override
+  bool isInterrupted(String reason) => _interruptReasons.contains(reason);
+
+  @override
+  void resume(String reason) {
+    _logger.fine('Connection no longer interrupted for: $reason');
+
+    _interruptReasons.remove(reason);
+
+    if (_shouldReconnect() && connectionState == ConnectionState.disconnected) {
+      _tryScheduleReconnect();
+    }
+  }
+
+  Future<void> _putInternal(Request request) async {
+    await _request(request);
+    _lastWriteTimestamp = DateTime.now();
+    _doIdleCheck();
   }
 
   void _addListen(Request request) {
@@ -313,37 +377,6 @@ class PersistentConnectionImpl extends PersistentConnection
   @override
   void mockResetMessage() {
     _connection._onMessage(ResetMessage(_url.host));
-  }
-
-  @override
-  void interrupt(String reason) {
-    _logger.fine('Connection interrupted for: $reason');
-    _interruptReasons.add(reason);
-
-    if (_connection != null) {
-      // Will call onDisconnect and set the connection state to Disconnected
-      _connection.close();
-      _connection = null;
-    } else {
-      _retryHelper.cancel();
-      _connectionState = ConnectionState.disconnected;
-    }
-    // Reset timeouts
-    _retryHelper.signalSuccess();
-  }
-
-  @override
-  bool isInterrupted(String reason) => _interruptReasons.contains(reason);
-
-  @override
-  void resume(String reason) {
-    _logger.fine('Connection no longer interrupted for: $reason');
-
-    _interruptReasons.remove(reason);
-
-    if (_shouldReconnect() && connectionState == ConnectionState.disconnected) {
-      _tryScheduleReconnect();
-    }
   }
 
   ConnectionState get connectionState => _connectionState;
@@ -424,22 +457,6 @@ class PersistentConnectionImpl extends PersistentConnection
     _connection = Connection(url: _url, delegate: this)..open();
   }
 
-  @override
-  void purgeOutstandingWrites() {
-    for (var request in _outstandingRequests) {
-      request._completer
-          .completeError(FirebaseDatabaseException.writeCanceled());
-    }
-    _outstandingRequests.clear();
-
-    // Only if we are not connected can we reliably determine that we don't have onDisconnects
-    // (outstanding) anymore. Otherwise we leave the flag untouched.
-    if (!_connected()) {
-//TODO      this.hasOnDisconnects = false;
-    }
-    _doIdleCheck();
-  }
-
   bool _connected() {
     return connectionState == ConnectionState.authenticating ||
         connectionState == ConnectionState.connected;
@@ -465,6 +482,8 @@ class PersistentConnectionImpl extends PersistentConnection
     }
   }
 
+  /// Returns true if the connection is currently not being used (for listen,
+  /// outstanding operations).
   bool _isIdle() =>
       _listens.isEmpty
       //TODO && this.requestCBHash.isEmpty()
