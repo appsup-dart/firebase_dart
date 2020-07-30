@@ -5,14 +5,47 @@ part of firebase.protocol;
 
 class PersistentConnectionImpl extends PersistentConnection
     implements ConnectionDelegate {
+  /// Delay after which a established connection is considered successful
+  static const _successfulConnectionEstablishedDelay = Duration(seconds: 30);
+
+  static const _idleTimeout = Duration(minutes: 1);
+
+  static const _serverKillInterruptReason = 'server_kill';
+  static const _idleInterruptReason = 'connection_idle';
+
   final RetryHelper _retryHelper = RetryHelper();
 
+  final List<Request> _listens = [];
+
+  final quiver.BiMap<int, Pair<String, QueryFilter>> _tagToQuery =
+      quiver.BiMap();
+
+  final List<Request> _outstandingRequests = [];
+
+  final StreamController<bool> _onConnect = StreamController(sync: true);
+  final StreamController<OperationEvent> _onDataOperation =
+      StreamController(sync: true);
+  final StreamController<Map> _onAuth = StreamController(sync: true);
+
   Connection _connection;
+
   Uri _url;
 
   int _nextTag = 0;
-  final quiver.BiMap<int, Pair<String, QueryFilter>> _tagToQuery =
-      quiver.BiMap();
+
+  Duration _serverTimeDiff;
+
+  Request _authRequest;
+
+  DateTime _lastConnectionEstablishedTime;
+
+  final Set<String> _interruptReasons = {};
+
+  ConnectionState _connectionState = ConnectionState.disconnected;
+
+  DateTime _lastWriteTimestamp = DateTime.fromMillisecondsSinceEpoch(0);
+
+  Timer _inactivityTimer;
 
   PersistentConnectionImpl(Uri url)
       : _url = url.replace(queryParameters: {
@@ -22,171 +55,15 @@ class PersistentConnectionImpl extends PersistentConnection
         }),
         super.base();
 
-  final List<Request> _listens = [];
-
+  // ConnectionDelegate methods
   @override
-  DateTime get serverTime =>
-      DateTime.now().add(_serverTimeDiff ?? const Duration());
-
-  Duration _serverTimeDiff;
-
-  @override
-  Future<Iterable<String>> listen(String path,
-      {QueryFilter query, String hash}) async {
-    var def = Pair(path, query);
-    var tag = _nextTag++;
-    _tagToQuery[tag] = def;
-
-    var r = Request.listen(path,
-        query: Query.fromFilter(query), tag: tag, hash: hash);
-    _addListen(r);
-    try {
-      var body = await _request(r);
-      return body.warnings ?? [];
-    } catch (e) {
-      _tagToQuery.remove(tag);
-      _removeListen(path, query);
-      rethrow;
-    }
+  void onReady(DateTime timestamp, String sessionId) {
+    _onConnect.add(true);
+    _url = _url
+        .replace(queryParameters: {..._url.queryParameters, 'ls': sessionId});
+    _serverTimeDiff = timestamp.difference(DateTime.now());
+    _restoreState();
   }
-
-  @override
-  Future<Null> unlisten(String path, {QueryFilter query}) async {
-    var def = Pair(path, query);
-    var tag = _tagToQuery.inverse.remove(def);
-    var r = Request.unlisten(path, query: Query.fromFilter(query), tag: tag);
-    _removeListen(path, query);
-    await _request(r);
-  }
-
-  final List<Request> _outstandingRequests = [];
-
-  @override
-  Future<Null> put(String path, dynamic value, {String hash}) async {
-    await _request(Request.put(path, value, hash));
-    _lastWriteTimestamp = DateTime.now();
-  }
-
-  @override
-  Future<Null> merge(String path, Map<String, dynamic> value,
-      {String hash}) async {
-    await _request(Request.merge(path, value, hash));
-    _lastWriteTimestamp = DateTime.now();
-  }
-
-  void _addListen(Request request) {
-    _listens.add(request);
-  }
-
-  void _removeListen(String path, QueryFilter query) {
-    _listens.removeWhere((element) =>
-        (element.message as DataMessage).body.path == path &&
-        (element.message as DataMessage).body.query.toFilter() == query);
-  }
-
-  final StreamController<bool> _onConnect = StreamController(sync: true);
-  final StreamController<OperationEvent> _onDataOperation =
-      StreamController(sync: true);
-  final StreamController<Map> _onAuth = StreamController(sync: true);
-
-  @override
-  Stream<bool> get onConnect => _onConnect.stream;
-
-  @override
-  Stream<OperationEvent> get onDataOperation => _onDataOperation.stream;
-
-  @override
-  Stream<Map> get onAuth => _onAuth.stream;
-
-  @override
-  Future<void> disconnect() async => _connection.close();
-
-  @override
-  Future<Null> close() async {
-    await _onDataOperation.close();
-    await _onAuth.close();
-    await _onConnect.close();
-    await disconnect();
-  }
-
-  Future _restoreState() async {
-    if (_connection.state != ConnectionState.connected) return;
-
-    // auth
-    if (_authRequest != null) {
-      await _request(_authRequest);
-    }
-
-    // listens
-    for (var r in _listens) {
-      _connection.sendRequest(r);
-    }
-
-    // requests
-    _outstandingRequests.forEach((r) {
-      _connection.sendRequest(r);
-    });
-  }
-
-  Request _authRequest;
-
-  @override
-  Future<Map<String, dynamic>> auth(FutureOr<String> token) async {
-    _authRequest = Request.auth(token);
-    var b = await _request(_authRequest);
-    return b.data['auth'];
-  }
-
-  @override
-  Future<Null> unauth() {
-    _authRequest = null;
-    return _request(Request.unauth()).then((b) => null);
-  }
-
-  bool get _transportIsReady =>
-      _connection != null && _connection.state == ConnectionState.connected;
-
-  Future<MessageBody> _request(Request request) async {
-    var message = request.message;
-    if (message is DataMessage) {
-      switch (message.action) {
-        case DataMessage.actionListen:
-        case DataMessage.actionUnlisten:
-          break;
-        default:
-          _outstandingRequests.add(request);
-      }
-    }
-    if (_transportIsReady) {
-      _connection.sendRequest(request);
-    }
-    return (await request).response.then<MessageBody>((r) {
-      _outstandingRequests.remove(request);
-      if (r.message.body.status == MessageBody.statusOk) {
-        return r.message.body;
-      } else {
-        throwServerError(r.message.body.status, r.message.body.data);
-      }
-    });
-  }
-
-  @override
-  Future<Null> onDisconnectPut(String path, dynamic value) async {
-    await _request(Request.onDisconnectPut(path, value));
-  }
-
-  @override
-  Future<Null> onDisconnectMerge(
-      String path, Map<String, dynamic> childrenToMerge) async {
-    await _request(Request.onDisconnectMerge(path, childrenToMerge));
-  }
-
-  @override
-  Future<Null> onDisconnectCancel(String path) async {
-    await _request(Request.onDisconnectCancel(path));
-  }
-
-  // ConnectionDelegate interface
 
   @override
   void onCacheHost(String host) {
@@ -230,8 +107,6 @@ class PersistentConnectionImpl extends PersistentConnection
     }
   }
 
-  DateTime _lastConnectionEstablishedTime;
-
   @override
   void onDisconnect(DisconnectReason reason) {
     _logger.fine('Got on disconnect due to $reason');
@@ -245,8 +120,8 @@ class PersistentConnectionImpl extends PersistentConnection
       if (_lastConnectionEstablishedTime != null) {
         var timeSinceLastConnectSucceeded =
             DateTime.now().difference(_lastConnectionEstablishedTime);
-        lastConnectionWasSuccessful =
-            timeSinceLastConnectSucceeded > Duration(seconds: 30);
+        lastConnectionWasSuccessful = timeSinceLastConnectSucceeded >
+            _successfulConnectionEstablishedDelay;
       } else {
         lastConnectionWasSuccessful = false;
       }
@@ -263,26 +138,104 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   void onKill(String reason) {
-    // TODO: implement onKill
+    _logger.fine(
+        'Firebase Database connection was forcefully killed by the server. Will not attempt reconnect. Reason: $reason');
+    interrupt(_serverKillInterruptReason);
   }
 
   @override
-  void onReady(DateTime timestamp, String sessionId) {
-    _onConnect.add(true);
-    _url = _url
-        .replace(queryParameters: {..._url.queryParameters, 'ls': sessionId});
-    _serverTimeDiff = timestamp.difference(DateTime.now());
-    _restoreState();
+  DateTime get serverTime =>
+      DateTime.now().add(_serverTimeDiff ?? const Duration());
+
+  @override
+  Future<Iterable<String>> listen(String path,
+      {QueryFilter query, String hash}) async {
+    var def = Pair(path, query);
+    var tag = _nextTag++;
+    _tagToQuery[tag] = def;
+
+    var r = Request.listen(path,
+        query: Query.fromFilter(query), tag: tag, hash: hash);
+    _addListen(r);
+    try {
+      var body = await _request(r);
+      return body.warnings ?? [];
+    } catch (e) {
+      _tagToQuery.remove(tag);
+      _removeListen(path, query);
+      rethrow;
+    }
   }
 
   @override
-  void mockConnectionLost() {
-    _connection.transport.close();
+  Future<Null> unlisten(String path, {QueryFilter query}) async {
+    var def = Pair(path, query);
+    var tag = _tagToQuery.inverse.remove(def);
+    var r = Request.unlisten(path, query: Query.fromFilter(query), tag: tag);
+    _removeListen(path, query);
+    await _request(r);
   }
 
   @override
-  void mockResetMessage() {
-    _connection._onMessage(ResetMessage(_url.host));
+  Future<Null> put(String path, dynamic value, {String hash}) async {
+    await _request(Request.put(path, value, hash));
+    _lastWriteTimestamp = DateTime.now();
+  }
+
+  @override
+  Future<Null> merge(String path, Map<String, dynamic> value,
+      {String hash}) async {
+    await _request(Request.merge(path, value, hash));
+    _lastWriteTimestamp = DateTime.now();
+  }
+
+  @override
+  Stream<bool> get onConnect => _onConnect.stream;
+
+  @override
+  Stream<OperationEvent> get onDataOperation => _onDataOperation.stream;
+
+  @override
+  Stream<Map> get onAuth => _onAuth.stream;
+
+  @override
+  Future<void> disconnect() async => _connection.close();
+
+  @override
+  Future<Null> close() async {
+    await _onDataOperation.close();
+    await _onAuth.close();
+    await _onConnect.close();
+    await disconnect();
+  }
+
+  @override
+  Future<Map<String, dynamic>> auth(FutureOr<String> token) async {
+    _authRequest = Request.auth(token);
+    var b = await _request(_authRequest);
+    return b.data['auth'];
+  }
+
+  @override
+  Future<Null> unauth() {
+    _authRequest = null;
+    return _request(Request.unauth()).then((b) => null);
+  }
+
+  @override
+  Future<Null> onDisconnectPut(String path, dynamic value) async {
+    await _request(Request.onDisconnectPut(path, value));
+  }
+
+  @override
+  Future<Null> onDisconnectMerge(
+      String path, Map<String, dynamic> childrenToMerge) async {
+    await _request(Request.onDisconnectMerge(path, childrenToMerge));
+  }
+
+  @override
+  Future<Null> onDisconnectCancel(String path) async {
+    await _request(Request.onDisconnectCancel(path));
   }
 
   @override
@@ -295,9 +248,72 @@ class PersistentConnectionImpl extends PersistentConnection
     interrupt('shutdown');
   }
 
-  final Set<String> _interruptReasons = {};
+  void _addListen(Request request) {
+    _listens.add(request);
+  }
 
-  ConnectionState _connectionState = ConnectionState.disconnected;
+  void _removeListen(String path, QueryFilter query) {
+    _listens.removeWhere((element) =>
+        (element.message as DataMessage).body.path == path &&
+        (element.message as DataMessage).body.query.toFilter() == query);
+  }
+
+  Future _restoreState() async {
+    if (_connection.state != ConnectionState.connected) return;
+
+    // auth
+    if (_authRequest != null) {
+      await _request(_authRequest);
+    }
+
+    // listens
+    for (var r in _listens) {
+      _connection.sendRequest(r);
+    }
+
+    // requests
+    _outstandingRequests.forEach((r) {
+      _connection.sendRequest(r);
+    });
+  }
+
+  bool get _transportIsReady =>
+      _connection != null && _connection.state == ConnectionState.connected;
+
+  Future<MessageBody> _request(Request request) async {
+    var message = request.message;
+    if (message is DataMessage) {
+      switch (message.action) {
+        case DataMessage.actionListen:
+        case DataMessage.actionUnlisten:
+          break;
+        default:
+          _outstandingRequests.add(request);
+      }
+    }
+    if (_transportIsReady) {
+      _connection.sendRequest(request);
+    }
+    return (await request).response.then<MessageBody>((r) {
+      _outstandingRequests.remove(request);
+      if (r.message.body.status == MessageBody.statusOk) {
+        return r.message.body;
+      } else {
+        throwServerError(r.message.body.status, r.message.body.data);
+      }
+    });
+  }
+
+  // testing methods
+  @override
+  void mockConnectionLost() {
+    _connection.transport.close();
+  }
+
+  @override
+  void mockResetMessage() {
+    _connection._onMessage(ResetMessage(_url.host));
+  }
 
   @override
   void interrupt(String reason) {
@@ -429,8 +445,6 @@ class PersistentConnectionImpl extends PersistentConnection
         connectionState == ConnectionState.connected;
   }
 
-  Timer _inactivityTimer;
-
   void _doIdleCheck() {
     if (_isIdle()) {
       if (_inactivityTimer != null) {
@@ -450,11 +464,6 @@ class PersistentConnectionImpl extends PersistentConnection
       resume(_idleInterruptReason);
     }
   }
-
-  DateTime _lastWriteTimestamp = DateTime.fromMillisecondsSinceEpoch(0);
-
-  static const _idleInterruptReason = 'connection_idle';
-  static const _idleTimeout = Duration(minutes: 1);
 
   bool _isIdle() =>
       _listens.isEmpty

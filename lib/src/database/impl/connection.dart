@@ -86,23 +86,6 @@ abstract class PersistentConnection {
   Map<ServerValue, Value> get serverValues =>
       {ServerValue.timestamp: Value(serverTime.millisecondsSinceEpoch)};
 
-  /// Registers a listener.
-  ///
-  /// Returns possible warning messages.
-  Future<Iterable<String>> listen(String path,
-      {QueryFilter query, String hash});
-
-  /// Unregisters a listener
-  Future<Null> unlisten(String path, {QueryFilter query});
-
-  /// Overwrites some value at a particular path.
-  Future<Null> put(String path, dynamic value, {String hash});
-
-  /// Merges children at a particular path.
-  Future<Null> merge(String path, Map<String, dynamic> value, {String hash});
-
-  void purgeOutstandingWrites();
-
   /// Stream of connect events.
   Stream<bool> get onConnect;
 
@@ -112,17 +95,47 @@ abstract class PersistentConnection {
   /// Stream of auth events.
   Stream<Map> get onAuth;
 
-  /// Trigger a disconnection.
-  Future<void> disconnect();
+  // Lifecycle
 
-  /// Closes the connection.
-  Future<void> close();
+  /// Initializes the connection
+  ///
+  /// Should be called before using
+  void initialize();
+
+  /// Shuts down the connection
+  void shutdown();
+
+  // auth
 
   /// Authenticates with the token.
   Future<Map> auth(FutureOr<String> token);
 
   /// Unauthenticates.
   Future<Null> unauth();
+
+  // listens
+
+  /// Registers a listener.
+  ///
+  /// Returns possible warning messages.
+  Future<Iterable<String>> listen(String path,
+      {QueryFilter query, String hash});
+
+  /// Unregisters a listener
+  Future<Null> unlisten(String path, {QueryFilter query});
+
+  // writes
+
+  /// Removes all outstanding writes
+  void purgeOutstandingWrites();
+
+  /// Overwrites some value at a particular path.
+  Future<Null> put(String path, dynamic value, {String hash});
+
+  /// Merges children at a particular path.
+  Future<Null> merge(String path, Map<String, dynamic> value, {String hash});
+
+  // disconnects
 
   /// Registers an onDisconnectPut
   Future<Null> onDisconnectPut(String path, dynamic value);
@@ -133,16 +146,6 @@ abstract class PersistentConnection {
 
   /// Registers an onDisconnectCancel
   Future<Null> onDisconnectCancel(String path);
-
-  void mockConnectionLost();
-  void mockResetMessage();
-
-  // Lifecycle
-
-  void initialize();
-
-  void shutdown();
-
   // Connection management
 
   void interrupt(String reason);
@@ -150,12 +153,21 @@ abstract class PersistentConnection {
   void resume(String reason);
 
   bool isInterrupted(String reason);
+
+  /// Trigger a disconnection.
+  Future<void> disconnect();
+
+  /// Closes the connection.
+  Future<void> close();
+
+  void mockConnectionLost();
+  void mockResetMessage();
 }
 
 enum ConnectionState {
+  disconnected,
+  gettingToken,
   connecting,
   authenticating,
   connected,
-  disconnected,
-  gettingToken
 }
