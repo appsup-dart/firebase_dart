@@ -47,6 +47,8 @@ class PersistentConnectionImpl extends PersistentConnection
 
   Timer _inactivityTimer;
 
+  bool _hasOnDisconnects = false;
+
   PersistentConnectionImpl(Uri url)
       : _url = url.replace(queryParameters: {
           'ns': url.host.split('.').first,
@@ -116,7 +118,7 @@ class PersistentConnectionImpl extends PersistentConnection
     _logger.fine('Got on disconnect due to $reason');
     _connectionState = ConnectionState.disconnected;
     _connection = null;
-    //TODO this.hasOnDisconnects = false;
+    _hasOnDisconnects = false;
     //TODO cancelSentTransactions();
     if (_shouldReconnect()) {
       bool lastConnectionWasSuccessful;
@@ -203,7 +205,7 @@ class PersistentConnectionImpl extends PersistentConnection
     // Only if we are not connected can we reliably determine that we don't have onDisconnects
     // (outstanding) anymore. Otherwise we leave the flag untouched.
     if (!_connected()) {
-//TODO      this.hasOnDisconnects = false;
+      _hasOnDisconnects = false;
     }
     _doIdleCheck();
   }
@@ -243,7 +245,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Future<Null> onDisconnectPut(String path, dynamic value) async {
-    //TODO this.hasOnDisconnects = true;
+    _hasOnDisconnects = true;
     await _request(Request.onDisconnectPut(path, value));
     _doIdleCheck();
   }
@@ -251,7 +253,7 @@ class PersistentConnectionImpl extends PersistentConnection
   @override
   Future<Null> onDisconnectMerge(
       String path, Map<String, dynamic> childrenToMerge) async {
-    //TODO this.hasOnDisconnects = true;
+    _hasOnDisconnects = true;
     await _request(Request.onDisconnectMerge(path, childrenToMerge));
     _doIdleCheck();
   }
@@ -485,11 +487,7 @@ class PersistentConnectionImpl extends PersistentConnection
   /// Returns true if the connection is currently not being used (for listen,
   /// outstanding operations).
   bool _isIdle() =>
-      _listens.isEmpty
-      //TODO && this.requestCBHash.isEmpty()
-      //TODO && !this.hasOnDisconnects
-      &&
-      _outstandingRequests.isEmpty;
+      _listens.isEmpty && !_hasOnDisconnects && _outstandingRequests.isEmpty;
 
   bool _idleHasTimedOut() {
     return _isIdle() &&
