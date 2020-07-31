@@ -21,7 +21,6 @@ import 'dart:math';
 import '../treestructureddata.dart';
 import 'package:sortedmap/sortedmap.dart';
 import '../connection.dart';
-import 'package:dart2_constant/convert.dart';
 import 'package:stream_channel/stream_channel.dart';
 
 part 'protocol/request.dart';

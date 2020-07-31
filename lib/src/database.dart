@@ -9,7 +9,7 @@ import 'package:crypto/crypto.dart';
 import 'dart:collection';
 import 'database/impl/firebase_impl.dart';
 import 'package:quiver/core.dart' as quiver;
-import 'package:dart2_constant/convert.dart';
+import 'dart:convert';
 
 import 'package:firebase_dart/core.dart';
 

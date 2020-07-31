@@ -10,7 +10,7 @@ import 'tree.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
-import 'package:dart2_constant/convert.dart';
+import 'dart:convert';
 
 part 'treestructureddata/name.dart';
 

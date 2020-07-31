@@ -13,7 +13,7 @@ import 'dart:async';
 import 'secrets.dart'
     if (dart.library.html) 'secrets.dart'
     if (dart.library.io) 'secrets_io.dart' as s;
-import 'package:dart2_constant/convert.dart';
+import 'dart:convert';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 
 void main() {
@@ -27,7 +27,7 @@ void main() {
   });
 
   group('mem', () {
-//    testsWith({'host': 'mem://test/', 'secret': 'x'});
+    testsWith({'host': 'mem://test/', 'secret': 'x'});
   });
 
   group('https', () {
