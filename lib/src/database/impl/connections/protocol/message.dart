@@ -167,9 +167,6 @@ class Query {
         limit: limit,
         reversed: isViewFromRight,
         ordering: TreeStructuredDataOrdering(index));
-    if (index == '.key') {
-      return f.copyWith(startAtKey: startValue, endAtKey: endValue);
-    }
     return f.copyWith(
         startAtKey: startName,
         startAtValue: startValue,
