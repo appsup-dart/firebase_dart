@@ -57,21 +57,15 @@ class Repo {
         _syncTree.applyServerOperation(event.operation, event.query);
       }
     });
-    _connection.onAuth.forEach((e) => _onAuth.add(e));
-    onAuth.listen((v) => _authData = v);
   }
 
   SyncTree get syncTree => _syncTree;
 
   RemoteListeners get registrar => _syncTree.registrar;
 
-  var _authData;
-  final StreamController<Map> _onAuth = StreamController.broadcast();
-
   Future triggerDisconnect() => _connection.disconnect();
 
   Future close() async {
-    await _onAuth.close();
     await _connection.close();
   }
 
@@ -84,34 +78,26 @@ class Repo {
   }
 
   /// The current authData
-  dynamic get authData => _authData;
+  dynamic get authData => _connection.authData;
 
   /// Stream of auth data.
   ///
   /// When a user is logged in, its auth data is posted. When logged of, `null`
   /// is posted.
-  Stream<Map> get onAuth => _onAuth.stream;
+  Stream<Map> get onAuth => _connection.onAuth;
 
   /// Tries to authenticate with [token].
   ///
   /// Returns a future that completes with the auth data on success, or fails
   /// otherwise.
-  Future<Map> auth(String token) async {
-    var auth = await _connection.refreshAuthToken(token).then((v) {
-      return v;
-    });
-    _onAuth.add(auth);
-    _authData = auth;
-    return auth;
+  Future<void> auth(String token) async {
+    await _connection.refreshAuthToken(token);
   }
 
   /// Unauthenticates.
   ///
   /// Returns a future that completes on success, or fails otherwise.
-  Future unauth() => _connection.refreshAuthToken(null).then((_) {
-        _onAuth.add(null);
-        _authData = null;
-      });
+  Future<void> unauth() => _connection.refreshAuthToken(null);
 
   String _preparePath(String path) =>
       path.split('/').map(Uri.decodeComponent).join('/');

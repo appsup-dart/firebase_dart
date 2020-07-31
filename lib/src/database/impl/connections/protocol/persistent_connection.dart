@@ -10,6 +10,9 @@ class PersistentConnectionImpl extends PersistentConnection
 
   static const _idleTimeout = Duration(minutes: 1);
 
+  /// If auth fails repeatedly, we'll assume something is wrong and log a warning / back off.
+  static const int invalidAuthTokenThreshold = 3;
+
   static const _serverKillInterruptReason = 'server_kill';
   static const _idleInterruptReason = 'connection_idle';
 
@@ -25,7 +28,8 @@ class PersistentConnectionImpl extends PersistentConnection
   final StreamController<bool> _onConnect = StreamController(sync: true);
   final StreamController<OperationEvent> _onDataOperation =
       StreamController(sync: true);
-  final StreamController<Map> _onAuth = StreamController(sync: true);
+  final StreamController<Map<String, dynamic>> _onAuth =
+      StreamController.broadcast();
 
   Connection _connection;
 
@@ -49,12 +53,19 @@ class PersistentConnectionImpl extends PersistentConnection
 
   bool _hasOnDisconnects = false;
 
-  PersistentConnectionImpl(Uri url)
+  Map<String, dynamic> _authData;
+
+  int _currentGetTokenAttempt = 0;
+
+  final AuthTokenProvider _authTokenProvider;
+
+  PersistentConnectionImpl(Uri url, {AuthTokenProvider authTokenProvider})
       : _url = url.replace(queryParameters: {
           'ns': url.host.split('.').first,
           ...url.queryParameters,
           'v': '5',
         }),
+        _authTokenProvider = authTokenProvider ?? ((bool refresh) => null),
         super.base();
 
   // ConnectionDelegate methods
@@ -64,7 +75,7 @@ class PersistentConnectionImpl extends PersistentConnection
     _lastConnectionEstablishedTime = DateTime.now();
     _serverTimeDiff = timestamp.difference(DateTime.now());
 
-    _restoreState();
+    _restoreAuth();
     _url = _url
         .replace(queryParameters: {..._url.queryParameters, 'ls': sessionId});
 
@@ -217,7 +228,7 @@ class PersistentConnectionImpl extends PersistentConnection
   Stream<OperationEvent> get onDataOperation => _onDataOperation.stream;
 
   @override
-  Stream<Map> get onAuth => _onAuth.stream;
+  Stream<Map<String, dynamic>> get onAuth => _onAuth.stream;
 
   @override
   Future<void> disconnect() async => _connection.close();
@@ -231,14 +242,77 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<Map<String, dynamic>> refreshAuthToken(String token) async {
-    if (token == null) {
-      _authRequest = null;
-      return _request(Request.unauth()).then((b) => null);
+  Future<void> refreshAuthToken(String token) async {
+    _logger.fine('Auth token refreshed.');
+    _authRequest = token == null ? null : Request.auth(token);
+    if (_connected()) {
+      if (token != null) {
+        await _upgradeAuth();
+      } else {
+        await _sendUnauth();
+      }
+    }
+  }
+
+  Future<void> _upgradeAuth() =>
+      _sendAuthHelper(restoreStateAfterComplete: false);
+
+  int _invalidAuthTokenCount = 0;
+  bool _forceAuthTokenRefresh = false;
+
+  Future<void> _sendAuthHelper({bool restoreStateAfterComplete}) async {
+    assert(_connected(),
+        'Must be connected to send auth, but was: $connectionState');
+    assert(_authRequest != null, 'Auth token must be set to authenticate!');
+
+    var response = await _request(_authRequest);
+
+    _connectionState = ConnectionState.connected;
+
+    if (response.status == 'ok') {
+      _invalidAuthTokenCount = 0;
+
+      _setAuthData(response.data['auth']);
+
+      if (restoreStateAfterComplete) {
+        await _restoreState();
+      }
     } else {
-      _authRequest = Request.auth(token);
-      var b = await _request(_authRequest);
-      return b.data['auth'];
+      _authRequest = null;
+      _forceAuthTokenRefresh = true;
+
+      _setAuthData(null);
+
+      _logger
+          .fine('Authentication failed: ${response.status} (${response.data})');
+      _connection.close();
+
+      if (response.status == 'invalid_token') {
+        // We'll wait a couple times before logging the warning / increasing the
+        // retry period since oauth tokens will report as "invalid" if they're
+        // just expired. Plus there may be transient issues that resolve themselves.
+        _invalidAuthTokenCount++;
+        if (_invalidAuthTokenCount >= _invalidAuthTokenCount) {
+          // Set a long reconnect delay because recovery is unlikely.
+          _retryHelper.setMaxDelay();
+          _logger.warning(
+              'Provided authentication credentials are invalid. This '
+              'usually indicates your FirebaseApp instance was not initialized '
+              'correctly. Make sure your google-services.json file has the '
+              'correct firebase_url and api_key. You can re-download '
+              'google-services.json from '
+              'https://console.firebase.google.com/.');
+        }
+      }
+    }
+  }
+
+  Future<void> _sendUnauth() async {
+    assert(_connected(), 'Must be connected to send unauth.');
+    assert(_authRequest == null, 'Auth token must not be set.');
+    var r = await _request(Request.unauth());
+    if (r.status == 'ok') {
+      _setAuthData(null);
     }
   }
 
@@ -319,27 +393,50 @@ class PersistentConnectionImpl extends PersistentConnection
 
   void _removeListen(String path, QueryFilter query) {
     _listens.removeWhere((element) =>
-        (element.message as DataMessage).body.path == path &&
-        (element.message as DataMessage).body.query.toFilter() == query);
+        element.message.body.path == path &&
+        element.message.body.query.toFilter() == query);
+  }
+
+  void _restoreAuth() {
+    _logger.fine('calling restore state');
+
+    assert(
+      connectionState == ConnectionState.connecting,
+      'Wanted to restore auth, but was in wrong state: $connectionState',
+    );
+
+    if (_authRequest == null) {
+      _logger.fine('Not restoring auth because token is null.');
+      _connectionState = ConnectionState.connected;
+      _restoreState();
+    } else {
+      _logger.fine('Restoring auth.');
+      _connectionState = ConnectionState.authenticating;
+      _sendAuthAndRestoreState();
+    }
+  }
+
+  void _sendAuthAndRestoreState() {
+    _sendAuthHelper(restoreStateAfterComplete: true);
   }
 
   Future _restoreState() async {
-    if (_connection.state != ConnectionState.connected) return;
+    assert(connectionState == ConnectionState.connected,
+        "Should be connected if we're restoring state, but we are: $connectionState");
 
-    // auth
-    if (_authRequest != null) {
-      await _request(_authRequest);
-    }
-
-    // listens
+    // Restore listens
+    _logger.fine('Restoring outstanding listens');
     for (var r in _listens) {
       _connection.sendRequest(r);
     }
 
-    // requests
+    _logger.fine('Restoring writes.');
+    // Restore puts
     _outstandingRequests.forEach((r) {
       _connection.sendRequest(r);
     });
+
+    if (_connection.state != ConnectionState.connected) return;
   }
 
   bool get _transportIsReady =>
@@ -389,25 +486,22 @@ class PersistentConnectionImpl extends PersistentConnection
       assert(connectionState == ConnectionState.disconnected,
           'Not in disconnected state: $connectionState');
       _logger.fine('Scheduling connection attempt');
-/*TODO
-      final forceRefresh = this.forceAuthTokenRefresh;
-      this.forceAuthTokenRefresh = false;
-*/
+      final forceRefresh = _forceAuthTokenRefresh;
+      _forceAuthTokenRefresh = false;
       _retryHelper.retry(() async {
         _logger.fine('Trying to fetch auth token');
         assert(
           connectionState == ConnectionState.disconnected,
           'Not in disconnected state: $connectionState',
         );
-/* TODO
         _connectionState = ConnectionState.gettingToken;
-        currentGetTokenAttempt++;
-        final thisGetTokenAttempt = currentGetTokenAttempt;
+        _currentGetTokenAttempt++;
+        final thisGetTokenAttempt = _currentGetTokenAttempt;
         var token;
         try {
-          token = await authTokenProvider.getToken(forceRefresh);
+          token = await _authTokenProvider(forceRefresh);
         } catch (error) {
-          if (thisGetTokenAttempt == currentGetTokenAttempt) {
+          if (thisGetTokenAttempt == _currentGetTokenAttempt) {
             _connectionState = ConnectionState.disconnected;
             _logger.fine('Error fetching token: $error');
             _tryScheduleReconnect();
@@ -416,14 +510,12 @@ class PersistentConnectionImpl extends PersistentConnection
                 'Ignoring getToken error, because this was not the latest attempt.');
           }
         }
-        if (thisGetTokenAttempt == currentGetTokenAttempt) {
+        if (thisGetTokenAttempt == _currentGetTokenAttempt) {
           // Someone could have interrupted us while fetching the token,
           // marking the connection as Disconnected
           if (connectionState == ConnectionState.gettingToken) {
             _logger.fine('Successfully fetched token, opening connection');
-*/
-        _openNetworkConnection(/*token*/);
-/*TODO
+            _openNetworkConnection(token);
           } else {
             assert(
               connectionState == ConnectionState.disconnected,
@@ -436,26 +528,28 @@ class PersistentConnectionImpl extends PersistentConnection
           _logger.fine(
               'Ignoring getToken result, because this was not the latest attempt.');
         }
-*/
       });
     }
   }
 
-  void _openNetworkConnection(/*String token*/) {
-/*
+  void _openNetworkConnection(String token) {
     assert(
-        connectionState == ConnectionState.gettingToken,
-        'Trying to open network connection while in the wrong state: $connectionState',
-        );
+      connectionState == ConnectionState.gettingToken,
+      'Trying to open network connection while in the wrong state: $connectionState',
+    );
     // User might have logged out. Positive auth status is handled after authenticating with
     // the server
     if (token == null) {
-      delegate.onAuthStatus(false);
+      _setAuthData(null);
     }
-    authToken = token;
-*/
+    _authRequest = token == null ? null : Request.auth(token);
     _connectionState = ConnectionState.connecting;
     _connection = Connection(url: _url, delegate: this)..open();
+  }
+
+  void _setAuthData(Map<String, dynamic> data) {
+    _authData = data;
+    _onAuth.add(_authData);
   }
 
   bool _connected() {
@@ -492,4 +586,7 @@ class PersistentConnectionImpl extends PersistentConnection
     return _isIdle() &&
         DateTime.now().isAfter(_lastWriteTimestamp.add(_idleTimeout));
   }
+
+  @override
+  Map<String, dynamic> get authData => _authData;
 }

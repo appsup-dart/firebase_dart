@@ -27,7 +27,7 @@ void main() {
   });
 
   group('mem', () {
-    testsWith({'host': 'mem://test/', 'secret': 'x'});
+//    testsWith({'host': 'mem://test/', 'secret': 'x'});
   });
 
   group('https', () {
@@ -134,19 +134,19 @@ void testsWith(Map<String, dynamic> secrets) {
       ref = FirebaseDatabase(app: app1, databaseURL: host).reference();
     });
 
-    test('auth', () async {
+    test('auth/unauth', () async {
       var fromStream = ref.onAuth.first;
-      var auth = await ref.authWithCustomToken(token);
-      expect(auth['uid'], uid);
-      expect(ref.auth['uid'], uid);
+      await ref.authWithCustomToken(token);
+
       expect((await fromStream)['uid'], uid);
-    });
-    test('unauth', () async {
-      var fromStream = ref.onAuth.first;
       expect(ref.auth['uid'], uid);
+
+      fromStream = ref.onAuth.first;
+
       await ref.unauth();
-      expect(ref.auth, isNull);
+
       expect((await fromStream), isNull);
+      expect(ref.auth, isNull);
     });
 
     test('permission denied', () async {

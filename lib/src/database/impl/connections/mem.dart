@@ -200,18 +200,23 @@ class MemConnection extends PersistentConnection {
   DateTime get serverTime => DateTime.now();
 
   @override
-  Future<Map> refreshAuthToken(String token) async {
-    if (token == null) return null;
-    var t = FirebaseTokenCodec(null).decode(token);
-    return t.data;
+  Future<void> refreshAuthToken(String token) async {
+    if (token == null) {
+      _authData = null;
+    } else {
+      var t = FirebaseTokenCodec(null).decode(token);
+      _authData = t.data;
+    }
+    _onAuth.add(_authData);
   }
 
-  final StreamController<Map> _onAuth = StreamController(sync: true);
+  final StreamController<Map<String, dynamic>> _onAuth =
+      StreamController.broadcast();
   final StreamController<OperationEvent> _onDataOperation =
       StreamController(sync: true);
 
   @override
-  Stream<Map> get onAuth => _onAuth.stream;
+  Stream<Map<String, dynamic>> get onAuth => _onAuth.stream;
 
   @override
   Stream<OperationEvent> get onDataOperation => _onDataOperation.stream;
@@ -256,4 +261,9 @@ class MemConnection extends PersistentConnection {
   void purgeOutstandingWrites() {
     // TODO: implement purgeOutstandingWrites
   }
+
+  Map<String, dynamic> _authData;
+
+  @override
+  Map<String, dynamic> get authData => _authData;
 }

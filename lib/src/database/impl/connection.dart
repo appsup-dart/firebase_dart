@@ -66,11 +66,12 @@ class OperationEvent {
 /// authentication credentials and on disconnect writes) and reattempt any
 /// outstanding writes.
 abstract class PersistentConnection {
-  factory PersistentConnection(Uri uri) {
+  factory PersistentConnection(Uri uri, {AuthTokenProvider authTokenProvider}) {
     switch (uri.scheme) {
       case 'http':
       case 'https':
-        return PersistentConnectionImpl(uri);
+        return PersistentConnectionImpl(uri,
+            authTokenProvider: authTokenProvider);
       case 'mem':
         return MemConnection(uri.host);
       default:
@@ -93,7 +94,9 @@ abstract class PersistentConnection {
   Stream<OperationEvent> get onDataOperation;
 
   /// Stream of auth events.
-  Stream<Map> get onAuth;
+  Stream<Map<String, dynamic>> get onAuth;
+
+  Map<String, dynamic> get authData;
 
   // Lifecycle
 
@@ -108,7 +111,7 @@ abstract class PersistentConnection {
   // auth
 
   /// Authenticates with the token.
-  Future<Map> refreshAuthToken(String token);
+  Future<void> refreshAuthToken(String token);
 
   // listens
 
@@ -168,3 +171,5 @@ enum ConnectionState {
   authenticating,
   connected,
 }
+
+typedef AuthTokenProvider = Future<String> Function(bool forceRefresh);

@@ -164,7 +164,7 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
 extension LegacyAuthExtension on DatabaseReference {
   Repo get repo => (this as ReferenceImpl)._repo;
 
-  Future<Map> authWithCustomToken(String token) => authenticate(token);
+  Future<void> authWithCustomToken(String token) => authenticate(token);
 
   dynamic get auth => repo.authData;
 
@@ -172,7 +172,7 @@ extension LegacyAuthExtension on DatabaseReference {
 
   Future unauth() => repo.unauth();
 
-  Future<Map> authenticate(String token) => repo.auth(token);
+  Future<void> authenticate(String token) => repo.auth(token);
 }
 
 class DisconnectImpl extends Disconnect {
