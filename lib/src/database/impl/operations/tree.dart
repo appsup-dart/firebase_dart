@@ -171,11 +171,18 @@ class TreeEventGenerator extends EventGenerator {
       IncompleteData newValue) sync* {
     var newChildren = newValue.value.children;
     var oldChildren = oldValue.value?.children ?? const {};
+    if (!newValue.isComplete) {
+      // do not generate events when value is incomplete
+      return;
+    }
+    if (!oldValue.isComplete) {
+      // when old value was not complete, we didn't yet show any children
+      oldChildren = const {};
+    }
     switch (eventType) {
       case 'child_added':
         var newPrevKey;
         for (var key in newChildren.keys) {
-          if (!newValue.isCompleteForChild(key)) continue;
           if (!oldChildren.containsKey(key)) {
             yield ChildAddedEvent(key, newChildren[key], newPrevKey);
           }
@@ -185,7 +192,6 @@ class TreeEventGenerator extends EventGenerator {
       case 'child_changed':
         var newPrevKey;
         for (var key in newChildren.keys) {
-          if (!newValue.isCompleteForChild(key)) continue;
           if (oldChildren.containsKey(key)) {
             if (oldChildren[key] != newChildren[key]) {
               yield ChildChangedEvent(key, newChildren[key], newPrevKey);
@@ -197,7 +203,6 @@ class TreeEventGenerator extends EventGenerator {
       case 'child_removed':
         var oldPrevKey;
         for (var key in oldChildren.keys) {
-          if (!newValue.isCompleteForChild(key)) continue;
           if (!newChildren.containsKey(key)) {
             yield ChildRemovedEvent(key, oldChildren[key], oldPrevKey);
           }
@@ -214,7 +219,6 @@ class TreeEventGenerator extends EventGenerator {
 
         var oldPrevKey;
         for (var key in oldChildren.keys) {
-          if (!newValue.isCompleteForChild(key)) continue;
           if (newChildren.containsKey(key)) {
             var newPrevKey = lastKeyBefore(newKeys, key);
             if (oldPrevKey != newPrevKey) {
