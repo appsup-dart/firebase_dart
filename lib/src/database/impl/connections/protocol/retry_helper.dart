@@ -55,7 +55,7 @@ class RetryHelper {
           (_currentRetryDelay * (jitterFactor * _random.nextDouble())));
     }
     _lastWasSuccess = false;
-    _logger.fine('Scheduling retry in $delay ms');
+    _logger.fine('Scheduling retry in $delay');
     _scheduledRetry = Timer(delay, () {
       _scheduledRetry = null;
       runnable();
