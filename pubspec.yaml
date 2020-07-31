@@ -14,6 +14,7 @@ dependencies:
   logging: '>=0.11.0 <0.12.0'
   sortedmap: '^0.4.1'
   web_socket_channel: '>=1.0.4 <2.0.0'
+  stream_channel: '^2.0.0'
   collection: '^1.9.1'
   meta: '^1.1.5'
   jose: ^0.1.2

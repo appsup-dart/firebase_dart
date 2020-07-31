@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:async/async.dart';
 import 'package:firebase_dart/database.dart' hide ServerValue;
 import 'package:firebase_dart/src/database/impl/connections/protocol/retry_helper.dart';
+import 'package:firebase_dart/src/database/impl/memory_backend.dart';
 import 'package:jose/jose.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:quiver/check.dart' as quiver;

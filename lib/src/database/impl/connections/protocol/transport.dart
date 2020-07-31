@@ -31,6 +31,9 @@ class Transport {
             .transform<dynamic>(jsonDocument)
             .transform<Message>(messageChannelTransformer);
         break;
+      case 'mem':
+        _channel = MemoryBackend.connect(url);
+        break;
       default:
         throw UnsupportedError('Unsupported scheme ${url.scheme}');
     }

@@ -8,7 +8,6 @@ import 'tree.dart';
 import 'treestructureddata.dart';
 import 'operations/tree.dart';
 import 'connections/protocol.dart';
-import 'connections/mem.dart';
 
 @alwaysThrows
 void throwServerError(String status, String details) {
@@ -67,16 +66,7 @@ class OperationEvent {
 /// outstanding writes.
 abstract class PersistentConnection {
   factory PersistentConnection(Uri uri, {AuthTokenProvider authTokenProvider}) {
-    switch (uri.scheme) {
-      case 'http':
-      case 'https':
-        return PersistentConnectionImpl(uri,
-            authTokenProvider: authTokenProvider);
-      case 'mem':
-        return MemConnection(uri.host);
-      default:
-        throw ArgumentError("No known connection for uri '$uri'.");
-    }
+    return PersistentConnectionImpl(uri);
   }
 
   PersistentConnection.base();
