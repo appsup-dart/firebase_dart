@@ -6,7 +6,7 @@ abstract class Backend {
 
   Future<void> unlisten(String path, EventListener listener, {Query query});
 
-  Future<void> put(String path, dynamic value);
+  Future<void> put(String path, dynamic value, {String hash});
 
   Future<void> merge(String path, Map<String, dynamic> children);
 }

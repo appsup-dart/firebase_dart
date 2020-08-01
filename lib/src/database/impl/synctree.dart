@@ -386,12 +386,14 @@ class SyncTree {
   /// Applies a user overwrite at [path] with [newData]
   void applyUserOverwrite(
       Path<Name> path, TreeStructuredData newData, int writeId) {
+    _logger.fine(() => 'apply user overwrite ($writeId) $path -> $newData');
     var operation = TreeOperation.overwrite(path, newData);
     _applyOperationToSyncPoints(
         root, null, operation, ViewOperationSource.user, writeId);
   }
 
   void applyServerOperation(TreeOperation operation, Filter filter) {
+    _logger.fine(() => 'apply server operation $operation');
     _applyOperationToSyncPoints(
         root, filter, operation, ViewOperationSource.server, null);
   }
@@ -410,6 +412,7 @@ class SyncTree {
   /// Applies a user merge at [path] with [changedChildren]
   void applyUserMerge(Path<Name> path,
       Map<Path<Name>, TreeStructuredData> changedChildren, int writeId) {
+    _logger.fine(() => 'apply user merge ($writeId) $path -> $changedChildren');
     var operation = TreeOperation.merge(path, changedChildren);
     _applyOperationToSyncPoints(
         root, null, operation, ViewOperationSource.user, writeId);
@@ -446,6 +449,7 @@ class SyncTree {
   }
 
   void applyAck(Path<Name> path, int writeId, bool success) {
+    _logger.fine(() => 'apply ack ($writeId) $path -> $success');
     var operation = TreeOperation.ack(path, success);
     _applyOperationToSyncPoints(
         root, null, operation, ViewOperationSource.ack, writeId);

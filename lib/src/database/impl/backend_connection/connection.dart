@@ -49,6 +49,7 @@ class BackendConnection {
   Future<void> _onMessage(Message message) async {
     if (message is DataMessage) {
       var data;
+      var status = 'ok';
       switch (message.action) {
         case DataMessage.actionAuth:
         case DataMessage.actionGauth:
@@ -92,7 +93,13 @@ class BackendConnection {
           );
           break;
         case DataMessage.actionPut:
-          await backend.put(message.body.path, message.body.data);
+          try {
+            await backend.put(message.body.path, message.body.data,
+                hash: message.body.hash);
+          } on FirebaseDatabaseException catch (e) {
+            status = e.code;
+            data = e.message;
+          }
           break;
         case DataMessage.actionMerge:
           await backend.merge(message.body.path, message.body.data);
@@ -116,7 +123,7 @@ class BackendConnection {
           throw UnimplementedError(
               'Message with action ${message.action} not implemented');
       }
-      sendMessage(DataMessage(null, MessageBody(data: data, status: 'ok'),
+      sendMessage(DataMessage(null, MessageBody(data: data, status: status),
           reqNum: message.reqNum));
     } else if (message is KeepAliveMessage) {
     } else {

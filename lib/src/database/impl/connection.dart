@@ -73,6 +73,8 @@ abstract class PersistentConnection {
 
   DateTime get serverTime;
 
+  ConnectionState get connectionState;
+
   /// Generates the special server values
   Map<ServerValue, Value> get serverValues =>
       {ServerValue.timestamp: Value(serverTime.millisecondsSinceEpoch)};

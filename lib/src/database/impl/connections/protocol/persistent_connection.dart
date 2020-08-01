@@ -477,6 +477,7 @@ class PersistentConnectionImpl extends PersistentConnection
     _connection._onMessage(ResetMessage(_url.host));
   }
 
+  @override
   ConnectionState get connectionState => _connectionState;
 
   bool _shouldReconnect() => _interruptReasons.isEmpty;

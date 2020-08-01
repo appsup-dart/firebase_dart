@@ -1,4 +1,6 @@
+import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
+import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:stream_channel/stream_channel.dart';
 
@@ -44,13 +46,23 @@ class MemoryBackend extends Backend {
   }
 
   @override
-  Future<void> put(String path, value) async {
+  Future<void> put(String path, value, {String hash}) async {
     var serverValues = {
       ServerValue.timestamp: Value(DateTime.now().millisecondsSinceEpoch)
     };
+    var p = Name.parsePath(path);
+    print('put with hash "$hash" $path $value');
+    if (hash != null) {
+      var current = getLatestValue(syncTree, p);
+      print('current value $current');
+      print(syncTree.root.value.views.values.first.data.serverVersion);
+      if (hash != current.hash) {
+        throw FirebaseDatabaseException.dataStale();
+      }
+    }
     syncTree.applyServerOperation(
         TreeOperation.overwrite(
-            Name.parsePath(path),
+            p,
             ServerValue.resolve(
                 TreeStructuredData.fromJson(value), serverValues)),
         null);

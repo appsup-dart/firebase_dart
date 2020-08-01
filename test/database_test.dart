@@ -509,6 +509,9 @@ void testsWith(Map<String, dynamic> secrets) {
         futures.add(ref.child('object/count').runTransaction((v) {
           print('run $i ${v.value}');
           return v..value = (v.value ?? 0) + 1;
+        }).then((v) {
+          expect(v.committed, isTrue);
+          expect(v.dataSnapshot.value, i + 1);
         }));
       }
       for (var i = 0; i < 10; i++) {
@@ -517,6 +520,9 @@ void testsWith(Map<String, dynamic> secrets) {
           v.value.putIfAbsent('count', () => 0);
           v.value['count']++;
           return v;
+        }).then((v) {
+          expect(v.committed, isFalse);
+          expect(v.error, FirebaseDatabaseException.overriddenBySet());
         }));
       }
       futures.add(ref.child('object/test').set('hello'));
@@ -1225,6 +1231,86 @@ void testsWith(Map<String, dynamic> secrets) {
 
         // Same config yields same firebase
         expect(testRef6.database, testRef5.database);
+      });
+
+      test('purgeOutstandingWrites purges all writes', () async {
+        var db = FirebaseDatabase(app: app1, databaseURL: testUrl);
+        var ref = db.reference().child('test/purge');
+
+        await ref.set(null);
+        await ref.get();
+        await db.goOffline();
+
+        var refs = List.generate(4, (_) => ref.push());
+
+        var events = <String>[];
+        refs.forEach((ref) =>
+            ref.onValue.map((e) => e.snapshot.value).listen(events.add));
+
+        for (var r in refs) {
+          expect(() => r.set('test-value-${refs.indexOf(r)}'),
+              throwsFirebaseDatabaseException());
+        }
+
+        await db.purgeOutstandingWrites();
+
+        await wait(100);
+        expect(events, [
+          null,
+          null,
+          null,
+          null,
+          'test-value-0',
+          'test-value-1',
+          'test-value-2',
+          'test-value-3',
+          null,
+          null,
+          null,
+          null
+        ]);
+
+        await db.goOnline();
+        expect(await ref.get(), null);
+      });
+
+      test('purgeOutstandingWrites cancels transactions', () async {
+        var db = FirebaseDatabase(app: app1, databaseURL: testUrl);
+        var ref = db.reference().child('test/purge');
+
+        var events = <String>[];
+
+        ref.onValue.listen((e) => events.add('value-${e.snapshot.value}'));
+
+        // Make sure the first value event is fired
+        expect(await ref.get(), null);
+
+        await db.goOffline();
+
+        var t1 = ref.runTransaction((data) {
+          return data..value = 1;
+        });
+        var t2 = ref.runTransaction((data) {
+          return data..value = 2;
+        });
+
+        await db.purgeOutstandingWrites();
+
+        await wait(200);
+
+        expect((await t1).error, FirebaseDatabaseException.writeCanceled());
+        expect((await t2).error, FirebaseDatabaseException.writeCanceled());
+
+        expect(await ref.get(), null);
+
+        expect(events, [
+          'value-null',
+          'value-1',
+          'value-2',
+          'value-null',
+        ]);
+
+        await db.goOnline();
       });
     });
     group('Transaction', () {

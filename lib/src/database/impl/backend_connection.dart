@@ -1,5 +1,6 @@
 library firebase_dart.database.backend_connection;
 
+import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:jose/jose.dart';

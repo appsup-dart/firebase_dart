@@ -23,6 +23,8 @@ import 'package:sortedmap/sortedmap.dart';
 final _logger = Logger('firebase-repo');
 
 class Repo {
+  static const _interruptReason = 'repo_interrupt';
+
   final PersistentConnection _connection;
   final Uri url;
 
@@ -65,17 +67,22 @@ class Repo {
 
   Future triggerDisconnect() => _connection.disconnect();
 
+  void purgeOutstandingWrites() {
+    _logger.fine('Purging writes');
+    // Abort any transactions
+    _transactions.abort(
+        Path.from([]), FirebaseDatabaseException.writeCanceled());
+    // Remove outstanding writes from connection
+    _connection.purgeOutstandingWrites();
+  }
+
   Future close() async {
     await _connection.close();
   }
 
-  void interrupt() {
-    _connection.interrupt('repo_interrupt');
-  }
+  void resume() => _connection.resume(_interruptReason);
 
-  void resume() {
-    _connection.resume('repo_interrupt');
-  }
+  void interrupt() => _connection.interrupt(_interruptReason);
 
   /// The current authData
   dynamic get authData => _connection.authData;
@@ -113,13 +120,15 @@ class Repo {
     var writeId = _nextWriteId++;
     _syncTree.applyUserOverwrite(Name.parsePath(path),
         ServerValue.resolve(newValue, _connection.serverValues), writeId);
-    _transactions.abort(Name.parsePath(path));
+    _transactions.abort(
+        Name.parsePath(path), FirebaseDatabaseException.overriddenBySet());
     try {
       await _connection.put(path, newValue.toJson(true));
       await Future.microtask(
           () => _syncTree.applyAck(Name.parsePath(path), writeId, true));
     } on FirebaseDatabaseException {
       _syncTree.applyAck(Name.parsePath(path), writeId, false);
+      rethrow;
     }
   }
 
@@ -229,7 +238,7 @@ class Repo {
       if (snap == null) return;
       _syncTree.applyServerOperation(
           TreeOperation.overwrite(path, ServerValue.resolve(snap, sv)), null);
-      _transactions.abort(path);
+      _transactions.abort(path, FirebaseDatabaseException.overriddenBySet());
     });
     _onDisconnect.children.clear();
     _onDisconnect.value = null;
@@ -485,6 +494,7 @@ class Transaction implements Comparable<Transaction> {
   }
 
   void stale() {
+    assert(status != TransactionStatus.completed);
     status = null;
     if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, false);
   }
@@ -512,7 +522,7 @@ class Transaction implements Comparable<Transaction> {
   }
 
   void complete() {
-    assert(status == TransactionStatus.sent);
+    assert(isSent);
     status = TransactionStatus.completed;
 
     if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, true);
@@ -556,7 +566,7 @@ class TransactionsTree {
     var transaction = Transaction(repo, path, transactionUpdate, applyLocally);
     var node = root.subtree(path, (a, b) => TransactionsNode());
 
-    var current = getLatestValue(repo, path);
+    var current = getLatestValue(repo._syncTree, path);
     if (node.value.isEmpty) {
       node.input = current;
     }
@@ -573,15 +583,29 @@ class TransactionsTree {
     });
   }
 
-  void abort(Path<Name> path) {
-    root.nodesOnPath(path).forEach((n) => n.abort());
+  void abort(Path<Name> path, FirebaseDatabaseException exception) {
+    for (var n in root.nodesOnPath(path)) {
+      n.abort(exception);
+    }
+    var n = root.subtree(path);
+    if (n == null) return;
+
+    for (var n in n.childrenDeep) {
+      n.abort(exception);
+    }
   }
 }
 
-TreeStructuredData getLatestValue(Repo repo, Path<Name> path) {
-  var node = repo._syncTree.root.subtree(path);
-  if (node == null) return TreeStructuredData();
-  return node.value.valueForFilter(QueryFilter());
+TreeStructuredData getLatestValue(SyncTree syncTree, Path<Name> path) {
+  var nodes = syncTree.root.nodesOnPath(path);
+  var subpath = path.skip(nodes.length - 1);
+  var node = nodes.last;
+
+  var point = node.value;
+  for (var n in subpath) {
+    point = point.child(n);
+  }
+  return point.valueForFilter(QueryFilter());
 }
 
 class TransactionsNode extends TreeNode<Name, List<Transaction>> {
@@ -611,27 +635,46 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
 
   /// Completes all sent transactions
   void complete() {
+    // complete all transactions that were sent and executed successfully,
+    // also when they are marked for abort
     value.where((t) => t.isSent).forEach((m) => m.complete());
-    value.where((t) => !t.isComplete).forEach((m) => m.status = null);
-    value =
-        value.where((t) => t.status != TransactionStatus.completed).toList();
+    // remove the transactions that are now complete
+    value = value.where((t) => !t.isComplete).toList();
+    // reset the status of all other transactions
+    value.forEach((m) => m.status = null);
+
+    // repeat for all children
     children.values.forEach((n) => n.complete());
   }
 
   /// Fails aborted transactions and resets other sent transactions
+  ///
+  /// A stale is executed when an attempt to write data failed, because the hash
+  /// did not match, meaning that the data has been changed by another process.
   void stale() {
+    // all transactions that were marked for abort, should fail
     value.where((t) => t.isAborted).forEach((m) => m.fail(m.abortReason));
+    // and be removed from the list
+    value = value.where((t) => !t.isComplete).toList();
+
+    // all non aborted transactions should execute again
     value.where((t) => !t.isAborted).forEach((m) => m.stale());
-    value =
-        value.where((t) => t.status != TransactionStatus.completed).toList();
+
+    // repeat for all children
     children.values.forEach((n) => n.stale());
   }
 
   /// Fails all sent transactions
+  ///
+  /// Transactions were sent, but failed with reason other than concurrent write.
+  /// The transactions will be stopped and return an error.
   void fail(FirebaseDatabaseException e) {
+    // fail all sent transactions
     value.where((t) => t.isSent).forEach((m) => m.fail(e));
-    value =
-        value.where((t) => t.status != TransactionStatus.completed).toList();
+    // remove the failed transactions
+    value = value.where((t) => !t.isComplete).toList();
+
+    // repeat for children
     children.values.forEach((n) => n.fail(e));
   }
 
@@ -644,7 +687,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     if (value.isNotEmpty) {
       if (needsRerun) {
         stale();
-        rerun(path, getLatestValue(repo, path));
+        rerun(path, getLatestValue(repo._syncTree, path));
       }
       if (isReadyToSend) {
         var latestHash = input.hash;
@@ -680,6 +723,11 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
   Iterable<Transaction> get _transactions sync* {
     yield* value;
     yield* children.values.expand<Transaction>((n) => n._transactions);
+  }
+
+  Iterable<TransactionsNode> get childrenDeep sync* {
+    yield* children.values;
+    yield* children.values.expand((n) => n.childrenDeep);
   }
 
   void rerun(Path<Name> path, TreeStructuredData input) {
@@ -726,9 +774,9 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     }
   }
 
-  void abort() {
+  void abort(FirebaseDatabaseException exception) {
     for (var txn in value) {
-      txn.abort(FirebaseDatabaseException.overriddenBySet());
+      txn.abort(exception);
     }
     value = value.where((t) => !t.isComplete).toList();
   }
