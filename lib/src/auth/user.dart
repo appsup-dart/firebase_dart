@@ -7,6 +7,8 @@ abstract class FirebaseUser implements UserInfo {
   /// account.
   bool get isAnonymous;
 
+  FirebaseUserMetadata get metadata;
+
   List<UserInfo> get providerData;
 
   @override
@@ -72,6 +74,20 @@ class UserInfo {
         'email': email,
         'phoneNumber': phoneNumber,
       };
+}
+
+/// Interface representing a user's metadata.
+class FirebaseUserMetadata {
+  /// When this account was created as dictated by the server clock.
+  final DateTime creationTime;
+
+  /// When the user last signed in as dictated by the server clock.
+  ///
+  /// This is only accurate up to a granularity of 2 minutes for consecutive
+  /// sign-in attempts.
+  final DateTime lastSignInTime;
+
+  FirebaseUserMetadata({this.creationTime, this.lastSignInTime});
 }
 
 /// Represents ID token result obtained from [FirebaseUser], containing the

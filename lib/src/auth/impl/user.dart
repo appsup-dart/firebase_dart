@@ -135,6 +135,11 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   @override
   List<UserInfo> get providerData => List.from(_providerData);
 
+  @override
+  FirebaseUserMetadata get metadata => FirebaseUserMetadata(
+      creationTime: _accountInfo.createdAt,
+      lastSignInTime: _accountInfo.lastLoginAt);
+
   /// Sets the user account info.
   void _setAccountInfo(AccountInfo accountInfo) {
     _accountInfo = accountInfo;
