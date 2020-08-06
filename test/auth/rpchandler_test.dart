@@ -1,4 +1,3 @@
-import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:test/test.dart';
 
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
@@ -103,6 +102,47 @@ void main() {
       rpcHandler..tenantId = null;
     });
 
+    group('getAccountInfoByIdToken', () {
+      var tester = Tester(
+        path: 'getAccountInfo',
+        expectedBody: {'idToken': 'ID_TOKEN'},
+        action: () => rpcHandler.getAccountInfoByIdToken('ID_TOKEN'),
+      );
+      test('getAccountInfoByIdToken: success', () async {
+        await tester.shouldSucceed(
+          serverResponse: {
+            'users': [
+              {
+                'localId': '14584746072031976743',
+                'email': 'uid123@fake.com',
+                'emailVerified': true,
+                'displayName': 'John Doe',
+                'providerUserInfo': [
+                  {
+                    'providerId': 'google.com',
+                    'displayName': 'John Doe',
+                    'photoUrl':
+                        'https://lh5.googleusercontent.com/123456789/photo.jpg',
+                    'federatedId': 'https://accounts.google.com/123456789'
+                  },
+                  {
+                    'providerId': 'twitter.com',
+                    'displayName': 'John Doe',
+                    'photoUrl':
+                        'http://abs.twimg.com/sticky/default_profile_images/def'
+                            'ault_profile_3_normal.png',
+                    'federatedId': 'http://twitter.com/987654321'
+                  }
+                ],
+                'photoUrl': 'http://abs.twimg.com/sticky/photo.png',
+                'passwordUpdatedAt': 0.0,
+                'disabled': false
+              }
+            ]
+          },
+        );
+      });
+    });
     group('signInAnonymously', () {
       var tester = Tester(
         path: 'signupNewUser',
