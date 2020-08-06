@@ -17,7 +17,11 @@ dependencies:
   stream_channel: '^2.0.0'
   collection: '^1.9.1'
   meta: '^1.1.5'
-  jose: ^0.1.2
+  jose: ^0.2.1+1
+  clock: ^1.0.1
+  googleapis: ^0.55.0
+  googleapis_auth: ^0.2.12
+  openid_client: ^0.3.0
 
 dev_dependencies:
   test: '>=0.12.0 <2.0.0'
