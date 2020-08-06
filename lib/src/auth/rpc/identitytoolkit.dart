@@ -36,6 +36,41 @@ mixin _ReturnSecureTokenProperty on _JsonSerializable {
   }
 }
 
+mixin IdTokenResponse on _JsonSerializable {
+  String get idToken;
+
+  dynamic mfaPendingCredential;
+
+  @override
+  Map<String, dynamic> _write(Map<String, dynamic> _json) {
+    _json = super._write(_json);
+    if (mfaPendingCredential != null) {
+      _json['mfaPendingCredential'] = mfaPendingCredential;
+    }
+    return _json;
+  }
+
+  @override
+  void _read(Map<String, dynamic> _json) {
+    super._read(_json);
+    if (_json.containsKey('mfaPendingCredential')) {
+      mfaPendingCredential = _json['mfaPendingCredential'];
+    }
+  }
+}
+
+class VerifyPasswordResponse extends it.VerifyPasswordResponse
+    with _JsonSerializable, IdTokenResponse {
+  VerifyPasswordResponse();
+
+  VerifyPasswordResponse.fromJson(Map _json) : super.fromJson(_json) {
+    _read(_json);
+  }
+
+  @override
+  Map<String, Object> toJson() => _write(super.toJson());
+}
+
 class IdentitytoolkitRelyingpartySignupNewUserRequest
     extends it.IdentitytoolkitRelyingpartySignupNewUserRequest
     with _JsonSerializable, _ReturnSecureTokenProperty {
@@ -130,12 +165,47 @@ class IdentitytoolkitApi implements it.IdentitytoolkitApi {
   final commons.ApiRequester _requester;
 
   @override
-  it.RelyingpartyResourceApi get relyingparty =>
-      it.RelyingpartyResourceApi(_requester);
+  RelyingpartyResourceApi get relyingparty =>
+      RelyingpartyResourceApi(_requester);
 
   IdentitytoolkitApi(http.Client client,
       {String rootUrl = 'https://www.googleapis.com/',
       String servicePath = 'identitytoolkit/v3/relyingparty/'})
       : _requester =
             _MyApiRequester(client, rootUrl, servicePath, it.USER_AGENT);
+}
+
+class RelyingpartyResourceApi extends it.RelyingpartyResourceApi {
+  final commons.ApiRequester _requester;
+
+  RelyingpartyResourceApi(this._requester) : super(_requester);
+
+  @override
+  Future<VerifyPasswordResponse> verifyPassword(
+      it.IdentitytoolkitRelyingpartyVerifyPasswordRequest request,
+      {String $fields}) async {
+    var _url;
+    var _queryParams = <String, List<String>>{};
+    var _uploadMedia;
+    var _uploadOptions;
+    var _downloadOptions = commons.DownloadOptions.Metadata;
+    var _body;
+
+    if (request != null) {
+      _body = json.encode((request).toJson());
+    }
+    if ($fields != null) {
+      _queryParams['fields'] = [$fields];
+    }
+
+    _url = 'verifyPassword';
+
+    var _response = _requester.request(_url, 'POST',
+        body: _body,
+        queryParams: _queryParams,
+        uploadOptions: _uploadOptions,
+        uploadMedia: _uploadMedia,
+        downloadOptions: _downloadOptions);
+    return _response.then((data) => VerifyPasswordResponse.fromJson(data));
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:test/test.dart';
 
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
@@ -98,6 +99,15 @@ void main() {
   group('RpcHandler', () {
     var rpcHandler = RpcHandler('apiKey', httpClient: mockHttpClient);
 
+    var pendingCredResponse = {
+      'mfaInfo': {
+        'mfaEnrollmentId': 'ENROLLMENT_UID1',
+        'enrolledAt': clock.now().toIso8601String(),
+        'phoneInfo': '+16505551234'
+      },
+      'mfaPendingCredential': 'PENDING_CREDENTIAL'
+    };
+
     setUp(() {
       rpcHandler..tenantId = null;
     });
@@ -143,6 +153,92 @@ void main() {
         );
       });
     });
+    group('verifyPassword', () {
+      var tester = Tester(
+          path: 'verifyPassword',
+          expectedBody: {
+            'email': 'uid123@fake.com',
+            'password': 'mysupersecretpassword',
+            'returnSecureToken': true
+          },
+          expectedResult: (response) {
+            return {'id_token': response['idToken']};
+          },
+          action: () => rpcHandler
+              .verifyPassword('uid123@fake.com', 'mysupersecretpassword')
+              .then((v) => {'id_token': v.response['id_token']}));
+      test('verifyPassword: success', () async {
+        await tester.shouldSucceed(
+          serverResponse: {
+            'idToken': createMockJwt(uid: 'uid123', providerId: 'password')
+          },
+        );
+      });
+
+      test('verifyPassword: multi factor required', () async {
+        await tester.shouldFail(
+          expectedError: AuthException.mfaRequired(),
+          serverResponse: pendingCredResponse,
+        );
+      });
+
+      test('verifyPassword: tenant id', () async {
+        rpcHandler.tenantId = '123456789012';
+        await tester.shouldSucceed(
+          expectedBody: {
+            'email': 'uid123@fake.com',
+            'password': 'mysupersecretpassword',
+            'returnSecureToken': true,
+            'tenantId': '123456789012'
+          },
+          serverResponse: {
+            'idToken': createMockJwt(uid: 'uid123', providerId: 'password')
+          },
+        );
+      });
+
+      test('verifyPassword: server caught error', () async {
+        await tester.shouldFailWithServerErrors(
+          errorMap: {
+            'INVALID_EMAIL': AuthException.invalidEmail(),
+            'INVALID_PASSWORD': AuthException.invalidPassword(),
+            'TOO_MANY_ATTEMPTS_TRY_LATER':
+                AuthException.tooManyAttemptsTryLater(),
+            'USER_DISABLED': AuthException.userDisabled(),
+            'INVALID_TENANT_ID': AuthException.invalidTenantId(),
+          },
+        );
+      });
+
+      test('verifyPassword: unknown server response', () async {
+        await tester.shouldFail(
+          expectedBody: {
+            'email': 'uid123@fake.com',
+            'password': 'mysupersecretpassword',
+            'returnSecureToken': true
+          },
+          serverResponse: {},
+          expectedError: AuthException.internalError(),
+          action: () => rpcHandler.verifyPassword(
+              'uid123@fake.com', 'mysupersecretpassword'),
+        );
+      });
+
+      test('verifyPassword: invalid password request', () async {
+        expect(() => rpcHandler.verifyPassword('uid123@fake.com', ''),
+            throwsA(AuthException.invalidPassword()));
+      });
+
+      test('verifyPassword: invalid email error', () async {
+        // Test when invalid email is passed in verifyPassword request.
+        // Test when request is invalid.
+        expect(
+            () => rpcHandler.verifyPassword(
+                'uid123.invalid', 'mysupersecretpassword'),
+            throwsA(AuthException.invalidEmail()));
+      });
+    });
+
     group('signInAnonymously', () {
       var tester = Tester(
         path: 'signupNewUser',

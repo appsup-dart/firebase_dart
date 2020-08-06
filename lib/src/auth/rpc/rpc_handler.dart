@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:firebase_dart/src/auth/utils.dart';
+
 import 'error.dart';
 import 'identitytoolkit.dart';
 import 'package:googleapis_auth/auth_io.dart';
@@ -30,6 +32,29 @@ class RpcHandler {
         .getAccountInfo(IdentitytoolkitRelyingpartyGetAccountInfoRequest()
           ..idToken = idToken));
     return response;
+  }
+
+  /// Verifies a password
+  ///
+  /// Returns a future that resolves with the ID token.
+  Future<openid.Credential> verifyPassword(
+      String email, String password) async {
+    _validateEmail(email);
+    _validatePassword(password);
+
+    var response = await relyingparty
+        .verifyPassword(IdentitytoolkitRelyingpartyVerifyPasswordRequest()
+          ..email = email
+          ..password = password
+          ..returnSecureToken = true
+          ..tenantId = tenantId);
+
+    _validateIdTokenResponse(response);
+
+    return _credentialFromIdToken(
+        idToken: response.idToken,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn);
   }
 
   /// Signs in a user as anonymous.
@@ -82,6 +107,35 @@ class RpcHandler {
         errorMessage ??= json.encode(e.jsonResponse);
       }
       throw error.replace(message: errorMessage);
+    }
+  }
+
+  /// Validates an email
+  void _validateEmail(String email) {
+    if (!isValidEmailAddress(email)) {
+      throw AuthException.invalidEmail();
+    }
+  }
+
+  /// Validates a password
+  void _validatePassword(String password) {
+    if (password == null || password.isEmpty) {
+      throw AuthException.invalidPassword();
+    }
+  }
+
+  /// Validates a response that should contain an ID token.
+  ///
+  /// If no ID token is available, it checks if a multi-factor pending credential
+  /// is available instead. In that case, it throws the MFA_REQUIRED error code.
+  void _validateIdTokenResponse(IdTokenResponse response) {
+    if (response.idToken == null) {
+      // User could be a second factor user.
+      // When second factor is required, a pending credential is returned.
+      if (response.mfaPendingCredential != null) {
+        throw AuthException.mfaRequired();
+      }
+      throw AuthException.internalError();
     }
   }
 }
