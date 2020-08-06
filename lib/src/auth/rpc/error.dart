@@ -127,3 +127,13 @@ final _serverErrors = {
 AuthException authErrorFromServerErrorCode(String errorCode) {
   return _serverErrors[errorCode];
 }
+
+Map<String, dynamic> errorToServerResponse(AuthException error) {
+  var code = _serverErrors.entries
+      .firstWhere((element) => element.value.code == error.code)
+      .key;
+
+  return {
+    'error': {'code': 400, 'message': '$code: ${error.message}'}
+  };
+}

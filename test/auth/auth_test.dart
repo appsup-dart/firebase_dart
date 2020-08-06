@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/backend/memory_backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
@@ -139,6 +140,33 @@ void main() async {
           throwsA(AuthException.internalError()));
     });
   });
+
+  group('signInWithEmailAndPassword', () {
+    test('signInWithEmailAndPassword: success', () async {
+      // Expected email and password.
+      var expectedEmail = 'user@example.com';
+      var expectedPass = 'password';
+
+      var result = await auth.signInWithEmailAndPassword(
+          email: expectedEmail, password: expectedPass) as AuthResultImpl;
+
+      print(result.user.email);
+      expect(result.user.uid, 'user1');
+      expect(result.credential, isNull);
+      expect(result.additionalUserInfo.providerId, 'password');
+      expect(result.additionalUserInfo.isNewUser, isFalse);
+      expect(result.operationType, AuthResultImpl.operationTypeSignIn);
+
+      expect(result.user.isAnonymous, isFalse);
+    });
+
+    test('signInWithEmailAndPassword: wrong password', () async {
+      expect(
+          () => auth.signInWithEmailAndPassword(
+              email: 'user@example.com', password: 'wrong_password'),
+          throwsA(AuthException.invalidPassword()));
+    });
+  });
 }
 
 class Tester {
@@ -146,7 +174,10 @@ class Tester {
       MemoryBackend(tokenSigningKey: key, projectId: '12345678')
         ..storeUser(UserInfo()
           ..localId = 'user1'
-          ..email = 'user@example.com');
+          ..createdAt = clock.now().millisecondsSinceEpoch.toString()
+          ..lastLoginAt = clock.now().millisecondsSinceEpoch.toString()
+          ..email = 'user@example.com'
+          ..rawPassword = 'password');
 
   BackendConnection _connection;
 

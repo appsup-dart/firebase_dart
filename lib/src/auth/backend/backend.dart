@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:clock/clock.dart';
+import 'package:firebase_dart/src/auth/error.dart';
+import 'package:firebase_dart/src/auth/rpc/error.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:jose/jose.dart';
 import 'package:http/http.dart' as http;
@@ -42,6 +44,26 @@ class BackendConnection {
     throw Exception();
   }
 
+  Future<VerifyPasswordResponse> verifyPassword(
+      IdentitytoolkitRelyingpartyVerifyPasswordRequest request) async {
+    var user = await backend.getUserByEmail(request.email);
+
+    if (user.rawPassword == request.password) {
+      var refreshToken = await backend.generateRefreshToken(user.localId);
+      return VerifyPasswordResponse()
+        ..kind = 'identitytoolkit#VerifyPasswordResponse'
+        ..localId = user.localId
+        ..idToken = request.returnSecureToken == true
+            ? await backend.generateIdToken(
+                uid: user.localId, providerId: 'password')
+            : null
+        ..expiresIn = '3600'
+        ..refreshToken = refreshToken;
+    }
+
+    throw AuthException.invalidPassword();
+  }
+
   Future<dynamic> _handle(String method, dynamic body) async {
     switch (method) {
       case 'signupNewUser':
@@ -52,6 +74,10 @@ class BackendConnection {
         var request =
             IdentitytoolkitRelyingpartyGetAccountInfoRequest.fromJson(body);
         return getAccountInfo(request);
+      case 'verifyPassword':
+        var request =
+            IdentitytoolkitRelyingpartyVerifyPasswordRequest.fromJson(body);
+        return verifyPassword(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }
@@ -62,13 +88,20 @@ class BackendConnection {
 
     var body = json.decode(request.body);
 
-    return http.Response(json.encode(await _handle(method, body)), 200,
-        headers: {'content-type': 'application/json'});
+    try {
+      return http.Response(json.encode(await _handle(method, body)), 200,
+          headers: {'content-type': 'application/json'});
+    } on AuthException catch (e) {
+      return http.Response(json.encode(errorToServerResponse(e)), 400,
+          headers: {'content-type': 'application/json'});
+    }
   }
 }
 
 abstract class Backend {
   Future<UserInfo> getUserById(String uid);
+
+  Future<UserInfo> getUserByEmail(String email);
 
   Future<UserInfo> createUser();
 

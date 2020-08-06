@@ -64,6 +64,19 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
+  Future<AuthResult> signInWithEmailAndPassword({
+    String email,
+    String password,
+  }) async {
+    var r = await _rpcHandler.verifyPassword(email, password);
+
+    var result =
+        await _signInWithIdTokenProvider(openidCredential: r, isNewUser: false);
+
+    return result;
+  }
+
+  @override
   Future<FirebaseUser> currentUser() async {
     await _onReady;
     return _currentUser;

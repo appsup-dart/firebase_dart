@@ -15,4 +15,10 @@ class MemoryBackend extends BaseBackend {
   @override
   Future<UserInfo> storeUser(UserInfo user) async =>
       _users[user.localId] = user;
+
+  @override
+  Future<UserInfo> getUserByEmail(String email) async {
+    return _users.values
+        .firstWhere((user) => user.email == email, orElse: () => null);
+  }
 }
