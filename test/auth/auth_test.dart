@@ -195,6 +195,22 @@ void main() async {
       expect(user.isAnonymous, isFalse);
     });
   });
+
+  group('createUserWithEmailAndPassword', () {
+    test('createUserWithEmailAndPassword: success', () async {
+      // Expected email and password.
+      var email = 'user@example.com';
+      var pass = 'password';
+
+      var result = await auth.createUserWithEmailAndPassword(
+          email: email, password: pass);
+
+      expect(result.user.email, email);
+      expect(result.user.isAnonymous, isFalse);
+      expect(result.additionalUserInfo.providerId, 'password');
+      expect(result.additionalUserInfo.isNewUser, isTrue);
+    });
+  });
 }
 
 class Tester {

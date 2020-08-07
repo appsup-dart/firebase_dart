@@ -25,23 +25,22 @@ class BackendConnection {
 
   Future<SignupNewUserResponse> signupNewUser(
       IdentitytoolkitRelyingpartySignupNewUserRequest request) async {
-    if (request.email == null) {
-      // anonymous
+    var user = await backend.createUser(
+      email: request.email,
+      password: request.password,
+    );
 
-      // create new user
-      var user = await backend.createUser();
+    var provider = request.email == null ? 'anonymous' : 'password';
 
-      var idToken = await backend.generateIdToken(
-          uid: user.localId, providerId: 'anonymous');
-      var refreshToken = await backend.generateRefreshToken(user.localId);
+    var idToken =
+        await backend.generateIdToken(uid: user.localId, providerId: provider);
+    var refreshToken = await backend.generateRefreshToken(user.localId);
 
-      return SignupNewUserResponse()
-        ..expiresIn = '3600'
-        ..kind = 'identitytoolkit#SignupNewUserResponse'
-        ..idToken = idToken
-        ..refreshToken = refreshToken;
-    }
-    throw Exception();
+    return SignupNewUserResponse()
+      ..expiresIn = '3600'
+      ..kind = 'identitytoolkit#SignupNewUserResponse'
+      ..idToken = idToken
+      ..refreshToken = refreshToken;
   }
 
   Future<VerifyPasswordResponse> verifyPassword(
@@ -138,7 +137,7 @@ abstract class Backend {
 
   Future<UserInfo> getUserByEmail(String email);
 
-  Future<UserInfo> createUser();
+  Future<UserInfo> createUser({String email, String password});
 
   Future<String> generateIdToken({String uid, String providerId});
 
@@ -155,12 +154,14 @@ abstract class BaseBackend extends Backend {
   Future<UserInfo> storeUser(UserInfo user);
 
   @override
-  Future<UserInfo> createUser() async {
+  Future<UserInfo> createUser({String email, String password}) async {
     var uid = _generateRandomString(24);
     var now = (clock.now().millisecondsSinceEpoch ~/ 1000).toString();
     return storeUser(UserInfo()
       ..createdAt = now
       ..lastLoginAt = now
+      ..email = email
+      ..rawPassword = password
       ..localId = uid);
   }
 

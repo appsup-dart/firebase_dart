@@ -148,9 +148,15 @@ class FirebaseAuthImpl extends FirebaseAuth {
 
   @override
   Future<AuthResult> createUserWithEmailAndPassword(
-      {String email, String password}) {
-    // TODO: implement createUserWithEmailAndPassword
-    throw UnimplementedError();
+      {String email, String password}) async {
+    await _onReady;
+
+    var r = await _rpcHandler.createAccount(email, password);
+
+    var result =
+        await _signInWithIdTokenProvider(openidCredential: r, isNewUser: true);
+
+    return result;
   }
 
   @override
