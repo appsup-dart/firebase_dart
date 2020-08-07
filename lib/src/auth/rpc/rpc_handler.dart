@@ -54,6 +54,41 @@ class RpcHandler {
     return response.dynamicLinksDomain;
   }
 
+  /// Checks if the provided iOS bundle ID belongs to the project.
+  Future<void> isIosBundleIdValid(String iosBundleId) async {
+    // This will either resolve if the identifier is valid or throw
+    // INVALID_APP_ID if not.
+    await relyingparty.getProjectConfig(
+        $fields: _toQueryString({'iosBundleId': iosBundleId}));
+  }
+
+  /// Checks if the provided Android package name belongs to the project.
+  Future<void> isAndroidPackageNameValid(String androidPackageName,
+      [String sha1Cert]) async {
+    // When no sha1Cert is passed, this will either resolve if the identifier is
+    // valid or throw INVALID_APP_ID if not.
+    // When sha1Cert is also passed, this will either resolve or fail with an
+    // INVALID_CERT_HASH error.
+    await relyingparty.getProjectConfig(
+      $fields: _toQueryString({
+        'androidPackageName': androidPackageName,
+        // This is relevant for the native Android SDK flow.
+        // This will redirect to an FDL domain owned by GMScore instead of
+        // the developer's FDL domain as is done for Cordova apps.
+        if (sha1Cert != null)
+          'sha1Cert': sha1Cert
+      }),
+    );
+  }
+
+  /// Checks if the provided OAuth client ID belongs to the project.
+  Future<void> isOAuthClientIdValid(String clientId) async {
+    // This will either resolve if the client ID is valid or throw
+    // INVALID_OAUTH_CLIENT_ID if not.
+    await relyingparty.getProjectConfig(
+        $fields: _toQueryString({'clientId': clientId}));
+  }
+
   /// Requests getAccountInfo endpoint using an ID token.
   Future<GetAccountInfoResponse> getAccountInfoByIdToken(String idToken) async {
     var response = await _handle(() => identitytoolkitApi.relyingparty

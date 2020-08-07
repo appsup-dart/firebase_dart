@@ -29,6 +29,19 @@ class Tester {
       this.expectedResult})
       : url = '$identityToolkitBaseUrl/$path';
 
+  Tester replace(
+          {String path,
+          dynamic expectedBody,
+          String method,
+          Future Function() action,
+          dynamic Function(Map<String, dynamic>) expectedResult}) =>
+      Tester(
+          path: path ?? Uri.parse(url).pathSegments.last,
+          expectedBody: expectedBody ?? this.expectedBody,
+          method: method ?? this.method,
+          action: action ?? this.action,
+          expectedResult: expectedResult ?? this.expectedResult);
+
   Future<void> shouldSucceed(
       {String url,
       dynamic expectedBody,
@@ -283,6 +296,115 @@ void main() {
               },
             ),
             expectedError: AuthException.dynamicLinkNotActivated(),
+          );
+        });
+      });
+
+      group('isIosBundleIdValid', () {
+        var tester = Tester(
+          path: 'getProjectConfig',
+          expectedBody: {'iosBundleId': 'com.example.app'},
+          action: () => rpcHandler.isIosBundleIdValid('com.example.app'),
+          expectedResult: (r) => null,
+          method: 'GET',
+        );
+
+        test('isIosBundleIdValid: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'projectId': '12345678',
+              'authorizedDomains': ['domain.com', 'www.mydomain.com']
+            },
+          );
+        });
+        test('isIosBundleIdValid: error', () async {
+          await tester.shouldFail(
+            // If for some reason, sitekey is not returned.
+            serverResponse: Tester.errorResponse('INVALID_APP_ID'),
+            expectedError: AuthException.invalidAppId(),
+          );
+        });
+      });
+
+      group('isAndroidPackageNameValid', () {
+        var tester = Tester(
+          path: 'getProjectConfig',
+          expectedBody: {'androidPackageName': 'com.example.app'},
+          expectedResult: (r) => null,
+          method: 'GET',
+        );
+
+        group('isAndroidPackageNameValid: no sha1Cert', () {
+          tester = tester.replace(
+            action: () =>
+                rpcHandler.isAndroidPackageNameValid('com.example.app'),
+          );
+
+          test('isAndroidPackageNameValid: no sha1Cert: success', () async {
+            await tester.shouldSucceed(
+              serverResponse: {
+                'projectId': '12345678',
+                'authorizedDomains': ['domain.com', 'www.mydomain.com']
+              },
+            );
+          });
+          test('isAndroidPackageNameValid: no sha1Cert: error', () async {
+            await tester.shouldFail(
+              serverResponse: Tester.errorResponse('INVALID_APP_ID'),
+              expectedError: AuthException.invalidAppId(),
+            );
+          });
+        });
+
+        group('isAndroidPackageNameValid: sha1Cert', () {
+          tester = tester.replace(
+            action: () => rpcHandler.isAndroidPackageNameValid(
+                'com.example.app', 'SHA_1_ANDROID_CERT'),
+            expectedBody: {
+              'androidPackageName': 'com.example.app',
+              'sha1Cert': 'SHA_1_ANDROID_CERT'
+            },
+          );
+
+          test('isAndroidPackageNameValid: sha1Cert: success', () async {
+            await tester.shouldSucceed(
+              serverResponse: {
+                'projectId': '12345678',
+                'authorizedDomains': ['domain.com', 'www.mydomain.com']
+              },
+            );
+          });
+          test('isAndroidPackageNameValid: sha1Cert: error', () async {
+            await tester.shouldFail(
+              serverResponse: Tester.errorResponse('INVALID_CERT_HASH'),
+              expectedError: AuthException.invalidCertHash(),
+            );
+          });
+        });
+      });
+
+      group('isOAuthCliendIdValid', () {
+        var tester = Tester(
+          path: 'getProjectConfig',
+          expectedBody: {'clientId': '123456.apps.googleusercontent.com'},
+          action: () => rpcHandler
+              .isOAuthClientIdValid('123456.apps.googleusercontent.com'),
+          expectedResult: (r) => null,
+          method: 'GET',
+        );
+
+        test('isOAuthCliendIdValid: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'projectId': '12345678',
+              'authorizedDomains': ['domain.com', 'www.mydomain.com']
+            },
+          );
+        });
+        test('isOAuthCliendIdValid: error', () async {
+          await tester.shouldFail(
+            serverResponse: Tester.errorResponse('INVALID_OAUTH_CLIENT_ID'),
+            expectedError: AuthException.invalidOAuthClientId(),
           );
         });
       });
