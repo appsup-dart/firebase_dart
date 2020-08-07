@@ -1,3 +1,4 @@
+import 'package:firebase_dart/src/auth/authcredential.dart';
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
 import 'package:quiver/core.dart';
 
@@ -172,6 +173,60 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
         'credential': _credential.toJson(),
         'providerData': [...providerData.map((v) => v.toJson())]
       };
+
+  @override
+  Future<void> delete() {
+    // TODO: implement delete
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<AuthResult> linkWithCredential(AuthCredential credential) {
+    // TODO: implement linkWithCredential
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<AuthResult> reauthenticateWithCredential(AuthCredential credential) {
+    // TODO: implement reauthenticateWithCredential
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> sendEmailVerification() {
+    // TODO: implement sendEmailVerification
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> unlinkFromProvider(String provider) {
+    // TODO: implement unlinkFromProvider
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateEmail(String email) {
+    // TODO: implement updateEmail
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updatePassword(String password) {
+    // TODO: implement updatePassword
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updatePhoneNumberCredential(AuthCredential credential) {
+    // TODO: implement updatePhoneNumberCredential
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateProfile(UserUpdateInfo userUpdateInfo) {
+    // TODO: implement updateProfile
+    throw UnimplementedError();
+  }
 }
 
 abstract class DelegatingUserInfo implements UserInfo {
