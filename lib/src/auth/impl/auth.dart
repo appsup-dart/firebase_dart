@@ -161,8 +161,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail({String email}) {
-    // TODO: implement fetchSignInMethodsForEmail
-    throw UnimplementedError();
+    return _rpcHandler.fetchSignInMethodsForIdentifier(email);
   }
 
   @override

@@ -167,6 +167,15 @@ void main() async {
           throwsA(AuthException.invalidPassword()));
     });
   });
+
+  group('fetchSignInMethodsForEmail', () {
+    test('fetchSignInMethodsForEmail: success', () async {
+      var signInMethods =
+          await auth.fetchSignInMethodsForEmail(email: 'user@example.com');
+
+      expect(signInMethods, ['password', 'google.com']);
+    });
+  });
 }
 
 class Tester {
@@ -177,7 +186,11 @@ class Tester {
           ..createdAt = clock.now().millisecondsSinceEpoch.toString()
           ..lastLoginAt = clock.now().millisecondsSinceEpoch.toString()
           ..email = 'user@example.com'
-          ..rawPassword = 'password');
+          ..rawPassword = 'password'
+          ..providerUserInfo = [
+            UserInfoProviderUserInfo()..providerId = 'password',
+            UserInfoProviderUserInfo()..providerId = 'google.com',
+          ]);
 
   BackendConnection _connection;
 

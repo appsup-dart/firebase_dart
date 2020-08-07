@@ -64,6 +64,16 @@ class BackendConnection {
     throw AuthException.invalidPassword();
   }
 
+  Future<CreateAuthUriResponse> createAuthUri(
+      IdentitytoolkitRelyingpartyCreateAuthUriRequest request) async {
+    var user = await backend.getUserByEmail(request.identifier);
+
+    return CreateAuthUriResponse()
+      ..kind = 'identitytoolkit#CreateAuthUriResponse'
+      ..allProviders = [for (var p in user.providerUserInfo) p.providerId]
+      ..signinMethods = [for (var p in user.providerUserInfo) p.providerId];
+  }
+
   Future<dynamic> _handle(String method, dynamic body) async {
     switch (method) {
       case 'signupNewUser':
@@ -78,6 +88,10 @@ class BackendConnection {
         var request =
             IdentitytoolkitRelyingpartyVerifyPasswordRequest.fromJson(body);
         return verifyPassword(request);
+      case 'createAuthUri':
+        var request =
+            IdentitytoolkitRelyingpartyCreateAuthUriRequest.fromJson(body);
+        return createAuthUri(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }
