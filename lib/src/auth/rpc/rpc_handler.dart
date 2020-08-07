@@ -43,6 +43,17 @@ class RpcHandler {
     return response;
   }
 
+  /// Gets the list of authorized domains for the specified project.
+  Future<String> getDynamicLinkDomain() async {
+    var response = await relyingparty.getProjectConfig(
+        $fields: _toQueryString({'returnDynamicLink': 'true'}));
+
+    if (response.dynamicLinksDomain == null) {
+      throw AuthException.internalError();
+    }
+    return response.dynamicLinksDomain;
+  }
+
   /// Requests getAccountInfo endpoint using an ID token.
   Future<GetAccountInfoResponse> getAccountInfoByIdToken(String idToken) async {
     var response = await _handle(() => identitytoolkitApi.relyingparty
@@ -104,6 +115,9 @@ class RpcHandler {
       refreshToken: refreshToken,
     );
   }
+
+  static String _toQueryString(Map<String, String> queryParameters) =>
+      Uri(queryParameters: queryParameters).query;
 
   Future<T> _handle<T>(Future<T> Function() action) async {
     try {

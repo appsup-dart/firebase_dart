@@ -244,6 +244,48 @@ void main() {
           );
         });
       });
+      group('getDynamicLinkDomain', () {
+        var tester = Tester(
+          path: 'getProjectConfig',
+          expectedBody: {'returnDynamicLink': 'true'},
+          action: () => rpcHandler.getDynamicLinkDomain(),
+          expectedResult: (r) => r['dynamicLinksDomain'],
+          method: 'GET',
+        );
+
+        test('getDynamicLinkDomain: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'projectId': '12345678',
+              'authorizedDomains': ['domain.com', 'www.mydomain.com'],
+              'dynamicLinksDomain': 'example.app.goog.gl'
+            },
+          );
+        });
+        test('getDynamicLinkDomain: internal error', () async {
+          await tester.shouldFail(
+            // If for some reason, sitekey is not returned.
+            serverResponse: {
+              'projectId': '12345678',
+              'authorizedDomains': ['domain.com', 'www.mydomain.com']
+            },
+            expectedError: AuthException.internalError(),
+          );
+        });
+        test('getDynamicLinkDomain: not activated', () async {
+          await tester.shouldFail(
+            // If for some reason, sitekey is not returned.
+            serverResponse: Tester.errorResponse(
+              'DYNAMIC_LINK_NOT_ACTIVATED',
+              extras: {
+                'domain': 'global',
+                'reason': 'invalid',
+              },
+            ),
+            expectedError: AuthException.dynamicLinkNotActivated(),
+          );
+        });
+      });
 
       group('getAccountInfoByIdToken', () {
         var tester = Tester(
