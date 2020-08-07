@@ -20,7 +20,6 @@ class UserManager {
   Stream<FirebaseUser> get onCurrentUserChanged {
     return Stream.fromFuture(Future.value(storage))
         .asyncExpand((event) async* {
-          yield event.get(_key);
           yield* event.watch(key: _key).map((v) => v?.value);
         })
         .distinct()
