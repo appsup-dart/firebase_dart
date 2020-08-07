@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:firebase_dart/src/auth/auth.dart';
+import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/user.dart';
 import 'package:hive/hive.dart';
 
@@ -11,8 +13,10 @@ import 'impl/user.dart';
 /// It also provides methods to listen to external user changes (updates, sign
 /// in, sign out, etc.)
 class UserManager {
+  final FirebaseAuthImpl auth;
+
   /// The Auth state's application ID
-  final String appId;
+  String get appId => auth.app.options.appId;
 
   /// The underlying storage manager.
   final FutureOr<Box> storage;
@@ -24,10 +28,11 @@ class UserManager {
         })
         .distinct()
         .cast<Map>()
-        .map((v) => v == null ? null : FirebaseUserImpl.fromJson(v.cast()));
+        .map((v) =>
+            v == null ? null : FirebaseUserImpl.fromJson(v.cast(), auth: auth));
   }
 
-  UserManager(this.appId, [FutureOr<Box> storage])
+  UserManager(this.auth, [FutureOr<Box> storage])
       : storage = storage ?? Hive.openBox('firebase_auth');
 
   String get _key => 'firebase:FirebaseUser:$appId';
@@ -51,6 +56,6 @@ class UserManager {
         : FirebaseUserImpl.fromJson({
             ...response,
             if (authDomain != null) 'authDomain': authDomain,
-          });
+          }, auth: auth);
   }
 }

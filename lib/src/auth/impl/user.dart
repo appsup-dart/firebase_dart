@@ -1,5 +1,7 @@
 import 'package:firebase_dart/src/auth/authcredential.dart';
+import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
+import 'package:meta/meta.dart';
 import 'package:quiver/core.dart';
 
 import '../auth.dart';
@@ -7,10 +9,11 @@ import '../error.dart';
 import '../user.dart';
 
 import 'package:openid_client/openid_client.dart' as openid;
-import 'package:http/http.dart' as http;
 
 class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
-  final RpcHandler _rpcHandler;
+  final FirebaseAuthImpl _auth;
+
+  RpcHandler get _rpcHandler => _auth.rpcHandler;
 
   openid.Credential _credential;
 
@@ -23,23 +26,25 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
 
   bool _destroyed = false;
 
-  FirebaseUserImpl(this._rpcHandler, this._credential, [this._authDomain]);
+  bool get isDestroyed => _destroyed;
+
+  FirebaseUserImpl(this._auth, this._credential, [this._authDomain])
+      : assert(_auth != null);
 
   factory FirebaseUserImpl.fromJson(Map<String, dynamic> user,
-      {http.Client httpClient}) {
+      {@required FirebaseAuthImpl auth}) {
+    assert(auth != null);
     if (user == null || user['apiKey'] == null) {
       throw ArgumentError.value(
           user, 'user', 'does not contain an `apiKey` field');
     }
-    var rpcHandler = RpcHandler(user['apiKey'], httpClient: httpClient);
 
     // Convert to server response format. Constructor does not take
     // stsTokenManager toPlainObject as that format is different than the return
     // server response which is always used to initialize a user instance.
     var credential =
         openid.Credential.fromJson((user['credential'] as Map).cast());
-    var firebaseUser =
-        FirebaseUserImpl(rpcHandler, credential, user['authDomain']);
+    var firebaseUser = FirebaseUserImpl(auth, credential, user['authDomain']);
     firebaseUser._setAccountInfo(AccountInfo.fromJson(user));
     if (user['providerData'] is List) {
       for (var userInfo in user['providerData']) {
@@ -55,9 +60,9 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   }
 
   static Future<FirebaseUser> initializeFromOpenidCredential(
-      RpcHandler rpcHandler, openid.Credential credential) async {
+      FirebaseAuth auth, openid.Credential credential) async {
     // Initialize the Firebase Auth user.
-    var user = FirebaseUserImpl(rpcHandler, credential);
+    var user = FirebaseUserImpl(auth, credential);
 
     // Updates the user info and data and resolves with a user instance.
     await user.reload();
@@ -175,9 +180,11 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
       };
 
   @override
-  Future<void> delete() {
-    // TODO: implement delete
-    throw UnimplementedError();
+  Future<void> delete() async {
+    var idToken = await getIdToken();
+    await _rpcHandler.deleteAccount(idToken.token);
+
+    _destroyed = true;
   }
 
   @override

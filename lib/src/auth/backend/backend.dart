@@ -81,13 +81,21 @@ class BackendConnection {
 
     var refreshToken = await backend.generateRefreshToken(user.localId);
     return VerifyCustomTokenResponse()
-      ..kind = 'identitytoolkit#VerifyCustomTokenResponse'
       ..idToken = request.returnSecureToken == true
           ? await backend.generateIdToken(
               uid: user.localId, providerId: 'custom')
           : null
       ..expiresIn = '3600'
       ..refreshToken = refreshToken;
+  }
+
+  Future<DeleteAccountResponse> deleteAccount(
+      IdentitytoolkitRelyingpartyDeleteAccountRequest request) async {
+    var jwt = JsonWebToken.unverified(request.idToken); // TODO verify
+    var uid = jwt.claims.subject;
+    await backend.deleteUser(uid);
+    return DeleteAccountResponse()
+      ..kind = 'identitytoolkit#DeleteAccountResponse';
   }
 
   Future<dynamic> _handle(String method, dynamic body) async {
@@ -112,6 +120,10 @@ class BackendConnection {
         var request =
             IdentitytoolkitRelyingpartyVerifyCustomTokenRequest.fromJson(body);
         return verifyCustomToken(request);
+      case 'deleteAccount':
+        var request =
+            IdentitytoolkitRelyingpartyDeleteAccountRequest.fromJson(body);
+        return deleteAccount(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }
@@ -138,6 +150,8 @@ abstract class Backend {
   Future<UserInfo> getUserByEmail(String email);
 
   Future<UserInfo> createUser({String email, String password});
+
+  Future<void> deleteUser(String uid);
 
   Future<String> generateIdToken({String uid, String providerId});
 

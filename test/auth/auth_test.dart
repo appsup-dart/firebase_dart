@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/backend/memory_backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
-import 'package:firebase_dart/src/auth/usermanager.dart';
 import 'package:hive/hive.dart';
 import 'package:mockito/mockito.dart';
 
@@ -26,7 +26,8 @@ void main() async {
   Hive.init(Directory.systemTemp.path);
   var box = await Hive.openBox('firebase_auth');
 
-  var tester = Tester();
+  var app = await Firebase.initializeApp(options: getOptions());
+  var tester = Tester(app);
   var auth = tester.auth;
 
   setUp(() async {
@@ -36,8 +37,6 @@ void main() async {
 
   group('signInAnonymously', () {
     test('signInAnonymously: success', () async {
-      var currentUserStorageManager = UserManager('apiKey');
-
       var result = await auth.signInAnonymously() as AuthResultImpl;
 
       expect(result.user.uid, hasLength(24));
@@ -49,7 +48,7 @@ void main() async {
       expect(result.user.isAnonymous, isTrue);
 
       // Confirm anonymous state saved.
-      var user = await currentUserStorageManager.getCurrentUser();
+      var user = await auth.userStorageManager.getCurrentUser();
       expect(user.toJson(), result.user.toJson());
       expect(user.isAnonymous, isTrue);
     });
@@ -93,13 +92,11 @@ void main() async {
             'phoneNumber': null
           }
         ]
-      });
-
-      var currentUserStorageManager = UserManager('apiKey');
+      }, auth: auth);
 
       // Save anonymous user as current in storage.
-      await currentUserStorageManager.setCurrentUser(user);
-      var u = await currentUserStorageManager.getCurrentUser();
+      await auth.userStorageManager.setCurrentUser(user);
+      var u = await auth.userStorageManager.getCurrentUser();
 
       print(u?.uid);
       await Future.delayed(Duration(milliseconds: 300));
@@ -189,8 +186,7 @@ void main() async {
       expect(result.additionalUserInfo.isNewUser, isFalse);
 
       // Confirm anonymous state saved.
-      var currentUserStorageManager = UserManager('apiKey');
-      var user = await currentUserStorageManager.getCurrentUser();
+      var user = await auth.userStorageManager.getCurrentUser();
       expect(user.toJson(), result.user.toJson());
       expect(user.isAnonymous, isFalse);
     });
@@ -237,7 +233,7 @@ class Tester {
 
   FirebaseAuthImpl get auth => _auth;
 
-  Tester({String apiKey = 'apiKey'}) {
+  Tester(FirebaseApp app) {
     mockOpenidResponses();
 
     _httpClient = ProxyClient({
@@ -251,7 +247,7 @@ class Tester {
       })
     });
 
-    _auth = FirebaseAuthImpl(apiKey, httpClient: httpClient);
+    _auth = FirebaseAuthImpl(app, httpClient: httpClient);
 
     connect();
   }

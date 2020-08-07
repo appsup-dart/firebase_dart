@@ -16,14 +16,18 @@ class FirebaseAuthImpl extends FirebaseAuth {
 
   FirebaseUserImpl _currentUser;
 
-  final UserManager _userStorageManager;
+  UserManager _userStorageManager;
+
+  UserManager get userStorageManager => _userStorageManager;
+
+  RpcHandler get rpcHandler => _rpcHandler;
 
   /// Completes when latest logged in user is loaded from storage
   Future<void> _onReady;
 
-  FirebaseAuthImpl(String apiKey, {Client httpClient})
-      : _rpcHandler = RpcHandler(apiKey, httpClient: httpClient),
-        _userStorageManager = UserManager(apiKey) {
+  FirebaseAuthImpl(this.app, {Client httpClient})
+      : _rpcHandler = RpcHandler(app.options.apiKey, httpClient: httpClient) {
+    _userStorageManager = UserManager(this);
     _onReady = _init();
   }
 
@@ -122,8 +126,8 @@ class FirebaseAuthImpl extends FirebaseAuth {
     await _onReady;
 
     // Initialize an Auth user using the provided ID token response.
-    var user = await FirebaseUserImpl.initializeFromOpenidCredential(
-        _rpcHandler, credential);
+    var user =
+        await FirebaseUserImpl.initializeFromOpenidCredential(this, credential);
 
     // Check if the same user is already signed in.
     if (_currentUser != null && user.uid == _currentUser.uid) {
@@ -137,8 +141,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  // TODO: implement app
-  FirebaseApp get app => throw UnimplementedError();
+  final FirebaseApp app;
 
   @override
   Future<void> confirmPasswordReset(String oobCode, String newPassword) {

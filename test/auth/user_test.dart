@@ -1,17 +1,34 @@
+import 'dart:io';
+
+import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
+import 'package:hive/hive.dart';
 import 'package:test/test.dart';
 
+import 'auth_test.dart';
 import 'jwt_util.dart';
+import 'util.dart';
 
-void main() {
+void main() async {
+  Hive.init(Directory.systemTemp.path);
+  var box = await Hive.openBox('firebase_auth');
+
+  var app = await Firebase.initializeApp(options: getOptions());
+  var tester = Tester(app);
+  var auth = tester.auth;
+
+  setUp(() async {
+    await box.clear();
+    tester.connect();
+  });
+
   group('FirebaseUserImpl', () {
-    var apiKey = 'apiKey1';
     var uid = 'defaultUserId';
     var jwt = createMockJwt(uid: uid, providerId: 'firebase');
 
     test('FirebaseUserImpl serialization', () {
       var json = {
-        'apiKey': apiKey,
+        'apiKey': auth.rpcHandler.apiKey,
         'uid': uid,
         'displayName': 'defaultDisplayName',
         'lastLoginAt': 1506050282000,
@@ -47,7 +64,7 @@ void main() {
           }
         ]
       };
-      var user = FirebaseUserImpl.fromJson(json);
+      var user = FirebaseUserImpl.fromJson(json, auth: auth);
 
       expect(user.uid, 'defaultUserId');
       expect(user.displayName, 'defaultDisplayName');
@@ -61,6 +78,69 @@ void main() {
 
       expect(user.toJson(), json);
       expect(user.lastAccessToken, jwt);
+    });
+  });
+
+  group('FirebaseUser', () {
+    group('delete', () {
+      test('delete: success', () async {
+        var email = 'me@example.com';
+        var pass = 'password';
+
+        var result = await auth.createUserWithEmailAndPassword(
+            email: email, password: pass);
+
+        var user = result.user as FirebaseUserImpl;
+
+        await user.delete();
+
+        expect(user.isDestroyed, isTrue);
+
+        expect(await tester.backend.getUserByEmail(email), isNull);
+      });
+/*
+
+
+
+
+function testDelete_error() {
+  asyncTestCase.waitForSignals(1);
+
+  user = new fireauth.AuthUser(config1, tokenResponse, accountInfo);
+  goog.events.listen(
+      user, fireauth.UserEventType.USER_DELETED, function(event) {
+        fail('Auth change listener should not trigger!');
+      });
+
+  // Simulate rpcHandler deleteAccount.
+  var expectedError =
+      new fireauth.AuthError(fireauth.authenum.Error.INVALID_AUTH);
+  stubs.replace(
+      fireauth.RpcHandler.prototype,
+      'deleteAccount',
+      function(idToken) {
+        assertEquals(jwt, idToken);
+        return goog.Promise.reject(expectedError);
+      });
+  // Checks that destroy is not called.
+  stubs.replace(
+      user,
+      'destroy',
+      function() {
+        fail('User destroy should not be called!');
+      });
+  user['delete']().thenCatch(function(error) {
+    fireauth.common.testHelper.assertErrorEquals(expectedError, error);
+    asyncTestCase.signal();
+  });
+}
+
+
+function testDelete_userDestroyed() {
+  assertFailsWhenUserIsDestroyed('delete', []);
+}
+
+ */
     });
   });
 }

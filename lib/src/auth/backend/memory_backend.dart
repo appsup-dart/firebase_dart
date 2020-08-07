@@ -21,4 +21,11 @@ class MemoryBackend extends BaseBackend {
     return _users.values
         .firstWhere((user) => user.email == email, orElse: () => null);
   }
+
+  @override
+  Future<void> deleteUser(String uid) async {
+    assert(uid != null);
+    print('delete user $uid');
+    _users.remove(uid);
+  }
 }

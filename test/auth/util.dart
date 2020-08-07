@@ -1,12 +1,24 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:firebase_dart/core.dart';
 import 'package:jose/jose.dart';
 import 'package:test/test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 
 import 'jwt_util.dart';
+
+FirebaseOptions getOptions(
+    {String appId = 'my_app_id',
+    String apiKey = 'apiKey',
+    String projectId = 'my_project'}) {
+  return FirebaseOptions(
+      appId: appId,
+      apiKey: apiKey,
+      projectId: projectId,
+      messagingSenderId: 'ignore');
+}
 
 class Expectation {
   dynamic _response;

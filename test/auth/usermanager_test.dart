@@ -1,18 +1,25 @@
 import 'dart:io';
 
+import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/usermanager.dart';
 import 'package:hive/hive.dart';
 import 'package:test/test.dart';
 
 import 'jwt_util.dart';
+import 'util.dart';
 
 void main() async {
+  var apiKey = 'apiKey1';
+  var appId = 'appId1';
+  var app = await Firebase.initializeApp(
+      options: getOptions(apiKey: apiKey, appId: appId));
+
   group('UserManager', () {
     Hive.init(Directory.systemTemp.path);
 
-    var appId = 'appId1';
-    var apiKey = 'apiKey1';
+    var auth = FirebaseAuthImpl(app);
     var uid = 'defaultUserId';
     var jwt = createMockJwt(uid: uid, providerId: 'firebase');
     var expectedUser = {
@@ -55,7 +62,7 @@ void main() async {
 
     test('get, set and remove current user', () async {
       var storage = await Hive.openBox('test');
-      var userManager = UserManager(appId, storage);
+      var userManager = UserManager(auth, storage);
 
       // Expected user with authDomain.
       var expectedUserWithAuthDomain = {
@@ -63,7 +70,8 @@ void main() async {
         'authDomain': 'project.firebaseapp.com'
       };
 
-      await userManager.setCurrentUser(FirebaseUserImpl.fromJson(expectedUser));
+      await userManager
+          .setCurrentUser(FirebaseUserImpl.fromJson(expectedUser, auth: auth));
 
       var user = await userManager.getCurrentUser();
       expect(user.toJson(), expectedUser);
@@ -83,7 +91,7 @@ void main() async {
 
     test('add/remove current user change listener', () async {
       var storage = await Hive.openBox('test');
-      var userManager = UserManager(appId, storage);
+      var userManager = UserManager(auth, storage);
 
       // Save existing Auth users for appId1 and appId2.
       await storage.put('firebase:FirebaseUser:appId1', expectedUser);

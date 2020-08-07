@@ -19,9 +19,7 @@ abstract class FirebaseAuth {
   /// Provides an instance of this class corresponding to `app`.
   factory FirebaseAuth.fromApp(FirebaseApp app) {
     assert(app != null);
-    return FirebaseAuthImpl(
-      app.options.apiKey,
-    );
+    return FirebaseAuthImpl(app);
   }
 
   /// Provides an instance of this class corresponding to the default app.
