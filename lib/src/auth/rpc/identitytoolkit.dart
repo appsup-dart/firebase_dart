@@ -102,6 +102,32 @@ class VerifyCustomTokenResponse extends it.VerifyCustomTokenResponse
   Map<String, Object> toJson() => _write(super.toJson());
 }
 
+class EmailLinkSigninResponse extends it.EmailLinkSigninResponse
+    with _JsonSerializable, IdTokenResponse {
+  EmailLinkSigninResponse();
+
+  EmailLinkSigninResponse.fromJson(Map _json) : super.fromJson(_json) {
+    _read(_json);
+  }
+
+  @override
+  Map<String, Object> toJson() => _write(super.toJson());
+}
+
+class IdentitytoolkitRelyingpartyEmailLinkSigninRequest
+    extends it.IdentitytoolkitRelyingpartyEmailLinkSigninRequest
+    with _JsonSerializable, _ReturnSecureTokenProperty, _TenantIdProperty {
+  IdentitytoolkitRelyingpartyEmailLinkSigninRequest();
+
+  IdentitytoolkitRelyingpartyEmailLinkSigninRequest.fromJson(Map _json)
+      : super.fromJson(_json) {
+    _read(_json);
+  }
+
+  @override
+  Map<String, Object> toJson() => _write(super.toJson());
+}
+
 class IdentitytoolkitRelyingpartySignupNewUserRequest
     extends it.IdentitytoolkitRelyingpartySignupNewUserRequest
     with _JsonSerializable, _ReturnSecureTokenProperty {
@@ -281,5 +307,34 @@ class RelyingpartyResourceApi extends it.RelyingpartyResourceApi {
         uploadMedia: _uploadMedia,
         downloadOptions: _downloadOptions);
     return _response.then((data) => VerifyCustomTokenResponse.fromJson(data));
+  }
+
+  @override
+  Future<EmailLinkSigninResponse> emailLinkSignin(
+      it.IdentitytoolkitRelyingpartyEmailLinkSigninRequest request,
+      {String $fields}) {
+    var _url;
+    var _queryParams = <String, List<String>>{};
+    var _uploadMedia;
+    var _uploadOptions;
+    var _downloadOptions = commons.DownloadOptions.Metadata;
+    var _body;
+
+    if (request != null) {
+      _body = json.encode((request).toJson());
+    }
+    if ($fields != null) {
+      _queryParams['fields'] = [$fields];
+    }
+
+    _url = 'emailLinkSignin';
+
+    var _response = _requester.request(_url, 'POST',
+        body: _body,
+        queryParams: _queryParams,
+        uploadOptions: _uploadOptions,
+        uploadMedia: _uploadMedia,
+        downloadOptions: _downloadOptions);
+    return _response.then((data) => EmailLinkSigninResponse.fromJson(data));
   }
 }

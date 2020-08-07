@@ -131,6 +131,30 @@ class RpcHandler {
         expiresIn: response.expiresIn);
   }
 
+  /// Verifies an email link OTP for sign-in
+  ///
+  /// Returns a future that resolves with the ID token.
+  Future<openid.Credential> emailLinkSignIn(
+      String email, String oobCode) async {
+    _validateEmail(email);
+    if (oobCode == null || oobCode.isEmpty) {
+      throw AuthException.internalError();
+    }
+    var response = await relyingparty
+        .emailLinkSignin(IdentitytoolkitRelyingpartyEmailLinkSigninRequest()
+          ..email = email
+          ..oobCode = oobCode
+          ..returnSecureToken = true
+          ..tenantId = tenantId);
+
+    _validateIdTokenResponse(response);
+
+    return _credentialFromIdToken(
+        idToken: response.idToken,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn);
+  }
+
   /// Verifies a password
   ///
   /// Returns a future that resolves with the ID token.

@@ -671,6 +671,72 @@ void main() {
               action: () => rpcHandler.verifyCustomToken('CUSTOM_TOKEN'));
         });
       });
+
+      group('emailLinkSignIn', () {
+        var tester = Tester(
+            path: 'emailLinkSignin',
+            expectedBody: {
+              'email': 'user@example.com',
+              'oobCode': 'OTP_CODE',
+              'returnSecureToken': true
+            },
+            expectedResult: (response) {
+              return {'id_token': response['idToken']};
+            },
+            action: () => rpcHandler
+                .emailLinkSignIn('user@example.com', 'OTP_CODE')
+                .then((v) => {'id_token': v.response['id_token']}));
+        test('emailLinkSignIn: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'idToken': createMockJwt(uid: 'user1')},
+          );
+        });
+
+        test('emailLinkSignIn: multi factor required', () async {
+          await tester.shouldFail(
+            expectedError: AuthException.mfaRequired(),
+            serverResponse: pendingCredResponse,
+          );
+        });
+
+        test('emailLinkSignIn: tenant id', () async {
+          rpcHandler.tenantId = 'TENANT_ID';
+          await tester.shouldSucceed(
+            expectedBody: {
+              'email': 'user@example.com',
+              'oobCode': 'OTP_CODE',
+              'returnSecureToken': true,
+              'tenantId': 'TENANT_ID'
+            },
+            serverResponse: {'idToken': createMockJwt(uid: 'user1')},
+          );
+        });
+
+        test('emailLinkSignIn: server caught error', () async {
+          await tester.shouldFailWithServerErrors(errorMap: {
+            'INVALID_EMAIL': AuthException.invalidEmail(),
+          });
+        });
+
+        test('emailLinkSignIn: unknown server response', () async {
+          await tester.shouldFail(
+            serverResponse: {},
+            expectedError: AuthException.internalError(),
+          );
+        });
+
+        test('emailLinkSignIn: empty action code error', () async {
+          // Test when empty action code is passed in emailLinkSignIn request.
+          expect(() => rpcHandler.emailLinkSignIn('user@example.com', ''),
+              throwsA(AuthException.internalError()));
+        });
+        test('emailLinkSignIn: invalid email error', () async {
+          // Test when invalid email is passed in emailLinkSignIn request.
+          expect(() => rpcHandler.emailLinkSignIn('user.invalid', 'OTP_CODE'),
+              throwsA(AuthException.invalidEmail()));
+        });
+      });
+
       group('verifyPassword', () {
         var tester = Tester(
             path: 'verifyPassword',
