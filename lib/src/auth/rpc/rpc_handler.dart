@@ -32,6 +32,17 @@ class RpcHandler {
     return response.authorizedDomains;
   }
 
+  /// reCAPTCHA.
+  Future<GetRecaptchaParamResponse> getRecaptchaParam() async {
+    var response = await relyingparty.getRecaptchaParam();
+
+    if (response.recaptchaSiteKey == null) {
+      throw AuthException.internalError();
+    }
+
+    return response;
+  }
+
   /// Requests getAccountInfo endpoint using an ID token.
   Future<GetAccountInfoResponse> getAccountInfoByIdToken(String idToken) async {
     var response = await _handle(() => identitytoolkitApi.relyingparty

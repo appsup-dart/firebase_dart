@@ -222,6 +222,29 @@ void main() {
         });
       });
 
+      group('getRecaptchaParam', () {
+        var tester = Tester(
+            path: 'getRecaptchaParam',
+            expectedBody: null,
+            action: () => rpcHandler.getRecaptchaParam(),
+            method: 'GET');
+
+        test('getRecaptchaParam: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'recaptchaSiteKey': 'RECAPTCHA_SITE_KEY'},
+            action: () => rpcHandler.getRecaptchaParam(),
+          );
+        });
+
+        test('getRecaptchaParam: invalid response: missing site key', () async {
+          await tester.shouldFail(
+            // If for some reason, sitekey is not returned.
+            serverResponse: {},
+            expectedError: AuthException.internalError(),
+          );
+        });
+      });
+
       group('getAccountInfoByIdToken', () {
         var tester = Tester(
           path: 'getAccountInfo',
