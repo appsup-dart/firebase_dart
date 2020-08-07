@@ -802,6 +802,38 @@ void main() {
         });
       });
 
+      group('deleteAccount', () {
+        var tester = Tester(
+            path: 'deleteAccount',
+            expectedBody: {'idToken': 'ID_TOKEN'},
+            action: () => rpcHandler.deleteAccount('ID_TOKEN'),
+            expectedResult: (_) => null);
+        test('deleteAccount: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {},
+          );
+        });
+
+        test('deleteAccount: server caught error', () async {
+          await tester.shouldFailWithServerErrors(
+            errorMap: {
+              'CREDENTIAL_TOO_OLD_LOGIN_AGAIN':
+                  AuthException.credentialTooOldLoginAgain(),
+              'INVALID_ID_TOKEN': AuthException.invalidAuth(),
+              'USER_NOT_FOUND': AuthException.tokenExpired(),
+              'TOKEN_EXPIRED': AuthException.tokenExpired(),
+              'USER_DISABLED': AuthException.userDisabled(),
+              'ADMIN_ONLY_OPERATION': AuthException.adminOnlyOperation(),
+            },
+          );
+        });
+
+        test('deleteAccount: invalid request error', () async {
+          expect(() => rpcHandler.deleteAccount(null),
+              throwsA(AuthException.internalError()));
+        });
+      });
+
       group('verifyPassword', () {
         var tester = Tester(
             path: 'verifyPassword',

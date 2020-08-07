@@ -179,6 +179,15 @@ class RpcHandler {
     return _handleIdTokenResponse(response);
   }
 
+  /// Deletes the user's account corresponding to the idToken given.
+  Future<void> deleteAccount(String idToken) async {
+    if (idToken == null) {
+      throw AuthException.internalError();
+    }
+    await relyingparty.deleteAccount(
+        IdentitytoolkitRelyingpartyDeleteAccountRequest()..idToken = idToken);
+  }
+
   /// Signs in a user as anonymous.
   ///
   /// Returns a future that resolves with the ID token.
