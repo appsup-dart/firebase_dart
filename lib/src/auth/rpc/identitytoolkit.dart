@@ -39,6 +39,10 @@ mixin _ReturnSecureTokenProperty on _JsonSerializable {
 mixin IdTokenResponse on _JsonSerializable {
   String get idToken;
 
+  String get refreshToken;
+
+  String get expiresIn;
+
   dynamic get mfaPendingCredential => _mfaPendingCredential;
 
   dynamic _mfaPendingCredential;

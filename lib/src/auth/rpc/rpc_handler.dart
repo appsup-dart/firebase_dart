@@ -123,12 +123,7 @@ class RpcHandler {
           ..returnSecureToken = true
           ..tenantId = tenantId);
 
-    _validateIdTokenResponse(response);
-
-    return _credentialFromIdToken(
-        idToken: response.idToken,
-        refreshToken: response.refreshToken,
-        expiresIn: response.expiresIn);
+    return _handleIdTokenResponse(response);
   }
 
   /// Verifies an email link OTP for sign-in
@@ -147,12 +142,7 @@ class RpcHandler {
           ..returnSecureToken = true
           ..tenantId = tenantId);
 
-    _validateIdTokenResponse(response);
-
-    return _credentialFromIdToken(
-        idToken: response.idToken,
-        refreshToken: response.refreshToken,
-        expiresIn: response.expiresIn);
+    return _handleIdTokenResponse(response);
   }
 
   /// Verifies a password
@@ -170,12 +160,7 @@ class RpcHandler {
           ..returnSecureToken = true
           ..tenantId = tenantId);
 
-    _validateIdTokenResponse(response);
-
-    return _credentialFromIdToken(
-        idToken: response.idToken,
-        refreshToken: response.refreshToken,
-        expiresIn: response.expiresIn);
+    return _handleIdTokenResponse(response);
   }
 
   /// Signs in a user as anonymous.
@@ -245,6 +230,15 @@ class RpcHandler {
       }
       throw error.replace(message: errorMessage);
     }
+  }
+
+  Future<openid.Credential> _handleIdTokenResponse(IdTokenResponse response) {
+    _validateIdTokenResponse(response);
+
+    return _credentialFromIdToken(
+        idToken: response.idToken,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn);
   }
 
   /// Validates an email
