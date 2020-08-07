@@ -110,6 +110,27 @@ class RpcHandler {
     return response;
   }
 
+  /// Verifies a custom token
+  ///
+  /// Returns a future that resolves with the ID token.
+  Future<openid.Credential> verifyCustomToken(String token) async {
+    if (token == null) {
+      throw AuthException.invalidCustomToken();
+    }
+    var response = await relyingparty
+        .verifyCustomToken(IdentitytoolkitRelyingpartyVerifyCustomTokenRequest()
+          ..token = token
+          ..returnSecureToken = true
+          ..tenantId = tenantId);
+
+    _validateIdTokenResponse(response);
+
+    return _credentialFromIdToken(
+        idToken: response.idToken,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn);
+  }
+
   /// Verifies a password
   ///
   /// Returns a future that resolves with the ID token.

@@ -601,6 +601,76 @@ void main() {
           );
         });
       });
+      group('verifyCustomToken', () {
+        var tester = Tester(
+          path: 'verifyCustomToken',
+          expectedBody: {'token': 'CUSTOM_TOKEN', 'returnSecureToken': true},
+          expectedResult: (response) {
+            return {'id_token': response['idToken']};
+          },
+          action: () => rpcHandler
+              .verifyCustomToken('CUSTOM_TOKEN')
+              .then((v) => {'id_token': v.response['id_token']}),
+        );
+
+        test('verifyCustomToken: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'idToken': createMockJwt(uid: 'my_id')},
+          );
+        });
+
+        test('verifyCustomToken: multi factor required', () async {
+          await tester.shouldFail(
+            expectedError: AuthException.mfaRequired(),
+            serverResponse: pendingCredResponse,
+          );
+        });
+
+        test('verifyCustomToken: tenant id', () async {
+          rpcHandler.tenantId = '123456789012';
+          await tester.shouldSucceed(
+            expectedBody: {
+              'token': 'CUSTOM_TOKEN',
+              'returnSecureToken': true,
+              'tenantId': '123456789012'
+            },
+            serverResponse: {'idToken': createMockJwt(uid: 'my_id')},
+          );
+        });
+
+        test('verifyCustomToken: unsupported tenant operation', () async {
+          rpcHandler.tenantId = '123456789012';
+          await tester.shouldFailWithServerErrors(expectedBody: {
+            'token': 'CUSTOM_TOKEN',
+            'returnSecureToken': true,
+            'tenantId': '123456789012'
+          }, errorMap: {
+            'UNSUPPORTED_TENANT_OPERATION':
+                AuthException.unsupportedTenantOperation(),
+          });
+        });
+
+        test('verifyCustomToken: server caught error', () async {
+          await tester.shouldFailWithServerErrors(errorMap: {
+            'MISSING_CUSTOM_TOKEN': AuthException.internalError(),
+            'INVALID_CUSTOM_TOKEN': AuthException.invalidCustomToken(),
+            'CREDENTIAL_MISMATCH': AuthException.credentialMismatch(),
+            'INVALID_TENANT_ID': AuthException.invalidTenantId(),
+            'TENANT_ID_MISMATCH': AuthException.tenantIdMismatch(),
+          });
+        });
+
+        test('verifyCustomToken: unknown server response', () async {
+          await tester.shouldFail(
+              expectedBody: {
+                'token': 'CUSTOM_TOKEN',
+                'returnSecureToken': true
+              },
+              serverResponse: {},
+              expectedError: AuthException.internalError(),
+              action: () => rpcHandler.verifyCustomToken('CUSTOM_TOKEN'));
+        });
+      });
       group('verifyPassword', () {
         var tester = Tester(
             path: 'verifyPassword',

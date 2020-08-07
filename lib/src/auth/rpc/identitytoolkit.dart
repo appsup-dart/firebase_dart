@@ -59,11 +59,42 @@ mixin IdTokenResponse on _JsonSerializable {
   }
 }
 
+mixin _TenantIdProperty on _JsonSerializable {
+  /// For multi-tenant use cases, in order to construct sign-in URL with the
+  /// correct IDP parameters, Firebear needs to know which Tenant to retrieve
+  /// IDP configs from.
+  String tenantId;
+
+  @override
+  Map<String, dynamic> _write(Map<String, dynamic> _json) {
+    _json = super._write(_json);
+    if (tenantId != null) {
+      _json['tenantId'] = tenantId;
+      if (_json.containsKey('tenantId')) {
+        tenantId = _json['tenantId'];
+      }
+    }
+    return _json;
+  }
+}
+
 class VerifyPasswordResponse extends it.VerifyPasswordResponse
     with _JsonSerializable, IdTokenResponse {
   VerifyPasswordResponse();
 
   VerifyPasswordResponse.fromJson(Map _json) : super.fromJson(_json) {
+    _read(_json);
+  }
+
+  @override
+  Map<String, Object> toJson() => _write(super.toJson());
+}
+
+class VerifyCustomTokenResponse extends it.VerifyCustomTokenResponse
+    with _JsonSerializable, IdTokenResponse {
+  VerifyCustomTokenResponse();
+
+  VerifyCustomTokenResponse.fromJson(Map _json) : super.fromJson(_json) {
     _read(_json);
   }
 
@@ -77,6 +108,20 @@ class IdentitytoolkitRelyingpartySignupNewUserRequest
   IdentitytoolkitRelyingpartySignupNewUserRequest();
 
   IdentitytoolkitRelyingpartySignupNewUserRequest.fromJson(Map _json)
+      : super.fromJson(_json) {
+    _read(_json);
+  }
+
+  @override
+  Map<String, Object> toJson() => _write(super.toJson());
+}
+
+class IdentitytoolkitRelyingpartyVerifyCustomTokenRequest
+    extends it.IdentitytoolkitRelyingpartyVerifyCustomTokenRequest
+    with _JsonSerializable, _TenantIdProperty {
+  IdentitytoolkitRelyingpartyVerifyCustomTokenRequest();
+
+  IdentitytoolkitRelyingpartyVerifyCustomTokenRequest.fromJson(Map _json)
       : super.fromJson(_json) {
     _read(_json);
   }
@@ -207,5 +252,34 @@ class RelyingpartyResourceApi extends it.RelyingpartyResourceApi {
         uploadMedia: _uploadMedia,
         downloadOptions: _downloadOptions);
     return _response.then((data) => VerifyPasswordResponse.fromJson(data));
+  }
+
+  @override
+  Future<VerifyCustomTokenResponse> verifyCustomToken(
+      it.IdentitytoolkitRelyingpartyVerifyCustomTokenRequest request,
+      {String $fields}) {
+    var _url;
+    var _queryParams = <String, List<String>>{};
+    var _uploadMedia;
+    var _uploadOptions;
+    var _downloadOptions = commons.DownloadOptions.Metadata;
+    var _body;
+
+    if (request != null) {
+      _body = json.encode((request).toJson());
+    }
+    if ($fields != null) {
+      _queryParams['fields'] = [$fields];
+    }
+
+    _url = 'verifyCustomToken';
+
+    var _response = _requester.request(_url, 'POST',
+        body: _body,
+        queryParams: _queryParams,
+        uploadOptions: _uploadOptions,
+        uploadMedia: _uploadMedia,
+        downloadOptions: _downloadOptions);
+    return _response.then((data) => VerifyCustomTokenResponse.fromJson(data));
   }
 }
