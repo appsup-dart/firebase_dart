@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:test/test.dart';
 
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
@@ -123,6 +124,7 @@ void main() {
 
     setUp(() {
       rpcHandler..tenantId = null;
+      platform = Platform(currentUrl: 'http://localhost');
     });
 
     group('identitytoolkit', () {
@@ -409,6 +411,155 @@ void main() {
         });
       });
 
+      group('fetchSignInMethodsForIdentifier', () {
+        var identifier = 'user@example.com';
+        var tester = Tester(
+          path: 'createAuthUri',
+          expectedBody: () =>
+              {'identifier': identifier, 'continueUri': platform.currentUrl},
+          action: () => rpcHandler.fetchSignInMethodsForIdentifier(identifier),
+          expectedResult: (r) => r['signinMethods'] ?? [],
+        );
+
+        test('fetchSignInMethodsForIdentifier: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'kind': 'identitytoolkit#CreateAuthUriResponse',
+              'allProviders': ['google.com', 'password'],
+              'signinMethods': ['google.com', 'emailLink'],
+              'registered': true,
+              'sessionId': 'AXT8iKR2x89y2o7zRnroApio_uo'
+            },
+          );
+        });
+
+        test('fetchSignInMethodsForIdentifier: tenantId', () async {
+          rpcHandler.tenantId = '123456789012';
+          await tester.shouldSucceed(
+              serverResponse: {
+                'kind': 'identitytoolkit#CreateAuthUriResponse',
+                'allProviders': ['google.com', 'password'],
+                'signinMethods': ['google.com', 'emailLink'],
+                'registered': true,
+                'sessionId': 'AXT8iKR2x89y2o7zRnroApio_uo'
+              },
+              expectedBody: () => {
+                    'identifier': identifier,
+                    'continueUri': platform.currentUrl,
+                    'tenantId': '123456789012'
+                  });
+        });
+
+        test('fetchSignInMethodsForIdentifier: no signin methods returned',
+            () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'kind': 'identitytoolkit#CreateAuthUriResponse',
+              'registered': true,
+              'sessionId': 'AXT8iKR2x89y2o7zRnroApio_uo'
+            },
+          );
+        });
+        test('fetchSignInMethodsForIdentifier: non http or https', () async {
+          // Simulate non http or https current URL.
+          platform =
+              Platform(currentUrl: 'chrome-extension://234567890/index.html');
+          await tester.shouldSucceed(
+            expectedBody: {
+              'identifier': identifier,
+              // A fallback HTTP URL should be used.
+              'continueUri': 'http://localhost'
+            },
+            serverResponse: {
+              'kind': 'identitytoolkit#CreateAuthUriResponse',
+              'allProviders': ['google.com', 'password'],
+              'signinMethods': ['google.com', 'emailLink'],
+              'registered': true,
+              'sessionId': 'AXT8iKR2x89y2o7zRnroApio_uo'
+            },
+          );
+        });
+
+        test('fetchSignInMethodsForIdentifier: server caught error', () async {
+          await tester.shouldFailWithServerErrors(errorMap: {
+            'INVALID_IDENTIFIER': AuthException.invalidEmail(),
+            'MISSING_CONTINUE_URI': AuthException.internalError(),
+          });
+        });
+      });
+
+      group('fetchProvidersForIdentifier', () {
+        var identifier = 'MY_ID';
+        var tester = Tester(
+          path: 'createAuthUri',
+          expectedBody: () =>
+              {'identifier': identifier, 'continueUri': platform.currentUrl},
+          action: () => rpcHandler.fetchProvidersForIdentifier(identifier),
+          expectedResult: (r) => r['allProviders'] ?? [],
+        );
+
+        test('fetchProvidersForIdentifier: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'kind': 'identitytoolkit#CreateAuthUriResponse',
+              'authUri': 'https://accounts.google.com/o/oauth2/auth?foo=bar',
+              'providerId': 'google.com',
+              'allProviders': ['google.com', 'myauthprovider.com'],
+              'registered': true,
+              'forExistingProvider': true,
+              'sessionId': 'MY_SESSION_ID'
+            },
+          );
+        });
+
+        test('fetchProvidersForIdentifier: tenantId', () async {
+          rpcHandler.tenantId = '123456789012';
+          await tester.shouldSucceed(
+              serverResponse: {
+                'kind': 'identitytoolkit#CreateAuthUriResponse',
+                'authUri': 'https://accounts.google.com/o/oauth2/auth?foo=bar',
+                'providerId': 'google.com',
+                'allProviders': ['google.com', 'myauthprovider.com'],
+                'registered': true,
+                'forExistingProvider': true,
+                'sessionId': 'MY_SESSION_ID'
+              },
+              expectedBody: () => {
+                    'identifier': identifier,
+                    'continueUri': platform.currentUrl,
+                    'tenantId': '123456789012'
+                  });
+        });
+
+        test('fetchProvidersForIdentifier: non http or https', () async {
+          // Simulate non http or https current URL.
+          platform =
+              Platform(currentUrl: 'chrome-extension://234567890/index.html');
+          await tester.shouldSucceed(
+            expectedBody: {
+              'identifier': identifier,
+              // A fallback HTTP URL should be used.
+              'continueUri': 'http://localhost'
+            },
+            serverResponse: {
+              'kind': 'identitytoolkit#CreateAuthUriResponse',
+              'authUri': 'https://accounts.google.com/o/oauth2/auth?foo=bar',
+              'providerId': 'google.com',
+              'allProviders': ['google.com', 'myauthprovider.com'],
+              'registered': true,
+              'forExistingProvider': true,
+              'sessionId': 'MY_SESSION_ID'
+            },
+          );
+        });
+
+        test('fetchProvidersForIdentifier: server caught error', () async {
+          await tester.shouldFailWithServerErrors(errorMap: {
+            'INVALID_IDENTIFIER': AuthException.invalidEmail(),
+            'MISSING_CONTINUE_URI': AuthException.internalError(),
+          });
+        });
+      });
       group('getAccountInfoByIdToken', () {
         var tester = Tester(
           path: 'getAccountInfo',
