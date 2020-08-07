@@ -39,7 +39,9 @@ mixin _ReturnSecureTokenProperty on _JsonSerializable {
 mixin IdTokenResponse on _JsonSerializable {
   String get idToken;
 
-  dynamic mfaPendingCredential;
+  dynamic get mfaPendingCredential => _mfaPendingCredential;
+
+  dynamic _mfaPendingCredential;
 
   @override
   Map<String, dynamic> _write(Map<String, dynamic> _json) {
@@ -54,7 +56,7 @@ mixin IdTokenResponse on _JsonSerializable {
   void _read(Map<String, dynamic> _json) {
     super._read(_json);
     if (_json.containsKey('mfaPendingCredential')) {
-      mfaPendingCredential = _json['mfaPendingCredential'];
+      _mfaPendingCredential = _json['mfaPendingCredential'];
     }
   }
 }
@@ -255,86 +257,34 @@ class RelyingpartyResourceApi extends it.RelyingpartyResourceApi {
   Future<VerifyPasswordResponse> verifyPassword(
       it.IdentitytoolkitRelyingpartyVerifyPasswordRequest request,
       {String $fields}) async {
-    var _url;
-    var _queryParams = <String, List<String>>{};
-    var _uploadMedia;
-    var _uploadOptions;
-    var _downloadOptions = commons.DownloadOptions.Metadata;
-    var _body;
-
-    if (request != null) {
-      _body = json.encode((request).toJson());
-    }
-    if ($fields != null) {
-      _queryParams['fields'] = [$fields];
-    }
-
-    _url = 'verifyPassword';
-
-    var _response = _requester.request(_url, 'POST',
-        body: _body,
-        queryParams: _queryParams,
-        uploadOptions: _uploadOptions,
-        uploadMedia: _uploadMedia,
-        downloadOptions: _downloadOptions);
-    return _response.then((data) => VerifyPasswordResponse.fromJson(data));
+    return VerifyPasswordResponse.fromJson(
+        await _do('verifyPassword', request, $fields: $fields));
   }
 
   @override
   Future<VerifyCustomTokenResponse> verifyCustomToken(
       it.IdentitytoolkitRelyingpartyVerifyCustomTokenRequest request,
-      {String $fields}) {
-    var _url;
-    var _queryParams = <String, List<String>>{};
-    var _uploadMedia;
-    var _uploadOptions;
-    var _downloadOptions = commons.DownloadOptions.Metadata;
-    var _body;
-
-    if (request != null) {
-      _body = json.encode((request).toJson());
-    }
-    if ($fields != null) {
-      _queryParams['fields'] = [$fields];
-    }
-
-    _url = 'verifyCustomToken';
-
-    var _response = _requester.request(_url, 'POST',
-        body: _body,
-        queryParams: _queryParams,
-        uploadOptions: _uploadOptions,
-        uploadMedia: _uploadMedia,
-        downloadOptions: _downloadOptions);
-    return _response.then((data) => VerifyCustomTokenResponse.fromJson(data));
+      {String $fields}) async {
+    return VerifyCustomTokenResponse.fromJson(
+        await _do('verifyCustomToken', request, $fields: $fields));
   }
 
   @override
   Future<EmailLinkSigninResponse> emailLinkSignin(
       it.IdentitytoolkitRelyingpartyEmailLinkSigninRequest request,
-      {String $fields}) {
-    var _url;
-    var _queryParams = <String, List<String>>{};
-    var _uploadMedia;
-    var _uploadOptions;
-    var _downloadOptions = commons.DownloadOptions.Metadata;
-    var _body;
+      {String $fields}) async {
+    return EmailLinkSigninResponse.fromJson(
+        await _do('emailLinkSignin', request, $fields: $fields));
+  }
 
-    if (request != null) {
-      _body = json.encode((request).toJson());
-    }
-    if ($fields != null) {
-      _queryParams['fields'] = [$fields];
-    }
+  Future<dynamic> _do(String url, dynamic request, {String $fields}) {
+    var body = request == null ? null : json.encode(request);
 
-    _url = 'emailLinkSignin';
-
-    var _response = _requester.request(_url, 'POST',
-        body: _body,
-        queryParams: _queryParams,
-        uploadOptions: _uploadOptions,
-        uploadMedia: _uploadMedia,
-        downloadOptions: _downloadOptions);
-    return _response.then((data) => EmailLinkSigninResponse.fromJson(data));
+    return _requester.request(url, 'POST',
+        body: body,
+        queryParams: {
+          if ($fields != null) 'fields': [$fields]
+        },
+        downloadOptions: commons.DownloadOptions.Metadata);
   }
 }
