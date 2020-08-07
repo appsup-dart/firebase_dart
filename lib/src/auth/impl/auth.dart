@@ -1,3 +1,5 @@
+import 'package:firebase_dart/core.dart';
+
 import '../user.dart';
 import '../usermanager.dart';
 import 'user.dart';
@@ -76,16 +78,6 @@ class FirebaseAuthImpl extends FirebaseAuth {
     return result;
   }
 
-  @override
-  Future<FirebaseUser> currentUser() async {
-    await _onReady;
-    return _currentUser;
-  }
-
-  @override
-  Stream<FirebaseUser> get onAuthStateChanged =>
-      _userStorageManager.onCurrentUserChanged;
-
   /// Handles user state changes.
   Future<void> _handleUserStateChange(FirebaseUser user) {
     return _userStorageManager.setCurrentUser(user);
@@ -142,6 +134,107 @@ class FirebaseAuthImpl extends FirebaseAuth {
     }
 
     await _handleUserStateChange(user);
+  }
+
+  @override
+  // TODO: implement app
+  FirebaseApp get app => throw UnimplementedError();
+
+  @override
+  Future<void> confirmPasswordReset(String oobCode, String newPassword) {
+    // TODO: implement confirmPasswordReset
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<AuthResult> createUserWithEmailAndPassword(
+      {String email, String password}) {
+    // TODO: implement createUserWithEmailAndPassword
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<FirebaseUser> currentUser() async {
+    await _onReady;
+    return _currentUser;
+  }
+
+  @override
+  Future<List<String>> fetchSignInMethodsForEmail({String email}) {
+    // TODO: implement fetchSignInMethodsForEmail
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<bool> isSignInWithEmailLink(String link) {
+    // TODO: implement isSignInWithEmailLink
+    throw UnimplementedError();
+  }
+
+  @override
+  Stream<FirebaseUser> get onAuthStateChanged =>
+      _userStorageManager.onCurrentUserChanged;
+
+  @override
+  Future<void> sendPasswordResetEmail({String email}) {
+    // TODO: implement sendPasswordResetEmail
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> sendSignInWithEmailLink(
+      {String email,
+      String url,
+      bool handleCodeInApp,
+      String iOSBundleID,
+      String androidPackageName,
+      bool androidInstallIfNotAvailable,
+      String androidMinimumVersion}) {
+    // TODO: implement sendSignInWithEmailLink
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> setLanguageCode(String language) {
+    // TODO: implement setLanguageCode
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<AuthResult> signInWithCredential(credential) {
+    // TODO: implement signInWithCredential
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<AuthResult> signInWithCustomToken({String token}) {
+    // TODO: implement signInWithCustomToken
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<AuthResult> signInWithEmailAndLink({String email, String link}) {
+    // TODO: implement signInWithEmailAndLink
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> signOut() {
+    // TODO: implement signOut
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> verifyPhoneNumber(
+      {String phoneNumber,
+      Duration timeout,
+      int forceResendingToken,
+      verificationCompleted,
+      verificationFailed,
+      codeSent,
+      codeAutoRetrievalTimeout}) {
+    // TODO: implement verifyPhoneNumber
+    throw UnimplementedError();
   }
 }
 
