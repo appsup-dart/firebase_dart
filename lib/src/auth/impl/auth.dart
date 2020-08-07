@@ -206,9 +206,16 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  Future<AuthResult> signInWithCustomToken({String token}) {
-    // TODO: implement signInWithCustomToken
-    throw UnimplementedError();
+  Future<AuthResult> signInWithCustomToken({String token}) async {
+    // Wait for the redirect state to be determined before proceeding. If critical
+    // errors like web storage unsupported are detected, fail before RPC, instead
+    // of after.
+    await _onReady;
+    var r = await _rpcHandler.verifyCustomToken(token);
+    var result =
+        await _signInWithIdTokenProvider(openidCredential: r, isNewUser: false);
+
+    return result;
   }
 
   @override

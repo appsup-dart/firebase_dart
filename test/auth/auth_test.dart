@@ -176,6 +176,25 @@ void main() async {
       expect(signInMethods, ['password', 'google.com']);
     });
   });
+
+  group('signInWithCustomToken', () {
+    test('signInWithCustomToken: success', () async {
+      var expectedCustomToken = createMockCustomToken(uid: 'user1');
+      // Sign in with custom token.
+      var result = await auth.signInWithCustomToken(token: expectedCustomToken);
+
+      // Anonymous status should be set to false.
+      expect(result.user.isAnonymous, isFalse);
+      expect(result.additionalUserInfo.providerId, isNull);
+      expect(result.additionalUserInfo.isNewUser, isFalse);
+
+      // Confirm anonymous state saved.
+      var currentUserStorageManager = UserManager('apiKey');
+      var user = await currentUserStorageManager.getCurrentUser();
+      expect(user.toJson(), result.user.toJson());
+      expect(user.isAnonymous, isFalse);
+    });
+  });
 }
 
 class Tester {

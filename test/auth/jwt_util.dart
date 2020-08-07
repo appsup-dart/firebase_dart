@@ -16,6 +16,13 @@ String createMockJwt({String uid, String providerId}) {
   return builder.build().toCompactSerialization();
 }
 
+String createMockCustomToken({String uid}) {
+  var builder = JsonWebSignatureBuilder()
+    ..jsonContent = {'uid': uid}
+    ..addRecipient(key);
+  return builder.build().toCompactSerialization();
+}
+
 Map<String, dynamic> _jwtPayloadFor(String uid, String providerId) {
   var now = clock.now().millisecondsSinceEpoch ~/ 1000;
   return {

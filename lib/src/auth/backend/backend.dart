@@ -74,6 +74,23 @@ class BackendConnection {
       ..signinMethods = [for (var p in user.providerUserInfo) p.providerId];
   }
 
+  Future<VerifyCustomTokenResponse> verifyCustomToken(
+      IdentitytoolkitRelyingpartyVerifyCustomTokenRequest request) async {
+    var t = JsonWebToken.unverified(request.token); // TODO
+    var uid = t.claims['uid'];
+    var user = await backend.getUserById(uid);
+
+    var refreshToken = await backend.generateRefreshToken(user.localId);
+    return VerifyCustomTokenResponse()
+      ..kind = 'identitytoolkit#VerifyCustomTokenResponse'
+      ..idToken = request.returnSecureToken == true
+          ? await backend.generateIdToken(
+              uid: user.localId, providerId: 'custom')
+          : null
+      ..expiresIn = '3600'
+      ..refreshToken = refreshToken;
+  }
+
   Future<dynamic> _handle(String method, dynamic body) async {
     switch (method) {
       case 'signupNewUser':
@@ -92,6 +109,10 @@ class BackendConnection {
         var request =
             IdentitytoolkitRelyingpartyCreateAuthUriRequest.fromJson(body);
         return createAuthUri(request);
+      case 'verifyCustomToken':
+        var request =
+            IdentitytoolkitRelyingpartyVerifyCustomTokenRequest.fromJson(body);
+        return verifyCustomToken(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }
