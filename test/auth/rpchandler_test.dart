@@ -205,6 +205,23 @@ void main() {
         });
       });
 
+      group('getAuthorizedDomains', () {
+        var tester = Tester(
+            path: 'getProjectConfig',
+            expectedBody: null,
+            expectedResult: (response) => response['authorizedDomains'],
+            action: () => rpcHandler.getAuthorizedDomains(),
+            method: 'GET');
+
+        test('getAuthorizedDomains: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'authorizedDomains': ['domain.com', 'www.mydomain.com']
+            },
+          );
+        });
+      });
+
       group('getAccountInfoByIdToken', () {
         var tester = Tester(
           path: 'getAccountInfo',

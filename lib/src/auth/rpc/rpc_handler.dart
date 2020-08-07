@@ -26,6 +26,12 @@ class RpcHandler {
       : identitytoolkitApi =
             IdentitytoolkitApi(clientViaApiKey(apiKey, baseClient: httpClient));
 
+  /// Gets the list of authorized domains for the specified project.
+  Future<List<String>> getAuthorizedDomains() async {
+    var response = await relyingparty.getProjectConfig();
+    return response.authorizedDomains;
+  }
+
   /// Requests getAccountInfo endpoint using an ID token.
   Future<GetAccountInfoResponse> getAccountInfoByIdToken(String idToken) async {
     var response = await _handle(() => identitytoolkitApi.relyingparty
