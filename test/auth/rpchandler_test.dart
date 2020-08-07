@@ -737,6 +737,71 @@ void main() {
         });
       });
 
+      group('createAccount', () {
+        var tester = Tester(
+          path: 'signupNewUser',
+          expectedBody: {
+            'email': 'uid123@fake.com',
+            'password': 'mysupersecretpassword',
+            'returnSecureToken': true
+          },
+          expectedResult: (response) {
+            return {'id_token': response['idToken']};
+          },
+          action: () => rpcHandler
+              .createAccount('uid123@fake.com', 'mysupersecretpassword')
+              .then((v) => {'id_token': v.response['id_token']}),
+        );
+        test('createAccount: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'idToken': createMockJwt(uid: 'user1')},
+          );
+        });
+        test('createAccount: tenant id', () async {
+          rpcHandler.tenantId = '123456789012';
+          await tester.shouldSucceed(
+            expectedBody: {
+              'email': 'uid123@fake.com',
+              'password': 'mysupersecretpassword',
+              'returnSecureToken': true,
+              'tenantId': '123456789012'
+            },
+            serverResponse: {'idToken': createMockJwt(uid: 'user1')},
+          );
+        });
+
+        test('createAccount: server caught error', () async {
+          await tester.shouldFailWithServerErrors(
+            errorMap: {
+              'EMAIL_EXISTS': AuthException.emailExists(),
+              'PASSWORD_LOGIN_DISABLED': AuthException.operationNotAllowed(),
+              'OPERATION_NOT_ALLOWED': AuthException.operationNotAllowed(),
+              'WEAK_PASSWORD': AuthException.weakPassword(),
+              'ADMIN_ONLY_OPERATION': AuthException.adminOnlyOperation(),
+              'INVALID_TENANT_ID': AuthException.invalidTenantId(),
+            },
+          );
+        });
+        test('createAccount: unknown server response', () async {
+          // Test when server returns unexpected response with no error message.
+          await tester.shouldFail(
+            serverResponse: {},
+            expectedError: AuthException.internalError(),
+          );
+        });
+
+        test('createAccount: no password error', () async {
+          expect(() => rpcHandler.createAccount('uid123@fake.com', ''),
+              throwsA(AuthException.weakPassword()));
+        });
+        test('createAccount: invalid email error', () async {
+          expect(
+              () => rpcHandler.createAccount(
+                  'uid123.invalid', 'mysupersecretpassword'),
+              throwsA(AuthException.invalidEmail()));
+        });
+      });
+
       group('verifyPassword', () {
         var tester = Tester(
             path: 'verifyPassword',

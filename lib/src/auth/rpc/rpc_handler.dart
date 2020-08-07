@@ -163,6 +163,22 @@ class RpcHandler {
     return _handleIdTokenResponse(response);
   }
 
+  /// Creates an email/password account.
+  ///
+  /// Returns a future that resolves with the ID token.
+  Future<openid.Credential> createAccount(String email, String password) async {
+    _validateEmail(email);
+    _validateStrongPassword(password);
+    var response = await relyingparty
+        .signupNewUser(IdentitytoolkitRelyingpartySignupNewUserRequest()
+          ..email = email
+          ..password = password
+          ..returnSecureToken = true
+          ..tenantId = tenantId);
+
+    return _handleIdTokenResponse(response);
+  }
+
   /// Signs in a user as anonymous.
   ///
   /// Returns a future that resolves with the ID token.
@@ -267,6 +283,13 @@ class RpcHandler {
         throw AuthException.mfaRequired();
       }
       throw AuthException.internalError();
+    }
+  }
+
+  /// Validates a password
+  void _validateStrongPassword(String password) {
+    if (password == null || password.isEmpty) {
+      throw AuthException.weakPassword();
     }
   }
 }

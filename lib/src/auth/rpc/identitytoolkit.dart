@@ -120,6 +120,18 @@ class EmailLinkSigninResponse extends it.EmailLinkSigninResponse
   Map<String, Object> toJson() => _write(super.toJson());
 }
 
+class SignupNewUserResponse extends it.SignupNewUserResponse
+    with _JsonSerializable, IdTokenResponse {
+  SignupNewUserResponse();
+
+  SignupNewUserResponse.fromJson(Map _json) : super.fromJson(_json) {
+    _read(_json);
+  }
+
+  @override
+  Map<String, Object> toJson() => _write(super.toJson());
+}
+
 class IdentitytoolkitRelyingpartyEmailLinkSigninRequest
     extends it.IdentitytoolkitRelyingpartyEmailLinkSigninRequest
     with _JsonSerializable, _ReturnSecureTokenProperty, _TenantIdProperty {
@@ -279,6 +291,14 @@ class RelyingpartyResourceApi extends it.RelyingpartyResourceApi {
       {String $fields}) async {
     return EmailLinkSigninResponse.fromJson(
         await _do('emailLinkSignin', request, $fields: $fields));
+  }
+
+  @override
+  Future<SignupNewUserResponse> signupNewUser(
+      it.IdentitytoolkitRelyingpartySignupNewUserRequest request,
+      {String $fields}) async {
+    return SignupNewUserResponse.fromJson(
+        await _do('signupNewUser', request, $fields: $fields));
   }
 
   Future<dynamic> _do(String url, dynamic request, {String $fields}) {
