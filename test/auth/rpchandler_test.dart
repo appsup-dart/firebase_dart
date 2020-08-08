@@ -124,7 +124,9 @@ void main() {
     };
 
     setUp(() {
-      rpcHandler..tenantId = null;
+      rpcHandler
+        ..tenantId = null
+        ..updateCustomLocaleHeader(null);
       platform = Platform(currentUrl: 'http://localhost');
     });
 
@@ -2026,6 +2028,90 @@ void main() {
             'OPERATION_NOT_ALLOWED': AuthException.operationNotAllowed(),
             'USER_CANCELLED': AuthException.userCancelled(),
           });
+        });
+      });
+
+      group('sendSignInLinkToEmail', () {
+        var userEmail = 'user@example.com';
+        var additionalRequestData = {
+          'continueUrl': 'https://www.example.com/?state=abc',
+          'iOSBundleId': 'com.example.ios',
+          'androidPackageName': 'com.example.android',
+          'androidInstallApp': true,
+          'androidMinimumVersion': '12',
+          'canHandleCodeInApp': true,
+          'dynamicLinkDomain': 'example.page.link'
+        };
+        var tester = Tester(
+          path: 'getOobConfirmationCode',
+          expectedBody: {
+            'requestType': 'EMAIL_SIGNIN',
+            'email': userEmail,
+            'continueUrl': 'https://www.example.com/?state=abc',
+            'iOSBundleId': 'com.example.ios',
+            'androidPackageName': 'com.example.android',
+            'androidInstallApp': true,
+            'androidMinimumVersion': '12',
+            'canHandleCodeInApp': true,
+            'dynamicLinkDomain': 'example.page.link'
+          },
+          action: () => rpcHandler.sendSignInLinkToEmail(
+              email: 'user@example.com',
+              continueUrl: 'https://www.example.com/?state=abc',
+              iOSBundleId: 'com.example.ios',
+              androidPackageName: 'com.example.android',
+              androidInstallApp: true,
+              androidMinimumVersion: '12',
+              canHandleCodeInApp: true,
+              dynamicLinkDomain: 'example.page.link'),
+        );
+        group('sendSignInLinkToEmail: success', () {
+          test('sendSignInLinkToEmail: success: action code settings',
+              () async {
+            await tester.shouldSucceed(
+              serverResponse: {'email': userEmail},
+              expectedResult: (_) => userEmail,
+            );
+          });
+          test('sendSignInLinkToEmail: success: custom locale', () async {
+            rpcHandler.updateCustomLocaleHeader('es');
+            await tester.shouldSucceed(
+              serverResponse: {'email': userEmail},
+              expectedHeaders: {
+                'Content-Type': 'application/json',
+                'X-Firebase-Locale': 'es'
+              },
+              expectedResult: (_) => userEmail,
+            );
+          });
+        });
+        test('sendSignInLinkToEmail: invalid email error', () async {
+          // Test when invalid email is passed in getOobCode request.
+
+          expect(() => rpcHandler.sendSignInLinkToEmail(email: 'user.invalid'),
+              throwsA(AuthException.invalidEmail()));
+        });
+        test('sendSignInLinkToEmail: unknown server response', () async {
+          await tester.shouldFail(
+            serverResponse: {},
+            expectedError: AuthException.internalError(),
+          );
+        });
+        test('sendSignInLinkToEmail: server caught error', () async {
+          await tester.shouldFailWithServerErrors(
+            errorMap: {
+              'INVALID_RECIPIENT_EMAIL': AuthException.invalidRecipientEmail(),
+              'INVALID_SENDER': AuthException.invalidSender(),
+              'INVALID_MESSAGE_PAYLOAD': AuthException.invalidMessagePayload(),
+              'INVALID_CONTINUE_URI': AuthException.invalidContinueUri(),
+              'MISSING_ANDROID_PACKAGE_NAME':
+                  AuthException.missingAndroidPackageName(),
+              'MISSING_IOS_BUNDLE_ID': AuthException.missingIosBundleId(),
+              'UNAUTHORIZED_DOMAIN': AuthException.unauthorizedDomain(),
+              'INVALID_DYNAMIC_LINK_DOMAIN':
+                  AuthException.invalidDynamicLinkDomain(),
+            },
+          );
         });
       });
     });

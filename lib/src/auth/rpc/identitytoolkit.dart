@@ -166,6 +166,20 @@ class VerifyAssertionResponse extends it.VerifyAssertionResponse
   Map<String, Object> toJson() => _write(super.toJson());
 }
 
+class Relyingparty extends it.Relyingparty {
+  String dynamicLinkDomain;
+
+  Relyingparty();
+
+  Relyingparty.fromJson(Map _json) : super.fromJson(_json) {
+    dynamicLinkDomain = _json['dynamicLinkDomain'];
+  }
+
+  @override
+  Map<String, Object> toJson() =>
+      {...super.toJson(), 'dynamicLinkDomain': dynamicLinkDomain};
+}
+
 class IdentitytoolkitRelyingpartyEmailLinkSigninRequest
     extends it.IdentitytoolkitRelyingpartyEmailLinkSigninRequest
     with _JsonSerializable, _ReturnSecureTokenProperty, _TenantIdProperty {
@@ -284,18 +298,43 @@ class _MyApiRequester extends commons.ApiRequester {
   }
 }
 
+class _Client extends http.BaseClient {
+  final http.Client baseClient;
+
+  _Client(this.baseClient);
+
+  String locale;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    if (locale != null) request.headers['X-Firebase-Locale'] = locale;
+    return baseClient.send(request);
+  }
+}
+
 class IdentitytoolkitApi implements it.IdentitytoolkitApi {
   final commons.ApiRequester _requester;
+  final _Client _client;
+
+  /// Updates the custom locale header.
+  void updateCustomLocaleHeader(String languageCode) {
+    _client.locale = languageCode;
+  }
 
   @override
   RelyingpartyResourceApi get relyingparty =>
       RelyingpartyResourceApi(_requester);
 
-  IdentitytoolkitApi(http.Client client,
+  IdentitytoolkitApi._(this._client,
       {String rootUrl = 'https://www.googleapis.com/',
       String servicePath = 'identitytoolkit/v3/relyingparty/'})
       : _requester =
-            _MyApiRequester(client, rootUrl, servicePath, it.USER_AGENT);
+            _MyApiRequester(_client, rootUrl, servicePath, it.USER_AGENT);
+
+  IdentitytoolkitApi(http.Client client,
+      {String rootUrl = 'https://www.googleapis.com/',
+      String servicePath = 'identitytoolkit/v3/relyingparty/'})
+      : this._(_Client(client), rootUrl: rootUrl, servicePath: servicePath);
 }
 
 class RelyingpartyResourceApi extends it.RelyingpartyResourceApi {

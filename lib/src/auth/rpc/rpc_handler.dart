@@ -331,6 +331,41 @@ class RpcHandler {
         expiresIn: response.expiresIn);
   }
 
+  /// Requests getOobCode endpoint for passwordless email sign-in.
+  ///
+  /// Returns future that resolves with user's email.
+  Future<String> sendSignInLinkToEmail(
+      {String email,
+      String continueUrl,
+      String iOSBundleId,
+      String androidPackageName,
+      bool androidInstallApp,
+      String androidMinimumVersion,
+      bool canHandleCodeInApp,
+      String dynamicLinkDomain}) async {
+    _validateEmail(email);
+    var response = await relyingparty.getOobConfirmationCode(Relyingparty()
+      ..requestType = 'EMAIL_SIGNIN'
+      ..email = email
+      ..continueUrl = continueUrl
+      ..iOSBundleId = iOSBundleId
+      ..androidPackageName = androidPackageName
+      ..androidInstallApp = androidInstallApp
+      ..androidMinimumVersion = androidMinimumVersion
+      ..canHandleCodeInApp = canHandleCodeInApp
+      ..dynamicLinkDomain = dynamicLinkDomain);
+
+    if (response.email == null) {
+      throw AuthException.internalError();
+    }
+    return response.email;
+  }
+
+  /// Updates the custom locale header.
+  void updateCustomLocaleHeader(String languageCode) {
+    identitytoolkitApi.updateCustomLocaleHeader(languageCode);
+  }
+
   AuthException _errorFromVerifyAssertionResponse(
       VerifyAssertionResponse response) {
     if (response.needConfirmation ?? false) {
