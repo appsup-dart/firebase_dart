@@ -98,6 +98,13 @@ class BackendConnection {
       ..kind = 'identitytoolkit#DeleteAccountResponse';
   }
 
+  Future<GetOobConfirmationCodeResponse> getOobConfirmationCode(
+      Relyingparty request) async {
+    return GetOobConfirmationCodeResponse()
+      ..kind = 'identitytoolkit#GetOobConfirmationCodeResponse'
+      ..email = request.email;
+  }
+
   Future<dynamic> _handle(String method, dynamic body) async {
     switch (method) {
       case 'signupNewUser':
@@ -124,6 +131,9 @@ class BackendConnection {
         var request =
             IdentitytoolkitRelyingpartyDeleteAccountRequest.fromJson(body);
         return deleteAccount(request);
+      case 'getOobConfirmationCode':
+        var request = Relyingparty.fromJson(body);
+        return getOobConfirmationCode(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }

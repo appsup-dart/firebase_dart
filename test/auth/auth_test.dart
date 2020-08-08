@@ -207,6 +207,28 @@ void main() async {
       expect(result.additionalUserInfo.isNewUser, isTrue);
     });
   });
+
+  group('sendSignInWithEmailLink', () {
+    test('sendSignInWithEmailLink: success', () async {
+      await auth.sendSignInWithEmailLink(
+          email: 'user@example.com', url: 'https://www.example.com/?state=abc');
+    });
+    test('sendSignInWithEmailLink: empty continue url error', () async {
+      expect(
+          () => auth.sendSignInWithEmailLink(
+              email: 'user@example.com', url: '', handleCodeInApp: true),
+          throwsA(AuthException.invalidContinueUri()));
+    });
+    test('sendSignInWithEmailLink: handle code in app error', () async {
+      expect(
+          () => auth.sendSignInWithEmailLink(
+              email: 'user@example.com',
+              url: 'https://www.example.com/?state=abc',
+              handleCodeInApp: false),
+          throwsA(AuthException.argumentError(
+              'handleCodeInApp must be true when sending sign in link to email')));
+    });
+  });
 }
 
 class Tester {

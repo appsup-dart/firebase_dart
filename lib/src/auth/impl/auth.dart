@@ -1,4 +1,5 @@
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/auth/error.dart';
 
 import '../user.dart';
 import '../usermanager.dart';
@@ -193,13 +194,31 @@ class FirebaseAuthImpl extends FirebaseAuth {
   Future<void> sendSignInWithEmailLink(
       {String email,
       String url,
-      bool handleCodeInApp,
+      bool handleCodeInApp = true,
       String iOSBundleID,
       String androidPackageName,
       bool androidInstallIfNotAvailable,
-      String androidMinimumVersion}) {
-    // TODO: implement sendSignInWithEmailLink
-    throw UnimplementedError();
+      String androidMinimumVersion}) async {
+    if (url == null) {
+      throw AuthException.missingContinueUri();
+    }
+    if (url.isEmpty) {
+      throw AuthException.invalidContinueUri();
+    }
+
+    if (handleCodeInApp == false) {
+      throw AuthException.argumentError(
+          'handleCodeInApp true when sending sign in link to email.');
+    }
+
+    await rpcHandler.sendSignInLinkToEmail(
+        email: email,
+        continueUrl: url,
+        canHandleCodeInApp: handleCodeInApp,
+        iOSBundleId: iOSBundleID,
+        androidPackageName: androidPackageName,
+        androidInstallApp: androidInstallIfNotAvailable,
+        androidMinimumVersion: androidMinimumVersion);
   }
 
   @override
