@@ -1786,6 +1786,248 @@ void main() {
               throwsA(AuthException.internalError()));
         });
       });
+
+      group('verifyAssertionForExisting', () {
+        var tester = Tester(
+          path: 'verifyAssertion',
+          expectedBody: {
+            'sessionId': 'SESSION_ID',
+            'requestUri': 'http://localhost/callback#oauthResponse',
+            'returnIdpCredential': true,
+            // autoCreate flag should be passed and set to false.
+            'autoCreate': false,
+            'returnSecureToken': true
+          },
+          action: () => rpcHandler.verifyAssertionForExisting(
+              sessionId: 'SESSION_ID',
+              requestUri: 'http://localhost/callback#oauthResponse'),
+        );
+        test('verifyAssertionForExisting: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'idToken': 'ID_TOKEN',
+              'oauthAccessToken': 'ACCESS_TOKEN',
+              'oauthExpireIn': 3600,
+              'oauthAuthorizationCode': 'AUTHORIZATION_CODE'
+            },
+          );
+        });
+
+        group('verifyAssertionForExisting: with session id nonce', () {
+          var t = tester.replace(
+            expectedBody: {
+              'sessionId': 'NONCE',
+              'requestUri':
+                  'http://localhost/callback#id_token=ID_TOKEN&state=STATE',
+              'returnIdpCredential': true,
+              // autoCreate flag should be passed and set to false.
+              'autoCreate': false,
+              'returnSecureToken': true
+            },
+            action: () => rpcHandler.verifyAssertionForExisting(
+                sessionId: 'NONCE',
+                requestUri:
+                    'http://localhost/callback#id_token=ID_TOKEN&state=STATE'),
+          );
+          test('verifyAssertionForExisting: with session id nonce: success',
+              () async {
+            await t.shouldSucceed(
+              serverResponse: {
+                'idToken': 'ID_TOKEN',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'oauthExpireIn': 3600,
+                'providerId': 'oidc.provider'
+              },
+              expectedResult: (_) => {
+                'idToken': 'ID_TOKEN',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'oauthExpireIn': 3600,
+                'providerId': 'oidc.provider',
+                'nonce': 'NONCE'
+              },
+            );
+          });
+        });
+        group('verifyAssertionForExisting: with post body nonce', () {
+          var t = tester.replace(
+            expectedBody: {
+              'postBody':
+                  'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+              'requestUri': 'http://localhost',
+              'returnIdpCredential': true,
+              // autoCreate flag should be passed and set to false.
+              'autoCreate': false,
+              'returnSecureToken': true
+            },
+            action: () => rpcHandler.verifyAssertionForExisting(
+                postBody:
+                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                requestUri: 'http://localhost'),
+          );
+          test('verifyAssertionForExisting: with post body nonce: success',
+              () async {
+            await t.shouldSucceed(
+              serverResponse: {
+                'idToken': 'ID_TOKEN',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'oauthExpireIn': 3600,
+                'providerId': 'oidc.provider',
+              },
+              expectedResult: (_) => {
+                'idToken': 'ID_TOKEN',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'oauthExpireIn': 3600,
+                'providerId': 'oidc.provider',
+                'nonce': 'NONCE'
+              },
+            );
+          });
+        });
+        group('verifyAssertionForExisting: pending token response', () {
+          var t = tester.replace(
+            expectedBody: {
+              'postBody':
+                  'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+              'requestUri': 'http://localhost',
+              'returnIdpCredential': true,
+              // autoCreate flag should be passed and set to false.
+              'autoCreate': false,
+              'returnSecureToken': true
+            },
+            action: () => rpcHandler.verifyAssertionForExisting(
+                postBody:
+                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                requestUri: 'http://localhost'),
+          );
+          test('verifyAssertionForExisting: pending token response: success',
+              () async {
+            await t.shouldSucceed(
+              serverResponse: {
+                'idToken': 'ID_TOKEN',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'pendingToken': 'PENDING_TOKEN',
+                'oauthExpireIn': 3600,
+                'providerId': 'oidc.provider'
+              },
+            );
+          });
+        });
+        group('verifyAssertionForExisting: pending token request', () {
+          var t = tester.replace(
+            expectedBody: {
+              'pendingIdToken': 'PENDING_TOKEN',
+              'requestUri': 'http://localhost',
+              'returnIdpCredential': true,
+              // autoCreate flag should be passed and set to false.
+              'autoCreate': false,
+              'returnSecureToken': true
+            },
+            action: () => rpcHandler.verifyAssertionForExisting(
+                pendingToken: 'PENDING_TOKEN', requestUri: 'http://localhost'),
+          );
+          test('verifyAssertionForExisting: pending token request: success',
+              () async {
+            await t.shouldSucceed(
+              serverResponse: {
+                'idToken': 'ID_TOKEN',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'pendingToken': 'PENDING_TOKEN2',
+                'oauthExpireIn': 3600
+              },
+            );
+          });
+        });
+        group('verifyAssertionForExisting: return idp credential', () {
+          var t = tester.replace(
+            expectedBody: {
+              'sessionId': 'SESSION_ID',
+              'requestUri': 'http://localhost/callback#oauthResponse',
+              'returnIdpCredential': true,
+              'autoCreate': false,
+              'returnSecureToken': true
+            },
+            action: () => rpcHandler.verifyAssertionForExisting(
+                sessionId: 'SESSION_ID',
+                requestUri: 'http://localhost/callback#oauthResponse'),
+          );
+          test(
+              'verifyAssertionForExisting: return idp credential: no recovery error',
+              () async {
+            await t.shouldFail(
+              serverResponse: {
+                'federatedId': 'FEDERATED_ID',
+                'providerId': 'google.com',
+                'email': 'user@example.com',
+                'emailVerified': true,
+                'oauthAccessToken': 'ACCESS_TOKEN',
+                'oauthExpireIn': 3600,
+                'oauthAuthorizationCode': 'AUTHORIZATION_CODE',
+                'errorMessage': 'USER_DISABLED'
+              },
+              expectedError: AuthException.userDisabled(),
+            );
+          });
+        });
+
+        group('verifyAssertionForExisting: error', () {
+          var t = tester.replace(
+            expectedBody: {
+              'sessionId': 'SESSION_ID',
+              'requestUri': 'http://localhost/callback#oauthResponse',
+              'returnIdpCredential': true,
+              // autoCreate flag should be passed and set to false.
+              'autoCreate': false,
+              'returnSecureToken': true
+            },
+            action: () => rpcHandler.verifyAssertionForExisting(
+                sessionId: 'SESSION_ID',
+                requestUri: 'http://localhost/callback#oauthResponse'),
+          );
+          test('verifyAssertionForExisting: error', () async {
+            // Same client side validation as verifyAssertion.
+            expect(
+                () => rpcHandler.verifyAssertionForExisting(
+                    requestUri: 'http://localhost/callback#oauthResponse'),
+                throwsA(AuthException.internalError()));
+          });
+          test('verifyAssertionForExisting: error: user not found', () async {
+            // No user is found. No idToken returned.
+            await t.shouldFail(
+              serverResponse: {
+                'oauthAccessToken': 'ACCESS_TOKEN',
+                'oauthExpireIn': 3600,
+                'oauthAuthorizationCode': 'AUTHORIZATION_CODE',
+                'errorMessage': 'USER_NOT_FOUND'
+              },
+              expectedError: AuthException.userDeleted(),
+            );
+          });
+          test('verifyAssertionForExisting: error: no idToken', () async {
+            // No idToken returned for whatever reason.
+            await t.shouldFail(
+              serverResponse: {
+                'oauthAccessToken': 'ACCESS_TOKEN',
+                'oauthExpireIn': 3600,
+                'oauthAuthorizationCode': 'AUTHORIZATION_CODE'
+              },
+              expectedError: AuthException.internalError(),
+            );
+          });
+        });
+        test('verifyAssertionForExisting: invalid request error', () async {
+          // Test when request is invalid.
+          expect(() => rpcHandler.verifyAssertionForExisting(postBody: '....'),
+              throwsA(AuthException.internalError()));
+        });
+        test('verifyAssertionForExisting: server caught error', () async {
+          await tester.shouldFailWithServerErrors(errorMap: {
+            'INVALID_IDP_RESPONSE': AuthException.invalidIdpResponse(),
+            'USER_DISABLED': AuthException.userDisabled(),
+            'OPERATION_NOT_ALLOWED': AuthException.operationNotAllowed(),
+            'USER_CANCELLED': AuthException.userCancelled(),
+          });
+        });
+      });
     });
   });
 }

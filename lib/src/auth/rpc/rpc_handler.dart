@@ -252,6 +252,21 @@ class RpcHandler {
       ..requestUri = requestUri);
   }
 
+  /// Requests verifyAssertion endpoint for an existing federated account
+  Future<VerifyAssertionResponse> verifyAssertionForExisting(
+      {String sessionId,
+      String requestUri,
+      String postBody,
+      String pendingToken}) async {
+    return _verifyAssertion(IdentitytoolkitRelyingpartyVerifyAssertionRequest()
+      ..returnIdpCredential = true
+      ..autoCreate = false
+      ..postBody = postBody
+      ..pendingIdToken = pendingToken
+      ..requestUri = requestUri
+      ..sessionId = sessionId);
+  }
+
   Future<VerifyAssertionResponse> _verifyAssertion(
       IdentitytoolkitRelyingpartyVerifyAssertionRequest request) async {
     // Force Auth credential to be returned on the following errors:
@@ -261,7 +276,9 @@ class RpcHandler {
     var response = await relyingparty.verifyAssertion(request
       ..returnIdpCredential = true
       ..returnSecureToken = true);
-    print(response.toJson());
+    if (response.errorMessage == 'USER_NOT_FOUND') {
+      throw AuthException.userDeleted();
+    }
     response = _processVerifyAssertionResponse(request, response);
     _validateVerifyAssertionResponse(response);
     return response;
