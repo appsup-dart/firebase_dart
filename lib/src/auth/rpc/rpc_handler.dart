@@ -234,6 +234,24 @@ class RpcHandler {
       ..pendingIdToken = pendingIdToken);
   }
 
+  /// Requests verifyAssertion endpoint for federated account linking
+  Future<VerifyAssertionResponse> verifyAssertionForLinking(
+      {String idToken,
+      String sessionId,
+      String requestUri,
+      String postBody,
+      String pendingToken}) async {
+    if (idToken == null) {
+      throw AuthException.internalError();
+    }
+    return _verifyAssertion(IdentitytoolkitRelyingpartyVerifyAssertionRequest()
+      ..postBody = postBody
+      ..pendingIdToken = pendingToken
+      ..idToken = idToken
+      ..sessionId = sessionId
+      ..requestUri = requestUri);
+  }
+
   Future<VerifyAssertionResponse> _verifyAssertion(
       IdentitytoolkitRelyingpartyVerifyAssertionRequest request) async {
     // Force Auth credential to be returned on the following errors:

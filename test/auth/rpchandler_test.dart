@@ -1595,6 +1595,197 @@ void main() {
           });
         });
       });
+
+      group('verifyAssertionForLinking', () {
+        var tester = Tester(
+          path: 'verifyAssertion',
+          expectedBody: {
+            'idToken': 'existingIdToken',
+            'sessionId': 'SESSION_ID',
+            'requestUri': 'http://localhost/callback#oauthResponse',
+            'returnIdpCredential': true,
+            'returnSecureToken': true
+          },
+          action: () => rpcHandler.verifyAssertionForLinking(
+              idToken: 'existingIdToken',
+              sessionId: 'SESSION_ID',
+              requestUri: 'http://localhost/callback#oauthResponse'),
+        );
+        test('verifyAssertionForLinking: success', () async {
+          await tester.shouldSucceed(serverResponse: {
+            'idToken': 'ID_TOKEN',
+            'oauthAccessToken': 'ACCESS_TOKEN',
+            'oauthExpireIn': 3600,
+            'oauthAuthorizationCode': 'AUTHORIZATION_CODE'
+          });
+        });
+
+        group('verifyAssertionForLinking: withSessionIdNonce', () {
+          var t = tester.replace(
+              expectedBody: {
+                'idToken': 'existingIdToken',
+                'sessionId': 'NONCE',
+                'requestUri':
+                    'http://localhost/callback#id_token=ID_TOKEN&state=STATE',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              action: () => rpcHandler.verifyAssertionForLinking(
+                  idToken: 'existingIdToken',
+                  sessionId: 'NONCE',
+                  requestUri:
+                      'http://localhost/callback#id_token=ID_TOKEN&state=STATE'));
+          test('verifyAssertionForLinking: withSessionIdNonce: success',
+              () async {
+            await t.shouldSucceed(
+                serverResponse: {
+                  'idToken': 'ID_TOKEN',
+                  'oauthIdToken': 'OIDC_ID_TOKEN',
+                  'oauthExpireIn': 3600,
+                  'providerId': 'oidc.provider'
+                },
+                expectedResult: (_) => {
+                      'idToken': 'ID_TOKEN',
+                      'oauthIdToken': 'OIDC_ID_TOKEN',
+                      'oauthExpireIn': 3600,
+                      'providerId': 'oidc.provider',
+                      'nonce': 'NONCE'
+                    });
+          });
+        });
+
+        group('verifyAssertionForLinking: with post body nonce', () {
+          var t = tester.replace(
+            expectedBody: {
+              'idToken': 'existingIdToken',
+              'postBody':
+                  'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+              'requestUri': 'http://localhost',
+              'returnIdpCredential': true,
+              'returnSecureToken': true
+            },
+            action: () => rpcHandler.verifyAssertionForLinking(
+                idToken: 'existingIdToken',
+                postBody:
+                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                requestUri: 'http://localhost'),
+          );
+          test('verifyAssertionForLinking: with post body nonce: success',
+              () async {
+            await t.shouldSucceed(
+              serverResponse: {
+                'idToken': 'ID_TOKEN',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'oauthExpireIn': 3600,
+                'providerId': 'oidc.provider',
+              },
+              expectedResult: (_) => {
+                'idToken': 'ID_TOKEN',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'oauthExpireIn': 3600,
+                'providerId': 'oidc.provider',
+                'nonce': 'NONCE'
+              },
+            );
+          });
+        });
+
+        group('verifyAssertionForLinking: pending token response', () {
+          var t = tester.replace(
+            expectedBody: {
+              'idToken': 'existingIdToken',
+              'postBody':
+                  'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+              'requestUri': 'http://localhost',
+              'returnIdpCredential': true,
+              'returnSecureToken': true
+            },
+            action: () => rpcHandler.verifyAssertionForLinking(
+                idToken: 'existingIdToken',
+                postBody:
+                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                requestUri: 'http://localhost'),
+          );
+          test('verifyAssertionForLinking: pending token response: success',
+              () async {
+            await t.shouldSucceed(
+              serverResponse: {
+                'idToken': 'ID_TOKEN',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'pendingToken': 'PENDING_TOKEN',
+                'oauthExpireIn': 3600,
+                'providerId': 'oidc.provider'
+              },
+            );
+          });
+        });
+        group('verifyAssertionForLinking: pending token request', () {
+          var t = tester.replace(
+            expectedBody: {
+              'idToken': 'existingIdToken',
+              'pendingIdToken': 'PENDING_TOKEN',
+              'requestUri': 'http://localhost',
+              'returnIdpCredential': true,
+              'returnSecureToken': true
+            },
+            action: () => rpcHandler.verifyAssertionForLinking(
+                idToken: 'existingIdToken',
+                pendingToken: 'PENDING_TOKEN',
+                requestUri: 'http://localhost'),
+          );
+          test('verifyAssertionForLinking: pending token request: success',
+              () async {
+            await t.shouldSucceed(
+              serverResponse: {
+                'idToken': 'ID_TOKEN',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'pendingToken': 'PENDING_TOKEN2',
+                'oauthExpireIn': 3600
+              },
+            );
+          });
+        });
+        group('verifyAssertionForLinking: return idp credential', () {
+          var t = tester.replace(
+            expectedBody: {
+              'idToken': 'ID_TOKEN',
+              'sessionId': 'SESSION_ID',
+              'requestUri': 'http://localhost/callback#oauthResponse',
+              'returnIdpCredential': true,
+              'returnSecureToken': true
+            },
+            action: () => rpcHandler.verifyAssertionForLinking(
+                idToken: 'ID_TOKEN',
+                sessionId: 'SESSION_ID',
+                requestUri: 'http://localhost/callback#oauthResponse'),
+          );
+          test(
+              'verifyAssertionForLinking: return idp credential: no recovery error',
+              () async {
+            await t.shouldFail(
+              serverResponse: {
+                'federatedId': 'FEDERATED_ID',
+                'providerId': 'google.com',
+                'email': 'user@example.com',
+                'emailVerified': true,
+                'oauthAccessToken': 'ACCESS_TOKEN',
+                'oauthExpireIn': 3600,
+                'oauthAuthorizationCode': 'AUTHORIZATION_CODE',
+                'errorMessage': 'USER_DISABLED'
+              },
+              expectedError: AuthException.userDisabled(),
+            );
+          });
+        });
+
+        test('verifyAssertionForLinking: error', () async {
+          expect(
+              () => rpcHandler.verifyAssertionForLinking(
+                  sessionId: 'SESSION_ID',
+                  requestUri: 'http://localhost/callback#oauthResponse'),
+              throwsA(AuthException.internalError()));
+        });
+      });
     });
   });
 }
