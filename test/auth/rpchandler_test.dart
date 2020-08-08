@@ -2114,6 +2114,174 @@ void main() {
           );
         });
       });
+      group('sendPasswordResetEmail', () {
+        var userEmail = 'user@example.com';
+        var tester = Tester(
+            path: 'getOobConfirmationCode',
+            expectedBody: {
+              'requestType': 'PASSWORD_RESET',
+              'email': userEmail,
+              'continueUrl': 'https://www.example.com/?state=abc',
+              'iOSBundleId': 'com.example.ios',
+              'androidPackageName': 'com.example.android',
+              'androidInstallApp': true,
+              'androidMinimumVersion': '12',
+              'canHandleCodeInApp': true,
+              'dynamicLinkDomain': 'example.page.link'
+            },
+            expectedResult: (_) => userEmail,
+            action: () => rpcHandler.sendPasswordResetEmail(
+                email: 'user@example.com',
+                continueUrl: 'https://www.example.com/?state=abc',
+                iOSBundleId: 'com.example.ios',
+                androidPackageName: 'com.example.android',
+                androidInstallApp: true,
+                androidMinimumVersion: '12',
+                canHandleCodeInApp: true,
+                dynamicLinkDomain: 'example.page.link'));
+
+        test('sendPasswordResetEmail: success: action code settings', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'email': userEmail},
+          );
+        });
+
+        group('sendPasswordResetEmail: no action code settings', () {
+          var t = tester.replace(
+              expectedBody: {
+                'requestType': 'PASSWORD_RESET',
+                'email': userEmail
+              },
+              action: () =>
+                  rpcHandler.sendPasswordResetEmail(email: 'user@example.com'));
+          test('sendPasswordResetEmail: success: no action code settings',
+              () async {
+            await t.shouldSucceed(
+              serverResponse: {'email': userEmail},
+            );
+          });
+
+          test('sendPasswordResetEmail: success: custom locale: no action code',
+              () async {
+            rpcHandler.updateCustomLocaleHeader('es');
+
+            await tester.shouldSucceed(
+              serverResponse: {'email': userEmail},
+              expectedHeaders: {
+                'Content-Type': 'application/json',
+                'X-Firebase-Locale': 'es'
+              },
+            );
+          });
+        });
+        test('sendPasswordResetEmail: invalid email error', () async {
+          // Test when invalid email is passed in getOobCode request.
+
+          expect(() => rpcHandler.sendPasswordResetEmail(email: 'user.invalid'),
+              throwsA(AuthException.invalidEmail()));
+        });
+        test('sendPasswordResetEmail: unknown server response', () async {
+          await tester.shouldFail(
+            serverResponse: {},
+            expectedError: AuthException.internalError(),
+          );
+        });
+        test('sendPasswordResetEmail: caught server error', () async {
+          await tester.shouldFailWithServerErrors(errorMap: {
+            'EMAIL_NOT_FOUND': AuthException.userDeleted(),
+            'RESET_PASSWORD_EXCEED_LIMIT':
+                AuthException.tooManyAttemptsTryLater(),
+            'INVALID_RECIPIENT_EMAIL': AuthException.invalidRecipientEmail(),
+            'INVALID_SENDER': AuthException.invalidSender(),
+            'INVALID_MESSAGE_PAYLOAD': AuthException.invalidMessagePayload(),
+            'INVALID_CONTINUE_URI': AuthException.invalidContinueUri(),
+            'MISSING_ANDROID_PACKAGE_NAME':
+                AuthException.missingAndroidPackageName(),
+            'MISSING_IOS_BUNDLE_ID': AuthException.missingIosBundleId(),
+            'UNAUTHORIZED_DOMAIN': AuthException.unauthorizedDomain(),
+            'INVALID_DYNAMIC_LINK_DOMAIN':
+                AuthException.invalidDynamicLinkDomain(),
+          });
+        });
+      });
+      group('sendEmailVerification', () {
+        var idToken = 'ID_TOKEN';
+        var userEmail = 'user@example.com';
+        var tester = Tester(
+          path: 'getOobConfirmationCode',
+          expectedBody: {
+            'requestType': 'VERIFY_EMAIL',
+            'idToken': idToken,
+            'continueUrl': 'https://www.example.com/?state=abc',
+            'iOSBundleId': 'com.example.ios',
+            'androidPackageName': 'com.example.android',
+            'androidInstallApp': true,
+            'androidMinimumVersion': '12',
+            'canHandleCodeInApp': true,
+            'dynamicLinkDomain': 'example.page.link'
+          },
+          expectedResult: (_) => userEmail,
+          action: () => rpcHandler.sendEmailVerification(
+              idToken: idToken,
+              continueUrl: 'https://www.example.com/?state=abc',
+              iOSBundleId: 'com.example.ios',
+              androidPackageName: 'com.example.android',
+              androidInstallApp: true,
+              androidMinimumVersion: '12',
+              canHandleCodeInApp: true,
+              dynamicLinkDomain: 'example.page.link'),
+        );
+        test('sendEmailVerification: success: action code settings', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'email': userEmail},
+          );
+        });
+
+        group('sendEmailVerification: no action code settings', () {
+          var t = tester.replace(
+            expectedBody: {'requestType': 'VERIFY_EMAIL', 'idToken': idToken},
+            action: () => rpcHandler.sendEmailVerification(idToken: idToken),
+          );
+          test('sendEmailVerification: success: no action code settings',
+              () async {
+            await t.shouldSucceed(
+              serverResponse: {'email': userEmail},
+            );
+          });
+          test(
+              'sendEmailVerification: success: custom locale: no action code settings',
+              () async {
+            rpcHandler.updateCustomLocaleHeader('ar');
+            await t.shouldSucceed(
+              serverResponse: {'email': userEmail},
+              expectedHeaders: {
+                'Content-Type': 'application/json',
+                'X-Firebase-Locale': 'ar'
+              },
+            );
+          });
+        });
+        test('sendEmailVerification: unknown server response', () async {
+          await tester.shouldFail(
+            serverResponse: {},
+            expectedError: AuthException.internalError(),
+          );
+        });
+        test('sendEmailVerification: caught server error', () async {
+          await tester.shouldFailWithServerErrors(
+            errorMap: {
+              'EMAIL_NOT_FOUND': AuthException.userDeleted(),
+              'INVALID_CONTINUE_URI': AuthException.invalidContinueUri(),
+              'MISSING_ANDROID_PACKAGE_NAME':
+                  AuthException.missingAndroidPackageName(),
+              'MISSING_IOS_BUNDLE_ID': AuthException.missingIosBundleId(),
+              'UNAUTHORIZED_DOMAIN': AuthException.unauthorizedDomain(),
+              'INVALID_DYNAMIC_LINK_DOMAIN':
+                  AuthException.invalidDynamicLinkDomain(),
+            },
+          );
+        });
+      });
     });
   });
 }

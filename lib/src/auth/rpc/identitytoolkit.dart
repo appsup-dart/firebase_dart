@@ -176,8 +176,10 @@ class Relyingparty extends it.Relyingparty {
   }
 
   @override
-  Map<String, Object> toJson() =>
-      {...super.toJson(), 'dynamicLinkDomain': dynamicLinkDomain};
+  Map<String, Object> toJson() => {
+        ...super.toJson(),
+        if (dynamicLinkDomain != null) 'dynamicLinkDomain': dynamicLinkDomain
+      };
 }
 
 class IdentitytoolkitRelyingpartyEmailLinkSigninRequest

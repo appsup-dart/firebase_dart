@@ -361,6 +361,65 @@ class RpcHandler {
     return response.email;
   }
 
+  /// Requests getOobCode endpoint for password reset.
+  ///
+  /// Returns future that resolves with user's email.
+  Future<String> sendPasswordResetEmail(
+      {String email,
+      String continueUrl,
+      String iOSBundleId,
+      String androidPackageName,
+      bool androidInstallApp,
+      String androidMinimumVersion,
+      bool canHandleCodeInApp,
+      String dynamicLinkDomain}) async {
+    _validateEmail(email);
+    var response = await relyingparty.getOobConfirmationCode(Relyingparty()
+      ..requestType = 'PASSWORD_RESET'
+      ..email = email
+      ..continueUrl = continueUrl
+      ..iOSBundleId = iOSBundleId
+      ..androidPackageName = androidPackageName
+      ..androidInstallApp = androidInstallApp
+      ..androidMinimumVersion = androidMinimumVersion
+      ..canHandleCodeInApp = canHandleCodeInApp
+      ..dynamicLinkDomain = dynamicLinkDomain);
+
+    if (response.email == null) {
+      throw AuthException.internalError();
+    }
+    return response.email;
+  }
+
+  /// Requests getOobCode endpoint for email verification.
+  ///
+  /// Returns future that resolves with user's email.
+  Future<String> sendEmailVerification(
+      {String idToken,
+      String continueUrl,
+      String iOSBundleId,
+      String androidPackageName,
+      bool androidInstallApp,
+      String androidMinimumVersion,
+      bool canHandleCodeInApp,
+      String dynamicLinkDomain}) async {
+    var response = await relyingparty.getOobConfirmationCode(Relyingparty()
+      ..requestType = 'VERIFY_EMAIL'
+      ..idToken = idToken
+      ..continueUrl = continueUrl
+      ..iOSBundleId = iOSBundleId
+      ..androidPackageName = androidPackageName
+      ..androidInstallApp = androidInstallApp
+      ..androidMinimumVersion = androidMinimumVersion
+      ..canHandleCodeInApp = canHandleCodeInApp
+      ..dynamicLinkDomain = dynamicLinkDomain);
+
+    if (response.email == null) {
+      throw AuthException.internalError();
+    }
+    return response.email;
+  }
+
   /// Updates the custom locale header.
   void updateCustomLocaleHeader(String languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);
