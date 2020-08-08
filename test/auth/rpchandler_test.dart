@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:firebase_dart/src/auth/auth_providers.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:test/test.dart';
 
@@ -1180,13 +1181,12 @@ void main() {
         });
 
         group('verifyAssertion: need confirmation error', () {
-/*
           test(
               'verifyAssertion: need confirmation error: oauth response and email',
               () {
             // Test Auth linking error when need confirmation flag is returned.
-            var credential = GoogleAuthProvider()
-                .credential(accessToken: 'googleAccessToken');
+            var credential = GoogleAuthProvider.getCredential(
+                accessToken: 'googleAccessToken');
 
             tester.shouldFail(
               expectedBody: {
@@ -1204,7 +1204,7 @@ void main() {
                 'oauthAccessToken': 'googleAccessToken',
                 'providerId': 'google.com'
               },
-              expectedError: AuthError.needConfirmation()
+              expectedError: AuthException.needConfirmation()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody:
@@ -1212,13 +1212,11 @@ void main() {
                   requestUri: 'http://localhost'),
             );
           });
-*/
-/*
           test('verifyAssertion: need confirmation error: nonce id token',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider(providerId: 'oidc.provider')
+                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
 
             await tester.shouldFail(
               expectedBody: {
@@ -1234,7 +1232,7 @@ void main() {
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'providerId': 'oidc.provider'
               },
-              expectedError: AuthError.needConfirmation()
+              expectedError: AuthException.needConfirmation()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody:
@@ -1242,14 +1240,12 @@ void main() {
                   requestUri: 'http://localhost'),
             );
           });
-*/
 
-/*
           test('verifyAssertion: need confirmation error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider(providerId: 'oidc.provider')
+                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
 
             await tester.shouldFail(
               expectedBody: {
@@ -1265,7 +1261,7 @@ void main() {
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'providerId': 'oidc.provider'
               },
-              expectedError: AuthError.needConfirmation()
+              expectedError: AuthException.needConfirmation()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
@@ -1277,10 +1273,9 @@ void main() {
               () async {
             // Expected error thrown with OIDC credential containing pending token and
             // no nonce.
-            var credential = OAuthCredential(
-                'oidc.provider',
-                {'pendingToken': 'PENDING_TOKEN', 'idToken': 'OIDC_ID_TOKEN'},
-                'oidc.provider');
+            var credential = OAuthProvider(providerId: 'oidc.provider')
+                .getCredential(
+                    idToken: 'OIDC_ID_TOKEN', pendingToken: 'PENDING_TOKEN');
 
             await tester.shouldFail(
                 expectedBody: {
@@ -1297,14 +1292,13 @@ void main() {
                   'providerId': 'oidc.provider',
                   'pendingToken': 'PENDING_TOKEN'
                 },
-                expectedError: AuthError.needConfirmation()
+                expectedError: AuthException.needConfirmation()
                     .replace(email: 'user@example.com', credential: credential),
                 action: () => rpcHandler.verifyAssertion(
                     postBody:
                         'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost'));
           });
-*/
 
           test('verifyAssertion: need confirmation error: pending token',
               () async {
@@ -1358,14 +1352,13 @@ void main() {
         });
 
         group('verifyAssertion: credentials already in use error', () {
-/*
           test(
               'verifyAssertion: credentials already in use error: oauth response and email',
               () async {
             // Test Auth linking error when FEDERATED_USER_ID_ALREADY_LINKED errorMessage
             // is returned.
-            var credential = GoogleAuthProvider()
-                .credential(accessToken: 'googleAccessToken');
+            var credential = GoogleAuthProvider.getCredential(
+                accessToken: 'googleAccessToken');
             await tester.shouldFail(
                 expectedBody: {
                   'postBody':
@@ -1383,21 +1376,19 @@ void main() {
                   'oauthExpireIn': 5183999,
                   'providerId': 'google.com'
                 },
-                expectedError: AuthError.credentialAlreadyInUse()
+                expectedError: AuthException.credentialAlreadyInUse()
                     .replace(email: 'user@example.com', credential: credential),
                 action: () => rpcHandler.verifyAssertion(
                     postBody:
                         'id_token=googleIdToken&access_token=accessToken&provider_id=google.com',
                     requestUri: 'http://localhost'));
           });
-*/
-/*
           test(
               'verifyAssertion: credentials already in use error: nonce id token',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider(providerId: 'oidc.provider')
+                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
             await tester.shouldFail(
                 expectedBody: {
                   'postBody':
@@ -1414,21 +1405,19 @@ void main() {
                   'oauthIdToken': 'OIDC_ID_TOKEN',
                   'providerId': 'oidc.provider'
                 },
-                expectedError: AuthError.credentialAlreadyInUse()
+                expectedError: AuthException.credentialAlreadyInUse()
                     .replace(email: 'user@example.com', credential: credential),
                 action: () => rpcHandler.verifyAssertion(
                     postBody:
                         'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost'));
           });
-*/
-/*
           test(
               'verifyAssertion: credentials already in use error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider(providerId: 'oidc.provider')
+                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
             await tester.shouldFail(
               expectedBody: {
                 'postBody': 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
@@ -1445,7 +1434,7 @@ void main() {
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'providerId': 'oidc.provider'
               },
-              expectedError: AuthError.credentialAlreadyInUse()
+              expectedError: AuthException.credentialAlreadyInUse()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
@@ -1453,17 +1442,14 @@ void main() {
                   requestUri: 'http://localhost'),
             );
           });
-*/
-/*
           test(
               'verifyAssertion: credentials already in use error: pending token',
               () async {
             // Expected error thrown with OIDC credential containing pending token and no
             // nonce.
-            var credential = OAuthCredential(
-                'oidc.provider',
-                {'pendingToken': 'PENDING_TOKEN', 'idToken': 'OIDC_ID_TOKEN'},
-                'oidc.provider');
+            var credential = OAuthProvider(providerId: 'oidc.provider')
+                .getCredential(
+                    pendingToken: 'PENDING_TOKEN', idToken: 'OIDC_ID_TOKEN');
             await tester.shouldFail(
               expectedBody: {
                 'postBody':
@@ -1481,7 +1467,7 @@ void main() {
                 'providerId': 'oidc.provider',
                 'pendingToken': 'PENDING_TOKEN'
               },
-              expectedError: AuthError.credentialAlreadyInUse()
+              expectedError: AuthException.credentialAlreadyInUse()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody:
@@ -1489,16 +1475,14 @@ void main() {
                   requestUri: 'http://localhost'),
             );
           });
-*/
         });
 
         group('verifyAssertion: email exists error', () {
-/*
           test('verifyAssertion: email exists error: oauth response and email',
               () async {
             // Test Auth linking error when EMAIL_EXISTS errorMessage is returned.
-            var credential = FacebookAuthProvider()
-                .credential(accessToken: 'facebookAccessToken');
+            var credential = FacebookAuthProvider.getCredential(
+                accessToken: 'facebookAccessToken');
             await tester.shouldFail(
               expectedBody: {
                 'postBody': 'access_token=accessToken&provider_id=facebook.com',
@@ -1514,21 +1498,18 @@ void main() {
                 'oauthExpireIn': 5183999,
                 'providerId': 'facebook.com'
               },
-              expectedError: AuthError.emailExists()
+              expectedError: AuthException.emailExists()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody: 'access_token=accessToken&provider_id=facebook.com',
                   requestUri: 'http://localhost'),
             );
           });
-*/
-/*
           test('verifyAssertion: email exists error: nonce id token', () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider(providerId: 'oidc.provider')
+                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
             await tester.shouldFail(
-                url: '$identityToolkitBaseUrl/verifyAssertion?key=apiKey',
                 expectedBody: {
                   'postBody':
                       'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
@@ -1544,20 +1525,18 @@ void main() {
                   'oauthIdToken': 'OIDC_ID_TOKEN',
                   'providerId': 'oidc.provider'
                 },
-                expectedError: AuthError.emailExists()
+                expectedError: AuthException.emailExists()
                     .replace(email: 'user@example.com', credential: credential),
                 action: () => rpcHandler.verifyAssertion(
                     postBody:
                         'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost'));
           });
-*/
-/*
           test('verifyAssertion: email exists error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider(providerId: 'oidc.provider')
+                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
             await tester.shouldFail(
               expectedBody: {
                 'postBody': 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
@@ -1574,7 +1553,7 @@ void main() {
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'providerId': 'oidc.provider'
               },
-              expectedError: AuthError.emailExists()
+              expectedError: AuthException.emailExists()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
@@ -1582,15 +1561,12 @@ void main() {
                   requestUri: 'http://localhost'),
             );
           });
-*/
-/*
           test('verifyAssertion: email exists error: pending token', () async {
             // Expected error thrown with OIDC credential containing no nonce since
             // pending token returned from server.
-            var credential = OAuthCredential(
-                'oidc.provider',
-                {'pendingToken': 'PENDING_TOKEN', 'idToken': 'OIDC_ID_TOKEN'},
-                'oidc.provider');
+            var credential = OAuthProvider(providerId: 'oidc.provider')
+                .getCredential(
+                    pendingToken: 'PENDING_TOKEN', idToken: 'OIDC_ID_TOKEN');
             await tester.shouldFail(
               expectedBody: {
                 'postBody':
@@ -1609,7 +1585,7 @@ void main() {
                 'providerId': 'oidc.provider',
                 'pendingToken': 'PENDING_TOKEN'
               },
-              expectedError: AuthError.emailExists()
+              expectedError: AuthException.emailExists()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody:
@@ -1617,7 +1593,6 @@ void main() {
                   requestUri: 'http://localhost'),
             );
           });
-*/
         });
       });
     });

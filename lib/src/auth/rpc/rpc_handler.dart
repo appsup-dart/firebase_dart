@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:firebase_dart/src/auth/auth.dart';
+import 'package:firebase_dart/src/auth/authcredential.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 
 import 'error.dart';
@@ -349,8 +351,87 @@ class RpcHandler {
 //TODO      message: response.message,
       email: response.email,
 //TODO      phoneNumber: response.phoneNumber,
-//TODO      credential: AuthProvider.getCredentialFromResponse(response),
+      credential: _getCredentialFromResponse(response),
     );
+  }
+
+  /// Constructs an Auth credential from a backend response.
+  AuthCredential _getCredentialFromResponse(dynamic response) {
+    // Handle phone Auth credential responses, as they have a different format
+    // from other backend responses (i.e. no providerId).
+    if (response is IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse) {
+      return PhoneAuthCredential.temporaryProof(
+          temporaryProof: response.temporaryProof,
+          phoneNumber: response.phoneNumber);
+    }
+
+    if (response is VerifyAssertionResponse) {
+      // Get all OAuth response parameters from response.
+      var providerId = response.providerId;
+
+      // Email and password is not supported as there is no situation where the
+      // server would return the password to the client.
+      if (providerId == null || providerId == EmailAuthProvider.providerId) {
+        return null;
+      }
+
+      try {
+        switch (providerId) {
+          case GoogleAuthProvider.providerId:
+            return GoogleAuthProvider.getCredential(
+                idToken: response.oauthIdToken,
+                accessToken: response.oauthAccessToken);
+
+          case FacebookAuthProvider.providerId:
+            return FacebookAuthProvider.getCredential(
+                accessToken: response.oauthAccessToken);
+
+          case GithubAuthProvider.providerId:
+            return GithubAuthProvider.getCredential(
+                token: response.oauthAccessToken);
+
+          case TwitterAuthProvider.providerId:
+            return TwitterAuthProvider.getCredential(
+                authToken: response.oauthAccessToken,
+                authTokenSecret: response.oauthTokenSecret);
+
+          default: // TODO: is this still VerifyAssertionResponse?
+            if (response.oauthAccessToken == null &&
+                response.oauthTokenSecret == null &&
+                response.oauthIdToken == null &&
+                response.pendingToken == null) {
+              return null;
+            }
+            if (response.pendingToken != null) {
+              if (SAMLAuthProvider.isSaml(providerId)) {
+                return SAMLAuthCredential(providerId, response.pendingToken);
+              } else {
+                // OIDC and non-default providers excluding Twitter.
+                return OAuthCredential({
+                  'providerId': providerId,
+                  'pendingToken': response.pendingToken,
+                  'idToken': response.oauthIdToken,
+                  'accessToken': response.oauthAccessToken
+                });
+              }
+            }
+            return OAuthProvider(providerId: providerId).getCredential(
+                idToken: response.oauthIdToken,
+                accessToken: response.oauthAccessToken,
+                rawNonce: response.nonce);
+        }
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Note this is not actually returned by the backend. It is introduced in
+    // rpcHandler.
+    var rawNonce = response && response['nonce'];
+    // Google Id Token returned when no additional scopes provided.
+    var idToken = response && response['oauthIdToken'];
+    // Pending token for SAML and OAuth/OIDC providers.
+    var pendingToken = response && response['pendingToken'];
   }
 
   /// Returns the developer facing error corresponding to the server code provided

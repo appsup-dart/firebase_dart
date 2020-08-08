@@ -11,6 +11,8 @@ import 'user.dart';
 export 'user.dart';
 import 'package:meta/meta.dart';
 
+export 'auth_providers.dart';
+
 /// The entry point of the Firebase Authentication SDK.
 /// The entry point of the Firebase Authentication SDK.
 abstract class FirebaseAuth {
