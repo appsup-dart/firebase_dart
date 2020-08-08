@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_dart/src/auth/error.dart';
 
 final _serverErrors = {
@@ -136,4 +138,56 @@ Map<String, dynamic> errorToServerResponse(AuthException error) {
   return {
     'error': {'code': 400, 'message': '$code: ${error.message}'}
   };
+}
+
+AuthException authErrorFromResponse(Map<String, dynamic> data,
+    [AuthException Function(String) errorMapper]) {
+  var error = data['error'] is Map && data['error']['errors'] is List
+      ? data['error']['errors'][0]
+      : {};
+  var reason = error['reason'] ?? '';
+
+  switch (reason) {
+    case 'keyInvalid':
+      return AuthException.invalidApiKey();
+    case 'ipRefererBlocked':
+      return AuthException.appNotAuthorized();
+  }
+  var errorCode = data['error'] is Map
+      ? data['error']['message']
+      : data['error'] is String ? data['error'] : null;
+
+  if (errorCode == null) {
+    throw AuthException.internalError().replace(
+      message: 'An internal error occurred while attempting to extract the '
+          'errorcode from the error.',
+    );
+  }
+
+  var errorMessage;
+
+// Get detailed message if available.
+  var match = RegExp(r'^[^\s]+\s*:\s*(.*)$').firstMatch(errorCode);
+  if (match != null) {
+    errorCode = match.group(1);
+    errorMessage = match.group(2);
+  }
+
+  if (errorMapper != null) {
+    var e = errorMapper(errorCode);
+    if (e != null) throw e;
+  }
+
+  var e = authErrorFromServerErrorCode(errorCode);
+  if (e != null) throw e.replace(message: errorMessage);
+
+// No error message found, return the serialized response as the message.
+// This is likely to be an Apiary error for unexpected cases like keyExpired,
+// etc.
+  if (errorMessage == null && data != null) {
+    errorMessage = json.encode(data);
+  }
+// The backend returned some error we don't recognize; this is an error on
+// our side.
+  return AuthException.internalError().replace(message: errorMessage);
 }

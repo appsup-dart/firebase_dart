@@ -219,6 +219,34 @@ class RpcHandler {
     );
   }
 
+  /// Requests verifyAssertion endpoint
+  Future<VerifyAssertionResponse> verifyAssertion(
+      {String sessionId,
+      String requestUri,
+      String postBody,
+      String pendingIdToken}) async {
+    return _verifyAssertion(IdentitytoolkitRelyingpartyVerifyAssertionRequest()
+      ..postBody = postBody
+      ..sessionId = sessionId
+      ..requestUri = requestUri
+      ..pendingIdToken = pendingIdToken);
+  }
+
+  Future<VerifyAssertionResponse> _verifyAssertion(
+      IdentitytoolkitRelyingpartyVerifyAssertionRequest request) async {
+    // Force Auth credential to be returned on the following errors:
+    // FEDERATED_USER_ID_ALREADY_LINKED
+    // EMAIL_EXISTS
+    _validateVerifyAssertionRequest(request);
+    var response = await relyingparty.verifyAssertion(request
+      ..returnIdpCredential = true
+      ..returnSecureToken = true);
+    print(response.toJson());
+    response = _processVerifyAssertionResponse(request, response);
+    _validateVerifyAssertionResponse(response);
+    return response;
+  }
+
   static String _toQueryString(Map<String, String> queryParameters) =>
       Uri(queryParameters: queryParameters).query;
 
@@ -264,6 +292,125 @@ class RpcHandler {
         idToken: response.idToken,
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn);
+  }
+
+  AuthException _errorFromVerifyAssertionResponse(
+      VerifyAssertionResponse response) {
+    if (response.needConfirmation ?? false) {
+      // Account linking required, previously logged in to another account
+      // with same email. User must authenticate they are owners of the
+      // first account.
+      // If enough info for Auth linking error, throw an instance of Auth linking
+      // error. This will be used by developer after reauthenticating with email
+      // provided by error to link using the credentials in Auth linking error.
+      // If missing information, return regular Auth error.
+      return AuthException.needConfirmation();
+    } else {
+      switch (response.errorMessage) {
+        case 'FEDERATED_USER_ID_ALREADY_LINKED':
+          // When FEDERATED_USER_ID_ALREADY_LINKED returned in error message, auth
+          // credential and email will also be returned, throw relevant error in that
+          // case.
+          // In this case the developer needs to signInWithCredential to the returned
+          // credentials.
+          return AuthException.credentialAlreadyInUse();
+        case 'EMAIL_EXISTS':
+          // When EMAIL_EXISTS returned in error message, Auth credential and email
+          // will also be returned, throw relevant error in that case.
+          // In this case, the developers needs to sign in the user to the original
+          // owner of the account and then link to the returned credential here.
+          return AuthException.emailExists();
+      }
+      if (response.errorMessage != null) {
+        // Construct developer facing error message from server code in errorMessage
+        // field.
+        return _getDeveloperErrorFromCode(response.errorMessage);
+      }
+    }
+    // If no error found and ID token is missing, throw an internal error.
+    if (response.idToken == null) {
+      return AuthException.internalError();
+    }
+    return null;
+  }
+
+  /// Validates a response from verifyAssertion.
+  void _validateVerifyAssertionResponse(VerifyAssertionResponse response) {
+    var error = _errorInfoFromResponse(
+        _errorFromVerifyAssertionResponse(response), response);
+    if (error != null) {
+      throw error;
+    }
+  }
+
+  AuthException _errorInfoFromResponse(
+      AuthException error, VerifyAssertionResponse response) {
+    return error?.replace(
+//TODO      message: response.message,
+      email: response.email,
+//TODO      phoneNumber: response.phoneNumber,
+//TODO      credential: AuthProvider.getCredentialFromResponse(response),
+    );
+  }
+
+  /// Returns the developer facing error corresponding to the server code provided
+  AuthException _getDeveloperErrorFromCode(String serverErrorCode) {
+    // Encapsulate the server error code in a typical server error response with
+    // the code populated within. This will convert the response to a developer
+    // facing one.
+    return authErrorFromResponse({
+      'error': {
+        'errors': [
+          {'message': serverErrorCode}
+        ],
+        'code': 400,
+        'message': serverErrorCode
+      }
+    });
+  }
+
+  /// Processes the verifyAssertion response and injects the same raw nonce
+  /// if available in request.
+  VerifyAssertionResponse _processVerifyAssertionResponse(
+      IdentitytoolkitRelyingpartyVerifyAssertionRequest request,
+      VerifyAssertionResponse response) {
+    // This makes it possible for OIDC providers to:
+    // 1. Initialize an OIDC Auth credential on successful response.
+    // 2. Initialize an OIDC Auth credential within the recovery error.
+
+    // When request has sessionId and response has OIDC ID token and no pending
+    // token, a credential with raw nonce and OIDC ID token needs to be returned.
+    if (response.oauthIdToken != null &&
+        response.providerId != null &&
+        response.providerId.startsWith('oidc.') &&
+        // Use pendingToken instead of idToken and rawNonce when available.
+        response.pendingToken == null) {
+      if (request.sessionId != null) {
+        // For full OAuth flow, the nonce is in the session ID.
+        response.nonce = request.sessionId;
+      } else if (request.postBody != null) {
+        // For credential flow, the nonce is in the postBody nonce field.
+        var queryData = Uri(query: request.postBody).queryParameters;
+        if (queryData.containsKey('nonce')) {
+          response.nonce = queryData['nonce'];
+        }
+      }
+    }
+
+    return response;
+  }
+
+  /// Validates a verifyAssertion request.
+  void _validateVerifyAssertionRequest(
+      IdentitytoolkitRelyingpartyVerifyAssertionRequest request) {
+    // Either (requestUri and sessionId), (requestUri and postBody) or
+    // (requestUri and pendingToken) are required.
+    if (request.requestUri == null ||
+        (request.sessionId == null &&
+            request.postBody == null &&
+            request.pendingIdToken == null)) {
+      throw AuthException.internalError();
+    }
   }
 
   /// Validates an email

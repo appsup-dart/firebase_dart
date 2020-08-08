@@ -132,6 +132,40 @@ class SignupNewUserResponse extends it.SignupNewUserResponse
   Map<String, Object> toJson() => _write(super.toJson());
 }
 
+class VerifyAssertionResponse extends it.VerifyAssertionResponse
+    with _JsonSerializable, IdTokenResponse {
+  String _pendingToken;
+
+  String nonce;
+
+  String get pendingToken => _pendingToken;
+
+  VerifyAssertionResponse();
+
+  VerifyAssertionResponse.fromJson(Map _json) : super.fromJson(_json) {
+    _read(_json);
+  }
+
+  @override
+  void _read(Map<String, dynamic> _json) {
+    super._read(_json);
+    _pendingToken = _json['pendingToken'];
+    nonce = _json['nonce'];
+  }
+
+  @override
+  Map<String, dynamic> _write(Map<String, dynamic> _json) {
+    return {
+      ...super._write(_json),
+      if (pendingToken != null) 'pendingToken': pendingToken,
+      if (nonce != null) 'nonce': nonce
+    };
+  }
+
+  @override
+  Map<String, Object> toJson() => _write(super.toJson());
+}
+
 class IdentitytoolkitRelyingpartyEmailLinkSigninRequest
     extends it.IdentitytoolkitRelyingpartyEmailLinkSigninRequest
     with _JsonSerializable, _ReturnSecureTokenProperty, _TenantIdProperty {
@@ -299,6 +333,14 @@ class RelyingpartyResourceApi extends it.RelyingpartyResourceApi {
       {String $fields}) async {
     return SignupNewUserResponse.fromJson(
         await _do('signupNewUser', request, $fields: $fields));
+  }
+
+  @override
+  Future<VerifyAssertionResponse> verifyAssertion(
+      it.IdentitytoolkitRelyingpartyVerifyAssertionRequest request,
+      {String $fields}) async {
+    return VerifyAssertionResponse.fromJson(
+        await _do('verifyAssertion', request, $fields: $fields));
   }
 
   Future<dynamic> _do(String url, dynamic request, {String $fields}) {

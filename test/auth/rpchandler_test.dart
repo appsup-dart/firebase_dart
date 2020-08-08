@@ -971,6 +971,655 @@ void main() {
           );
         });
       });
+      group('verifyAssertion', () {
+        var tester = Tester(
+          path: 'verifyAssertion',
+          expectedBody: {
+            'sessionId': 'SESSION_ID',
+            'requestUri': 'http://localhost/callback#oauthResponse',
+            'returnIdpCredential': true,
+            'returnSecureToken': true
+          },
+          action: () => rpcHandler.verifyAssertion(
+              sessionId: 'SESSION_ID',
+              requestUri: 'http://localhost/callback#oauthResponse'),
+        );
+        test('verifyAssertion: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'idToken': 'ID_TOKEN',
+              'oauthAccessToken': 'ACCESS_TOKEN',
+              'oauthExpireIn': 3600,
+              'oauthAuthorizationCode': 'AUTHORIZATION_CODE'
+            },
+          );
+        });
+        test('verifyAssertion: with session id nonce: success', () async {
+          await tester.shouldSucceed(
+            expectedBody: {
+              'sessionId': 'NONCE',
+              'requestUri':
+                  'http://localhost/callback#id_token=ID_TOKEN&state=STATE',
+              'returnIdpCredential': true,
+              'returnSecureToken': true
+            },
+            serverResponse: {
+              'idToken': 'ID_TOKEN',
+              'oauthIdToken': 'OIDC_ID_TOKEN',
+              'oauthExpireIn': 3600,
+              'providerId': 'oidc.provider'
+            },
+            expectedResult: (_) => {
+              'idToken': 'ID_TOKEN',
+              'oauthIdToken': 'OIDC_ID_TOKEN',
+              'oauthExpireIn': 3600,
+              'providerId': 'oidc.provider',
+              'nonce': 'NONCE'
+            },
+            action: () => rpcHandler.verifyAssertion(
+                sessionId: 'NONCE',
+                requestUri:
+                    'http://localhost/callback#id_token=ID_TOKEN&state=STATE'),
+          );
+        });
+        test('verifyAssertion: with post body nonce: success', () async {
+          await tester.shouldSucceed(
+            expectedBody: {
+              'postBody':
+                  'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+              'requestUri': 'http://localhost',
+              'returnIdpCredential': true,
+              'returnSecureToken': true
+            },
+            serverResponse: {
+              'idToken': 'ID_TOKEN',
+              'oauthIdToken': 'OIDC_ID_TOKEN',
+              'oauthExpireIn': 3600,
+              'providerId': 'oidc.provider',
+            },
+            expectedResult: (_) => {
+              'idToken': 'ID_TOKEN',
+              'oauthIdToken': 'OIDC_ID_TOKEN',
+              'oauthExpireIn': 3600,
+              'providerId': 'oidc.provider',
+              'nonce': 'NONCE'
+            },
+            action: () => rpcHandler.verifyAssertion(
+                postBody:
+                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                requestUri: 'http://localhost'),
+          );
+        });
+        test('verifyAssertion: pending token response: success', () async {
+          // Nonce should not be injected since pending token is present in response.
+          await tester.shouldSucceed(
+            expectedBody: {
+              'postBody':
+                  'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+              'requestUri': 'http://localhost',
+              'returnIdpCredential': true,
+              'returnSecureToken': true
+            },
+            serverResponse: {
+              'idToken': 'ID_TOKEN',
+              'oauthIdToken': 'OIDC_ID_TOKEN',
+              'pendingToken': 'PENDING_TOKEN',
+              'oauthExpireIn': 3600,
+              'providerId': 'oidc.provider'
+            },
+            action: () => rpcHandler.verifyAssertion(
+                postBody:
+                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                requestUri: 'http://localhost'),
+          );
+        });
+        group('verifyAssertion: pending token request', () {
+          test('verifyAssertion: pending token request: success', () async {
+            await tester.shouldSucceed(
+              expectedBody: {
+                'pendingIdToken': 'PENDING_TOKEN',
+                'requestUri': 'http://localhost',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              serverResponse: {
+                'idToken': 'ID_TOKEN',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'pendingToken': 'PENDING_TOKEN2',
+                'oauthExpireIn': 3600,
+              },
+              action: () => rpcHandler.verifyAssertion(
+                  pendingIdToken: 'PENDING_TOKEN',
+                  requestUri: 'http://localhost'),
+            );
+          });
+
+          test('verifyAssertion: pending token request: server caught error',
+              () async {
+            await tester.shouldFailWithServerErrors(
+              expectedBody: {
+                'pendingIdToken': 'PENDING_TOKEN',
+                'requestUri': 'http://localhost',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              action: () => rpcHandler.verifyAssertion(
+                pendingIdToken: 'PENDING_TOKEN',
+                requestUri: 'http://localhost',
+              ),
+              errorMap: {
+                'INVALID_IDP_RESPONSE': AuthException.invalidIdpResponse(),
+                'INVALID_PENDING_TOKEN': AuthException.invalidIdpResponse(),
+              },
+            );
+          });
+        });
+        group('verifyAssertion: return idp credential', () {
+          test('verifyAssertion: return idp credential: no recovery error',
+              () async {
+            // Simulate server response containing unrecoverable errorMessage.
+            await tester.shouldFail(
+              expectedBody: {
+                'sessionId': 'SESSION_ID',
+                'requestUri': 'http://localhost/callback#oauthResponse',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              serverResponse: {
+                'federatedId': 'FEDERATED_ID',
+                'providerId': 'google.com',
+                'email': 'user@example.com',
+                'emailVerified': true,
+                'oauthAccessToken': 'ACCESS_TOKEN',
+                'oauthExpireIn': 3600,
+                'oauthAuthorizationCode': 'AUTHORIZATION_CODE',
+                'errorMessage': 'USER_DISABLED'
+              },
+              expectedError: AuthException.userDisabled(),
+              action: () => rpcHandler.verifyAssertion(
+                  sessionId: 'SESSION_ID',
+                  requestUri: 'http://localhost/callback#oauthResponse'),
+            );
+          });
+        });
+        test('verifyAssertion: error', () async {
+          expect(
+              () => rpcHandler.verifyAssertion(
+                  requestUri: 'http://localhost/callback#oauthResponse'),
+              throwsA(AuthException.internalError()));
+        });
+        test('verifyAssertion: server caught error', () async {
+          await tester.shouldFailWithServerErrors(
+            expectedBody: {
+              'postBody':
+                  'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=invalid',
+              'requestUri': 'http://localhost',
+              'returnIdpCredential': true,
+              'returnSecureToken': true
+            },
+            action: () => rpcHandler.verifyAssertion(
+              postBody:
+                  'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=invalid',
+              requestUri: 'http://localhost',
+            ),
+            errorMap: {
+              'INVALID_IDP_RESPONSE': AuthException.invalidIdpResponse(),
+              'USER_DISABLED': AuthException.userDisabled(),
+              'FEDERATED_USER_ID_ALREADY_LINKED':
+                  AuthException.credentialAlreadyInUse(),
+              'OPERATION_NOT_ALLOWED': AuthException.operationNotAllowed(),
+              'USER_CANCELLED': AuthException.userCancelled(),
+              'MISSING_OR_INVALID_NONCE': AuthException.missingOrInvalidNonce()
+            },
+          );
+        });
+        test('verifyAssertion: invalid request error', () async {
+          // Test when request is invalid.
+          expect(() => rpcHandler.verifyAssertion(postBody: '....'),
+              throwsA(AuthException.internalError()));
+        });
+
+        group('verifyAssertion: need confirmation error', () {
+/*
+          test(
+              'verifyAssertion: need confirmation error: oauth response and email',
+              () {
+            // Test Auth linking error when need confirmation flag is returned.
+            var credential = GoogleAuthProvider()
+                .credential(accessToken: 'googleAccessToken');
+
+            tester.shouldFail(
+              expectedBody: {
+                'postBody':
+                    'id_token=googleIdToken&access_token=accessToken&provide'
+                        'r_id=google.com',
+                'requestUri': 'http://localhost',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              serverResponse: {
+                'needConfirmation': true,
+                'idToken': 'PENDING_TOKEN',
+                'email': 'user@example.com',
+                'oauthAccessToken': 'googleAccessToken',
+                'providerId': 'google.com'
+              },
+              expectedError: AuthError.needConfirmation()
+                  .replace(email: 'user@example.com', credential: credential),
+              action: () => rpcHandler.verifyAssertion(
+                  postBody:
+                      'id_token=googleIdToken&access_token=accessToken&provider_id=google.com',
+                  requestUri: 'http://localhost'),
+            );
+          });
+*/
+/*
+          test('verifyAssertion: need confirmation error: nonce id token',
+              () async {
+            // Expected error thrown with OIDC credential containing nonce.
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+
+            await tester.shouldFail(
+              expectedBody: {
+                'postBody':
+                    'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
+                'requestUri': 'http://localhost',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              serverResponse: {
+                'needConfirmation': true,
+                'email': 'user@example.com',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'providerId': 'oidc.provider'
+              },
+              expectedError: AuthError.needConfirmation()
+                  .replace(email: 'user@example.com', credential: credential),
+              action: () => rpcHandler.verifyAssertion(
+                  postBody:
+                      'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
+                  requestUri: 'http://localhost'),
+            );
+          });
+*/
+
+/*
+          test('verifyAssertion: need confirmation error: id token session id',
+              () async {
+            // Expected error thrown with OIDC credential containing nonce.
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+
+            await tester.shouldFail(
+              expectedBody: {
+                'postBody': 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
+                'sessionId': 'NONCE',
+                'requestUri': 'http://localhost',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              serverResponse: {
+                'needConfirmation': true,
+                'email': 'user@example.com',
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'providerId': 'oidc.provider'
+              },
+              expectedError: AuthError.needConfirmation()
+                  .replace(email: 'user@example.com', credential: credential),
+              action: () => rpcHandler.verifyAssertion(
+                  postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
+                  sessionId: 'NONCE',
+                  requestUri: 'http://localhost'),
+            );
+          });
+          test('verifyAssertion: need confirmation error: pending token',
+              () async {
+            // Expected error thrown with OIDC credential containing pending token and
+            // no nonce.
+            var credential = OAuthCredential(
+                'oidc.provider',
+                {'pendingToken': 'PENDING_TOKEN', 'idToken': 'OIDC_ID_TOKEN'},
+                'oidc.provider');
+
+            await tester.shouldFail(
+                expectedBody: {
+                  'postBody':
+                      'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
+                  'requestUri': 'http://localhost',
+                  'returnIdpCredential': true,
+                  'returnSecureToken': true
+                },
+                serverResponse: {
+                  'needConfirmation': true,
+                  'email': 'user@example.com',
+                  'oauthIdToken': 'OIDC_ID_TOKEN',
+                  'providerId': 'oidc.provider',
+                  'pendingToken': 'PENDING_TOKEN'
+                },
+                expectedError: AuthError.needConfirmation()
+                    .replace(email: 'user@example.com', credential: credential),
+                action: () => rpcHandler.verifyAssertion(
+                    postBody:
+                        'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
+                    requestUri: 'http://localhost'));
+          });
+*/
+
+          test('verifyAssertion: need confirmation error: pending token',
+              () async {
+            // Test Auth linking error when need confirmation flag is returned.
+
+            await tester.shouldFail(
+                expectedBody: {
+                  'postBody':
+                      'id_token=googleIdToken&access_token=accessToken&provide'
+                          'r_id=google.com',
+                  'requestUri': 'http://localhost',
+                  'returnIdpCredential': true,
+                  'returnSecureToken': true
+                },
+                serverResponse: {
+                  'needConfirmation': true,
+                  'idToken': 'PENDING_TOKEN',
+                  'email': 'user@example.com'
+                },
+                expectedError: AuthException.needConfirmation()
+                    .replace(email: 'user@example.com'),
+                action: () => rpcHandler.verifyAssertion(
+                    postBody:
+                        'id_token=googleIdToken&access_token=accessToken&provider_id'
+                        '=google.com',
+                    requestUri: 'http://localhost'));
+          });
+
+          test('verifyAssertion: need confirmation error: no extra info',
+              () async {
+            // Test Auth error when need confirmation flag is returned but OAuth response
+            // missing.
+            await tester.shouldFail(
+                expectedBody: {
+                  'postBody':
+                      'id_token=googleIdToken&access_token=accessToken&provide'
+                          'r_id=google.com',
+                  'requestUri': 'http://localhost',
+                  'returnIdpCredential': true,
+                  'returnSecureToken': true
+                },
+                serverResponse: {
+                  'needConfirmation': true
+                },
+                expectedError: AuthException.needConfirmation(),
+                action: () => rpcHandler.verifyAssertion(
+                    postBody:
+                        'id_token=googleIdToken&access_token=accessToken&provider_id=google.com',
+                    requestUri: 'http://localhost'));
+          });
+        });
+
+        group('verifyAssertion: credentials already in use error', () {
+/*
+          test(
+              'verifyAssertion: credentials already in use error: oauth response and email',
+              () async {
+            // Test Auth linking error when FEDERATED_USER_ID_ALREADY_LINKED errorMessage
+            // is returned.
+            var credential = GoogleAuthProvider()
+                .credential(accessToken: 'googleAccessToken');
+            await tester.shouldFail(
+                expectedBody: {
+                  'postBody':
+                      'id_token=googleIdToken&access_token=accessToken&provide'
+                          'r_id=google.com',
+                  'requestUri': 'http://localhost',
+                  'returnIdpCredential': true,
+                  'returnSecureToken': true
+                },
+                serverResponse: {
+                  'kind': 'identitytoolkit#VerifyAssertionResponse',
+                  'errorMessage': 'FEDERATED_USER_ID_ALREADY_LINKED',
+                  'email': 'user@example.com',
+                  'oauthAccessToken': 'googleAccessToken',
+                  'oauthExpireIn': 5183999,
+                  'providerId': 'google.com'
+                },
+                expectedError: AuthError.credentialAlreadyInUse()
+                    .replace(email: 'user@example.com', credential: credential),
+                action: () => rpcHandler.verifyAssertion(
+                    postBody:
+                        'id_token=googleIdToken&access_token=accessToken&provider_id=google.com',
+                    requestUri: 'http://localhost'));
+          });
+*/
+/*
+          test(
+              'verifyAssertion: credentials already in use error: nonce id token',
+              () async {
+            // Expected error thrown with OIDC credential containing nonce.
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            await tester.shouldFail(
+                expectedBody: {
+                  'postBody':
+                      'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
+                  'requestUri': 'http://localhost',
+                  'returnIdpCredential': true,
+                  'returnSecureToken': true
+                },
+                serverResponse: {
+                  'kind': 'identitytoolkit#VerifyAssertionResponse',
+                  'errorMessage': 'FEDERATED_USER_ID_ALREADY_LINKED',
+                  'email': 'user@example.com',
+                  'oauthExpireIn': 5183999,
+                  'oauthIdToken': 'OIDC_ID_TOKEN',
+                  'providerId': 'oidc.provider'
+                },
+                expectedError: AuthError.credentialAlreadyInUse()
+                    .replace(email: 'user@example.com', credential: credential),
+                action: () => rpcHandler.verifyAssertion(
+                    postBody:
+                        'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
+                    requestUri: 'http://localhost'));
+          });
+*/
+/*
+          test(
+              'verifyAssertion: credentials already in use error: id token session id',
+              () async {
+            // Expected error thrown with OIDC credential containing nonce.
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            await tester.shouldFail(
+              expectedBody: {
+                'postBody': 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
+                'sessionId': 'NONCE',
+                'requestUri': 'http://localhost',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              serverResponse: {
+                'kind': 'identitytoolkit#VerifyAssertionResponse',
+                'errorMessage': 'FEDERATED_USER_ID_ALREADY_LINKED',
+                'email': 'user@example.com',
+                'oauthExpireIn': 5183999,
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'providerId': 'oidc.provider'
+              },
+              expectedError: AuthError.credentialAlreadyInUse()
+                  .replace(email: 'user@example.com', credential: credential),
+              action: () => rpcHandler.verifyAssertion(
+                  postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
+                  sessionId: 'NONCE',
+                  requestUri: 'http://localhost'),
+            );
+          });
+*/
+/*
+          test(
+              'verifyAssertion: credentials already in use error: pending token',
+              () async {
+            // Expected error thrown with OIDC credential containing pending token and no
+            // nonce.
+            var credential = OAuthCredential(
+                'oidc.provider',
+                {'pendingToken': 'PENDING_TOKEN', 'idToken': 'OIDC_ID_TOKEN'},
+                'oidc.provider');
+            await tester.shouldFail(
+              expectedBody: {
+                'postBody':
+                    'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
+                'requestUri': 'http://localhost',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              serverResponse: {
+                'kind': 'identitytoolkit#VerifyAssertionResponse',
+                'errorMessage': 'FEDERATED_USER_ID_ALREADY_LINKED',
+                'email': 'user@example.com',
+                'oauthExpireIn': 5183999,
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'providerId': 'oidc.provider',
+                'pendingToken': 'PENDING_TOKEN'
+              },
+              expectedError: AuthError.credentialAlreadyInUse()
+                  .replace(email: 'user@example.com', credential: credential),
+              action: () => rpcHandler.verifyAssertion(
+                  postBody:
+                      'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
+                  requestUri: 'http://localhost'),
+            );
+          });
+*/
+        });
+
+        group('verifyAssertion: email exists error', () {
+/*
+          test('verifyAssertion: email exists error: oauth response and email',
+              () async {
+            // Test Auth linking error when EMAIL_EXISTS errorMessage is returned.
+            var credential = FacebookAuthProvider()
+                .credential(accessToken: 'facebookAccessToken');
+            await tester.shouldFail(
+              expectedBody: {
+                'postBody': 'access_token=accessToken&provider_id=facebook.com',
+                'requestUri': 'http://localhost',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              serverResponse: {
+                'kind': 'identitytoolkit#VerifyAssertionResponse',
+                'errorMessage': 'EMAIL_EXISTS',
+                'email': 'user@example.com',
+                'oauthAccessToken': 'facebookAccessToken',
+                'oauthExpireIn': 5183999,
+                'providerId': 'facebook.com'
+              },
+              expectedError: AuthError.emailExists()
+                  .replace(email: 'user@example.com', credential: credential),
+              action: () => rpcHandler.verifyAssertion(
+                  postBody: 'access_token=accessToken&provider_id=facebook.com',
+                  requestUri: 'http://localhost'),
+            );
+          });
+*/
+/*
+          test('verifyAssertion: email exists error: nonce id token', () async {
+            // Expected error thrown with OIDC credential containing nonce.
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            await tester.shouldFail(
+                url: '$identityToolkitBaseUrl/verifyAssertion?key=apiKey',
+                expectedBody: {
+                  'postBody':
+                      'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
+                  'requestUri': 'http://localhost',
+                  'returnIdpCredential': true,
+                  'returnSecureToken': true
+                },
+                serverResponse: {
+                  'kind': 'identitytoolkit#VerifyAssertionResponse',
+                  'errorMessage': 'EMAIL_EXISTS',
+                  'email': 'user@example.com',
+                  'oauthExpireIn': 5183999,
+                  'oauthIdToken': 'OIDC_ID_TOKEN',
+                  'providerId': 'oidc.provider'
+                },
+                expectedError: AuthError.emailExists()
+                    .replace(email: 'user@example.com', credential: credential),
+                action: () => rpcHandler.verifyAssertion(
+                    postBody:
+                        'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
+                    requestUri: 'http://localhost'));
+          });
+*/
+/*
+          test('verifyAssertion: email exists error: id token session id',
+              () async {
+            // Expected error thrown with OIDC credential containing nonce.
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            await tester.shouldFail(
+              expectedBody: {
+                'postBody': 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
+                'sessionId': 'NONCE',
+                'requestUri': 'http://localhost',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              serverResponse: {
+                'kind': 'identitytoolkit#VerifyAssertionResponse',
+                'errorMessage': 'EMAIL_EXISTS',
+                'email': 'user@example.com',
+                'oauthExpireIn': 5183999,
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'providerId': 'oidc.provider'
+              },
+              expectedError: AuthError.emailExists()
+                  .replace(email: 'user@example.com', credential: credential),
+              action: () => rpcHandler.verifyAssertion(
+                  postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
+                  sessionId: 'NONCE',
+                  requestUri: 'http://localhost'),
+            );
+          });
+*/
+/*
+          test('verifyAssertion: email exists error: pending token', () async {
+            // Expected error thrown with OIDC credential containing no nonce since
+            // pending token returned from server.
+            var credential = OAuthCredential(
+                'oidc.provider',
+                {'pendingToken': 'PENDING_TOKEN', 'idToken': 'OIDC_ID_TOKEN'},
+                'oidc.provider');
+            await tester.shouldFail(
+              expectedBody: {
+                'postBody':
+                    'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce='
+                        'NONCE',
+                'requestUri': 'http://localhost',
+                'returnIdpCredential': true,
+                'returnSecureToken': true
+              },
+              serverResponse: {
+                'kind': 'identitytoolkit#VerifyAssertionResponse',
+                'errorMessage': 'EMAIL_EXISTS',
+                'email': 'user@example.com',
+                'oauthExpireIn': 5183999,
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'providerId': 'oidc.provider',
+                'pendingToken': 'PENDING_TOKEN'
+              },
+              expectedError: AuthError.emailExists()
+                  .replace(email: 'user@example.com', credential: credential),
+              action: () => rpcHandler.verifyAssertion(
+                  postBody:
+                      'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
+                  requestUri: 'http://localhost'),
+            );
+          });
+*/
+        });
+      });
     });
   });
 }

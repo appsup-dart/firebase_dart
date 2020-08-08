@@ -1,10 +1,22 @@
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/auth/authcredential.dart';
 
 /// Generic exception related to Firebase Authentication.
 ///
 /// Check the error code and message for more details.
 class AuthException extends FirebaseException {
-  AuthException._({String code, String message})
+  final String email;
+
+  final String phoneNumber;
+
+  final AuthCredential credential;
+
+  AuthException._(
+      {String code,
+      String message,
+      this.email,
+      this.phoneNumber,
+      this.credential})
       : super(plugin: 'auth', code: code, message: message);
 
   AuthException(String code, [String message])
@@ -366,11 +378,31 @@ class AuthException extends FirebaseException {
             'This browser is not supported or 3rd party cookies and data may be '
                 'disabled');
 
-  AuthException replace({
-    String message,
-  }) =>
+  AuthException replace(
+          {String message,
+          String email,
+          String phoneNumber,
+          AuthCredential credential}) =>
       AuthException._(
-        code: code,
-        message: message ?? this.message,
-      );
+          code: code,
+          message: message ?? this.message,
+          email: email ?? this.email,
+          phoneNumber: phoneNumber ?? this.phoneNumber,
+          credential: credential ?? this.credential);
+
+  @override
+  int get hashCode =>
+      super.hashCode +
+      email.hashCode +
+      phoneNumber.hashCode +
+      credential.hashCode;
+
+  @override
+  bool operator ==(other) =>
+      other is AuthException &&
+      other.code == code &&
+      other.message == message &&
+      other.email == email &&
+      other.phoneNumber == phoneNumber &&
+      other.credential == credential;
 }
