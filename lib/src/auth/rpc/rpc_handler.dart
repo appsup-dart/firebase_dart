@@ -513,6 +513,56 @@ class RpcHandler {
     return response;
   }
 
+  /// Requests setAccountInfo endpoint for updateEmail operation.
+  Future<SetAccountInfoResponse> updateEmail(
+      String idToken, String newEmail) async {
+    if (idToken == null) {
+      throw AuthException.internalError();
+    }
+    _validateEmail(newEmail);
+    var response = await relyingparty
+        .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
+          ..idToken = idToken
+          ..email = newEmail
+          ..returnSecureToken = true);
+    return response;
+  }
+
+  /// Requests setAccountInfo endpoint for updatePassword operation.
+  Future<SetAccountInfoResponse> updatePassword(
+      String idToken, String newPassword) async {
+    if (idToken == null) {
+      throw AuthException.internalError();
+    }
+    _validateStrongPassword(newPassword);
+    var response = await relyingparty
+        .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
+          ..idToken = idToken
+          ..password = newPassword
+          ..returnSecureToken = true);
+    _validateIdTokenResponse(response);
+    return response;
+  }
+
+  /// Requests setAccountInfo endpoint to set the email and password. This can be
+  /// used to link an existing account to a email and password account.
+  Future<SetAccountInfoResponse> updateEmailAndPassword(
+      String idToken, String newEmail, String newPassword) async {
+    if (idToken == null) {
+      throw AuthException.internalError();
+    }
+    _validateEmail(newEmail);
+    _validateStrongPassword(newPassword);
+    var response = await relyingparty
+        .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
+          ..idToken = idToken
+          ..email = newEmail
+          ..password = newPassword
+          ..returnSecureToken = true);
+    _validateIdTokenResponse(response);
+    return response;
+  }
+
   /// Updates the custom locale header.
   void updateCustomLocaleHeader(String languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);

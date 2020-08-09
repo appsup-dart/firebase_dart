@@ -2529,6 +2529,93 @@ void main() {
           );
         });
       });
+
+      group('updateEmail', () {
+        var tester = Tester(
+          path: 'setAccountInfo',
+          expectedBody: {
+            'idToken': 'ID_TOKEN',
+            'email': 'newuser@example.com',
+            'returnSecureToken': true
+          },
+          action: () =>
+              rpcHandler.updateEmail('ID_TOKEN', 'newuser@example.com'),
+        );
+        test('updateEmail: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'email': 'newuser@example.com'},
+          );
+        });
+
+        test('updateEmail: custom locale success', () async {
+          rpcHandler.updateCustomLocaleHeader('tr');
+          await tester.shouldSucceed(
+            serverResponse: {'email': 'newuser@example.com'},
+            expectedHeaders: {
+              'Content-Type': 'application/json',
+              'X-Firebase-Locale': 'tr'
+            },
+          );
+        });
+
+        test('updateEmail: invalid email', () async {
+          expect(() => rpcHandler.updateEmail('ID_TOKEN', 'newuser.invalid'),
+              throwsA(AuthException.invalidEmail()));
+        });
+      });
+
+      group('updatePassword', () {
+        var tester = Tester(
+          path: 'setAccountInfo',
+          expectedBody: {
+            'idToken': 'ID_TOKEN',
+            'password': 'newPassword',
+            'returnSecureToken': true
+          },
+          action: () => rpcHandler.updatePassword('ID_TOKEN', 'newPassword'),
+        );
+        test('updatePassword: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'email': 'user@example.com', 'idToken': 'idToken'},
+          );
+        });
+
+        test('updatePassword: no password', () async {
+          expect(() => rpcHandler.updatePassword('ID_TOKEN', ''),
+              throwsA(AuthException.weakPassword()));
+        });
+      });
+
+      group('updateEmailAndPassword', () {
+        var tester = Tester(
+          path: 'setAccountInfo',
+          expectedBody: {
+            'idToken': 'ID_TOKEN',
+            'email': 'me@gmail.com',
+            'password': 'newPassword',
+            'returnSecureToken': true
+          },
+          action: () => rpcHandler.updateEmailAndPassword(
+              'ID_TOKEN', 'me@gmail.com', 'newPassword'),
+        );
+        test('updateEmailAndPassword: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'email': 'user@example.com', 'idToken': 'idToken'},
+          );
+        });
+
+        test('updateEmailAndPassword: no email', () async {
+          expect(
+              rpcHandler.updateEmailAndPassword('ID_TOKEN', '', 'newPassword'),
+              throwsA(AuthException.invalidEmail()));
+        });
+        test('updateEmailAndPassword: no password', () async {
+          expect(
+              () => rpcHandler.updateEmailAndPassword(
+                  'ID_TOKEN', 'me@gmail.com', ''),
+              throwsA(AuthException.weakPassword()));
+        });
+      });
     });
   });
 }
