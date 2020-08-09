@@ -460,6 +460,18 @@ class RpcHandler {
     return response.email;
   }
 
+  /// Updates the providers for the account associated with the idToken.
+  Future<SetAccountInfoResponse> deleteLinkedAccounts(
+      String idToken, List<String> providersToDelete) async {
+    if (providersToDelete == null) {
+      throw AuthException.internalError();
+    }
+    return relyingparty
+        .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
+          ..idToken = idToken
+          ..deleteProvider = providersToDelete);
+  }
+
   /// Updates the custom locale header.
   void updateCustomLocaleHeader(String languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);

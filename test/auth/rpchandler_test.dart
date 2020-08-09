@@ -2416,5 +2416,37 @@ void main() {
         );
       });
     });
+    group('deleteLinkedAccounts', () {
+      var tester = Tester(
+        path: 'setAccountInfo',
+        expectedBody: {
+          'idToken': 'ID_TOKEN',
+          'deleteProvider': ['github.com', 'facebook.com']
+        },
+        action: () => rpcHandler
+            .deleteLinkedAccounts('ID_TOKEN', ['github.com', 'facebook.com']),
+      );
+      test('deleteLinkedAccounts: success', () async {
+        await tester.shouldSucceed(
+          serverResponse: {
+            'email': 'user@example.com',
+            'providerUserInfo': [
+              {'providerId': 'google.com'}
+            ]
+          },
+        );
+      });
+
+      test('deleteLinkedAccounts: invalid request error', () async {
+        expect(() => rpcHandler.deleteLinkedAccounts('ID_TOKEN', null),
+            throwsA(AuthException.internalError()));
+      });
+
+      test('deleteLinkedAccounts: server caught errors', () async {
+        await tester.shouldFailWithServerErrors(
+          errorMap: {'USER_NOT_FOUND': AuthException.tokenExpired()},
+        );
+      });
+    });
   });
 }
