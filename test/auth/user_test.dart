@@ -1,7 +1,10 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
+import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:hive/hive.dart';
 import 'package:test/test.dart';
 
@@ -135,6 +138,92 @@ void main() async {
         expect(user2.email, 'wrong@email.com');
         await user2.sendEmailVerification();
         expect(user2.email, email);
+      });
+    });
+
+    group('unlinkFromProvider', () {
+      var email = 'me@example.com';
+      var password = 'password';
+
+      setUp(() {
+        tester.backend.storeUser(UserInfo()
+          ..email = email
+          ..rawPassword = password
+          ..phoneNumber = '+16505550101'
+          // User on server has two federated providers and one phone provider linked.
+          ..providerUserInfo = [
+            UserInfoProviderUserInfo.fromJson({
+              'providerId': 'providerId1',
+              'displayName': 'user1',
+              'email': 'user1@example.com',
+              'photoUrl': 'https://www.example.com/user1/photo.png',
+              'rawId': 'providerUserId1'
+            }),
+            UserInfoProviderUserInfo.fromJson({
+              'providerId': 'providerId2',
+              'displayName': 'user2',
+              'email': 'user2@example.com',
+              'photoUrl': 'https://www.example.com/user2/photo.png',
+              'rawId': 'providerUserId2'
+            }),
+            UserInfoProviderUserInfo.fromJson({
+              'providerId': 'phone',
+              'rawId': '+16505550101',
+              'phoneNumber': '+16505550101'
+            }),
+          ]);
+      });
+      test('unlinkFromProvider: success', () async {
+        var r = await auth.signInWithEmailAndPassword(
+            email: email, password: password);
+
+        var user = r.user;
+        var providerIds = user.providerData.map((v) => v.providerId).toSet();
+        expect(providerIds, ['providerId1', 'providerId2', 'phone']);
+
+        await user.unlinkFromProvider('providerId2');
+        providerIds = user.providerData.map((v) => v.providerId).toSet();
+        expect(providerIds, ['providerId1', 'phone']);
+      });
+      test('unlinkFromProvider: already deleted', () async {
+        var r = await auth.signInWithEmailAndPassword(
+            email: email, password: password);
+
+        var user = r.user;
+        var providerIds = user.providerData.map((v) => v.providerId).toSet();
+        expect(providerIds, ['providerId1', 'providerId2', 'phone']);
+
+        // User on server has only one federated provider linked despite the local
+        // copy having three.
+        var backendUser = await tester.backend.getUserById(user.uid);
+        backendUser.providerUserInfo
+            .removeWhere((element) => element.providerId != 'providerId1');
+        await tester.backend.storeUser(backendUser);
+
+        expect(() => user.unlinkFromProvider('providerId2'),
+            throwsA(AuthException.noSuchProvider()));
+      });
+      test('unlinkFromProvider: phone', () async {
+        var r = await auth.signInWithEmailAndPassword(
+            email: email, password: password);
+
+        var user = r.user;
+        var providerIds = user.providerData.map((v) => v.providerId).toSet();
+        expect(providerIds, ['providerId1', 'providerId2', 'phone']);
+
+        expect(user.phoneNumber, '+16505550101');
+
+        await user.unlinkFromProvider('phone');
+        providerIds = user.providerData.map((v) => v.providerId).toSet();
+        expect(providerIds, ['providerId1', 'providerId2']);
+
+        expect(user.phoneNumber, isNull);
+
+        await user.reload();
+        providerIds = user.providerData.map((v) => v.providerId).toSet();
+        expect(providerIds, ['providerId1', 'providerId2']);
+
+        expect(user.phoneNumber, isNull);
       });
     });
   });

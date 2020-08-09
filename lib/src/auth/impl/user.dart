@@ -134,6 +134,14 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
             ? null
             : DateTime.fromMillisecondsSinceEpoch(int.parse(user.createdAt)));
     _setAccountInfo(accountInfo);
+
+    _providerData.addAll(user.providerUserInfo.map((v) => UserInfo(
+        providerId: v.providerId,
+        displayName: v.displayName,
+        photoUrl: v.photoUrl,
+        phoneNumber: v.phoneNumber,
+        email: v.email,
+        uid: v.rawId)));
   }
 
   final List<UserInfo> _providerData = [];
@@ -211,9 +219,34 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   }
 
   @override
-  Future<void> unlinkFromProvider(String provider) {
-    // TODO: implement unlinkFromProvider
-    throw UnimplementedError();
+  Future<void> unlinkFromProvider(String provider) async {
+    await _reloadWithoutSaving();
+    // Provider already unlinked.
+    if (providerData.every((element) => element.providerId != provider)) {
+      throw AuthException.noSuchProvider();
+    }
+    // We delete the providerId given.
+    var idToken = await getIdToken();
+    var resp =
+        await _rpcHandler.deleteLinkedAccounts(idToken.token, [provider]);
+
+    // Construct the set of provider IDs returned by server.
+    var userInfo = resp.providerUserInfo ?? [];
+    var remainingProviderIds = userInfo.map((v) => v.providerId).toSet();
+
+    // Remove all provider data objects where the provider ID no
+    // longer exists in this user.
+    for (var d in providerData) {
+      if (remainingProviderIds.contains(d.providerId)) continue;
+      // This provider no longer linked, remove it from user.
+      _providerData.remove(d);
+    }
+
+    // Remove the phone number if the phone provider was unlinked.
+    if (!remainingProviderIds.contains(PhoneAuthProvider.providerId)) {
+      _accountInfo =
+          AccountInfo.fromJson(_accountInfo.toJson()..remove('phoneNumber'));
+    }
   }
 
   @override
@@ -295,9 +328,12 @@ class AccountInfo {
             emailVerified: json['emailVerified'],
             phoneNumber: json['phoneNumber'],
             isAnonymous: json['isAnonymous'],
-            createdAt: DateTime.fromMillisecondsSinceEpoch(json['createdAt']),
-            lastLoginAt:
-                DateTime.fromMillisecondsSinceEpoch(json['lastLoginAt']));
+            createdAt: json['createdAt'] == null
+                ? null
+                : DateTime.fromMillisecondsSinceEpoch(json['createdAt']),
+            lastLoginAt: json['lastLoginAt'] == null
+                ? null
+                : DateTime.fromMillisecondsSinceEpoch(json['lastLoginAt']));
 
   Map<String, dynamic> toJson() => {
         'uid': uid,
@@ -307,8 +343,8 @@ class AccountInfo {
         'emailVerified': emailVerified,
         'phoneNumber': phoneNumber,
         'isAnonymous': isAnonymous,
-        'createdAt': createdAt.millisecondsSinceEpoch,
-        'lastLoginAt': lastLoginAt.millisecondsSinceEpoch,
+        'createdAt': createdAt?.millisecondsSinceEpoch,
+        'lastLoginAt': lastLoginAt?.millisecondsSinceEpoch,
       };
 }
 

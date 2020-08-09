@@ -126,6 +126,28 @@ class BackendConnection {
       ..email = user.email;
   }
 
+  Future<SetAccountInfoResponse> setAccountInfo(
+      IdentitytoolkitRelyingpartySetAccountInfoRequest request) async {
+    var user = await _userFromIdToken(request.idToken);
+    user.providerUserInfo.removeWhere(
+        (element) => request.deleteProvider.contains(element.providerId));
+
+    if (request.deleteProvider.contains('phone')) {
+      user.phoneNumber = null;
+    }
+    await backend.updateUser(user);
+
+    return SetAccountInfoResponse()
+      ..kind = 'identitytoolkit#SetAccountInfoResponse'
+      ..providerUserInfo = [
+        for (var u in user.providerUserInfo)
+          SetAccountInfoResponseProviderUserInfo()
+            ..providerId = u.providerId
+            ..photoUrl = u.photoUrl
+            ..displayName = u.displayName
+      ];
+  }
+
   Future<dynamic> _handle(String method, dynamic body) async {
     switch (method) {
       case 'signupNewUser':
@@ -159,6 +181,10 @@ class BackendConnection {
         var request =
             IdentitytoolkitRelyingpartyResetPasswordRequest.fromJson(body);
         return resetPassword(request);
+      case 'setAccountInfo':
+        var request =
+            IdentitytoolkitRelyingpartySetAccountInfoRequest.fromJson(body);
+        return setAccountInfo(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }
