@@ -436,6 +436,30 @@ class RpcHandler {
     return response.email;
   }
 
+  /// Checks the validity of an email action code and returns the response
+  /// received.
+  Future<ResetPasswordResponse> checkActionCode(String code) async {
+    _validateApplyActionCode(code);
+    var response = await relyingparty.resetPassword(
+        IdentitytoolkitRelyingpartyResetPasswordRequest()..oobCode = code);
+
+    _validateCheckActionCodeResponse(response);
+    return response;
+  }
+
+  /// Applies an out-of-band email action code, such as an email verification
+  /// code.
+  Future<String> applyActionCode(String code) async {
+    _validateApplyActionCode(code);
+    var response = await relyingparty.setAccountInfo(
+        IdentitytoolkitRelyingpartySetAccountInfoRequest()..oobCode = code);
+
+    if (response.email == null) {
+      throw AuthException.internalError();
+    }
+    return response.email;
+  }
+
   /// Updates the custom locale header.
   void updateCustomLocaleHeader(String languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);
@@ -635,6 +659,19 @@ class RpcHandler {
         (request.sessionId == null &&
             request.postBody == null &&
             request.pendingIdToken == null)) {
+      throw AuthException.internalError();
+    }
+  }
+
+  /// Validates that a checkActionCode response contains the email and requestType
+  /// fields.
+  void _validateCheckActionCodeResponse(ResetPasswordResponse response) {
+    // If the code is invalid, usually a clear error would be returned.
+    // In this case, something unexpected happened.
+    // Email could be empty only if the request type is EMAIL_SIGNIN.
+    var operation = response.requestType;
+    if (operation == null ||
+        (response.email == null && operation != 'EMAIL_SIGNIN')) {
       throw AuthException.internalError();
     }
   }

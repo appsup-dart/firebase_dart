@@ -2319,5 +2319,102 @@ void main() {
         );
       });
     });
+
+    group('checkActionCode', () {
+      var code = 'REVOKE_EMAIL_OOB_CODE';
+      var tester = Tester(
+        path: 'resetPassword',
+        expectedBody: {'oobCode': code},
+        action: () => rpcHandler.checkActionCode(code),
+      );
+      test('checkActionCode: success', () async {
+        await tester.shouldSucceed(
+          serverResponse: {
+            'email': 'user@example.com',
+            'newEmail': 'fake@example.com',
+            'requestType': 'PASSWORD_RESET'
+          },
+        );
+      });
+
+      test('checkActionCode: email sign in success', () async {
+        // Email field is empty for EMAIL_SIGNIN.
+        await tester.shouldSucceed(
+          serverResponse: {'requestType': 'EMAIL_SIGNIN'},
+        );
+      });
+
+      test('checkActionCode: missing code', () async {
+        expect(() => rpcHandler.checkActionCode(''),
+            throwsA(AuthException.invalidOobCode()));
+      });
+      test('checkActionCode: uncaught server error', () async {
+        // Required fields missing in response.
+        await tester.shouldFail(
+          expectedBody: {'oobCode': code},
+          serverResponse: {},
+          expectedError: AuthException.internalError(),
+        );
+      });
+      test('checkActionCode: uncaught server error', () async {
+        // Required requestType field missing in response.
+        await tester.shouldFail(
+          serverResponse: {
+            'email': 'user@example.com',
+            'newEmail': 'fake@example.com'
+          },
+          expectedError: AuthException.internalError(),
+        );
+      });
+      test('checkActionCode: caught server error', () async {
+        var code = 'REVOKE_EMAIL_OOB_CODE';
+        await tester.shouldFailWithServerErrors(
+          errorMap: {
+            'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
+            'INVALID_OOB_CODE': AuthException.invalidOobCode(),
+            'MISSING_OOB_CODE': AuthException.internalError()
+          },
+        );
+      });
+    });
+
+    group('applyActionCode', () {
+      var userEmail = 'user@example.com';
+      var code = 'EMAIL_VERIFICATION_OOB_CODE';
+      var tester = Tester(
+        path: 'setAccountInfo',
+        expectedBody: {'oobCode': code},
+        action: () => rpcHandler.applyActionCode(code),
+        expectedResult: (_) => userEmail,
+      );
+      test('applyActionCode: success', () async {
+        await tester.shouldSucceed(
+          serverResponse: {'email': userEmail},
+        );
+      });
+
+      test('applyActionCode: missing code', () async {
+        expect(() => rpcHandler.applyActionCode(''),
+            throwsA(AuthException.invalidOobCode()));
+      });
+
+      test('applyActionCode: unknown server response', () async {
+        await tester.shouldFail(
+          serverResponse: {},
+          expectedError: AuthException.internalError(),
+        );
+      });
+
+      test('applyActionCode: caught server error', () async {
+        await tester.shouldFailWithServerErrors(
+          errorMap: {
+            'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
+            'EMAIL_NOT_FOUND': AuthException.userDeleted(),
+            'INVALID_OOB_CODE': AuthException.invalidOobCode(),
+            'USER_DISABLED': AuthException.userDisabled(),
+          },
+        );
+      });
+    });
   });
 }
