@@ -628,6 +628,26 @@ class RpcHandler {
     return response;
   }
 
+  /// Requests sendVerificationCode endpoint for verifying the user's ownership of
+  /// a phone number. It resolves with a sessionInfo (verificationId).
+  Future<String> sendVerificationCode(
+      {String phoneNumber, String recaptchaToken}) async {
+    // In the future, we could support other types of assertions so for now,
+    // we are keeping the request an object.
+
+    if (phoneNumber == null || recaptchaToken == null) {
+      throw AuthException.internalError();
+    }
+    var request = IdentitytoolkitRelyingpartySendVerificationCodeRequest()
+      ..phoneNumber = phoneNumber
+      ..recaptchaToken = recaptchaToken;
+    var response = await relyingparty.sendVerificationCode(request);
+    if (response.sessionInfo == null) {
+      throw AuthException.internalError();
+    }
+    return response.sessionInfo;
+  }
+
   /// Updates the custom locale header.
   void updateCustomLocaleHeader(String languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);

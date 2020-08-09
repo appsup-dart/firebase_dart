@@ -2872,6 +2872,59 @@ void main() {
           );
         });
       });
+
+      group('sendVerificationCode', () {
+        var tester = Tester(
+          path: 'sendVerificationCode',
+          expectedBody: {
+            'phoneNumber': '15551234567',
+            'recaptchaToken': 'RECAPTCHA_TOKEN'
+          },
+          expectedResult: (_) => 'SESSION_INFO',
+          action: () => rpcHandler.sendVerificationCode(
+              phoneNumber: '15551234567', recaptchaToken: 'RECAPTCHA_TOKEN'),
+        );
+        test('sendVerificationCode: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'sessionInfo': 'SESSION_INFO'},
+          );
+        });
+
+        test('sendVerificationCode: invalid request missing phone number',
+            () async {
+          expect(
+              () => rpcHandler.sendVerificationCode(
+                  recaptchaToken: 'RECAPTCHA_TOKEN'),
+              throwsA(AuthException.internalError()));
+        });
+
+        test('sendVerificationCode: invalid request missing recaptcha token',
+            () async {
+          expect(
+              () => rpcHandler.sendVerificationCode(phoneNumber: '15551234567'),
+              throwsA(AuthException.internalError()));
+        });
+
+        test('sendVerificationCode: unknown server response', () async {
+          await tester.shouldFail(
+            // No sessionInfo returned.
+            serverResponse: {},
+            expectedError: AuthException.internalError(),
+          );
+        });
+
+        test('sendVerificationCode: caught server error', () async {
+          await tester.shouldFailWithServerErrors(errorMap: {
+            'CAPTCHA_CHECK_FAILED': AuthException.captchaCheckFailed(),
+            'INVALID_APP_CREDENTIAL': AuthException.invalidAppCredential(),
+            'INVALID_PHONE_NUMBER': AuthException.invalidPhoneNumber(),
+            'MISSING_APP_CREDENTIAL': AuthException.missingAppCredential(),
+            'MISSING_PHONE_NUMBER': AuthException.missingPhoneNumber(),
+            'QUOTA_EXCEEDED': AuthException.quotaExceeded(),
+            'REJECTED_CREDENTIAL': AuthException.rejectedCredential(),
+          });
+        });
+      });
     });
   });
 }
