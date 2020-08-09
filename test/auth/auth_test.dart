@@ -229,6 +229,14 @@ void main() async {
               'handleCodeInApp must be true when sending sign in link to email')));
     });
   });
+
+  group('sendPasswordResetEmail', () {
+    var email = 'user@example.com';
+
+    test('sendPasswordResetEmail: success', () async {
+      await auth.sendPasswordResetEmail(email: email);
+    });
+  });
 }
 
 class Tester {

@@ -186,8 +186,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
 
   @override
   Future<void> sendPasswordResetEmail({String email}) {
-    // TODO: implement sendPasswordResetEmail
-    throw UnimplementedError();
+    return rpcHandler.sendPasswordResetEmail(email: email);
   }
 
   @override
