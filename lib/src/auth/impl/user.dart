@@ -252,15 +252,25 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   }
 
   @override
-  Future<void> updateEmail(String email) {
-    // TODO: implement updateEmail
-    throw UnimplementedError();
+  Future<void> updateEmail(String email) async {
+    var idToken = await getIdToken();
+    var response = await await _rpcHandler.updateEmail(idToken.token, email);
+    // Calls to SetAccountInfo may invalidate old tokens.
+    _updateTokensIfPresent(response);
+    // Reloads the user to update emailVerified.
+    return reload();
   }
 
   @override
-  Future<void> updatePassword(String password) {
-    // TODO: implement updatePassword
-    throw UnimplementedError();
+  Future<void> updatePassword(String password) async {
+    var idToken = await getIdToken();
+    var response =
+        await await _rpcHandler.updatePassword(idToken.token, password);
+    // Calls to SetAccountInfo may invalidate old tokens.
+    _updateTokensIfPresent(response);
+    // Reloads the user in case email has also been updated and the user
+    // was anonymous.
+    return reload();
   }
 
   @override

@@ -154,6 +154,10 @@ class BackendConnection {
         }
       }
     }
+    if (request.email != null) {
+      user.email = request.email;
+      user.emailVerified = false;
+    }
 
     await backend.updateUser(user);
 
@@ -161,6 +165,10 @@ class BackendConnection {
       ..kind = 'identitytoolkit#SetAccountInfoResponse'
       ..displayName = user.displayName
       ..photoUrl = user.photoUrl
+      ..idToken = request.returnSecureToken == true
+          ? await backend.generateIdToken(
+              uid: user.localId, providerId: 'password')
+          : null
       ..providerUserInfo = [
         for (var u in user.providerUserInfo)
           SetAccountInfoResponseProviderUserInfo()
@@ -261,7 +269,13 @@ abstract class BaseBackend extends Backend {
       ..lastLoginAt = now
       ..email = email
       ..rawPassword = password
-      ..localId = uid);
+      ..localId = uid
+      ..providerUserInfo = [
+        if (password != null)
+          UserInfoProviderUserInfo()
+            ..providerId = 'password'
+            ..email = email
+      ]);
   }
 
   @override

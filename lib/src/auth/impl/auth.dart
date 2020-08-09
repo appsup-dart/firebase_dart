@@ -251,9 +251,16 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  Future<void> signOut() {
-    // TODO: implement signOut
-    throw UnimplementedError();
+  Future<void> signOut() async {
+    await _onReady;
+    // Ignore if already signed out.
+    if (_currentUser == null) {
+      return;
+    }
+    // Detach all event listeners.
+    _currentUser.destroy();
+    // Set current user to null.
+    await _userStorageManager.removeCurrentUser();
   }
 
   @override

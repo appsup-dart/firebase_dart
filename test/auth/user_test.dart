@@ -276,5 +276,64 @@ void main() async {
         await user.updateProfile(UserUpdateInfo());
       });
     });
+
+    group('updateEmail', () {
+      test('updateEmail: success', () async {
+        var u = await tester.backend.getUserById('user1');
+        await tester.backend.storeUser(u..emailVerified = true);
+
+        var r = await auth.signInWithEmailAndPassword(
+            email: u.email, password: u.rawPassword);
+        var user = r.user;
+        expect(user.email, 'user@example.com');
+        expect(user.isEmailVerified, isTrue);
+
+        var newEmail = 'newuser@example.com';
+
+        await user.updateEmail(newEmail);
+
+        expect(user.email, newEmail);
+        expect(user.isEmailVerified, isFalse);
+      });
+      test('updateEmail: user destroyed', () async {
+        var u = await tester.backend.getUserById('user1');
+        await tester.backend.storeUser(u..emailVerified = true);
+
+        var r = await auth.signInWithEmailAndPassword(
+            email: u.email, password: u.rawPassword);
+        var user = r.user;
+
+        await auth.signOut();
+
+        expect(() => user.updateEmail('newuser@example.com'),
+            throwsA(AuthException.moduleDestroyed()));
+      });
+    });
+
+    group('updatePassword', () {
+      test('updatePassword: success', () async {
+        var u = await tester.backend.getUserById('user1');
+        await tester.backend.storeUser(u..emailVerified = true);
+
+        var r = await auth.signInWithEmailAndPassword(
+            email: u.email, password: u.rawPassword);
+        var user = r.user;
+
+        await user.updatePassword('newPassword');
+      });
+      test('updatePassword: user destroyed', () async {
+        var u = await tester.backend.getUserById('user1');
+        await tester.backend.storeUser(u..emailVerified = true);
+
+        var r = await auth.signInWithEmailAndPassword(
+            email: u.email, password: u.rawPassword);
+        var user = r.user;
+
+        await auth.signOut();
+
+        expect(() => user.updatePassword('newPassword'),
+            throwsA(AuthException.moduleDestroyed()));
+      });
+    });
   });
 }
