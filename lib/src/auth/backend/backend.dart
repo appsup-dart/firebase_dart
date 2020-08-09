@@ -15,9 +15,7 @@ class BackendConnection {
 
   Future<GetAccountInfoResponse> getAccountInfo(
       IdentitytoolkitRelyingpartyGetAccountInfoRequest request) async {
-    var jwt = JsonWebToken.unverified(request.idToken); // TODO verify
-    var uid = jwt.claims.subject;
-    var user = await backend.getUserById(uid);
+    var user = await _userFromIdToken(request.idToken);
     return GetAccountInfoResponse()
       ..kind = 'identitytoolkit#GetAccountInfoResponse'
       ..users = [user];
@@ -75,9 +73,7 @@ class BackendConnection {
 
   Future<VerifyCustomTokenResponse> verifyCustomToken(
       IdentitytoolkitRelyingpartyVerifyCustomTokenRequest request) async {
-    var t = JsonWebToken.unverified(request.token); // TODO
-    var uid = t.claims['uid'];
-    var user = await backend.getUserById(uid);
+    var user = await _userFromIdToken(request.token);
 
     var refreshToken = await backend.generateRefreshToken(user.localId);
     return VerifyCustomTokenResponse()
@@ -91,18 +87,29 @@ class BackendConnection {
 
   Future<DeleteAccountResponse> deleteAccount(
       IdentitytoolkitRelyingpartyDeleteAccountRequest request) async {
-    var jwt = JsonWebToken.unverified(request.idToken); // TODO verify
-    var uid = jwt.claims.subject;
-    await backend.deleteUser(uid);
+    var user = await _userFromIdToken(request.idToken);
+    await backend.deleteUser(user.localId);
     return DeleteAccountResponse()
       ..kind = 'identitytoolkit#DeleteAccountResponse';
   }
 
+  Future<UserInfo> _userFromIdToken(String idToken) {
+    var jwt = JsonWebToken.unverified(idToken); // TODO verify
+    var uid = jwt.claims['uid'] ?? jwt.claims.subject;
+    return backend.getUserById(uid);
+  }
+
   Future<GetOobConfirmationCodeResponse> getOobConfirmationCode(
       Relyingparty request) async {
+    var user = (request.idToken != null)
+        ? await _userFromIdToken(request.idToken)
+        : await backend.getUserByEmail(request.email);
+    if (user == null) {
+      throw AuthException.userDeleted();
+    }
     return GetOobConfirmationCodeResponse()
       ..kind = 'identitytoolkit#GetOobConfirmationCodeResponse'
-      ..email = request.email;
+      ..email = user.email;
   }
 
   Future<dynamic> _handle(String method, dynamic body) async {

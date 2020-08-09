@@ -200,9 +200,14 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   }
 
   @override
-  Future<void> sendEmailVerification() {
-    // TODO: implement sendEmailVerification
-    throw UnimplementedError();
+  Future<void> sendEmailVerification() async {
+    var idToken = await getIdToken();
+    var email = await _rpcHandler.sendEmailVerification(idToken: idToken.token);
+    if (email != this.email) {
+      // Our local copy does not have an email. If the email changed,
+      // reload the user.
+      return reload();
+    }
   }
 
   @override

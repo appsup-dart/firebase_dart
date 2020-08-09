@@ -98,49 +98,44 @@ void main() async {
 
         expect(await tester.backend.getUserByEmail(email), isNull);
       });
-/*
+    });
 
+    group('sendEmailVerification', () {
+      var email = 'user@example.com';
+      var pass = 'password';
 
+      test('sendEmailVerification: success', () async {
+        var result =
+            await auth.signInWithEmailAndPassword(email: email, password: pass);
+        var user = result.user;
 
-
-function testDelete_error() {
-  asyncTestCase.waitForSignals(1);
-
-  user = new fireauth.AuthUser(config1, tokenResponse, accountInfo);
-  goog.events.listen(
-      user, fireauth.UserEventType.USER_DELETED, function(event) {
-        fail('Auth change listener should not trigger!');
+        await user.sendEmailVerification();
       });
 
-  // Simulate rpcHandler deleteAccount.
-  var expectedError =
-      new fireauth.AuthError(fireauth.authenum.Error.INVALID_AUTH);
-  stubs.replace(
-      fireauth.RpcHandler.prototype,
-      'deleteAccount',
-      function(idToken) {
-        assertEquals(jwt, idToken);
-        return goog.Promise.reject(expectedError);
+      test('sendEmailVerification: local copy wrong email', () async {
+        var result =
+            await auth.signInWithEmailAndPassword(email: email, password: pass);
+        var user = result.user;
+
+        // This user does not have an email.
+        var user1 = FirebaseUserImpl.fromJson({
+          ...user.toJson()..remove('email'),
+        }, auth: auth);
+
+        expect(user1.email, isNull);
+        await user1.sendEmailVerification();
+        expect(user1.email, email);
+
+        // This user has the wrong email.
+        var user2 = FirebaseUserImpl.fromJson({
+          ...user.toJson(),
+          'email': 'wrong@email.com',
+        }, auth: auth);
+
+        expect(user2.email, 'wrong@email.com');
+        await user2.sendEmailVerification();
+        expect(user2.email, email);
       });
-  // Checks that destroy is not called.
-  stubs.replace(
-      user,
-      'destroy',
-      function() {
-        fail('User destroy should not be called!');
-      });
-  user['delete']().thenCatch(function(error) {
-    fireauth.common.testHelper.assertErrorEquals(expectedError, error);
-    asyncTestCase.signal();
-  });
-}
-
-
-function testDelete_userDestroyed() {
-  assertFailsWhenUserIsDestroyed('delete', []);
-}
-
- */
     });
   });
 }
