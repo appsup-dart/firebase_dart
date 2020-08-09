@@ -472,6 +472,47 @@ class RpcHandler {
           ..deleteProvider = providersToDelete);
   }
 
+  /// Updates the profile of the user. When resolved, promise returns a response
+  /// similar to that of getAccountInfo.
+  Future<SetAccountInfoResponse> updateProfile(
+      String idToken, Map<String, dynamic> profileData) async {
+    var request = IdentitytoolkitRelyingpartySetAccountInfoRequest()
+      ..idToken = idToken
+      ..returnSecureToken = true;
+    var fieldsToDelete = <String>[];
+
+    // Copy over the relevant fields from profileData, or explicitly flag a field
+    // for deletion if null is passed as the value. Note that this currently only
+    // checks profileData to the first level.
+    for (var fieldName in ['displayName', 'photoUrl']) {
+      var fieldValue = profileData[fieldName];
+      if (profileData.containsKey(fieldName) && fieldValue == null) {
+        // If null is explicitly provided, delete the field.
+        fieldsToDelete.add({
+          'displayName': 'DISPLAY_NAME',
+          'photoUrl': 'PHOTO_URL'
+        }[fieldName]);
+      } else if (profileData.containsKey(fieldName)) {
+        // If the field is explicitly set, send it to the backend.
+        switch (fieldName) {
+          case 'displayName':
+            request.displayName = fieldValue;
+            break;
+          case 'photoUrl':
+            request.photoUrl = fieldValue;
+            break;
+        }
+      }
+    }
+
+    if (fieldsToDelete.isNotEmpty) {
+      request.deleteAttribute = fieldsToDelete;
+    }
+    var response = await relyingparty.setAccountInfo(request);
+
+    return response;
+  }
+
   /// Updates the custom locale header.
   void updateCustomLocaleHeader(String languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);

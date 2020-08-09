@@ -2447,6 +2447,88 @@ void main() {
           );
         });
       });
+
+      group('updateProfile', () {
+        var tester = Tester(
+          path: 'setAccountInfo',
+          expectedBody: {
+            'idToken': 'ID_TOKEN',
+            'displayName': 'John Doe',
+            'photoUrl': 'http://abs.twimg.com/sticky/default.png',
+            'returnSecureToken': true
+          },
+          action: () => rpcHandler.updateProfile('ID_TOKEN', {
+            'displayName': 'John Doe',
+            'photoUrl': 'http://abs.twimg.com/sticky/default.png'
+          }),
+        );
+        test('updateProfile: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'email': 'uid123@fake.com',
+              'displayName': 'John Doe',
+              'photoUrl': 'http://abs.twimg.com/sticky/default.png'
+            },
+          );
+        });
+
+        test('updateProfile: blank fields', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              // We test here that a response without email is a valid response.
+              'email': '',
+              'displayName': ''
+            },
+          );
+        });
+
+        test('updateProfile: omittedFields', () async {
+          var t = tester.replace(
+              expectedBody: {
+                'idToken': 'ID_TOKEN',
+                'displayName': 'John Doe',
+                'returnSecureToken': true
+              },
+              action: () => rpcHandler
+                  .updateProfile('ID_TOKEN', {'displayName': 'John Doe'}));
+
+          await t.shouldSucceed(
+            serverResponse: {
+              'email': 'uid123@fake.com',
+              'displayName': 'John Doe',
+              'photoUrl': 'http://abs.twimg.com/sticky/default.png'
+            },
+          );
+        });
+
+        test('updateProfile: delete fields', () async {
+          var t = tester.replace(
+              expectedBody: {
+                'idToken': 'ID_TOKEN',
+                'displayName': 'John Doe',
+                'deleteAttribute': ['PHOTO_URL'],
+                'returnSecureToken': true
+              },
+              action: () => rpcHandler.updateProfile(
+                  'ID_TOKEN', {'displayName': 'John Doe', 'photoUrl': null}));
+          await t.shouldSucceed(
+            serverResponse: {
+              'email': 'uid123@fake.com',
+              'displayName': 'John Doe'
+            },
+          );
+        });
+
+        test('updateProfile: error', () async {
+          await tester.shouldFailWithServerErrors(
+            errorMap: {
+              'INTERNAL_ERROR': AuthException.internalError().replace(
+                  message:
+                      '{"error":{"errors":[{"message":"INTERNAL_ERROR"}],"code":400,"message":"INTERNAL_ERROR"}}')
+            },
+          );
+        });
+      });
     });
   });
 }
