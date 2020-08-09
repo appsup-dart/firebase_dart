@@ -2680,6 +2680,198 @@ void main() {
               throwsA(AuthException.internalError()));
         });
       });
+
+      group('getAuthUri', () {
+        var expectedCustomParameters = {
+          'hd': 'example.com',
+          'login_hint': 'user@example.com'
+        };
+        var tester = Tester(
+          path: 'createAuthUri',
+          expectedBody: {
+            'identifier': 'user@example.com',
+            'providerId': 'google.com',
+            'continueUri': 'http://localhost/widget',
+            'customParameter': expectedCustomParameters,
+            'oauthScope': json.encode({'google.com': 'scope1,scope2,scope3'})
+          },
+          action: () => rpcHandler.getAuthUri(
+              'google.com',
+              'http://localhost/widget',
+              expectedCustomParameters,
+              ['scope1', 'scope2', 'scope3'],
+              'user@example.com'),
+        );
+
+        test('getAuthUri: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'authUri': 'https://accounts.google.com',
+              'providerId': 'google.com',
+              'registered': true,
+              'forExistingProvider': true,
+              'sessionId': 'SESSION_ID'
+            },
+          );
+        });
+
+        test('getAuthUri: success saml', () async {
+          var t = tester.replace(
+            expectedBody: {
+              'providerId': 'saml.provider',
+              'continueUri': 'http://localhost/widget'
+            },
+            action: () => rpcHandler.getAuthUri(
+                'saml.provider',
+                'http://localhost/widget',
+                // Custom parameters should be ignored.
+                expectedCustomParameters,
+                // Scopes should be ignored.
+                ['scope1', 'scope2', 'scope3'],
+                null),
+          );
+          await t.shouldSucceed(
+            serverResponse: {
+              'authUri':
+                  'https://www.example.com/samlp/?SAMLRequest=1234567890',
+              'providerId': 'saml.provider',
+              'registered': false,
+              'sessionId': 'SESSION_ID'
+            },
+          );
+        });
+
+        test('getAuthUri: error missing continue uri', () async {
+          expect(
+              () => rpcHandler.getAuthUri(
+                  'saml.provider',
+                  null,
+                  // Custom parameters should be ignored.
+                  expectedCustomParameters,
+                  // Scopes should be ignored.
+                  ['scope1', 'scope2', 'scope3'],
+                  'user@example.com'),
+              throwsA(AuthException.missingContinueUri()));
+        });
+        test('getAuthUri: error missing provider id', () async {
+          expect(
+              () => rpcHandler.getAuthUri(
+                  // No provider ID.
+                  null,
+                  'http://localhost/widget',
+                  // Custom parameters should be ignored.
+                  expectedCustomParameters,
+                  // Scopes should be ignored.
+                  ['scope1', 'scope2', 'scope3'],
+                  'user@example.com'),
+              throwsA(AuthException.internalError().replace(
+                  message: 'A provider ID must be provided in the request.')));
+        });
+
+        test('getAuthUri: caught server error', () async {
+          await tester.shouldFailWithServerErrors(
+            errorMap: {
+              'INVALID_PROVIDER_ID': AuthException.invalidProviderId()
+            },
+          );
+        });
+
+        test('getAuthUri: google provider with session id', () async {
+          var t = tester.replace(
+            expectedBody: {
+              'identifier': 'user@example.com',
+              'providerId': 'google.com',
+              'continueUri': 'http://localhost/widget',
+              'customParameter': expectedCustomParameters,
+              'oauthScope': json.encode({'google.com': 'scope1,scope2,scope3'}),
+              'sessionId': 'SESSION_ID',
+              'authFlowType': 'CODE_FLOW'
+            },
+            action: () => rpcHandler.getAuthUri(
+                'google.com',
+                'http://localhost/widget',
+                expectedCustomParameters,
+                ['scope1', 'scope2', 'scope3'],
+                'user@example.com',
+                'SESSION_ID'),
+          );
+          await t.shouldSucceed(
+            serverResponse: {
+              'authUri': 'https://accounts.google.com',
+              'providerId': 'google.com',
+              'registered': true,
+              'forExistingProvider': true,
+              'sessionId': 'SESSION_ID'
+            },
+          );
+        });
+
+        test('getAuthUri: other provider with session id', () async {
+          var t = tester.replace(
+            expectedBody: {
+              'providerId': 'facebook.com',
+              'continueUri': 'http://localhost/widget',
+              'customParameter': {},
+              'oauthScope':
+                  json.encode({'facebook.com': 'scope1,scope2,scope3'}),
+              'sessionId': 'SESSION_ID'
+            },
+            action: () => rpcHandler.getAuthUri(
+                'facebook.com',
+                'http://localhost/widget',
+                null,
+                ['scope1', 'scope2', 'scope3'],
+                null,
+                'SESSION_ID'),
+          );
+          await t.shouldSucceed(
+            serverResponse: {
+              'authUri': 'https://facebook.com/login',
+              'providerId': 'facebook.com',
+              'registered': true,
+              'sessionId': 'SESSION_ID'
+            },
+          );
+        });
+
+        test('getAuthUri: error', () async {
+          await tester.shouldFailWithServerErrors(errorMap: {
+            'INTERNAL_ERROR': AuthException.internalError().replace(
+                message:
+                    '{"error":{"errors":[{"message":"INTERNAL_ERROR"}],"code":400,"message":"INTERNAL_ERROR"}}')
+          });
+        });
+
+        test('getAuthUri: error no auth uri', () async {
+          var t = tester.replace(
+            expectedBody: {
+              'identifier': 'user@example.com',
+              'providerId': 'google.com',
+              'continueUri': 'http://localhost/widget',
+              'customParameter': expectedCustomParameters,
+              'oauthScope': json.encode({'google.com': 'scope1,scope2,scope3'})
+            },
+            action: () => rpcHandler.getAuthUri(
+                'google.com',
+                'http://localhost/widget',
+                expectedCustomParameters,
+                ['scope1', 'scope2', 'scope3'],
+                'user@example.com'),
+          );
+          await t.shouldFail(
+            serverResponse: {
+              'providerId': 'google.com',
+              'registered': true,
+              'forExistingProvider': true,
+              'sessionId': 'SESSION_ID'
+            },
+            expectedError: AuthException.internalError().replace(
+                message:
+                    'Unable to determine the authorization endpoint for the specified '
+                    'provider. This may be an issue in the provider configuration.'),
+          );
+        });
+      });
     });
   });
 }

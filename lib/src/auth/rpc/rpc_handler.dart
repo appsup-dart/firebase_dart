@@ -584,9 +584,75 @@ class RpcHandler {
     return response;
   }
 
+  /// Requests createAuthUri endpoint to retrieve the authUri and session ID for
+  /// the start of an OAuth handshake.
+  Future<CreateAuthUriResponse> getAuthUri(
+      String providerId, String continueUri,
+      [Map<String, dynamic> customParameters,
+      List<String> additionalScopes,
+      String email,
+      String sessionId]) async {
+    if (continueUri == null) {
+      throw AuthException.missingContinueUri();
+    }
+    // Either a SAML or non SAML providerId must be provided.
+    if (providerId == null) {
+      throw AuthException.internalError()
+          .replace(message: 'A provider ID must be provided in the request.');
+    }
+
+    var scopes = _getAdditionalScopes(providerId, additionalScopes);
+    // SAML provider request is constructed differently than OAuth requests.
+    var request = IdentitytoolkitRelyingpartyCreateAuthUriRequest()
+      ..providerId = providerId
+      ..continueUri = continueUri
+      ..customParameter = customParameters ?? {};
+    if (email != null) request.identifier = email;
+    if (scopes != null) request.oauthScope = scopes;
+    if (sessionId != null) request.sessionId = sessionId;
+
+    // Custom parameters and OAuth scopes should be ignored.
+    if (SAMLAuthProvider.isSaml(providerId)) {
+      request
+        ..customParameter = null
+        ..oauthScope = null;
+    }
+    // When sessionId is provided, mobile flow (Cordova) is being used, force
+    // code flow and not implicit flow. All other providers use code flow by
+    // default.
+    if (sessionId != null && providerId == GoogleAuthProvider.providerId) {
+      request.authFlowType = 'CODE_FLOW';
+    }
+    var response = await relyingparty.createAuthUri(request);
+    _validateGetAuthResponse(response);
+    return response;
+  }
+
   /// Updates the custom locale header.
   void updateCustomLocaleHeader(String languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);
+  }
+
+  /// Returns the IDP and its comma separated scope strings serialized.
+  String _getAdditionalScopes(String providerId,
+      [List<String> additionalScopes]) {
+    if (additionalScopes != null && additionalScopes.isNotEmpty) {
+      // Return stringified scopes.
+      return json.encode({providerId: additionalScopes.join(',')});
+    }
+    return null;
+  }
+
+  /// Validates a response from getAuthUri.
+  void _validateGetAuthResponse(CreateAuthUriResponse response) {
+    if (response.authUri == null) {
+      throw AuthException.internalError().replace(
+          message:
+              'Unable to determine the authorization endpoint for the specified '
+              'provider. This may be an issue in the provider configuration.');
+    } else if (response.sessionId == null) {
+      throw AuthException.internalError();
+    }
   }
 
   AuthException _errorFromVerifyAssertionResponse(
