@@ -145,9 +145,8 @@ class FirebaseAuthImpl extends FirebaseAuth {
   final FirebaseApp app;
 
   @override
-  Future<void> confirmPasswordReset(String oobCode, String newPassword) {
-    // TODO: implement confirmPasswordReset
-    throw UnimplementedError();
+  Future<void> confirmPasswordReset(String oobCode, String newPassword) async {
+    await rpcHandler.confirmPasswordReset(oobCode, newPassword);
   }
 
   @override

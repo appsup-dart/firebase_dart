@@ -237,6 +237,30 @@ void main() async {
       await auth.sendPasswordResetEmail(email: email);
     });
   });
+
+  group('confirmPasswordReset', () {
+    var expectedEmail = 'user@example.com';
+    var expectedCode = createMockJwt(uid: 'user1');
+    var expectedNewPassword = 'newPassword';
+    test('confirmPasswordReset: success', () async {
+      expect(
+          () => auth.signInWithEmailAndPassword(
+              email: expectedEmail, password: expectedNewPassword),
+          throwsA(AuthException.invalidPassword()));
+
+      await auth.confirmPasswordReset(expectedCode, expectedNewPassword);
+      var r = await auth.signInWithEmailAndPassword(
+          email: expectedEmail, password: expectedNewPassword);
+
+      expect(r.user.email, expectedEmail);
+    });
+
+    test('confirmPasswordReset: error', () async {
+      expect(
+          () => auth.confirmPasswordReset('INVALID_CODE', expectedNewPassword),
+          throwsA(AuthException.invalidOobCode()));
+    });
+  });
 }
 
 class Tester {

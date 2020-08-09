@@ -112,6 +112,20 @@ class BackendConnection {
       ..email = user.email;
   }
 
+  Future<ResetPasswordResponse> resetPassword(
+      IdentitytoolkitRelyingpartyResetPasswordRequest request) async {
+    UserInfo user;
+    try {
+      user = await _userFromIdToken(request.oobCode);
+    } on ArgumentError {
+      throw AuthException.invalidOobCode();
+    }
+    await backend.updateUser(user..rawPassword = request.newPassword);
+    return ResetPasswordResponse()
+      ..kind = 'identitytoolkit#ResetPasswordResponse'
+      ..email = user.email;
+  }
+
   Future<dynamic> _handle(String method, dynamic body) async {
     switch (method) {
       case 'signupNewUser':
@@ -141,6 +155,10 @@ class BackendConnection {
       case 'getOobConfirmationCode':
         var request = Relyingparty.fromJson(body);
         return getOobConfirmationCode(request);
+      case 'resetPassword':
+        var request =
+            IdentitytoolkitRelyingpartyResetPasswordRequest.fromJson(body);
+        return resetPassword(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }
@@ -168,6 +186,8 @@ abstract class Backend {
 
   Future<UserInfo> createUser({String email, String password});
 
+  Future<UserInfo> updateUser(UserInfo user);
+
   Future<void> deleteUser(String uid);
 
   Future<String> generateIdToken({String uid, String providerId});
@@ -194,6 +214,11 @@ abstract class BaseBackend extends Backend {
       ..email = email
       ..rawPassword = password
       ..localId = uid);
+  }
+
+  @override
+  Future<UserInfo> updateUser(UserInfo user) {
+    return storeUser(user);
   }
 
   @override
