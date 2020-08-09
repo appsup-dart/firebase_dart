@@ -420,6 +420,22 @@ class RpcHandler {
     return response.email;
   }
 
+  /// Requests resetPassword endpoint for password reset.
+  ///
+  /// Returns future that resolves with user's email.
+  Future<String> confirmPasswordReset(String code, newPassword) async {
+    _validateApplyActionCode(code);
+    var response = await relyingparty
+        .resetPassword(IdentitytoolkitRelyingpartyResetPasswordRequest()
+          ..oobCode = code
+          ..newPassword = newPassword);
+
+    if (response.email == null) {
+      throw AuthException.internalError();
+    }
+    return response.email;
+  }
+
   /// Updates the custom locale header.
   void updateCustomLocaleHeader(String languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);
@@ -620,6 +636,13 @@ class RpcHandler {
             request.postBody == null &&
             request.pendingIdToken == null)) {
       throw AuthException.internalError();
+    }
+  }
+
+  /// Validates an action code.
+  void _validateApplyActionCode(String oobCode) {
+    if (oobCode == null || oobCode.isEmpty) {
+      throw AuthException.invalidOobCode();
     }
   }
 

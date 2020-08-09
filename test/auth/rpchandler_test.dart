@@ -2283,5 +2283,41 @@ void main() {
         });
       });
     });
+
+    group('confirmPasswordReset', () {
+      var userEmail = 'user@example.com';
+      var newPassword = 'newPass';
+      var code = 'PASSWORD_RESET_OOB_CODE';
+      var tester = Tester(
+        path: 'resetPassword',
+        expectedBody: {'oobCode': code, 'newPassword': newPassword},
+        expectedResult: (_) => userEmail,
+        action: () => rpcHandler.confirmPasswordReset(code, newPassword),
+      );
+      test('confirmPasswordReset: success', () async {
+        await tester.shouldSucceed(serverResponse: {'email': userEmail});
+      });
+
+      test('confirmPasswordReset: missing code', () async {
+        expect(() => rpcHandler.confirmPasswordReset('', 'myPassword'),
+            throwsA(AuthException.invalidOobCode()));
+      });
+
+      test('confirmPasswordReset: unknown server response', () async {
+        await tester.shouldFail(
+          serverResponse: {},
+          expectedError: AuthException.internalError(),
+        );
+      });
+      test('confirmPasswordReset: caught server error', () async {
+        await tester.shouldFailWithServerErrors(
+          errorMap: {
+            'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
+            'INVALID_OOB_CODE': AuthException.invalidOobCode(),
+            'MISSING_OOB_CODE': AuthException.internalError(),
+          },
+        );
+      });
+    });
   });
 }
