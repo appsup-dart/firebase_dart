@@ -2282,170 +2282,170 @@ void main() {
           );
         });
       });
-    });
 
-    group('confirmPasswordReset', () {
-      var userEmail = 'user@example.com';
-      var newPassword = 'newPass';
-      var code = 'PASSWORD_RESET_OOB_CODE';
-      var tester = Tester(
-        path: 'resetPassword',
-        expectedBody: {'oobCode': code, 'newPassword': newPassword},
-        expectedResult: (_) => userEmail,
-        action: () => rpcHandler.confirmPasswordReset(code, newPassword),
-      );
-      test('confirmPasswordReset: success', () async {
-        await tester.shouldSucceed(serverResponse: {'email': userEmail});
-      });
-
-      test('confirmPasswordReset: missing code', () async {
-        expect(() => rpcHandler.confirmPasswordReset('', 'myPassword'),
-            throwsA(AuthException.invalidOobCode()));
-      });
-
-      test('confirmPasswordReset: unknown server response', () async {
-        await tester.shouldFail(
-          serverResponse: {},
-          expectedError: AuthException.internalError(),
+      group('confirmPasswordReset', () {
+        var userEmail = 'user@example.com';
+        var newPassword = 'newPass';
+        var code = 'PASSWORD_RESET_OOB_CODE';
+        var tester = Tester(
+          path: 'resetPassword',
+          expectedBody: {'oobCode': code, 'newPassword': newPassword},
+          expectedResult: (_) => userEmail,
+          action: () => rpcHandler.confirmPasswordReset(code, newPassword),
         );
-      });
-      test('confirmPasswordReset: caught server error', () async {
-        await tester.shouldFailWithServerErrors(
-          errorMap: {
-            'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
-            'INVALID_OOB_CODE': AuthException.invalidOobCode(),
-            'MISSING_OOB_CODE': AuthException.internalError(),
-          },
-        );
-      });
-    });
+        test('confirmPasswordReset: success', () async {
+          await tester.shouldSucceed(serverResponse: {'email': userEmail});
+        });
 
-    group('checkActionCode', () {
-      var code = 'REVOKE_EMAIL_OOB_CODE';
-      var tester = Tester(
-        path: 'resetPassword',
-        expectedBody: {'oobCode': code},
-        action: () => rpcHandler.checkActionCode(code),
-      );
-      test('checkActionCode: success', () async {
-        await tester.shouldSucceed(
-          serverResponse: {
-            'email': 'user@example.com',
-            'newEmail': 'fake@example.com',
-            'requestType': 'PASSWORD_RESET'
-          },
-        );
+        test('confirmPasswordReset: missing code', () async {
+          expect(() => rpcHandler.confirmPasswordReset('', 'myPassword'),
+              throwsA(AuthException.invalidOobCode()));
+        });
+
+        test('confirmPasswordReset: unknown server response', () async {
+          await tester.shouldFail(
+            serverResponse: {},
+            expectedError: AuthException.internalError(),
+          );
+        });
+        test('confirmPasswordReset: caught server error', () async {
+          await tester.shouldFailWithServerErrors(
+            errorMap: {
+              'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
+              'INVALID_OOB_CODE': AuthException.invalidOobCode(),
+              'MISSING_OOB_CODE': AuthException.internalError(),
+            },
+          );
+        });
       });
 
-      test('checkActionCode: email sign in success', () async {
-        // Email field is empty for EMAIL_SIGNIN.
-        await tester.shouldSucceed(
-          serverResponse: {'requestType': 'EMAIL_SIGNIN'},
-        );
-      });
-
-      test('checkActionCode: missing code', () async {
-        expect(() => rpcHandler.checkActionCode(''),
-            throwsA(AuthException.invalidOobCode()));
-      });
-      test('checkActionCode: uncaught server error', () async {
-        // Required fields missing in response.
-        await tester.shouldFail(
-          expectedBody: {'oobCode': code},
-          serverResponse: {},
-          expectedError: AuthException.internalError(),
-        );
-      });
-      test('checkActionCode: uncaught server error', () async {
-        // Required requestType field missing in response.
-        await tester.shouldFail(
-          serverResponse: {
-            'email': 'user@example.com',
-            'newEmail': 'fake@example.com'
-          },
-          expectedError: AuthException.internalError(),
-        );
-      });
-      test('checkActionCode: caught server error', () async {
+      group('checkActionCode', () {
         var code = 'REVOKE_EMAIL_OOB_CODE';
-        await tester.shouldFailWithServerErrors(
-          errorMap: {
-            'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
-            'INVALID_OOB_CODE': AuthException.invalidOobCode(),
-            'MISSING_OOB_CODE': AuthException.internalError()
+        var tester = Tester(
+          path: 'resetPassword',
+          expectedBody: {'oobCode': code},
+          action: () => rpcHandler.checkActionCode(code),
+        );
+        test('checkActionCode: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'email': 'user@example.com',
+              'newEmail': 'fake@example.com',
+              'requestType': 'PASSWORD_RESET'
+            },
+          );
+        });
+
+        test('checkActionCode: email sign in success', () async {
+          // Email field is empty for EMAIL_SIGNIN.
+          await tester.shouldSucceed(
+            serverResponse: {'requestType': 'EMAIL_SIGNIN'},
+          );
+        });
+
+        test('checkActionCode: missing code', () async {
+          expect(() => rpcHandler.checkActionCode(''),
+              throwsA(AuthException.invalidOobCode()));
+        });
+        test('checkActionCode: uncaught server error', () async {
+          // Required fields missing in response.
+          await tester.shouldFail(
+            expectedBody: {'oobCode': code},
+            serverResponse: {},
+            expectedError: AuthException.internalError(),
+          );
+        });
+        test('checkActionCode: uncaught server error', () async {
+          // Required requestType field missing in response.
+          await tester.shouldFail(
+            serverResponse: {
+              'email': 'user@example.com',
+              'newEmail': 'fake@example.com'
+            },
+            expectedError: AuthException.internalError(),
+          );
+        });
+        test('checkActionCode: caught server error', () async {
+          var code = 'REVOKE_EMAIL_OOB_CODE';
+          await tester.shouldFailWithServerErrors(
+            errorMap: {
+              'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
+              'INVALID_OOB_CODE': AuthException.invalidOobCode(),
+              'MISSING_OOB_CODE': AuthException.internalError()
+            },
+          );
+        });
+      });
+
+      group('applyActionCode', () {
+        var userEmail = 'user@example.com';
+        var code = 'EMAIL_VERIFICATION_OOB_CODE';
+        var tester = Tester(
+          path: 'setAccountInfo',
+          expectedBody: {'oobCode': code},
+          action: () => rpcHandler.applyActionCode(code),
+          expectedResult: (_) => userEmail,
+        );
+        test('applyActionCode: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'email': userEmail},
+          );
+        });
+
+        test('applyActionCode: missing code', () async {
+          expect(() => rpcHandler.applyActionCode(''),
+              throwsA(AuthException.invalidOobCode()));
+        });
+
+        test('applyActionCode: unknown server response', () async {
+          await tester.shouldFail(
+            serverResponse: {},
+            expectedError: AuthException.internalError(),
+          );
+        });
+
+        test('applyActionCode: caught server error', () async {
+          await tester.shouldFailWithServerErrors(
+            errorMap: {
+              'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
+              'EMAIL_NOT_FOUND': AuthException.userDeleted(),
+              'INVALID_OOB_CODE': AuthException.invalidOobCode(),
+              'USER_DISABLED': AuthException.userDisabled(),
+            },
+          );
+        });
+      });
+      group('deleteLinkedAccounts', () {
+        var tester = Tester(
+          path: 'setAccountInfo',
+          expectedBody: {
+            'idToken': 'ID_TOKEN',
+            'deleteProvider': ['github.com', 'facebook.com']
           },
+          action: () => rpcHandler
+              .deleteLinkedAccounts('ID_TOKEN', ['github.com', 'facebook.com']),
         );
-      });
-    });
+        test('deleteLinkedAccounts: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'email': 'user@example.com',
+              'providerUserInfo': [
+                {'providerId': 'google.com'}
+              ]
+            },
+          );
+        });
 
-    group('applyActionCode', () {
-      var userEmail = 'user@example.com';
-      var code = 'EMAIL_VERIFICATION_OOB_CODE';
-      var tester = Tester(
-        path: 'setAccountInfo',
-        expectedBody: {'oobCode': code},
-        action: () => rpcHandler.applyActionCode(code),
-        expectedResult: (_) => userEmail,
-      );
-      test('applyActionCode: success', () async {
-        await tester.shouldSucceed(
-          serverResponse: {'email': userEmail},
-        );
-      });
+        test('deleteLinkedAccounts: invalid request error', () async {
+          expect(() => rpcHandler.deleteLinkedAccounts('ID_TOKEN', null),
+              throwsA(AuthException.internalError()));
+        });
 
-      test('applyActionCode: missing code', () async {
-        expect(() => rpcHandler.applyActionCode(''),
-            throwsA(AuthException.invalidOobCode()));
-      });
-
-      test('applyActionCode: unknown server response', () async {
-        await tester.shouldFail(
-          serverResponse: {},
-          expectedError: AuthException.internalError(),
-        );
-      });
-
-      test('applyActionCode: caught server error', () async {
-        await tester.shouldFailWithServerErrors(
-          errorMap: {
-            'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
-            'EMAIL_NOT_FOUND': AuthException.userDeleted(),
-            'INVALID_OOB_CODE': AuthException.invalidOobCode(),
-            'USER_DISABLED': AuthException.userDisabled(),
-          },
-        );
-      });
-    });
-    group('deleteLinkedAccounts', () {
-      var tester = Tester(
-        path: 'setAccountInfo',
-        expectedBody: {
-          'idToken': 'ID_TOKEN',
-          'deleteProvider': ['github.com', 'facebook.com']
-        },
-        action: () => rpcHandler
-            .deleteLinkedAccounts('ID_TOKEN', ['github.com', 'facebook.com']),
-      );
-      test('deleteLinkedAccounts: success', () async {
-        await tester.shouldSucceed(
-          serverResponse: {
-            'email': 'user@example.com',
-            'providerUserInfo': [
-              {'providerId': 'google.com'}
-            ]
-          },
-        );
-      });
-
-      test('deleteLinkedAccounts: invalid request error', () async {
-        expect(() => rpcHandler.deleteLinkedAccounts('ID_TOKEN', null),
-            throwsA(AuthException.internalError()));
-      });
-
-      test('deleteLinkedAccounts: server caught errors', () async {
-        await tester.shouldFailWithServerErrors(
-          errorMap: {'USER_NOT_FOUND': AuthException.tokenExpired()},
-        );
+        test('deleteLinkedAccounts: server caught errors', () async {
+          await tester.shouldFailWithServerErrors(
+            errorMap: {'USER_NOT_FOUND': AuthException.tokenExpired()},
+          );
+        });
       });
     });
   });
