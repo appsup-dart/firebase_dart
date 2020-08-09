@@ -284,4 +284,6 @@ class UserUpdateInfo {
   set photoUrl(String photoUri) => _updateData['photoUrl'] = photoUri;
 
   String get photoUrl => _updateData['photoUrl'];
+
+  Map<String, dynamic> toJson() => {..._updateData};
 }

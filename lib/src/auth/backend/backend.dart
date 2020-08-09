@@ -129,16 +129,38 @@ class BackendConnection {
   Future<SetAccountInfoResponse> setAccountInfo(
       IdentitytoolkitRelyingpartySetAccountInfoRequest request) async {
     var user = await _userFromIdToken(request.idToken);
-    user.providerUserInfo.removeWhere(
-        (element) => request.deleteProvider.contains(element.providerId));
-
-    if (request.deleteProvider.contains('phone')) {
-      user.phoneNumber = null;
+    if (request.deleteProvider != null) {
+      user.providerUserInfo.removeWhere(
+          (element) => request.deleteProvider.contains(element.providerId));
+      if (request.deleteProvider.contains('phone')) {
+        user.phoneNumber = null;
+      }
     }
+    if (request.displayName != null) {
+      user.displayName = request.displayName;
+    }
+    if (request.photoUrl != null) {
+      user.photoUrl = request.photoUrl;
+    }
+    if (request.deleteAttribute != null) {
+      for (var a in request.deleteAttribute) {
+        switch (a) {
+          case 'displayName':
+            user.displayName = null;
+            break;
+          case 'photoUrl':
+            user.photoUrl = null;
+            break;
+        }
+      }
+    }
+
     await backend.updateUser(user);
 
     return SetAccountInfoResponse()
       ..kind = 'identitytoolkit#SetAccountInfoResponse'
+      ..displayName = user.displayName
+      ..photoUrl = user.photoUrl
       ..providerUserInfo = [
         for (var u in user.providerUserInfo)
           SetAccountInfoResponseProviderUserInfo()

@@ -84,6 +84,18 @@ mixin _TenantIdProperty on _JsonSerializable {
   }
 }
 
+class SetAccountInfoResponse extends it.SetAccountInfoResponse
+    with _JsonSerializable, IdTokenResponse {
+  SetAccountInfoResponse();
+
+  SetAccountInfoResponse.fromJson(Map _json) : super.fromJson(_json) {
+    _read(_json);
+  }
+
+  @override
+  Map<String, Object> toJson() => _write(super.toJson());
+}
+
 class VerifyPasswordResponse extends it.VerifyPasswordResponse
     with _JsonSerializable, IdTokenResponse {
   VerifyPasswordResponse();
@@ -350,6 +362,14 @@ class RelyingpartyResourceApi extends it.RelyingpartyResourceApi {
       {String $fields}) async {
     return VerifyPasswordResponse.fromJson(
         await _do('verifyPassword', request, $fields: $fields));
+  }
+
+  @override
+  Future<SetAccountInfoResponse> setAccountInfo(
+      it.IdentitytoolkitRelyingpartySetAccountInfoRequest request,
+      {String $fields}) async {
+    return SetAccountInfoResponse.fromJson(
+        await _do('setAccountInfo', request, $fields: $fields));
   }
 
   @override

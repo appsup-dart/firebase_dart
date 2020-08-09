@@ -5,6 +5,7 @@ import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
+import 'package:firebase_dart/src/auth/user.dart' show UserUpdateInfo;
 import 'package:hive/hive.dart';
 import 'package:test/test.dart';
 
@@ -224,6 +225,55 @@ void main() async {
         expect(providerIds, ['providerId1', 'providerId2']);
 
         expect(user.phoneNumber, isNull);
+      });
+    });
+
+    group('updateProfile', () {
+      test('updateProfile: success', () async {
+        var u = await tester.backend.getUserById('user1');
+        var r = await auth.signInWithEmailAndPassword(
+            email: u.email, password: u.rawPassword);
+
+        var user = r.user;
+
+        await user.updateProfile(UserUpdateInfo()
+          ..displayName = 'Jack Smith'
+          ..photoUrl = 'http://www.example.com/photo/photo.png');
+
+        expect(user.displayName, 'Jack Smith');
+        expect(user.photoUrl, 'http://www.example.com/photo/photo.png');
+
+        await user.reload();
+
+        expect(user.displayName, 'Jack Smith');
+        expect(user.photoUrl, 'http://www.example.com/photo/photo.png');
+      });
+      test('updateProfile: with password provider', () async {
+        var u = await tester.backend.getUserById('user1');
+
+        var r = await auth.signInWithEmailAndPassword(
+            email: u.email, password: u.rawPassword);
+
+        var user = r.user;
+
+        await user.updateProfile(UserUpdateInfo()
+          ..displayName = 'Jack Smith'
+          ..photoUrl = 'http://www.example.com/photo/photo.png');
+
+        var p = user.providerData
+            .firstWhere((element) => element.providerId == 'password');
+        expect(p.displayName, 'Jack Smith');
+        expect(p.photoUrl, 'http://www.example.com/photo/photo.png');
+      });
+      test('updateProfile: empty change', () async {
+        var u = await tester.backend.getUserById('user1');
+
+        var r = await auth.signInWithEmailAndPassword(
+            email: u.email, password: u.rawPassword);
+
+        var user = r.user;
+
+        await user.updateProfile(UserUpdateInfo());
       });
     });
   });

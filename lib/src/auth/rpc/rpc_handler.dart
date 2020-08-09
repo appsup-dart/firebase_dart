@@ -125,7 +125,7 @@ class RpcHandler {
           ..returnSecureToken = true
           ..tenantId = tenantId);
 
-    return _handleIdTokenResponse(response);
+    return handleIdTokenResponse(response);
   }
 
   /// Verifies an email link OTP for sign-in
@@ -144,7 +144,7 @@ class RpcHandler {
           ..returnSecureToken = true
           ..tenantId = tenantId);
 
-    return _handleIdTokenResponse(response);
+    return handleIdTokenResponse(response);
   }
 
   /// Verifies a password
@@ -162,7 +162,7 @@ class RpcHandler {
           ..returnSecureToken = true
           ..tenantId = tenantId);
 
-    return _handleIdTokenResponse(response);
+    return handleIdTokenResponse(response);
   }
 
   /// Creates an email/password account.
@@ -178,7 +178,7 @@ class RpcHandler {
           ..returnSecureToken = true
           ..tenantId = tenantId);
 
-    return _handleIdTokenResponse(response);
+    return handleIdTokenResponse(response);
   }
 
   /// Deletes the user's account corresponding to the idToken given.
@@ -322,7 +322,7 @@ class RpcHandler {
     }
   }
 
-  Future<openid.Credential> _handleIdTokenResponse(IdTokenResponse response) {
+  Future<openid.Credential> handleIdTokenResponse(IdTokenResponse response) {
     _validateIdTokenResponse(response);
 
     return _credentialFromIdToken(

@@ -1,5 +1,7 @@
 import 'package:firebase_dart/src/auth/authcredential.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
+import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
+    show SetAccountInfoResponse;
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
 import 'package:meta/meta.dart';
 import 'package:quiver/core.dart';
@@ -268,9 +270,47 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   }
 
   @override
-  Future<void> updateProfile(UserUpdateInfo userUpdateInfo) {
-    // TODO: implement updateProfile
-    throw UnimplementedError();
+  Future<void> updateProfile(UserUpdateInfo userUpdateInfo) async {
+    var profile = userUpdateInfo.toJson();
+    if (profile.isEmpty) {
+      // No change, directly return.
+      return _checkDestroyed();
+    }
+    var idToken = await getIdToken();
+    var response = await _rpcHandler.updateProfile(idToken.token, profile);
+
+    // Calls to SetAccountInfo may invalidate old tokens.
+    _updateTokensIfPresent(response);
+
+    // Update properties.
+    _accountInfo = AccountInfo.fromJson({
+      ..._accountInfo.toJson(),
+      'displayName': response.displayName,
+      'photoUrl': response.photoUrl
+    });
+
+    for (var userInfo in providerData) {
+      // Check if password provider is linked.
+      if (userInfo.providerId == EmailAuthProvider.providerId) {
+        // If so, update both fields in that provider.
+        _providerData[_providerData.indexOf(userInfo)] = UserInfo.fromJson({
+          ...userInfo.toJson(),
+          'displayName': displayName,
+          'photoUrl': photoUrl
+        });
+      }
+    }
+  }
+
+  /// Updates the current tokens using a server response, if new tokens are
+  /// present and are different from the current ones, and notify the Auth
+  /// listeners.
+  void _updateTokensIfPresent(SetAccountInfoResponse response) async {
+    if (response.idToken != null && _lastAccessToken != response.idToken) {
+      _credential = await _rpcHandler.handleIdTokenResponse(response);
+
+      _lastAccessToken = response.idToken;
+    }
   }
 }
 
