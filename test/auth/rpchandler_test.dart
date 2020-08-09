@@ -2616,6 +2616,70 @@ void main() {
               throwsA(AuthException.weakPassword()));
         });
       });
+
+      group('emailLinkSignInForLinking', () {
+        var tester = Tester(
+          path: 'emailLinkSignin',
+          expectedBody: {
+            'idToken': 'ID_TOKEN',
+            'email': 'user@example.com',
+            'oobCode': 'OTP_CODE',
+            'returnSecureToken': true
+          },
+          action: () => rpcHandler.emailLinkSignInForLinking(
+              'ID_TOKEN', 'user@example.com', 'OTP_CODE'),
+        );
+        test('emailLinkSignInForLinking: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'idToken': 'ID_TOKEN'},
+          );
+        });
+
+        test('emailLinkSignInForLinking: server caught error', () async {
+          await tester.shouldFailWithServerErrors(
+            errorMap: {
+              'INVALID_EMAIL': AuthException.invalidEmail(),
+              'TOO_MANY_ATTEMPTS_TRY_LATER':
+                  AuthException.tooManyAttemptsTryLater(),
+              'USER_DISABLED': AuthException.userDisabled()
+            },
+          );
+        });
+
+        test('emailLinkSignInForLinking: unknown server response', () async {
+          // Test when server returns unexpected response with no error message.
+
+          await tester.shouldFail(
+            serverResponse: {},
+            expectedError: AuthException.internalError(),
+          );
+        });
+
+        test('emailLinkSignInForLinking: empty action code error', () async {
+          // Test when empty action code is passed in emailLinkSignInForLinking request.
+
+          expect(
+              () => rpcHandler.emailLinkSignInForLinking(
+                  'ID_TOKEN', 'user@example.com', ''),
+              throwsA(AuthException.internalError()));
+        });
+        test('emailLinkSignInForLinking: invalid email error', () async {
+          // Test when invalid email is passed in emailLinkSignInForLinking request.
+
+          expect(
+              () => rpcHandler.emailLinkSignInForLinking(
+                  'ID_TOKEN', 'user.invalid', 'OTP_CODE'),
+              throwsA(AuthException.invalidEmail()));
+        });
+        test('emailLinkSignInForLinking: empty idToken error', () async {
+          // Test when empty ID token is passed in emailLinkSignInForLinking request.
+
+          expect(
+              () => rpcHandler.emailLinkSignInForLinking(
+                  '', 'user@example.com', 'OTP_CODE'),
+              throwsA(AuthException.internalError()));
+        });
+      });
     });
   });
 }

@@ -563,6 +563,27 @@ class RpcHandler {
     return response;
   }
 
+  /// Verifies an email link OTP for linking and returns a Promise that resolves
+  /// with the ID token.
+  Future<EmailLinkSigninResponse> emailLinkSignInForLinking(
+      String idToken, String email, String oobCode) async {
+    if (idToken == null ||
+        idToken.isEmpty ||
+        oobCode == null ||
+        oobCode.isEmpty) {
+      throw AuthException.internalError();
+    }
+    _validateEmail(email);
+    var response = await relyingparty
+        .emailLinkSignin(IdentitytoolkitRelyingpartyEmailLinkSigninRequest()
+          ..idToken = idToken
+          ..email = email
+          ..oobCode = oobCode
+          ..returnSecureToken = true);
+    _validateIdTokenResponse(response);
+    return response;
+  }
+
   /// Updates the custom locale header.
   void updateCustomLocaleHeader(String languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);
