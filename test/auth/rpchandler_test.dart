@@ -2925,6 +2925,108 @@ void main() {
           });
         });
       });
+
+      group('verifyPhoneNumber', () {
+        // Token response with expiresIn.
+        var tokenResponseWithExpiresIn = {
+          'idToken': createMockJwt(uid: 'uid123', providerId: 'phone'),
+          'refreshToken': 'refreshToken',
+          'expiresIn': '3600'
+        };
+
+        var tester = Tester(
+          path: 'verifyPhoneNumber',
+          expectedBody: {'sessionInfo': 'SESSION_INFO', 'code': '123456'},
+          expectedResult: (response) {
+            return {'id_token': response['idToken']};
+          },
+          action: () => rpcHandler
+              .verifyPhoneNumber(sessionInfo: 'SESSION_INFO', code: '123456')
+              .then((v) => {'id_token': v.response['id_token']}),
+        );
+
+        group('verifyPhoneNumber: using code', () {
+          test('verifyPhoneNumber: success using code', () async {
+            // Tests successful verifyPhoneNumber RPC call using an SMS code.
+
+            await tester.shouldSucceed(
+              serverResponse: tokenResponseWithExpiresIn,
+            );
+          });
+
+          test('verifyPhoneNumber: success custom locale using code', () async {
+            // Tests successful verifyPhoneNumber RPC call using an SMS code and passing
+            // custom locale.
+            rpcHandler.updateCustomLocaleHeader('ru');
+            await tester.shouldSucceed(
+                serverResponse: tokenResponseWithExpiresIn,
+                expectedHeaders: {
+                  'Content-Type': 'application/json',
+                  'X-Firebase-Locale': 'ru'
+                });
+          });
+          test('verifyPhoneNumber: invalid request missing session info',
+              () async {
+            expect(() => rpcHandler.verifyPhoneNumber(code: '123456'),
+                throwsA(AuthException.missingSessionInfo()));
+          });
+          test('verifyPhoneNumber: invalid request missing code', () async {
+            expect(
+                () => rpcHandler.verifyPhoneNumber(sessionInfo: 'SESSION_INFO'),
+                throwsA(AuthException.missingCode()));
+          });
+          test('verifyPhoneNumber: unknown server response', () async {
+            await tester.shouldFail(
+              serverResponse: {},
+              expectedError: AuthException.internalError(),
+            );
+          });
+
+          test('verifyPhoneNumber: caught server error', () async {
+            await tester.shouldFailWithServerErrors(errorMap: {
+              'INVALID_CODE': AuthException.invalidCode(),
+              'INVALID_SESSION_INFO': AuthException.invalidSessionInfo(),
+              'INVALID_TEMPORARY_PROOF': AuthException.invalidIdpResponse(),
+              'MISSING_CODE': AuthException.missingCode(),
+              'MISSING_SESSION_INFO': AuthException.missingSessionInfo(),
+              'SESSION_EXPIRED': AuthException.codeExpired(),
+              'REJECTED_CREDENTIAL': AuthException.rejectedCredential(),
+            });
+          });
+        });
+
+        group('verifyPhoneNumber: using temporary proof', () {
+          var t = tester.replace(
+            expectedBody: {
+              'phoneNumber': '16505550101',
+              'temporaryProof': 'TEMPORARY_PROOF'
+            },
+            action: () => rpcHandler
+                .verifyPhoneNumber(
+                    phoneNumber: '16505550101',
+                    temporaryProof: 'TEMPORARY_PROOF')
+                .then((v) => {'id_token': v.response['id_token']}),
+          );
+          test('verifyPhoneNumber: success using temporary proof', () async {
+            // Tests successful verifyPhoneNumber RPC call using a temporary proof.
+            await t.shouldSucceed(
+              serverResponse: tokenResponseWithExpiresIn,
+            );
+          });
+
+          test('verifyPhoneNumber: error no phone number', () async {
+            expect(
+                () => rpcHandler.verifyPhoneNumber(
+                    temporaryProof: 'TEMPORARY_PROOF'),
+                throwsA(AuthException.internalError()));
+          });
+          test('verifyPhoneNumber: error no temporary proof', () async {
+            expect(
+                () => rpcHandler.verifyPhoneNumber(phoneNumber: '16505550101'),
+                throwsA(AuthException.internalError()));
+          });
+        });
+      });
     });
   });
 }

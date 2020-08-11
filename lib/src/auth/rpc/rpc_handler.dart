@@ -648,9 +648,50 @@ class RpcHandler {
     return response.sessionInfo;
   }
 
+  /// Requests verifyPhoneNumber endpoint for sign in/sign up phone number
+  /// authentication flow and resolves with the STS token response.
+  Future<openid.Credential> verifyPhoneNumber(
+      {String sessionInfo,
+      String code,
+      String temporaryProof,
+      String phoneNumber}) async {
+    var request = IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest()
+      ..sessionInfo = sessionInfo
+      ..code = code
+      ..temporaryProof = temporaryProof
+      ..phoneNumber = phoneNumber;
+    _validateVerifyPhoneNumberRequest(request);
+
+    var response = await relyingparty.verifyPhoneNumber(request);
+    return handleIdTokenResponse(response);
+  }
+
   /// Updates the custom locale header.
   void updateCustomLocaleHeader(String languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);
+  }
+
+  /// Validates a request that sends the verification ID and code for a sign in/up
+  /// phone Auth flow.
+  void _validateVerifyPhoneNumberRequest(
+      IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest request) {
+    // There are 2 cases here:
+    // case 1: sessionInfo and code
+    // case 2: phoneNumber and temporaryProof
+    if (request.phoneNumber != null || request.temporaryProof != null) {
+      // Case 2. Both phoneNumber and temporaryProof should be set.
+      if (request.phoneNumber == null || request.temporaryProof == null) {
+        throw AuthException.internalError();
+      }
+    } else {
+      // Otherwise it's case 1, so we expect sessionInfo and code.
+      if (request.sessionInfo == null) {
+        throw AuthException.missingSessionInfo();
+      }
+      if (request.code == null) {
+        throw AuthException.missingCode();
+      }
+    }
   }
 
   /// Returns the IDP and its comma separated scope strings serialized.
