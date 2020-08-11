@@ -476,7 +476,8 @@ class GenericAdditionalUserInfo implements AdditionalUserInfo {
       // but no providerId. Get providerId from the token itself.
       // isNewUser will be returned for verifyPhoneNumber.
       var token = openid.IdToken.unverified(idToken);
-      providerId = token.claims.getTyped('provider_id');
+      providerId = token.claims.getTyped('provider_id') ??
+          (token.claims['firebase'] ?? {})['sign_in_provider'];
     }
     if (providerId == null) {
       // This is internal only.
