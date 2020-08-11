@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:firebase_dart/src/auth/error.dart';
 import 'package:jose/jose.dart';
 
 import 'backend.dart';
@@ -23,9 +26,48 @@ class MemoryBackend extends BaseBackend {
   }
 
   @override
+  Future<UserInfo> getUserByPhoneNumber(String phoneNumber) async {
+    return _users.values.firstWhere((user) => user.phoneNumber == phoneNumber,
+        orElse: () => null);
+  }
+
+  @override
   Future<void> deleteUser(String uid) async {
     assert(uid != null);
     print('delete user $uid');
     _users.remove(uid);
+  }
+
+  final Map<String, Future<String>> _smsCodes = {};
+
+  Future<String> receiveSmsCode(String phoneNumber) => _smsCodes[phoneNumber];
+
+  @override
+  Future<String> sendVerificationCode(String phoneNumber) async {
+    var user = await getUserByPhoneNumber(phoneNumber);
+    if (user == null) {
+      throw AuthException.userDeleted();
+    }
+
+    var max = 100000;
+    var code = (Random.secure().nextInt(max) + max).toString().substring(1);
+    _smsCodes[phoneNumber] = Future.value(code);
+    var builder = JsonWebSignatureBuilder()
+      ..jsonContent = user.phoneNumber
+      ..addRecipient(tokenSigningKey);
+    return builder.build().toCompactSerialization();
+  }
+
+  @override
+  Future<UserInfo> verifyPhoneNumber(String sessionInfo, String code) async {
+    var s = JsonWebSignature.fromCompactSerialization(sessionInfo);
+
+    var phoneNumber = s.unverifiedPayload.jsonContent;
+
+    var v = await _smsCodes.remove(phoneNumber);
+    if (v != code) {
+      throw AuthException.invalidCode();
+    }
+    return getUserByPhoneNumber(phoneNumber);
   }
 }

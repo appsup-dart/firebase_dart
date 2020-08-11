@@ -108,6 +108,20 @@ class VerifyPasswordResponse extends it.VerifyPasswordResponse
   Map<String, Object> toJson() => _write(super.toJson());
 }
 
+class IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse
+    extends it.IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse
+    with _JsonSerializable, IdTokenResponse {
+  IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse();
+
+  IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse.fromJson(Map _json)
+      : super.fromJson(_json) {
+    _read(_json);
+  }
+
+  @override
+  Map<String, Object> toJson() => _write(super.toJson());
+}
+
 class VerifyCustomTokenResponse extends it.VerifyCustomTokenResponse
     with _JsonSerializable, IdTokenResponse {
   VerifyCustomTokenResponse();
@@ -362,6 +376,15 @@ class RelyingpartyResourceApi extends it.RelyingpartyResourceApi {
       {String $fields}) async {
     return VerifyPasswordResponse.fromJson(
         await _do('verifyPassword', request, $fields: $fields));
+  }
+
+  @override
+  Future<IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse>
+      verifyPhoneNumber(
+          it.IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest request,
+          {String $fields}) async {
+    return IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse.fromJson(
+        await _do('verifyPhoneNumber', request, $fields: $fields));
   }
 
   @override

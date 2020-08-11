@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/auth/app_verifier.dart';
+import 'package:firebase_dart/src/auth/auth_providers.dart';
+import 'package:firebase_dart/src/auth/authcredential.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/backend/memory_backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
@@ -259,6 +263,40 @@ void main() async {
       expect(
           () => auth.confirmPasswordReset('INVALID_CODE', expectedNewPassword),
           throwsA(AuthException.invalidOobCode()));
+    });
+  });
+
+  group('verifyPhoneNumber', () {
+    test('verifyPhoneNumber: success', () async {
+      var phoneNumber = '+15551234567';
+
+      var u = await tester.backend.getUserById('user1');
+      u.phoneNumber = phoneNumber;
+      await tester.backend.storeUser(u);
+
+      var credential = Completer<AuthCredential>();
+
+      ApplicationVerifier.instance = DummyApplicationVerifier();
+
+      await auth.verifyPhoneNumber(
+          phoneNumber: phoneNumber,
+          timeout: Duration(),
+          verificationCompleted: (value) {
+            credential.complete(value);
+          },
+          verificationFailed: (e) {
+            throw e;
+          },
+          codeAutoRetrievalTimeout: (verificationId) async {
+            var code = await tester.backend.receiveSmsCode(phoneNumber);
+            credential.complete(PhoneAuthProvider.getCredential(
+                verificationId: verificationId, smsCode: code));
+          });
+
+      var r = await auth.signInWithCredential(await credential.future);
+
+      expect(r.user.uid, 'user1');
+      expect(r.user.phoneNumber, phoneNumber);
     });
   });
 }

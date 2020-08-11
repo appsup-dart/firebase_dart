@@ -1,4 +1,5 @@
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 
 import '../user.dart';
@@ -10,6 +11,7 @@ import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 import '../authcredential.dart';
 import '../auth.dart';
+import 'package:pedantic/pedantic.dart';
 
 /// The entry point of the Firebase Authentication SDK.
 class FirebaseAuthImpl extends FirebaseAuth {
@@ -226,9 +228,21 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  Future<AuthResult> signInWithCredential(credential) {
-    // TODO: implement signInWithCredential
-    throw UnimplementedError();
+  Future<AuthResult> signInWithCredential(AuthCredential credential) async {
+    await _onReady;
+
+    if (credential is PhoneAuthCredential) {
+      var openidCredential = await rpcHandler.verifyPhoneNumber(
+          sessionInfo: credential.verificationId, code: credential.smsCode);
+      return _signInWithIdTokenProvider(
+        openidCredential: openidCredential,
+        credential: credential,
+        isNewUser: false,
+        provider: credential.providerId,
+      );
+/*
+*/
+    }
   }
 
   @override
@@ -265,15 +279,23 @@ class FirebaseAuthImpl extends FirebaseAuth {
 
   @override
   Future<void> verifyPhoneNumber(
-      {String phoneNumber,
-      Duration timeout,
+      {@required String phoneNumber,
+      @required Duration timeout,
       int forceResendingToken,
-      verificationCompleted,
-      verificationFailed,
-      codeSent,
-      codeAutoRetrievalTimeout}) {
-    // TODO: implement verifyPhoneNumber
-    throw UnimplementedError();
+      @required PhoneVerificationCompleted verificationCompleted,
+      @required PhoneVerificationFailed verificationFailed,
+      PhoneCodeSent codeSent,
+      PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout}) async {
+    var assertion = await ApplicationVerifier.instance.verify(this);
+    var v = await rpcHandler.sendVerificationCode(
+        phoneNumber: phoneNumber, recaptchaToken: assertion);
+
+    if (codeSent != null) codeSent(v);
+
+    if (codeAutoRetrievalTimeout != null) {
+      unawaited(
+          Future.delayed(timeout).then((_) => codeAutoRetrievalTimeout(v)));
+    }
   }
 }
 

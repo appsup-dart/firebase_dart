@@ -178,6 +178,29 @@ class BackendConnection {
       ];
   }
 
+  Future<IdentitytoolkitRelyingpartySendVerificationCodeResponse>
+      sendVerificationCode(
+          IdentitytoolkitRelyingpartySendVerificationCodeRequest
+              request) async {
+    var token = await backend.sendVerificationCode(request.phoneNumber);
+    return IdentitytoolkitRelyingpartySendVerificationCodeResponse()
+      ..sessionInfo = token;
+  }
+
+  Future<IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse>
+      verifyPhoneNumber(
+          IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest request) async {
+    var user =
+        await backend.verifyPhoneNumber(request.sessionInfo, request.code);
+
+    return IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse()
+      ..localId = user.localId
+      ..idToken = await backend.generateIdToken(
+          uid: user.localId, providerId: 'password')
+      ..expiresIn = '3600'
+      ..refreshToken = await backend.generateRefreshToken(user.localId);
+  }
+
   Future<dynamic> _handle(String method, dynamic body) async {
     switch (method) {
       case 'signupNewUser':
@@ -215,6 +238,15 @@ class BackendConnection {
         var request =
             IdentitytoolkitRelyingpartySetAccountInfoRequest.fromJson(body);
         return setAccountInfo(request);
+      case 'sendVerificationCode':
+        var request =
+            IdentitytoolkitRelyingpartySendVerificationCodeRequest.fromJson(
+                body);
+        return sendVerificationCode(request);
+      case 'verifyPhoneNumber':
+        var request =
+            IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest.fromJson(body);
+        return verifyPhoneNumber(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }
@@ -240,6 +272,8 @@ abstract class Backend {
 
   Future<UserInfo> getUserByEmail(String email);
 
+  Future<UserInfo> getUserByPhoneNumber(String phoneNumber);
+
   Future<UserInfo> createUser({String email, String password});
 
   Future<UserInfo> updateUser(UserInfo user);
@@ -249,6 +283,10 @@ abstract class Backend {
   Future<String> generateIdToken({String uid, String providerId});
 
   Future<String> generateRefreshToken(String uid);
+
+  Future<String> sendVerificationCode(String phoneNumber);
+
+  Future<UserInfo> verifyPhoneNumber(String sessionInfo, String code);
 }
 
 abstract class BaseBackend extends Backend {
