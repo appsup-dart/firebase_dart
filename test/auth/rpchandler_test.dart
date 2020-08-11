@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:firebase_dart/src/auth/auth_providers.dart';
 import 'package:firebase_dart/src/auth/authcredential.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
@@ -3229,6 +3230,80 @@ void main() {
                       phoneNumber: '16505550101',
                     ),
                 throwsA(AuthException.internalError()));
+          });
+        });
+      });
+
+      group('Send Firebase backend request', () {
+        var identifier = 'user@example.com';
+        var tester = Tester(
+          path: 'createAuthUri',
+          expectedBody: {
+            'identifier': identifier,
+            'continueUri': platform.currentUrl
+          },
+          expectedResult: (_) => ['google.com', 'myauthprovider.com'],
+          action: () => rpcHandler.fetchProvidersForIdentifier(identifier),
+        );
+        test('Send Firebase backend request: timeout', () async {
+          fakeAsync((fake) {
+            tester.shouldFail(
+              serverResponse: Future.delayed(Duration(days: 1)),
+              expectedError: AuthException.networkRequestFailed(),
+            );
+
+            // This will cause the timeout above to fire immediately, without waiting
+            // 5 seconds of real time.
+            fake.elapse(Duration(minutes: 1));
+          });
+        });
+
+        group('Send Firebase backend request: offline', () {
+          setUp(() {
+            platform =
+                Platform(currentUrl: 'http://localhost', isOnline: false);
+          });
+          test('Send Firebase backend request: offline false alert', () async {
+            fakeAsync((fake) {
+              tester.shouldSucceed(
+                serverResponse: Future.delayed(
+                    Duration(milliseconds: 4999),
+                    () => {
+                          'kind': 'identitytoolkit#CreateAuthUriResponse',
+                          'authUri':
+                              'https://accounts.google.com/o/oauth2/auth?foo=bar',
+                          'providerId': 'google.com',
+                          'allProviders': ['google.com', 'myauthprovider.com'],
+                          'registered': true,
+                          'forExistingProvider': true,
+                          'sessionId': 'MY_SESSION_ID'
+                        }),
+              );
+
+              fake.elapse(Duration(minutes: 1));
+            });
+          });
+          test('Send Firebase backend request: offline slow response',
+              () async {
+            fakeAsync((fake) {
+              tester.shouldFail(
+                serverResponse: Future.delayed(
+                    Duration(milliseconds: 5001),
+                    () => {
+                          'kind': 'identitytoolkit#CreateAuthUriResponse',
+                          'authUri':
+                              'https://accounts.google.com/o/oauth2/auth?foo=bar',
+                          'providerId': 'google.com',
+                          'allProviders': ['google.com', 'myauthprovider.com'],
+                          'registered': true,
+                          'forExistingProvider': true,
+                          'sessionId': 'MY_SESSION_ID'
+                        }),
+                expectedError: AuthException.networkRequestFailed(),
+              );
+
+              fake.elapse(Duration(minutes: 1));
+            });
           });
         });
       });
