@@ -57,7 +57,7 @@ final _serverErrors = {
   'CREDENTIAL_TOO_OLD_LOGIN_AGAIN': AuthException.credentialTooOldLoginAgain(),
   'INVALID_ID_TOKEN': AuthException.invalidAuth(),
   'TOKEN_EXPIRED': AuthException.tokenExpired(),
-  'USER_NOT_FOUND': AuthException.tokenExpired(),
+  'USER_NOT_FOUND': AuthException.userDeleted(),
 
   // CORS issues.
   'CORS_UNSUPPORTED': AuthException.corsUnsupported(),

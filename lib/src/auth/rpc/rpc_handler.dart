@@ -186,8 +186,15 @@ class RpcHandler {
     if (idToken == null) {
       throw AuthException.internalError();
     }
-    await relyingparty.deleteAccount(
-        IdentitytoolkitRelyingpartyDeleteAccountRequest()..idToken = idToken);
+    try {
+      await relyingparty.deleteAccount(
+          IdentitytoolkitRelyingpartyDeleteAccountRequest()..idToken = idToken);
+    } on AuthException catch (e) {
+      if (e.code == AuthException.userDeleted().code) {
+        throw AuthException.tokenExpired();
+      }
+      rethrow;
+    }
   }
 
   /// Signs in a user as anonymous.
@@ -466,10 +473,17 @@ class RpcHandler {
     if (providersToDelete == null) {
       throw AuthException.internalError();
     }
-    return relyingparty
-        .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
-          ..idToken = idToken
-          ..deleteProvider = providersToDelete);
+    try {
+      return await relyingparty
+          .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
+            ..idToken = idToken
+            ..deleteProvider = providersToDelete);
+    } on AuthException catch (e) {
+      if (e.code == AuthException.userDeleted().code) {
+        throw AuthException.tokenExpired();
+      }
+      rethrow;
+    }
   }
 
   /// Updates the profile of the user. When resolved, promise returns a response
@@ -666,6 +680,61 @@ class RpcHandler {
     return handleIdTokenResponse(response);
   }
 
+  /// Requests verifyPhoneNumber endpoint for link/update phone number
+  /// authentication flow and resolves with the STS token response.
+  Future<openid.Credential> verifyPhoneNumberForLinking(
+      {String sessionInfo,
+      String code,
+      String temporaryProof,
+      String phoneNumber,
+      String idToken}) async {
+    // idToken should be required here.
+    if (idToken == null) {
+      throw AuthException.internalError();
+    }
+    var request = IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest()
+      ..sessionInfo = sessionInfo
+      ..code = code
+      ..temporaryProof = temporaryProof
+      ..phoneNumber = phoneNumber
+      ..idToken = idToken;
+    _validateVerifyPhoneNumberRequest(request);
+
+    var response = await relyingparty.verifyPhoneNumber(request);
+
+    if (response.temporaryProof != null) {
+      throw _errorInfoFromResponse(
+          AuthException.credentialAlreadyInUse(), response);
+    }
+
+    return handleIdTokenResponse(response);
+  }
+
+  /// Requests verifyPhoneNumber endpoint for reauthenticating with a phone number
+  /// and resolves with the STS token response.
+  Future<openid.Credential> verifyPhoneNumberForExisting(
+      {String sessionInfo,
+      String code,
+      String temporaryProof,
+      String phoneNumber}) async {
+    var request = IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest()
+      ..sessionInfo = sessionInfo
+      ..code = code
+      ..temporaryProof = temporaryProof
+      ..phoneNumber = phoneNumber
+      ..operation = 'REAUTH';
+    _validateVerifyPhoneNumberRequest(request);
+
+    var response = await relyingparty.verifyPhoneNumber(request);
+
+    if (response.temporaryProof != null) {
+      throw _errorInfoFromResponse(
+          AuthException.credentialAlreadyInUse(), response);
+    }
+
+    return handleIdTokenResponse(response);
+  }
+
   /// Updates the custom locale header.
   void updateCustomLocaleHeader(String languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);
@@ -766,11 +835,21 @@ class RpcHandler {
   }
 
   AuthException _errorInfoFromResponse(
-      AuthException error, VerifyAssertionResponse response) {
+      AuthException error, IdTokenResponse response) {
+    var message, email, phoneNumber;
+    if (response is VerifyAssertionResponse) {
+      email = response.email;
+    } else if (response
+        is IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse) {
+      phoneNumber = response.phoneNumber;
+    } else {
+      // TODO check callers
+      throw UnimplementedError();
+    }
     return error?.replace(
-//TODO      message: response.message,
-      email: response.email,
-//TODO      phoneNumber: response.phoneNumber,
+      message: message,
+      email: email,
+      phoneNumber: phoneNumber,
       credential: _getCredentialFromResponse(response),
     );
   }
