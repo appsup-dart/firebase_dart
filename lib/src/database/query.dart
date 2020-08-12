@@ -33,16 +33,12 @@ abstract class Query {
   /// Streams for 'child_removed' events.
   Stream<Event> get onChildRemoved => on('child_removed');
 
-  /// Listens for exactly one event of the specified event type, and then stops
-  /// listening.
-  Future<DataSnapshot> once(String eventType) =>
-      on(eventType).first.then<DataSnapshot>((e) => e.snapshot);
-
-  /// Listens for exactly one 'value' event.
-  Future<DataSnapshot> get onceValue => once('value');
+  /// Listens for a single value event and then stops listening.
+  Future<DataSnapshot> once() =>
+      on('value').first.then<DataSnapshot>((e) => e.snapshot);
 
   /// Convenient method to get the value for this query.
-  Future get() => onceValue.then((v) => v.value);
+  Future get() => once().then((v) => v.value);
 
   /// Generates a new [Query] object ordered by the specified child key.
   Query orderByChild(String child);
