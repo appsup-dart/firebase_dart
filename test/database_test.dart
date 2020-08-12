@@ -310,7 +310,7 @@ void testsWith(Map<String, dynamic> secrets) {
       await ref.set('hello');
       expect(await ref.get(), 'hello');
       await ref.set(null);
-      expect((await ref.once()), isNull);
+      expect((await ref.once()).value, isNull);
     });
 
     test('Merge', () async {
