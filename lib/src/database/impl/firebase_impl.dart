@@ -33,7 +33,7 @@ class QueryImpl extends Query {
 
   @override
   Stream<Event> on(String eventType) =>
-      _repo.createStream(ref, filter, eventType);
+      _repo.createStream(reference(), filter, eventType);
 
   Query _withFilter(QueryFilter filter) =>
       QueryImpl._(_db, _pathSegments, filter);
@@ -74,7 +74,7 @@ class QueryImpl extends Query {
       _withFilter(filter.copyWith(limit: limit, reverse: true));
 
   @override
-  DatabaseReference get ref => ReferenceImpl(_db, _pathSegments);
+  DatabaseReference reference() => ReferenceImpl(_db, _pathSegments);
 }
 
 class ReferenceImpl extends QueryImpl with DatabaseReference {
