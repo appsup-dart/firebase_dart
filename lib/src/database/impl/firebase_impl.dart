@@ -75,6 +75,11 @@ class QueryImpl extends Query {
 
   @override
   DatabaseReference reference() => ReferenceImpl(_db, _pathSegments);
+
+  @override
+  Future<void> keepSynced(bool value) async {
+    // TODO: implement keepSynced: do nothing for now
+  }
 }
 
 class ReferenceImpl extends QueryImpl with DatabaseReference {

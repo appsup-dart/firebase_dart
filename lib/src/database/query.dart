@@ -93,4 +93,12 @@ abstract class Query {
   /// Queries are attached to a location in your Firebase. This method will
   /// return a Firebase reference to that location.
   DatabaseReference reference();
+
+  /// By calling keepSynced(true) on a location, the data for that location will
+  /// automatically be downloaded and kept in sync, even when no listeners are
+  /// attached for that location.
+  ///
+  /// Additionally, while a location is kept synced, it will not be evicted from
+  /// the persistent disk cache.
+  Future<void> keepSynced(bool value);
 }
