@@ -52,6 +52,30 @@ class FirebaseDatabase {
     await repo.purgeOutstandingWrites();
   }
 
+  /// Attempts to sets the database persistence to [enabled].
+  ///
+  /// This property must be set before calling methods on database references
+  /// and only needs to be called once per application. The returned [Future]
+  /// will complete with `true` if the operation was successful or `false` if
+  /// the persistence could not be set (because database references have
+  /// already been created).
+  ///
+  /// The Firebase Database client will cache synchronized data and keep track
+  /// of all writes you’ve initiated while your application is running. It
+  /// seamlessly handles intermittent network connections and re-sends write
+  /// operations when the network connection is restored.
+  ///
+  /// However by default your write operations and cached data are only stored
+  /// in-memory and will be lost when your app restarts. By setting [enabled]
+  /// to `true`, the data will be persisted to on-device (disk) storage and will
+  /// thus be available again when the app is restarted (even when there is no
+  /// network connectivity at that time).
+  Future<bool> setPersistenceEnabled(bool enabled) async {
+    // TODO: implement setPersistenceEnabled: do nothing for now
+
+    return false;
+  }
+
   @override
   int get hashCode => quiver.hash2(databaseURL, app);
 
