@@ -4,40 +4,16 @@ import 'repo.dart';
 import 'dart:async';
 
 class DataSnapshotImpl extends DataSnapshot {
+  @override
+  final String key;
+
   final TreeStructuredData treeStructuredData;
 
-  DataSnapshotImpl(DatabaseReference ref, this.treeStructuredData) : super(ref);
+  DataSnapshotImpl(DatabaseReference ref, this.treeStructuredData)
+      : key = ref.key;
 
   @override
   dynamic get value => treeStructuredData?.toJson();
-
-  @override
-  bool get exists => treeStructuredData != null && !treeStructuredData.isNil;
-
-  @override
-  DataSnapshot child(String c) => DataSnapshotImpl(
-      ref.child(c), treeStructuredData?.subtree(Name.parsePath(c)));
-
-  @override
-  void forEach(Function(DataSnapshot snapshot) cb) =>
-      treeStructuredData.children.forEach((key, value) =>
-          cb(DataSnapshotImpl(ref.child(key.toString()), value)));
-
-  @override
-  bool hasChild(String path) =>
-      treeStructuredData.hasChild(Name.parsePath(path));
-
-  @override
-  bool get hasChildren => treeStructuredData.children.isNotEmpty;
-
-  @override
-  int get numChildren => treeStructuredData.children.length;
-
-  @override
-  dynamic get priority => treeStructuredData.priority.toJson();
-
-  @override
-  dynamic exportVal() => treeStructuredData.toJson(true);
 }
 
 extension QueryExtensionForTesting on Query {

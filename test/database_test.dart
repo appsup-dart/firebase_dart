@@ -186,28 +186,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
       var s = e.snapshot;
       expect(s.key, 'snapshot');
-      expect(s.exists, true);
       expect(s.value, {'hello': 'world'});
-
-      s = s.child('hello');
-      expect(s.key, 'hello');
-      expect(s.exists, true);
-      expect(s.value, 'world');
-
-      s = s.child('does not exist');
-      expect(s.key, 'does not exist');
-      expect(s.exists, false);
-      expect(s.value, null);
-
-      s = s.child('also does not exist');
-      expect(s.key, 'also does not exist');
-      expect(s.exists, false);
-      expect(s.value, null);
-
-      s = s.child('also does not exist');
-      expect(s.key, 'also does not exist');
-      expect(s.exists, false);
-      expect(s.value, null);
     });
   });
 
@@ -331,7 +310,7 @@ void testsWith(Map<String, dynamic> secrets) {
       await ref.set('hello');
       expect(await ref.get(), 'hello');
       await ref.set(null);
-      expect((await ref.once()).exists, false);
+      expect((await ref.once()), isNull);
     });
 
     test('Merge', () async {
