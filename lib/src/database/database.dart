@@ -18,7 +18,7 @@ class FirebaseDatabase {
   ///
   /// If app is specified, its options should include a `databaseURL`.
   FirebaseDatabase({this.app, String databaseURL})
-      : databaseURL = _normalizeUrl(databaseURL);
+      : databaseURL = _normalizeUrl(databaseURL ?? app.options.databaseURL);
 
   /// Gets a DatabaseReference for the root of your Firebase Database.
   DatabaseReference reference() => ReferenceImpl(this, <String>[]);
