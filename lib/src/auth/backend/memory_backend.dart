@@ -34,7 +34,6 @@ class MemoryBackend extends BaseBackend {
   @override
   Future<void> deleteUser(String uid) async {
     assert(uid != null);
-    print('delete user $uid');
     _users.remove(uid);
   }
 

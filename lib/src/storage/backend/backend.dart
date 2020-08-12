@@ -10,8 +10,6 @@ class BackendConnection {
   BackendConnection(this.backend);
 
   Future<http.Response> handleRequest(http.Request request) async {
-    print(request.url);
-
     if (!request.url.path.startsWith('/v0/b/')) {
       throw StorageException.internalError(
           'Invalid request ${request.method}${request.url}');

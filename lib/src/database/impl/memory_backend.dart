@@ -51,11 +51,8 @@ class MemoryBackend extends Backend {
       ServerValue.timestamp: Value(DateTime.now().millisecondsSinceEpoch)
     };
     var p = Name.parsePath(path);
-    print('put with hash "$hash" $path $value');
     if (hash != null) {
       var current = getLatestValue(syncTree, p);
-      print('current value $current');
-      print(syncTree.root.value.views.values.first.data.serverVersion);
       if (hash != current.hash) {
         throw FirebaseDatabaseException.dataStale();
       }

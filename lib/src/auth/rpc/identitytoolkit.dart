@@ -289,7 +289,6 @@ class _MyApiRequester extends commons.ApiRequester {
       commons.DownloadOptions downloadOptions =
           client_requests.DownloadOptions.Metadata}) async {
     try {
-      print(queryParams);
       var fields = queryParams.remove('fields') ?? [];
 
       return await super
