@@ -5,6 +5,7 @@ import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
 
 import 'event.dart';
 import 'data_observer.dart';
+import 'events/cancel.dart';
 import 'treestructureddata.dart';
 import 'view.dart';
 import 'operations/tree.dart';
@@ -338,11 +339,14 @@ class SyncTree {
                               true
                           ? point.views[f]._data.serverVersion.value.hash
                           : null)
-                  .catchError((e) {
-                if (e.code == 'permission_denied') {
-                  point.views.values
-                      .expand((v) => v.observers.values)
-                      .forEach((t) => t.dispatchEvent(Event('cancel')));
+                  .catchError((e, tr) {
+                if (e is FirebaseDatabaseException &&
+                    e.code == 'permission_denied') {
+                  point.views.values.expand((v) => v.observers.values).forEach(
+                      (t) => t.dispatchEvent(CancelEvent(
+                          e.replace(
+                              message: 'Access to ${path.join('/')} denied'),
+                          tr)));
                   point.views.clear();
                 } else {
                   throw e;
@@ -399,14 +403,11 @@ class SyncTree {
   }
 
   void applyListenRevoked(Path<Name> path, Filter filter) {
-    root
-        .subtree(path)
-        .value
-        .views
-        .remove(filter)
-        .observers
-        .values
-        .forEach((t) => t.dispatchEvent(Event('cancel')));
+    root.subtree(path).value.views.remove(filter).observers.values.forEach(
+        (t) => t.dispatchEvent(CancelEvent(
+            FirebaseDatabaseException.permissionDenied()
+                .replace(message: 'Access to ${path.join('/')} denied'),
+            null))); // TODO is this always because of permission denied?
   }
 
   /// Applies a user merge at [path] with [changedChildren]

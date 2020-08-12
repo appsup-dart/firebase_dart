@@ -89,4 +89,7 @@ class FirebaseDatabaseException extends FirebaseException {
   /// Please refer to the error message and error details for more information.
   FirebaseDatabaseException.unknownError()
       : this(code: 'unknown_error', message: 'An unknown error occurred');
+
+  FirebaseDatabaseException replace({String message}) =>
+      FirebaseDatabaseException(code: code, message: message ?? this.message);
 }

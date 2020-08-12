@@ -7,6 +7,7 @@ import 'package:meta/meta.dart';
 
 import 'connection.dart';
 import 'dart:async';
+import 'events/cancel.dart';
 import 'treestructureddata.dart';
 import 'synctree.dart';
 import '../../database.dart' as firebase;
@@ -337,8 +338,10 @@ class StreamFactory {
   }
 
   void addError(Event error) {
+    assert(error is CancelEvent);
     stopListen();
-    controller.addError(error);
+    controller.addError(
+        (error as CancelEvent).error, (error as CancelEvent).stackTrace);
     controller.close();
   }
 
