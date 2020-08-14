@@ -1,6 +1,7 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
+import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/database.dart'
     show FirebaseDatabaseException, MutableData, TransactionHandler;
 import 'package:meta/meta.dart';
@@ -41,8 +42,24 @@ class Repo {
 
   factory Repo(firebase.FirebaseDatabase db) {
     var url = Uri.parse(db.databaseURL ?? db.app.options.databaseURL);
-    return _repos.putIfAbsent(
-        db, () => Repo._(url, PersistentConnection(url)..initialize()));
+
+    return _repos.putIfAbsent(db, () {
+      var auth = FirebaseAuth.fromApp(db.app);
+
+      var connection =
+          PersistentConnection(url, authTokenProvider: (refresh) async {
+        var user = await auth.currentUser();
+        var token = await user.getIdToken(refresh: refresh);
+        return token.token;
+      })
+            ..initialize();
+
+      auth.onAuthStateChanged.listen((user) async {
+        return connection.refreshAuthToken((await user.getIdToken()).token);
+      }); // TODO cancel this somewhere
+
+      return Repo._(url, connection);
+    });
   }
 
   Repo._(this.url, this._connection)
