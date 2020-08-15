@@ -3,14 +3,14 @@ part of firebase_dart.core;
 /// Represents a single Firebase app instance.
 ///
 /// You can get an instance by calling [Firebase.app()].
-class FirebaseApp {
+abstract class FirebaseApp {
   /// The name of this [FirebaseApp].
   final String name;
 
   /// The [FirebaseOptions] this app was created with.
   final FirebaseOptions options;
 
-  FirebaseApp._(this.name, this.options);
+  FirebaseApp(this.name, this.options);
 
   /// Deletes this app and frees up system resources.
   ///
