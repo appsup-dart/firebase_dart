@@ -13,15 +13,12 @@ import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:hive/hive.dart';
-import 'package:mockito/mockito.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart' as http;
+import 'package:test/test.dart';
 
 import 'jwt_util.dart';
 import 'util.dart';
-
-import 'package:test/test.dart';
-
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart' as http;
 
 const identityToolkitBaseUrl =
     'https://www.googleapis.com/identitytoolkit/v3/relyingparty';
@@ -352,5 +349,3 @@ class Tester {
     _connection = null;
   }
 }
-
-class MockBackendConnection extends Mock implements BackendConnection {}
