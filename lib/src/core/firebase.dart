@@ -41,17 +41,4 @@ class Firebase {
     }
     _apps.remove(name);
   }
-
-  @override
-  bool operator ==(dynamic other) {
-    if (identical(this, other)) return true;
-    if (other is! Firebase) return false;
-    return other.hashCode == hashCode;
-  }
-
-  @override
-  int get hashCode => toString().hashCode;
-
-  @override
-  String toString() => '$Firebase';
 }
