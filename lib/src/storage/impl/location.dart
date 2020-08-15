@@ -8,7 +8,10 @@ class Location {
   final Uri uri;
 
   Location(String bucket, [List<String> pathSegments = const []])
-      : uri = Uri(scheme: 'gs', host: bucket, pathSegments: pathSegments);
+      : uri = Uri(
+            scheme: 'gs',
+            host: Uri.encodeComponent(bucket),
+            pathSegments: pathSegments);
 
   factory Location.fromBucketSpec(String bucketString) {
     try {
@@ -47,7 +50,7 @@ class Location {
     throw StorageException.invalidUrl(url);
   }
 
-  String get bucket => uri.host;
+  String get bucket => Uri.decodeComponent(uri.host);
 
   String get path => uri.pathSegments.join('/');
 

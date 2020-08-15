@@ -3,12 +3,11 @@ import 'dart:convert';
 
 import 'package:firebase_dart/src/storage.dart';
 import 'package:firebase_dart/src/storage/impl/http_client.dart';
-import 'package:test/test.dart';
-import 'package:http/testing.dart';
-import 'package:http/http.dart';
-
 import 'package:firebase_dart/src/storage/impl/location.dart';
 import 'package:firebase_dart/src/storage/impl/resource_client.dart';
+import 'package:http/http.dart';
+import 'package:http/testing.dart';
+import 'package:test/test.dart';
 
 void main() async {
   group('ResourceClient', () {
@@ -19,7 +18,6 @@ void main() async {
     var locationNormalNoObjUrl = '/b/' + normalBucket + '/o';
     var locationEscapes = Location.fromBucketSpec('b/').child('o?');
     var locationEscapesUrl = '/b/b%2F/o/o%3F';
-    var locationEscapesNoObjUrl = '/b/b%2F/o';
 
     String token;
     FutureOr<Response> Function(Request) handler;
