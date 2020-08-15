@@ -15,10 +15,10 @@ import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
-import 'secrets.dart'
-    if (dart.library.html) 'secrets.dart'
-    if (dart.library.io) 'secrets_io.dart' as s;
-import 'util.dart';
+import '../secrets.dart'
+    if (dart.library.html) '../secrets.dart'
+    if (dart.library.io) '../secrets_io.dart' as s;
+import '../util.dart';
 
 void main() {
   Hive.init(Directory.systemTemp.path);
