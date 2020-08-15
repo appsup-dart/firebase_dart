@@ -1,7 +1,74 @@
-import '../../database.dart';
-import 'treestructureddata.dart';
-import 'repo.dart';
 import 'dart:async';
+
+import 'package:firebase_dart/core.dart';
+import 'package:quiver/core.dart' as quiver;
+
+import '../../database.dart';
+import 'repo.dart';
+import 'treestructureddata.dart';
+
+class FirebaseDatabaseImpl implements FirebaseDatabase {
+  @override
+  final String databaseURL;
+
+  @override
+  final FirebaseApp app;
+
+  FirebaseDatabaseImpl({this.app, String databaseURL})
+      : databaseURL = _normalizeUrl(databaseURL ?? app.options.databaseURL);
+
+  @override
+  DatabaseReference reference() => ReferenceImpl(this, <String>[]);
+
+  @override
+  Future<void> goOnline() async {
+    var repo = Repo(this);
+    await repo.resume();
+  }
+
+  @override
+  Future<void> goOffline() async {
+    var repo = Repo(this);
+    await repo.interrupt();
+  }
+
+  @override
+  Future<void> purgeOutstandingWrites() async {
+    var repo = Repo(this);
+    await repo.purgeOutstandingWrites();
+  }
+
+  Future<bool> setPersistenceEnabled(bool enabled) async {
+    // TODO: implement setPersistenceEnabled: do nothing for now
+
+    return false;
+  }
+
+  static String _normalizeUrl(String url) {
+    if (url == null) {
+      throw ArgumentError.notNull('databaseURL');
+    }
+    var uri = Uri.parse(url);
+
+    if (!['http', 'https', 'mem'].contains(uri.scheme)) {
+      throw ArgumentError.value(
+          url, 'databaseURL', 'Only http, https or mem scheme allowed');
+    }
+    if (uri.pathSegments.isNotEmpty) {
+      throw ArgumentError.value(url, 'databaseURL', 'Paths are not allowed');
+    }
+    return Uri.parse(url).replace(path: '').toString();
+  }
+
+  @override
+  int get hashCode => quiver.hash2(databaseURL, app);
+
+  @override
+  bool operator ==(Object other) =>
+      other is FirebaseDatabase &&
+      other.app == app &&
+      other.databaseURL == databaseURL;
+}
 
 class DataSnapshotImpl extends DataSnapshot {
   @override

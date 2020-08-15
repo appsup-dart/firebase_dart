@@ -4,28 +4,21 @@
 library firebase_dart;
 
 import 'dart:async';
-import 'dart:convert' show Converter, Codec;
-import 'package:crypto/crypto.dart';
 import 'dart:collection';
-import 'database/impl/firebase_impl.dart';
-import 'package:quiver/core.dart' as quiver;
+import 'dart:convert' show Converter, Codec;
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:firebase_dart/core.dart';
-import 'database/impl/repo.dart';
 
-part 'database/datasnapshot.dart';
-
-part 'database/event.dart';
-
-part 'database/query.dart';
-
-part 'database/disconnect.dart';
-
-part 'database/token.dart';
-
-part 'database/server_value.dart';
+import 'database/impl/firebase_impl.dart';
 
 part 'database/database.dart';
-part 'database/reference.dart';
+part 'database/datasnapshot.dart';
+part 'database/disconnect.dart';
+part 'database/event.dart';
 part 'database/exception.dart';
+part 'database/query.dart';
+part 'database/reference.dart';
+part 'database/server_value.dart';
+part 'database/token.dart';

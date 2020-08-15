@@ -3,39 +3,32 @@ part of firebase_dart;
 /// The entry point for accessing a Firebase Database.
 ///
 /// To access a location in the database and read or write data, use `reference()`.
-class FirebaseDatabase {
+abstract class FirebaseDatabase {
   /// The [FirebaseApp] instance to which this [FirebaseDatabase] belongs.
   ///
   /// If null, the default [FirebaseApp] is used.
-  final FirebaseApp app;
+  FirebaseApp get app;
 
   /// The URL to which this [FirebaseDatabase] belongs
   ///
   /// If null, the URL of the specified [FirebaseApp] is used
-  final String databaseURL;
+  String get databaseURL;
 
   /// Gets an instance of [FirebaseDatabase].
   ///
   /// If app is specified, its options should include a `databaseURL`.
-  FirebaseDatabase({this.app, String databaseURL})
-      : databaseURL = _normalizeUrl(databaseURL ?? app.options.databaseURL);
+  factory FirebaseDatabase({FirebaseApp app, String databaseURL}) => FirebaseDatabaseImpl(app: app, databaseURL: databaseURL);
 
   /// Gets a DatabaseReference for the root of your Firebase Database.
-  DatabaseReference reference() => ReferenceImpl(this, <String>[]);
+  DatabaseReference reference();
 
   /// Resumes our connection to the Firebase Database backend after a previous
   /// [goOffline] call.
-  Future<void> goOnline() async {
-    var repo = Repo(this);
-    await repo.resume();
-  }
+  Future<void> goOnline();
 
   /// Shuts down our connection to the Firebase Database backend until
   /// [goOnline] is called.
-  Future<void> goOffline() async {
-    var repo = Repo(this);
-    await repo.interrupt();
-  }
+  Future<void> goOffline();
 
   /// The Firebase Database client automatically queues writes and sends them to
   /// the server at the earliest opportunity, depending on network connectivity.
@@ -47,10 +40,7 @@ class FirebaseDatabase {
   /// The writes will be rolled back locally, perhaps triggering events for
   /// affected event listeners, and the client will not (re-)send them to the
   /// Firebase Database backend.
-  Future<void> purgeOutstandingWrites() async {
-    var repo = Repo(this);
-    await repo.purgeOutstandingWrites();
-  }
+  Future<void> purgeOutstandingWrites();
 
   /// Attempts to sets the database persistence to [enabled].
   ///
@@ -70,34 +60,7 @@ class FirebaseDatabase {
   /// to `true`, the data will be persisted to on-device (disk) storage and will
   /// thus be available again when the app is restarted (even when there is no
   /// network connectivity at that time).
-  Future<bool> setPersistenceEnabled(bool enabled) async {
-    // TODO: implement setPersistenceEnabled: do nothing for now
+  Future<bool> setPersistenceEnabled(bool enabled);
 
-    return false;
-  }
-
-  @override
-  int get hashCode => quiver.hash2(databaseURL, app);
-
-  @override
-  bool operator ==(Object other) =>
-      other is FirebaseDatabase &&
-      other.app == app &&
-      other.databaseURL == databaseURL;
 }
 
-String _normalizeUrl(String url) {
-  if (url == null) {
-    throw ArgumentError.notNull('databaseURL');
-  }
-  var uri = Uri.parse(url);
-
-  if (!['http', 'https', 'mem'].contains(uri.scheme)) {
-    throw ArgumentError.value(
-        url, 'databaseURL', 'Only http, https or mem scheme allowed');
-  }
-  if (uri.pathSegments.isNotEmpty) {
-    throw ArgumentError.value(url, 'databaseURL', 'Paths are not allowed');
-  }
-  return Uri.parse(url).replace(path: '').toString();
-}
