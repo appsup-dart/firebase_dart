@@ -1,22 +1,28 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-import 'package:test/test.dart';
-import 'package:firebase_dart/database.dart';
-import 'package:firebase_dart/src/database/impl/repo.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+
 import 'package:firebase_dart/core.dart' hide Firebase;
 import 'package:firebase_dart/core.dart' as core;
+import 'package:firebase_dart/database.dart';
+import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
+import 'package:firebase_dart/src/database/impl/repo.dart';
+import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
-import 'dart:math';
-import 'dart:async';
+import 'package:test/test.dart';
 
 import 'secrets.dart'
     if (dart.library.html) 'secrets.dart'
     if (dart.library.io) 'secrets_io.dart' as s;
-import 'dart:convert';
-import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
+import 'util.dart';
 
 void main() {
+  Hive.init(Directory.systemTemp.path);
+
   StreamSubscription logSubscription;
   setUp(() {
     Logger.root.level = Level.ALL;
@@ -43,10 +49,11 @@ void testsWith(Map<String, dynamic> secrets) {
   FirebaseApp app1, app2, appAlt1, appAlt2;
 
   setUpAll(() async {
-    app1 = await core.Firebase.initializeApp(name: 'app1');
-    app2 = await core.Firebase.initializeApp(name: 'app2');
-    appAlt1 = await core.Firebase.initializeApp(name: 'alt1');
-    appAlt2 = await core.Firebase.initializeApp(name: 'alt2');
+    var options = getOptions();
+    app1 = await core.Firebase.initializeApp(name: 'app1', options: options);
+    app2 = await core.Firebase.initializeApp(name: 'app2', options: options);
+    appAlt1 = await core.Firebase.initializeApp(name: 'alt1', options: options);
+    appAlt2 = await core.Firebase.initializeApp(name: 'alt2', options: options);
   });
 
   tearDownAll(() async {

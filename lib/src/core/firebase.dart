@@ -15,7 +15,7 @@ class Firebase {
   /// Initializes a new [FirebaseApp] instance by [name] and [options] and returns
   /// the created app.
   static Future<FirebaseApp> initializeApp(
-      {String name, FirebaseOptions options}) async {
+      {String name, @required FirebaseOptions options}) async {
     name ??= defaultFirebaseAppName;
     if (_apps.containsKey(name)) {
       throw FirebaseCoreException.duplicateApp(name);
