@@ -100,7 +100,7 @@ class FirebaseOptions {
   const FirebaseOptions({
     @required this.apiKey,
     @required this.appId,
-    @required this.messagingSenderId,
+    this.messagingSenderId,
     @required this.projectId,
     this.authDomain,
     this.databaseURL,
@@ -115,8 +115,6 @@ class FirebaseOptions {
     this.appGroupId,
   })  : assert(apiKey != null, "'apiKey' cannot be null"),
         assert(appId != null, "'appId' cannot be null."),
-        assert(
-            messagingSenderId != null, "'messagingSenderId' cannot be null."),
         assert(projectId != null, "'projectId' cannot be null.");
 
   /// Named constructor to create [FirebaseOptions] from a Map.
