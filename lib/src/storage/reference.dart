@@ -77,21 +77,20 @@ class StorageReferenceImpl implements StorageReference {
   Future<String> getBucket() async => location.bucket;
 
   @override
-  Future<Uint8List> getData(int maxSize) {
-    // TODO: implement getData
-    throw UnimplementedError();
+  Future<Uint8List> getData(int maxSize) async {
+    var url = await getDownloadURL();
+    var response = await storage.httpClient.get(url);
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    }
+    throw StorageException.internalError(
+        'Unable to download $path: ${response.reasonPhrase}');
   }
 
   @override
   Future<StorageMetadata> getMetadata() async {
     _throwIfRoot('getMetadata');
-/*
-    var requestInfo = requests.getMetadata(
-        self.authWrapper, self.location, self.mappings());
-    return self.authWrapper.makeRequest(requestInfo, authToken).getFuture();
-*/
-    // TODO: implement getMetadata
-    throw UnimplementedError();
+    return await requests.getMetadata();
   }
 
   @override

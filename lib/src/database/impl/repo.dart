@@ -1,26 +1,27 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
+import 'dart:math';
+
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/database.dart'
     show FirebaseDatabaseException, MutableData, TransactionHandler;
-import 'package:meta/meta.dart';
-
-import 'connection.dart';
-import 'dart:async';
-import 'events/cancel.dart';
-import 'treestructureddata.dart';
-import 'synctree.dart';
-import '../../database.dart' as firebase;
-import 'firebase_impl.dart' as firebase;
-import 'events/value.dart';
-import 'events/child.dart';
-import 'dart:math';
 import 'package:logging/logging.dart';
-import 'tree.dart';
-import 'event.dart';
-import 'operations/tree.dart';
+import 'package:meta/meta.dart';
 import 'package:sortedmap/sortedmap.dart';
+
+import '../../database.dart' as firebase;
+import 'connection.dart';
+import 'event.dart';
+import 'events/cancel.dart';
+import 'events/child.dart';
+import 'events/value.dart';
+import 'firebase_impl.dart' as firebase;
+import 'operations/tree.dart';
+import 'synctree.dart';
+import 'tree.dart';
+import 'treestructureddata.dart';
 
 final _logger = Logger('firebase-repo');
 
@@ -49,13 +50,14 @@ class Repo {
       var connection =
           PersistentConnection(url, authTokenProvider: (refresh) async {
         var user = await auth.currentUser();
+        if (user == null) return null;
         var token = await user.getIdToken(refresh: refresh);
         return token.token;
       })
             ..initialize();
 
       auth.onAuthStateChanged.listen((user) async {
-        return connection.refreshAuthToken((await user.getIdToken()).token);
+        return connection.refreshAuthToken(user==null ? null : (await user.getIdToken()).token);
       }); // TODO cancel this somewhere
 
       return Repo._(url, connection);

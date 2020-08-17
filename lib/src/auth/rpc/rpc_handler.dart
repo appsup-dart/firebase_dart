@@ -3,14 +3,15 @@ import 'dart:convert';
 import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/auth/authcredential.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
-
-import 'error.dart';
-import 'identitytoolkit.dart';
+import 'package:firebase_dart/src/util/proxy.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart' as http;
+import 'package:openid_client/openid_client.dart' as openid;
 
 import '../error.dart';
-import 'package:openid_client/openid_client.dart' as openid;
+import 'error.dart';
+import 'identitytoolkit.dart';
 
 class RpcHandler {
   final IdentitytoolkitApi identitytoolkitApi;
@@ -24,8 +25,27 @@ class RpcHandler {
 
   RelyingpartyResourceApi get relyingparty => identitytoolkitApi.relyingparty;
 
-  RpcHandler(this.apiKey, {this.httpClient})
-      : identitytoolkitApi =
+  RpcHandler(this.apiKey, {http.Client httpClient})
+      : httpClient = ProxyClient({
+          RegExp('https://securetoken.google.com/.*/.well-known/openid-configuration'):
+              http.MockClient((request) async {
+            var projectId = request.url.pathSegments.first;
+            return http.Response(
+                json.encode({
+                  'issuer': 'https://securetoken.google.com/$projectId',
+                  'jwks_uri':
+                      'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com',
+                  'token_endpoint':
+                      'https://securetoken.googleapis.com/v1/token?key=$apiKey',
+                  'response_types_supported': ['id_token'],
+                  'subject_types_supported': ['public'],
+                  'id_token_signing_alg_values_supported': ['RS256']
+                }),
+                200);
+          }),
+          RegExp('.*'): httpClient,
+        }),
+        identitytoolkitApi =
             IdentitytoolkitApi(clientViaApiKey(apiKey, baseClient: httpClient));
 
   /// Gets the list of authorized domains for the specified project.
@@ -77,8 +97,7 @@ class RpcHandler {
         // This is relevant for the native Android SDK flow.
         // This will redirect to an FDL domain owned by GMScore instead of
         // the developer's FDL domain as is done for Cordova apps.
-        if (sha1Cert != null)
-          'sha1Cert': sha1Cert
+        if (sha1Cert != null) 'sha1Cert': sha1Cert
       }),
     );
   }

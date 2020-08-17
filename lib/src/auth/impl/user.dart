@@ -4,13 +4,12 @@ import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
     show SetAccountInfoResponse;
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
 import 'package:meta/meta.dart';
+import 'package:openid_client/openid_client.dart' as openid;
 import 'package:quiver/core.dart';
 
 import '../auth.dart';
 import '../error.dart';
 import '../user.dart';
-
-import 'package:openid_client/openid_client.dart' as openid;
 
 class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   final FirebaseAuthImpl _auth;
@@ -137,7 +136,7 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
             : DateTime.fromMillisecondsSinceEpoch(int.parse(user.createdAt)));
     _setAccountInfo(accountInfo);
 
-    _providerData.addAll(user.providerUserInfo.map((v) => UserInfo(
+    _providerData.addAll((user.providerUserInfo ?? []).map((v) => UserInfo(
         providerId: v.providerId,
         displayName: v.displayName,
         photoUrl: v.photoUrl,
@@ -192,9 +191,20 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   @override
   Future<void> delete() async {
     var idToken = await getIdToken();
-    await _rpcHandler.deleteAccount(idToken.token);
+    try {
+      await _rpcHandler.deleteAccount(idToken.token);
+    } on AuthException catch (e) {
+      if (e.code == AuthException.tokenExpired().code) {
+        // user already deleted
+      } else {
+        rethrow;
+      }
+    }
 
     _destroyed = true;
+
+    // A deleted user will be treated like a sign out event.
+    await _auth.signOut();
   }
 
   @override

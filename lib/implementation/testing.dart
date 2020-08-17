@@ -10,6 +10,7 @@ import 'package:firebase_dart/src/implementation/dart.dart';
 import 'package:firebase_dart/src/storage/backend/backend.dart' as storage;
 import 'package:firebase_dart/src/storage/backend/memory_backend.dart'
     as storage;
+import 'package:firebase_dart/src/util/proxy.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
@@ -21,7 +22,7 @@ class FirebaseTesting {
   static void setup() {
     Hive.init(Directory.systemTemp.path);
 
-    var openIdClient = _ProxyClient({
+    var openIdClient = ProxyClient({
       RegExp('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'):
           http.MockClient((request) async {
         return http.Response(
@@ -48,7 +49,7 @@ class FirebaseTesting {
     JsonWebKeySetLoader.global =
         DefaultJsonWebKeySetLoader(httpClient: openIdClient);
 
-    var httpClient = _ProxyClient({
+    var httpClient = ProxyClient({
       ...openIdClient.clients,
       RegExp('https://www.googleapis.com/.*'): http.MockClient((r) async {
         var apiKey = r.url.queryParameters['key'];
@@ -113,20 +114,4 @@ class Backend {
 
   storage.MemoryBackend get storageBackend =>
       getStorageBackend(_app.options.storageBucket);
-}
-
-class _ProxyClient extends http.BaseClient {
-  final Map<Pattern, http.Client> clients;
-
-  _ProxyClient(this.clients);
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    for (var p in clients.keys) {
-      if (p.allMatches(request.url.replace(query: '').toString()).isNotEmpty) {
-        return clients[p].send(request);
-      }
-    }
-    throw ArgumentError('No client defined for url ${request.url}');
-  }
 }
