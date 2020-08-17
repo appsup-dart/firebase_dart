@@ -1,12 +1,13 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:firebase_dart/auth.dart' hide UserInfo;
+import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/auth_providers.dart';
 import 'package:firebase_dart/src/auth/authcredential.dart';
+import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/backend/memory_backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
@@ -295,7 +296,7 @@ class Tester {
 
     var backend = FirebaseTesting.getBackend(app);
 
-    await backend.authBackend.storeUser(UserInfo()
+    await backend.authBackend.storeUser(BackendUser()
       ..localId = 'user1'
       ..createdAt = clock.now().millisecondsSinceEpoch.toString()
       ..lastLoginAt = clock.now().millisecondsSinceEpoch.toString()

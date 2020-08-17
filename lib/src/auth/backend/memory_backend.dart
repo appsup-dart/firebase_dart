@@ -4,29 +4,28 @@ import 'package:firebase_dart/src/auth/error.dart';
 import 'package:jose/jose.dart';
 
 import 'backend.dart';
-import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 
 class MemoryBackend extends BaseBackend {
   MemoryBackend({JsonWebKey tokenSigningKey, String projectId})
       : super(tokenSigningKey: tokenSigningKey, projectId: projectId);
 
-  final Map<String, UserInfo> _users = {};
+  final Map<String, BackendUser> _users = {};
 
   @override
-  Future<UserInfo> getUserById(String uid) async => _users[uid];
+  Future<BackendUser> getUserById(String uid) async => _users[uid];
 
   @override
-  Future<UserInfo> storeUser(UserInfo user) async =>
+  Future<BackendUser> storeUser(BackendUser user) async =>
       _users[user.localId] = user;
 
   @override
-  Future<UserInfo> getUserByEmail(String email) async {
+  Future<BackendUser> getUserByEmail(String email) async {
     return _users.values
         .firstWhere((user) => user.email == email, orElse: () => null);
   }
 
   @override
-  Future<UserInfo> getUserByPhoneNumber(String phoneNumber) async {
+  Future<BackendUser> getUserByPhoneNumber(String phoneNumber) async {
     return _users.values.firstWhere((user) => user.phoneNumber == phoneNumber,
         orElse: () => null);
   }
@@ -58,7 +57,7 @@ class MemoryBackend extends BaseBackend {
   }
 
   @override
-  Future<UserInfo> verifyPhoneNumber(String sessionInfo, String code) async {
+  Future<BackendUser> verifyPhoneNumber(String sessionInfo, String code) async {
     var s = JsonWebSignature.fromCompactSerialization(sessionInfo);
 
     var phoneNumber = s.unverifiedPayload.jsonContent;

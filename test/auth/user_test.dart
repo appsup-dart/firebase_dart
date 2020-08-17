@@ -1,3 +1,4 @@
+import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
@@ -132,7 +133,7 @@ void main() async {
       var password = 'password';
 
       setUp(() {
-        tester.backend.storeUser(UserInfo()
+        tester.backend.storeUser(BackendUser()
           ..email = email
           ..rawPassword = password
           ..phoneNumber = '+16505550101'

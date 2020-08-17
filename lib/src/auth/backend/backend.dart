@@ -5,8 +5,8 @@ import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/rpc/error.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
-import 'package:jose/jose.dart';
 import 'package:http/http.dart' as http;
+import 'package:jose/jose.dart';
 
 class BackendConnection {
   final Backend backend;
@@ -93,7 +93,7 @@ class BackendConnection {
       ..kind = 'identitytoolkit#DeleteAccountResponse';
   }
 
-  Future<UserInfo> _userFromIdToken(String idToken) {
+  Future<BackendUser> _userFromIdToken(String idToken) {
     var jwt = JsonWebToken.unverified(idToken); // TODO verify
     var uid = jwt.claims['uid'] ?? jwt.claims.subject;
     return backend.getUserById(uid);
@@ -114,7 +114,7 @@ class BackendConnection {
 
   Future<ResetPasswordResponse> resetPassword(
       IdentitytoolkitRelyingpartyResetPasswordRequest request) async {
-    UserInfo user;
+    BackendUser user;
     try {
       user = await _userFromIdToken(request.oobCode);
     } on ArgumentError {
@@ -268,15 +268,15 @@ class BackendConnection {
 }
 
 abstract class Backend {
-  Future<UserInfo> getUserById(String uid);
+  Future<BackendUser> getUserById(String uid);
 
-  Future<UserInfo> getUserByEmail(String email);
+  Future<BackendUser> getUserByEmail(String email);
 
-  Future<UserInfo> getUserByPhoneNumber(String phoneNumber);
+  Future<BackendUser> getUserByPhoneNumber(String phoneNumber);
 
-  Future<UserInfo> createUser({String email, String password});
+  Future<BackendUser> createUser({String email, String password});
 
-  Future<UserInfo> updateUser(UserInfo user);
+  Future<BackendUser> updateUser(BackendUser user);
 
   Future<void> deleteUser(String uid);
 
@@ -286,7 +286,7 @@ abstract class Backend {
 
   Future<String> sendVerificationCode(String phoneNumber);
 
-  Future<UserInfo> verifyPhoneNumber(String sessionInfo, String code);
+  Future<BackendUser> verifyPhoneNumber(String sessionInfo, String code);
 }
 
 abstract class BaseBackend extends Backend {
@@ -296,13 +296,13 @@ abstract class BaseBackend extends Backend {
 
   BaseBackend({this.tokenSigningKey, this.projectId});
 
-  Future<UserInfo> storeUser(UserInfo user);
+  Future<BackendUser> storeUser(BackendUser user);
 
   @override
-  Future<UserInfo> createUser({String email, String password}) async {
+  Future<BackendUser> createUser({String email, String password}) async {
     var uid = _generateRandomString(24);
     var now = (clock.now().millisecondsSinceEpoch ~/ 1000).toString();
-    return storeUser(UserInfo()
+    return storeUser(BackendUser()
       ..createdAt = now
       ..lastLoginAt = now
       ..email = email
@@ -317,7 +317,7 @@ abstract class BaseBackend extends Backend {
   }
 
   @override
-  Future<UserInfo> updateUser(UserInfo user) {
+  Future<BackendUser> updateUser(BackendUser user) {
     return storeUser(user);
   }
 
@@ -362,3 +362,5 @@ abstract class BaseBackend extends Backend {
     };
   }
 }
+
+class BackendUser extends UserInfo {}
