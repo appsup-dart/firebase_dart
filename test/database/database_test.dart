@@ -3,15 +3,14 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:firebase_dart/core.dart' hide Firebase;
 import 'package:firebase_dart/core.dart' as core;
 import 'package:firebase_dart/database.dart';
+import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
-import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
@@ -21,7 +20,7 @@ import '../secrets.dart'
 import '../util.dart';
 
 void main() {
-  Hive.init(Directory.systemTemp.path);
+  FirebaseTesting.setup();
 
   StreamSubscription logSubscription;
   setUp(() {

@@ -1,25 +1,20 @@
-import 'dart:io';
-
-import 'package:firebase_dart/core.dart';
-import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/usermanager.dart';
 import 'package:hive/hive.dart';
 import 'package:test/test.dart';
 
+import 'auth_test.dart';
 import 'jwt_util.dart';
-import 'util.dart';
 
 void main() async {
-  var apiKey = 'apiKey1';
-  var appId = 'appId1';
-  var app = await Firebase.initializeApp(
-      options: getOptions(apiKey: apiKey, appId: appId));
+  var tester = await Tester.create();
+
+  var apiKey = tester.app.options.apiKey;
+  var appId = tester.app.options.appId;
 
   group('UserManager', () {
-    Hive.init(Directory.systemTemp.path);
+    var auth = tester.auth;
 
-    var auth = FirebaseAuthImpl(app);
     var uid = 'defaultUserId';
     var jwt = createMockJwt(uid: uid, providerId: 'firebase');
     var expectedUser = {
@@ -93,9 +88,12 @@ void main() async {
       var storage = await Hive.openBox('test');
       var userManager = UserManager(auth, storage);
 
+      var key1 = 'firebase:FirebaseUser:${appId}';
+      var key2 = 'firebase:FirebaseUser:other_app_id';
+
       // Save existing Auth users for appId1 and appId2.
-      await storage.put('firebase:FirebaseUser:appId1', expectedUser);
-      await storage.put('firebase:FirebaseUser:appId2', expectedUser);
+      await storage.put(key1, expectedUser);
+      await storage.put(key2, expectedUser);
 
       await Future.delayed(Duration(milliseconds: 300));
       var calls = 0;
@@ -110,12 +108,12 @@ void main() async {
       // Simulate appId1 user deletion.
       await Future.value(
           storage); // wait a bit so that delete is not executed before watch
-      await storage.delete('firebase:FirebaseUser:appId1');
+      await storage.delete(key1);
       // This should trigger listener.
       expect(calls, 1);
 
       // Simulate appId2 user deletion.
-      await storage.delete('firebase:FirebaseUser:appId2');
+      await storage.delete(key2);
       // This should not trigger listener.
       expect(calls, 1);
 
@@ -124,7 +122,7 @@ void main() async {
 
       // Simulate new user saved for appId1.
       // This should not trigger listener.
-      await storage.put('firebase:FirebaseUser:appId1', expectedUser);
+      await storage.put(key1, expectedUser);
     });
   });
 }

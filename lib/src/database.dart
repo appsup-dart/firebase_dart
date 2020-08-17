@@ -10,8 +10,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:firebase_dart/core.dart';
-
-import 'database/impl/firebase_impl.dart';
+import 'package:firebase_dart/src/implementation.dart';
 
 part 'database/database.dart';
 part 'database/datasnapshot.dart';

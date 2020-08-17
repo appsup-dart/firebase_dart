@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 import 'package:quiver/core.dart';
 
-import 'core/impl/app.dart';
+import 'implementation.dart';
 
 part 'core/app.dart';
 part 'core/core_exception.dart';

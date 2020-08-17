@@ -1,30 +1,15 @@
-import 'dart:io';
-
-import 'package:clock/clock.dart';
-import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:firebase_dart/src/auth/user.dart' show UserUpdateInfo;
-import 'package:hive/hive.dart';
 import 'package:test/test.dart';
 
 import 'auth_test.dart';
 import 'jwt_util.dart';
-import 'util.dart';
 
 void main() async {
-  Hive.init(Directory.systemTemp.path);
-  var box = await Hive.openBox('firebase_auth');
-
-  var app = await Firebase.initializeApp(options: getOptions());
-  var tester = Tester(app);
+  var tester = await Tester.create();
   var auth = tester.auth;
-
-  setUp(() async {
-    await box.clear();
-    tester.connect();
-  });
 
   group('FirebaseUserImpl', () {
     var uid = 'defaultUserId';

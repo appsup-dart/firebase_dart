@@ -1,26 +1,15 @@
-import 'dart:io';
-
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/storage.dart';
-import 'package:firebase_dart/src/storage/backend/backend.dart';
 import 'package:firebase_dart/src/storage/backend/memory_backend.dart';
-import 'package:firebase_dart/src/storage/metadata.dart';
-import 'package:firebase_dart/src/storage/service.dart';
 import 'package:firebase_dart/src/storage/impl/location.dart';
-import 'package:hive/hive.dart';
+import 'package:firebase_dart/src/storage/metadata.dart';
 import 'package:test/test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart' as http;
-
-import '../auth/util.dart';
 
 void main() async {
-  Hive.init(Directory.systemTemp.path);
-
-  var app = await Firebase.initializeApp(options: getOptions());
-  var tester = Tester(app);
-  var storage = FirebaseStorageImpl(app, app.options.storageBucket,
-      httpClient: tester.httpClient);
+  var tester = await Tester.create();
+  var app = tester.app;
+  var storage = FirebaseStorage(app: app);
   var root = storage.ref();
   var child = root.child('hello');
 
@@ -152,6 +141,7 @@ void main() async {
     });
     group('StorageReference.getDownloadUrl', () {
       var ref = child.child('world.txt');
+      print(tester.backend);
       tester.backend.metadata[Location.fromUrl(ref.toString())] =
           StorageMetadataImpl(
               bucket: ref.getStorage().storageBucket,
@@ -188,33 +178,18 @@ FirebaseOptions getOptions(
 }
 
 class Tester {
-  final MemoryBackend backend = MemoryBackend();
+  final MemoryBackend backend;
 
-  http.Client _httpClient;
+  final FirebaseApp app;
 
-  BackendConnection _connection;
+  Tester._(this.app, this.backend);
 
-  http.Client get httpClient => _httpClient;
+  static Future<Tester> create() async {
+    FirebaseTesting.setup();
 
-  Tester(FirebaseApp app) {
-    _httpClient = ProxyClient({
-      RegExp('.*'): http.MockClient((r) {
-        try {
-          return _connection.handleRequest(r);
-        } catch (e) {
-          throw StorageException.internalError('');
-        }
-      })
-    });
+    var app = await Firebase.initializeApp(options: getOptions());
 
-    connect();
-  }
-
-  void connect() {
-    _connection = BackendConnection(backend);
-  }
-
-  void disconnect() {
-    _connection = null;
+    var backend = FirebaseTesting.getBackend(app);
+    return Tester._(app, backend.storageBackend);
   }
 }

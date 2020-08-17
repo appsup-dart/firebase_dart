@@ -3,17 +3,15 @@ library firebase_dart.auth;
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/authcredential.dart';
 import 'package:firebase_dart/src/auth/error.dart';
-
-import 'impl/auth.dart';
+import 'package:firebase_dart/src/implementation.dart';
+import 'package:meta/meta.dart';
 
 import 'user.dart';
 
-export 'user.dart';
-import 'package:meta/meta.dart';
-
 export 'auth_providers.dart';
-export 'error.dart';
 export 'authcredential.dart';
+export 'error.dart';
+export 'user.dart';
 
 /// The entry point of the Firebase Authentication SDK.
 /// The entry point of the Firebase Authentication SDK.
@@ -23,7 +21,7 @@ abstract class FirebaseAuth {
   /// Provides an instance of this class corresponding to `app`.
   factory FirebaseAuth.fromApp(FirebaseApp app) {
     assert(app != null);
-    return FirebaseAuthImpl(app);
+    return FirebaseImplementation.installation.createAuth(app);
   }
 
   /// Provides an instance of this class corresponding to the default app.

@@ -17,7 +17,10 @@ abstract class FirebaseDatabase {
   /// Gets an instance of [FirebaseDatabase].
   ///
   /// If app is specified, its options should include a `databaseURL`.
-  factory FirebaseDatabase({FirebaseApp app, String databaseURL}) => FirebaseDatabaseImpl(app: app, databaseURL: databaseURL);
+  factory FirebaseDatabase({FirebaseApp app, String databaseURL}) {
+    return FirebaseImplementation.installation
+        .createDatabase(app, databaseURL: databaseURL);
+  }
 
   /// Gets a DatabaseReference for the root of your Firebase Database.
   DatabaseReference reference();
@@ -61,6 +64,4 @@ abstract class FirebaseDatabase {
   /// thus be available again when the app is restarted (even when there is no
   /// network connectivity at that time).
   Future<bool> setPersistenceEnabled(bool enabled);
-
 }
-

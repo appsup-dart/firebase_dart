@@ -1,8 +1,9 @@
-import 'package:firebase_dart/src/storage/service.dart';
-
-import 'core.dart';
 import 'dart:async';
 import 'dart:typed_data';
+
+import 'package:firebase_dart/src/implementation.dart';
+
+import 'core.dart';
 
 /// FirebaseStorage is a service that supports uploading and downloading large
 /// objects to Google Cloud Storage.
@@ -20,7 +21,8 @@ abstract class FirebaseStorage {
   ///
   /// The [app] argument is the custom [FirebaseApp].
   factory FirebaseStorage({FirebaseApp app, String storageBucket}) =>
-      FirebaseStorageImpl(app, storageBucket);
+      FirebaseImplementation.installation
+          .createStorage(app, storageBucket: storageBucket);
 
   /// The [FirebaseApp] instance to which this [FirebaseStorage] belongs.
   ///

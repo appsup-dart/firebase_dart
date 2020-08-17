@@ -1,20 +1,17 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:firebase_dart/auth.dart' hide UserInfo;
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/auth_providers.dart';
 import 'package:firebase_dart/src/auth/authcredential.dart';
-import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/backend/memory_backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
-import 'package:hive/hive.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart' as http;
 import 'package:test/test.dart';
 
 import 'jwt_util.dart';
@@ -24,17 +21,8 @@ const identityToolkitBaseUrl =
     'https://www.googleapis.com/identitytoolkit/v3/relyingparty';
 
 void main() async {
-  Hive.init(Directory.systemTemp.path);
-  var box = await Hive.openBox('firebase_auth');
-
-  var app = await Firebase.initializeApp(options: getOptions());
-  var tester = Tester(app);
+  var tester = await Tester.create();
   var auth = tester.auth;
-
-  setUp(() async {
-    await box.clear();
-    tester.connect();
-  });
 
   group('signInAnonymously', () {
     test('signInAnonymously: success', () async {
@@ -129,13 +117,6 @@ void main() async {
       expect(result.user, same(currentUser));
 
       await s.cancel();
-    });
-
-    test('signInAnonymously: error', () {
-      tester.disconnect();
-
-      expect(() => auth.signInAnonymously(),
-          throwsA(AuthException.internalError()));
     });
   });
 
@@ -299,53 +280,32 @@ void main() async {
 }
 
 class Tester {
-  final MemoryBackend backend =
-      MemoryBackend(tokenSigningKey: key, projectId: '12345678')
-        ..storeUser(UserInfo()
-          ..localId = 'user1'
-          ..createdAt = clock.now().millisecondsSinceEpoch.toString()
-          ..lastLoginAt = clock.now().millisecondsSinceEpoch.toString()
-          ..email = 'user@example.com'
-          ..rawPassword = 'password'
-          ..providerUserInfo = [
-            UserInfoProviderUserInfo()..providerId = 'password',
-            UserInfoProviderUserInfo()..providerId = 'google.com',
-          ]);
+  final MemoryBackend backend;
 
-  BackendConnection _connection;
+  final FirebaseApp app;
 
-  http.Client _httpClient;
+  Tester._(this.app, this.backend);
 
-  FirebaseAuthImpl _auth;
+  FirebaseAuthImpl get auth => FirebaseAuth.fromApp(app);
 
-  http.Client get httpClient => _httpClient;
+  static Future<Tester> create() async {
+    FirebaseTesting.setup();
 
-  FirebaseAuthImpl get auth => _auth;
+    var app = await Firebase.initializeApp(options: getOptions());
 
-  Tester(FirebaseApp app) {
-    mockOpenidResponses();
+    var backend = FirebaseTesting.getBackend(app);
 
-    _httpClient = ProxyClient({
-      RegExp(r'https:\/\/securetoken.google.com\/.*'): mockHttpClient,
-      RegExp('.*'): http.MockClient((r) {
-        try {
-          return _connection.handleRequest(r);
-        } catch (e) {
-          throw AuthException.internalError();
-        }
-      })
-    });
+    await backend.authBackend.storeUser(UserInfo()
+      ..localId = 'user1'
+      ..createdAt = clock.now().millisecondsSinceEpoch.toString()
+      ..lastLoginAt = clock.now().millisecondsSinceEpoch.toString()
+      ..email = 'user@example.com'
+      ..rawPassword = 'password'
+      ..providerUserInfo = [
+        UserInfoProviderUserInfo()..providerId = 'password',
+        UserInfoProviderUserInfo()..providerId = 'google.com',
+      ]);
 
-    _auth = FirebaseAuthImpl(app, httpClient: httpClient);
-
-    connect();
-  }
-
-  void connect() {
-    _connection = BackendConnection(backend);
-  }
-
-  void disconnect() {
-    _connection = null;
+    return Tester._(app, backend.authBackend);
   }
 }

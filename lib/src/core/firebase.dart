@@ -20,7 +20,8 @@ class Firebase {
     if (_apps.containsKey(name)) {
       throw FirebaseCoreException.duplicateApp(name);
     }
-    var app = FirebaseAppImpl(name, options);
+    var app =
+        await FirebaseImplementation.installation.createApp(name, options);
     return _apps[name] = app;
   }
 
