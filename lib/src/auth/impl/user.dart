@@ -43,8 +43,9 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
     // Convert to server response format. Constructor does not take
     // stsTokenManager toPlainObject as that format is different than the return
     // server response which is always used to initialize a user instance.
-    var credential =
-        openid.Credential.fromJson((user['credential'] as Map).cast());
+    var credential = openid.Credential.fromJson(
+        (user['credential'] as Map).cast(),
+        httpClient: auth.rpcHandler.httpClient);
     var firebaseUser = FirebaseUserImpl(auth, credential, user['authDomain']);
     firebaseUser._setAccountInfo(AccountInfo.fromJson(user));
     if (user['providerData'] is List) {

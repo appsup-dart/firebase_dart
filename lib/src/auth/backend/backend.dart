@@ -284,6 +284,8 @@ abstract class Backend {
 
   Future<String> generateRefreshToken(String uid);
 
+  Future<String> verifyRefreshToken(String token);
+
   Future<String> sendVerificationCode(String phoneNumber);
 
   Future<BackendUser> verifyPhoneNumber(String sessionInfo, String code);
@@ -335,6 +337,14 @@ abstract class BaseBackend extends Backend {
       ..jsonContent = uid
       ..addRecipient(tokenSigningKey);
     return builder.build().toCompactSerialization();
+  }
+
+  @override
+  Future<String> verifyRefreshToken(String token) async {
+    var store = JsonWebKeyStore()..addKey(tokenSigningKey);
+    var jws = JsonWebSignature.fromCompactSerialization(token);
+    var payload = await jws.getPayload(store);
+    return payload.jsonContent;
   }
 
   static final _random = Random(DateTime.now().millisecondsSinceEpoch);

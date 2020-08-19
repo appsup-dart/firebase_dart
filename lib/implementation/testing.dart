@@ -48,6 +48,37 @@ class FirebaseTesting {
             }),
             200);
       }),
+      RegExp('https://securetoken.googleapis.com/v1/token'):
+          http.MockClient((request) async {
+        var apiKey = request.url.queryParameters['key'];
+        if (apiKey == null) {
+          throw AuthException.invalidApiKey();
+        }
+
+        var projectId = Backend._apiKeys[apiKey];
+        var authBackend = Backend.getAuthBackend(projectId);
+        assert(authBackend != null);
+
+        var body = request.bodyFields;
+
+        switch (body['grant_type']) {
+          case 'refresh_token':
+            var uid =
+                await authBackend.verifyRefreshToken(body['refresh_token']);
+
+            var accessToken = await authBackend.generateRefreshToken(uid);
+            return http.Response(
+                json.encode({
+                  'access_token': accessToken,
+                  'id_token': accessToken,
+                  'expires_in': 3600,
+                  'refresh_token': body['refresh_token']
+                }),
+                200);
+          default:
+            throw UnimplementedError();
+        }
+      }),
     });
     JsonWebKeySetLoader.global =
         DefaultJsonWebKeySetLoader(httpClient: openIdClient);
@@ -92,9 +123,6 @@ class Backend {
     var existing = _apiKeys[_app.options.apiKey];
     assert(existing == null || existing == _app.options.projectId);
     _apiKeys[_app.options.apiKey] = _app.options.projectId;
-    print(_apiKeys);
-    print(_app.options.apiKey);
-    print(_app.options.projectId);
   }
 
   static final Map<String, String> _apiKeys = {};
