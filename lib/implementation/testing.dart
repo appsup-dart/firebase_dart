@@ -16,11 +16,14 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 import 'package:jose/jose.dart';
 
+export 'package:firebase_dart/src/auth/backend/backend.dart' show BackendUser;
+
 class FirebaseTesting {
   static final JsonWebKey _tokenSigningKey = JsonWebKey.generate('RS256');
 
-  static void setup() {
+  static Future<void> setup() async {
     Hive.init(Directory.systemTemp.path);
+    await Hive.deleteFromDisk();
 
     var openIdClient = ProxyClient({
       RegExp('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'):
