@@ -290,7 +290,7 @@ class Tester {
   FirebaseAuthImpl get auth => FirebaseAuth.fromApp(app);
 
   static Future<Tester> create() async {
-    FirebaseTesting.setup();
+    await FirebaseTesting.setup();
 
     var app = await Firebase.initializeApp(options: getOptions());
 

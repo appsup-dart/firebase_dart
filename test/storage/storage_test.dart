@@ -185,7 +185,7 @@ class Tester {
   Tester._(this.app, this.backend);
 
   static Future<Tester> create() async {
-    FirebaseTesting.setup();
+    await FirebaseTesting.setup();
 
     var app = await Firebase.initializeApp(options: getOptions());
 

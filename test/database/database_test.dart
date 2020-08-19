@@ -19,8 +19,8 @@ import '../secrets.dart'
     if (dart.library.io) '../secrets_io.dart' as s;
 import '../util.dart';
 
-void main() {
-  FirebaseTesting.setup();
+void main() async {
+  await FirebaseTesting.setup();
 
   StreamSubscription logSubscription;
   setUp(() {
