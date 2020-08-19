@@ -1,17 +1,17 @@
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/error.dart';
-
-import '../user.dart';
-import '../usermanager.dart';
-import 'user.dart';
-import '../rpc/rpc_handler.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
-import '../authcredential.dart';
-import '../auth.dart';
 import 'package:pedantic/pedantic.dart';
+
+import '../auth.dart';
+import '../authcredential.dart';
+import '../rpc/rpc_handler.dart';
+import '../user.dart';
+import '../usermanager.dart';
+import 'user.dart';
 
 /// The entry point of the Firebase Authentication SDK.
 class FirebaseAuthImpl extends FirebaseAuth {
@@ -182,8 +182,10 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  Stream<FirebaseUser> get onAuthStateChanged =>
-      _userStorageManager.onCurrentUserChanged;
+  Stream<FirebaseUser> get onAuthStateChanged async* {
+    yield await _userStorageManager.getCurrentUser();
+    yield* _userStorageManager.onCurrentUserChanged;
+  }
 
   @override
   Future<void> sendPasswordResetEmail({String email}) {
