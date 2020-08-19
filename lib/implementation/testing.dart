@@ -23,7 +23,7 @@ class FirebaseTesting {
 
   static Future<void> setup() async {
     Hive.init(Directory.systemTemp.path);
-    await Hive.deleteFromDisk();
+    await Hive.deleteBoxFromDisk('firebase_auth');
 
     var openIdClient = ProxyClient({
       RegExp('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'):
