@@ -166,7 +166,7 @@ void testsWith(Map<String, dynamic> secrets) {
       await ref.set('hello world');
       expect(await ref.get(), 'hello world');
       await ref.unauth();
-      await ref.set('hello all').catchError(print);
+      await expectLater(() => ref.set('hello all'), throwsException);
       expect(await ref.get(), 'hello world');
     });
     test('token', () {
