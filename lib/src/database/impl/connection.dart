@@ -1,13 +1,14 @@
 library firebase.connection;
 
 import 'dart:async';
+
 import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
 import 'package:meta/meta.dart';
 
+import 'connections/protocol.dart';
+import 'operations/tree.dart';
 import 'tree.dart';
 import 'treestructureddata.dart';
-import 'operations/tree.dart';
-import 'connections/protocol.dart';
 
 @alwaysThrows
 void throwServerError(String status, String details) {
@@ -66,7 +67,7 @@ class OperationEvent {
 /// outstanding writes.
 abstract class PersistentConnection {
   factory PersistentConnection(Uri uri, {AuthTokenProvider authTokenProvider}) {
-    return PersistentConnectionImpl(uri);
+    return PersistentConnectionImpl(uri, authTokenProvider: authTokenProvider);
   }
 
   PersistentConnection.base();

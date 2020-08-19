@@ -57,7 +57,8 @@ class Repo {
             ..initialize();
 
       auth.onAuthStateChanged.listen((user) async {
-        return connection.refreshAuthToken(user==null ? null : (await user.getIdToken()).token);
+        return connection.refreshAuthToken(
+            user == null ? null : (await user.getIdToken()).token);
       }); // TODO cancel this somewhere
 
       return Repo._(url, connection);
