@@ -5,8 +5,6 @@ import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
-import 'package:firebase_dart/src/auth/auth_providers.dart';
-import 'package:firebase_dart/src/auth/authcredential.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/backend/memory_backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
@@ -27,13 +25,13 @@ void main() async {
 
   group('signInAnonymously', () {
     test('signInAnonymously: success', () async {
-      var result = await auth.signInAnonymously() as AuthResultImpl;
+      var result = await auth.signInAnonymously() as UserCredentialImpl;
 
       expect(result.user.uid, hasLength(24));
       expect(result.credential, isNull);
       expect(result.additionalUserInfo.providerId, isNull);
       expect(result.additionalUserInfo.isNewUser, isTrue);
-      expect(result.operationType, AuthResultImpl.operationTypeSignIn);
+      expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
 
       expect(result.user.isAnonymous, isTrue);
 
@@ -93,23 +91,23 @@ void main() async {
 
       // All listeners should be called once with the saved anonymous user.
       var stateChanged = 0;
-      var s = auth.onAuthStateChanged.listen((user) {
+      var s = auth.authStateChanges().listen((user) {
         stateChanged++;
         expect(stateChanged, 1);
         expect(user.uid, uid);
       });
       // signInAnonymously should resolve with the already signed in anonymous
       // user without calling RPC handler underneath.
-      var result = await auth.signInAnonymously() as AuthResultImpl;
+      var result = await auth.signInAnonymously() as UserCredentialImpl;
       expect(result.user.toJson(), user.toJson());
       expect(result.additionalUserInfo,
           GenericAdditionalUserInfo(providerId: null, isNewUser: false));
-      expect(result.operationType, AuthResultImpl.operationTypeSignIn);
-      expect(await auth.currentUser(), result.user);
+      expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
+      expect(auth.currentUser, result.user);
       expect(result.user.isAnonymous, isTrue);
 
       // Save reference to current user.
-      var currentUser = await auth.currentUser();
+      var currentUser = auth.currentUser;
 
       // Sign in anonymously again.
       result = await auth.signInAnonymously();
@@ -128,14 +126,14 @@ void main() async {
       var expectedPass = 'password';
 
       var result = await auth.signInWithEmailAndPassword(
-          email: expectedEmail, password: expectedPass) as AuthResultImpl;
+          email: expectedEmail, password: expectedPass) as UserCredentialImpl;
 
       print(result.user.email);
       expect(result.user.uid, 'user1');
       expect(result.credential, isNull);
       expect(result.additionalUserInfo.providerId, 'password');
       expect(result.additionalUserInfo.isNewUser, isFalse);
-      expect(result.operationType, AuthResultImpl.operationTypeSignIn);
+      expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
 
       expect(result.user.isAnonymous, isFalse);
     });
@@ -144,14 +142,14 @@ void main() async {
       expect(
           () => auth.signInWithEmailAndPassword(
               email: 'user@example.com', password: 'wrong_password'),
-          throwsA(AuthException.invalidPassword()));
+          throwsA(FirebaseAuthException.invalidPassword()));
     });
   });
 
   group('fetchSignInMethodsForEmail', () {
     test('fetchSignInMethodsForEmail: success', () async {
       var signInMethods =
-          await auth.fetchSignInMethodsForEmail(email: 'user@example.com');
+          await auth.fetchSignInMethodsForEmail('user@example.com');
 
       expect(signInMethods, ['password', 'google.com']);
     });
@@ -161,7 +159,7 @@ void main() async {
     test('signInWithCustomToken: success', () async {
       var expectedCustomToken = createMockCustomToken(uid: 'user1');
       // Sign in with custom token.
-      var result = await auth.signInWithCustomToken(token: expectedCustomToken);
+      var result = await auth.signInWithCustomToken(expectedCustomToken);
 
       // Anonymous status should be set to false.
       expect(result.user.isAnonymous, isFalse);
@@ -191,24 +189,29 @@ void main() async {
     });
   });
 
-  group('sendSignInWithEmailLink', () {
-    test('sendSignInWithEmailLink: success', () async {
-      await auth.sendSignInWithEmailLink(
-          email: 'user@example.com', url: 'https://www.example.com/?state=abc');
+  group('sendSignInLinkToEmail', () {
+    test('sendSignInLinkToEmail: success', () async {
+      await auth.sendSignInLinkToEmail(
+          email: 'user@example.com',
+          actionCodeSettings:
+              ActionCodeSettings(url: 'https://www.example.com/?state=abc'));
     });
-    test('sendSignInWithEmailLink: empty continue url error', () async {
+    test('sendSignInLinkToEmail: empty continue url error', () async {
       expect(
-          () => auth.sendSignInWithEmailLink(
-              email: 'user@example.com', url: '', handleCodeInApp: true),
-          throwsA(AuthException.invalidContinueUri()));
-    });
-    test('sendSignInWithEmailLink: handle code in app error', () async {
-      expect(
-          () => auth.sendSignInWithEmailLink(
+          () => auth.sendSignInLinkToEmail(
               email: 'user@example.com',
-              url: 'https://www.example.com/?state=abc',
-              handleCodeInApp: false),
-          throwsA(AuthException.argumentError(
+              actionCodeSettings:
+                  ActionCodeSettings(url: '', handleCodeInApp: true)),
+          throwsA(FirebaseAuthException.invalidContinueUri()));
+    });
+    test('sendSignInLinkToEmail: handle code in app error', () async {
+      expect(
+          () => auth.sendSignInLinkToEmail(
+              email: 'user@example.com',
+              actionCodeSettings: ActionCodeSettings(
+                  url: 'https://www.example.com/?state=abc',
+                  handleCodeInApp: false)),
+          throwsA(FirebaseAuthException.argumentError(
               'handleCodeInApp must be true when sending sign in link to email')));
     });
   });
@@ -229,7 +232,7 @@ void main() async {
       expect(
           () => auth.signInWithEmailAndPassword(
               email: expectedEmail, password: expectedNewPassword),
-          throwsA(AuthException.invalidPassword()));
+          throwsA(FirebaseAuthException.invalidPassword()));
 
       await auth.confirmPasswordReset(expectedCode, expectedNewPassword);
       var r = await auth.signInWithEmailAndPassword(
@@ -241,7 +244,7 @@ void main() async {
     test('confirmPasswordReset: error', () async {
       expect(
           () => auth.confirmPasswordReset('INVALID_CODE', expectedNewPassword),
-          throwsA(AuthException.invalidOobCode()));
+          throwsA(FirebaseAuthException.invalidOobCode()));
     });
   });
 
@@ -266,9 +269,10 @@ void main() async {
           verificationFailed: (e) {
             throw e;
           },
+          codeSent: (a, b) => null,
           codeAutoRetrievalTimeout: (verificationId) async {
             var code = await tester.backend.receiveSmsCode(phoneNumber);
-            credential.complete(PhoneAuthProvider.getCredential(
+            credential.complete(PhoneAuthProvider.credential(
                 verificationId: verificationId, smsCode: code));
           });
 
@@ -287,7 +291,7 @@ class Tester {
 
   Tester._(this.app, this.backend);
 
-  FirebaseAuthImpl get auth => FirebaseAuth.fromApp(app);
+  FirebaseAuthImpl get auth => FirebaseAuth.instanceFor(app: app);
 
   static Future<Tester> create() async {
     await FirebaseTesting.setup();

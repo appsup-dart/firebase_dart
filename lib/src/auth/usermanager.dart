@@ -21,7 +21,7 @@ class UserManager {
   /// The underlying storage manager.
   final FutureOr<Box> storage;
 
-  Stream<FirebaseUser> get onCurrentUserChanged {
+  Stream<User> get onCurrentUserChanged {
     return Stream.fromFuture(Future.value(storage))
         .asyncExpand((event) async* {
           yield* event.watch(key: _key).map((v) => v?.value);
@@ -38,7 +38,7 @@ class UserManager {
   String get _key => 'firebase:FirebaseUser:$appId';
 
   /// Stores the current Auth user for the provided application ID.
-  Future<void> setCurrentUser(FirebaseUser currentUser) async {
+  Future<void> setCurrentUser(User currentUser) async {
     // Wait for any pending persistence change to be resolved.
     await (await storage).put(_key, currentUser?.toJson());
   }
@@ -48,7 +48,7 @@ class UserManager {
     await (await storage).delete(_key);
   }
 
-  Future<FirebaseUser> getCurrentUser([String authDomain]) async {
+  Future<User> getCurrentUser([String authDomain]) async {
     var response = await (await storage).get(_key);
 
     return response == null

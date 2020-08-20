@@ -1,12 +1,13 @@
-import 'package:googleapis/identitytoolkit/v3.dart' as it;
-import 'package:_discoveryapis_commons/_discoveryapis_commons.dart' as commons;
-import 'package:_discoveryapis_commons/src/requests.dart' as client_requests;
-import 'package:http/http.dart' as http;
-import '../utils.dart';
 import 'dart:convert';
 
-import 'error.dart';
+import 'package:_discoveryapis_commons/_discoveryapis_commons.dart' as commons;
+import 'package:_discoveryapis_commons/src/requests.dart' as client_requests;
+import 'package:googleapis/identitytoolkit/v3.dart' as it;
+import 'package:http/http.dart' as http;
+
 import '../error.dart';
+import '../utils.dart';
+import 'error.dart';
 
 export 'package:googleapis/identitytoolkit/v3.dart';
 
@@ -304,7 +305,8 @@ class _MyApiRequester extends commons.ApiRequester {
               uploadOptions: uploadOptions,
               downloadOptions: downloadOptions)
           .timeout(timeoutDuration,
-              onTimeout: () => throw AuthException.networkRequestFailed());
+              onTimeout: () =>
+                  throw FirebaseAuthException.networkRequestFailed());
     } on it.DetailedApiRequestError catch (e) {
       var errorCode = e.message;
       var errorMessage;
@@ -317,7 +319,7 @@ class _MyApiRequester extends commons.ApiRequester {
 
       var error = authErrorFromServerErrorCode(errorCode);
       if (error == null) {
-        error = AuthException.internalError();
+        error = FirebaseAuthException.internalError();
         errorMessage ??= json.encode(e.jsonResponse);
       }
       throw error.replace(message: errorMessage);

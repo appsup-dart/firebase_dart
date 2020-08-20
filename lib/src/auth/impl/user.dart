@@ -1,4 +1,3 @@
-import 'package:firebase_dart/src/auth/authcredential.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
     show SetAccountInfoResponse;
@@ -8,10 +7,8 @@ import 'package:openid_client/openid_client.dart' as openid;
 import 'package:quiver/core.dart';
 
 import '../auth.dart';
-import '../error.dart';
-import '../user.dart';
 
-class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
+class FirebaseUserImpl extends User with DelegatingUserInfo {
   final FirebaseAuthImpl _auth;
 
   RpcHandler get _rpcHandler => _auth.rpcHandler;
@@ -61,7 +58,7 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
     return firebaseUser;
   }
 
-  static Future<FirebaseUser> initializeFromOpenidCredential(
+  static Future<User> initializeFromOpenidCredential(
       FirebaseAuth auth, openid.Credential credential) async {
     // Initialize the Firebase Auth user.
     var user = FirebaseUserImpl(auth, credential);
@@ -81,14 +78,18 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   }
 
   @override
-  Future<IdTokenResult> getIdToken({bool refresh = false}) async {
+  Future<String> getIdToken([bool forceRefresh = false]) async =>
+      (await getIdTokenResult(forceRefresh)).token;
+
+  @override
+  Future<IdTokenResult> getIdTokenResult([bool refresh = false]) async {
     _checkDestroyed();
 
     var response = await _credential.getTokenResponse(refresh);
 
     if (response == null) {
       // If the user exists, the token manager should be initialized.
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     // Only if the access token is refreshed, notify Auth listeners.
     if (response.accessToken != _lastAccessToken) {
@@ -107,7 +108,7 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   Future<void> _reloadWithoutSaving() async {
     // ID token is required to refresh the user's data.
     // If this is called after invalidation, getToken will throw the cached error.
-    var idToken = await getIdToken();
+    var idToken = await getIdTokenResult();
 
     await _setUserAccountInfoFromToken(idToken);
   }
@@ -118,7 +119,7 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
     var resp = await _rpcHandler.getAccountInfoByIdToken(idToken.token);
 
     if (resp.users.isEmpty) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     var user = resp.users.first;
     var accountInfo = AccountInfo(
@@ -140,7 +141,7 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
     _providerData.addAll((user.providerUserInfo ?? []).map((v) => UserInfo(
         providerId: v.providerId,
         displayName: v.displayName,
-        photoUrl: v.photoUrl,
+        photoURL: v.photoUrl,
         phoneNumber: v.phoneNumber,
         email: v.email,
         uid: v.rawId)));
@@ -152,7 +153,7 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   List<UserInfo> get providerData => List.from(_providerData);
 
   @override
-  FirebaseUserMetadata get metadata => FirebaseUserMetadata(
+  UserMetadata get metadata => UserMetadata(
       creationTime: _accountInfo.createdAt,
       lastSignInTime: _accountInfo.lastLoginAt);
 
@@ -164,7 +165,7 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
 
   /// Ensures the user is still logged
   void _checkDestroyed() {
-    if (_destroyed) throw AuthException.moduleDestroyed();
+    if (_destroyed) throw FirebaseAuthException.moduleDestroyed();
   }
 
   void copy(FirebaseUserImpl other) {
@@ -193,9 +194,9 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   Future<void> delete() async {
     var idToken = await getIdToken();
     try {
-      await _rpcHandler.deleteAccount(idToken.token);
-    } on AuthException catch (e) {
-      if (e.code == AuthException.tokenExpired().code) {
+      await _rpcHandler.deleteAccount(idToken);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == FirebaseAuthException.tokenExpired().code) {
         // user already deleted
       } else {
         rethrow;
@@ -209,21 +210,23 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   }
 
   @override
-  Future<AuthResult> linkWithCredential(AuthCredential credential) {
+  Future<UserCredential> linkWithCredential(AuthCredential credential) {
     // TODO: implement linkWithCredential
     throw UnimplementedError();
   }
 
   @override
-  Future<AuthResult> reauthenticateWithCredential(AuthCredential credential) {
+  Future<UserCredential> reauthenticateWithCredential(
+      AuthCredential credential) {
     // TODO: implement reauthenticateWithCredential
     throw UnimplementedError();
   }
 
   @override
-  Future<void> sendEmailVerification() async {
+  Future<void> sendEmailVerification(
+      [ActionCodeSettings actionCodeSettings]) async {
     var idToken = await getIdToken();
-    var email = await _rpcHandler.sendEmailVerification(idToken: idToken.token);
+    var email = await _rpcHandler.sendEmailVerification(idToken: idToken);
     if (email != this.email) {
       // Our local copy does not have an email. If the email changed,
       // reload the user.
@@ -232,16 +235,15 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   }
 
   @override
-  Future<void> unlinkFromProvider(String provider) async {
+  Future<User> unlink(String provider) async {
     await _reloadWithoutSaving();
     // Provider already unlinked.
     if (providerData.every((element) => element.providerId != provider)) {
-      throw AuthException.noSuchProvider();
+      throw FirebaseAuthException.noSuchProvider();
     }
     // We delete the providerId given.
     var idToken = await getIdToken();
-    var resp =
-        await _rpcHandler.deleteLinkedAccounts(idToken.token, [provider]);
+    var resp = await _rpcHandler.deleteLinkedAccounts(idToken, [provider]);
 
     // Construct the set of provider IDs returned by server.
     var userInfo = resp.providerUserInfo ?? [];
@@ -256,16 +258,18 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
     }
 
     // Remove the phone number if the phone provider was unlinked.
-    if (!remainingProviderIds.contains(PhoneAuthProvider.providerId)) {
+    if (!remainingProviderIds.contains(PhoneAuthProvider.PROVIDER_ID)) {
       _accountInfo =
           AccountInfo.fromJson(_accountInfo.toJson()..remove('phoneNumber'));
     }
+
+    return this;
   }
 
   @override
   Future<void> updateEmail(String email) async {
     var idToken = await getIdToken();
-    var response = await await _rpcHandler.updateEmail(idToken.token, email);
+    var response = await await _rpcHandler.updateEmail(idToken, email);
     // Calls to SetAccountInfo may invalidate old tokens.
     _updateTokensIfPresent(response);
     // Reloads the user to update emailVerified.
@@ -275,8 +279,7 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   @override
   Future<void> updatePassword(String password) async {
     var idToken = await getIdToken();
-    var response =
-        await await _rpcHandler.updatePassword(idToken.token, password);
+    var response = await await _rpcHandler.updatePassword(idToken, password);
     // Calls to SetAccountInfo may invalidate old tokens.
     _updateTokensIfPresent(response);
     // Reloads the user in case email has also been updated and the user
@@ -285,20 +288,14 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
   }
 
   @override
-  Future<void> updatePhoneNumberCredential(AuthCredential credential) {
-    // TODO: implement updatePhoneNumberCredential
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> updateProfile(UserUpdateInfo userUpdateInfo) async {
-    var profile = userUpdateInfo.toJson();
-    if (profile.isEmpty) {
+  Future<void> updateProfile({String displayName, String photoURL}) async {
+    if (displayName == null && photoURL == null) {
       // No change, directly return.
       return _checkDestroyed();
     }
     var idToken = await getIdToken();
-    var response = await _rpcHandler.updateProfile(idToken.token, profile);
+    var response = await _rpcHandler.updateProfile(
+        idToken, {'displayName': displayName, 'photoUrl': photoURL});
 
     // Calls to SetAccountInfo may invalidate old tokens.
     _updateTokensIfPresent(response);
@@ -312,12 +309,12 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
 
     for (var userInfo in providerData) {
       // Check if password provider is linked.
-      if (userInfo.providerId == EmailAuthProvider.providerId) {
+      if (userInfo.providerId == EmailAuthProvider.PROVIDER_ID) {
         // If so, update both fields in that provider.
         _providerData[_providerData.indexOf(userInfo)] = UserInfo.fromJson({
           ...userInfo.toJson(),
           'displayName': displayName,
-          'photoUrl': photoUrl
+          'photoUrl': photoURL
         });
       }
     }
@@ -333,6 +330,30 @@ class FirebaseUserImpl extends FirebaseUser with DelegatingUserInfo {
       _lastAccessToken = response.idToken;
     }
   }
+
+  @override
+  String get providerId => 'firebase';
+
+  @override
+  // TODO: implement refreshToken
+  String get refreshToken => throw UnimplementedError();
+
+  @override
+  // TODO: implement tenantId
+  String get tenantId => throw UnimplementedError();
+
+  @override
+  Future<void> updatePhoneNumber(PhoneAuthCredential phoneCredential) {
+    // TODO: implement updatePhoneNumber
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> verifyBeforeUpdateEmail(String newEmail,
+      [ActionCodeSettings actionCodeSettings]) {
+    // TODO: implement verifyBeforeUpdateEmail
+    throw UnimplementedError();
+  }
 }
 
 abstract class DelegatingUserInfo implements UserInfo {
@@ -345,7 +366,7 @@ abstract class DelegatingUserInfo implements UserInfo {
   String get displayName => _accountInfo.displayName;
 
   @override
-  String get photoUrl => _accountInfo.photoUrl;
+  String get photoURL => _accountInfo.photoUrl;
 
   @override
   String get email => _accountInfo.email;
@@ -355,7 +376,7 @@ abstract class DelegatingUserInfo implements UserInfo {
 
   bool get isAnonymous => _accountInfo.isAnonymous;
 
-  bool get isEmailVerified => _accountInfo.emailVerified;
+  bool get emailVerified => _accountInfo.emailVerified;
 }
 
 class AccountInfo {

@@ -52,7 +52,7 @@ class FirebaseTesting {
           http.MockClient((request) async {
         var apiKey = request.url.queryParameters['key'];
         if (apiKey == null) {
-          throw AuthException.invalidApiKey();
+          throw FirebaseAuthException.invalidApiKey();
         }
 
         var projectId = Backend._apiKeys[apiKey];
@@ -88,7 +88,7 @@ class FirebaseTesting {
       RegExp('https://www.googleapis.com/.*'): http.MockClient((r) async {
         var apiKey = r.url.queryParameters['key'];
         if (apiKey == null) {
-          throw AuthException.invalidApiKey();
+          throw FirebaseAuthException.invalidApiKey();
         }
 
         var projectId = Backend._apiKeys[apiKey];

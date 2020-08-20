@@ -1,16 +1,15 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
-import 'package:firebase_dart/src/auth/auth_providers.dart';
-import 'package:firebase_dart/src/auth/authcredential.dart';
-import 'package:firebase_dart/src/auth/utils.dart';
-import 'package:test/test.dart';
-
-import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
+import 'package:firebase_dart/auth.dart';
+import 'package:firebase_dart/src/auth/auth_provider.dart';
 import 'package:firebase_dart/src/auth/error.dart';
-
-import 'dart:convert';
-import 'dart:async';
+import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
+import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:meta/meta.dart';
+import 'package:test/test.dart';
 
 import 'jwt_util.dart';
 import 'util.dart';
@@ -68,7 +67,7 @@ class Tester {
       {String url,
       dynamic expectedBody,
       @required FutureOr<Map<String, dynamic>> serverResponse,
-      @required AuthException expectedError,
+      @required FirebaseAuthException expectedError,
       Future Function() action,
       String method}) async {
     when(method ?? this.method, url ?? this.url)
@@ -82,7 +81,7 @@ class Tester {
       String method,
       Map<String, dynamic> expectedBody,
       Future Function() action,
-      @required Map<String, AuthException> errorMap}) async {
+      @required Map<String, FirebaseAuthException> errorMap}) async {
     for (var serverErrorCode in errorMap.keys) {
       var expectedError = errorMap[serverErrorCode];
 
@@ -156,7 +155,7 @@ void main() {
                     'domain': 'global',
                     'reason': 'invalid',
                   }),
-              expectedError: AuthException.invalidCustomToken()
+              expectedError: FirebaseAuthException.invalidCustomToken()
                   .replace(message: 'Some specific reason.'),
             );
           });
@@ -174,7 +173,7 @@ void main() {
                     'domain': 'global',
                     'reason': 'invalid',
                   }),
-              expectedError: AuthException.internalError()
+              expectedError: FirebaseAuthException.internalError()
                   .replace(message: 'Something strange happened.'),
             );
           });
@@ -200,7 +199,7 @@ void main() {
                 });
             await tester.shouldFail(
               serverResponse: serverResponse,
-              expectedError: AuthException.internalError()
+              expectedError: FirebaseAuthException.internalError()
                   .replace(message: json.encode(serverResponse)),
             );
           });
@@ -218,7 +217,7 @@ void main() {
 
             await tester.shouldFail(
               serverResponse: serverResponse,
-              expectedError: AuthException.internalError()
+              expectedError: FirebaseAuthException.internalError()
                   .replace(message: json.encode(serverResponse)),
             );
           });
@@ -260,7 +259,7 @@ void main() {
           await tester.shouldFail(
             // If for some reason, sitekey is not returned.
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
       });
@@ -289,7 +288,7 @@ void main() {
               'projectId': '12345678',
               'authorizedDomains': ['domain.com', 'www.mydomain.com']
             },
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
         test('getDynamicLinkDomain: not activated', () async {
@@ -302,7 +301,7 @@ void main() {
                 'reason': 'invalid',
               },
             ),
-            expectedError: AuthException.dynamicLinkNotActivated(),
+            expectedError: FirebaseAuthException.dynamicLinkNotActivated(),
           );
         });
       });
@@ -328,7 +327,7 @@ void main() {
           await tester.shouldFail(
             // If for some reason, sitekey is not returned.
             serverResponse: Tester.errorResponse('INVALID_APP_ID'),
-            expectedError: AuthException.invalidAppId(),
+            expectedError: FirebaseAuthException.invalidAppId(),
           );
         });
       });
@@ -358,7 +357,7 @@ void main() {
           test('isAndroidPackageNameValid: no sha1Cert: error', () async {
             await tester.shouldFail(
               serverResponse: Tester.errorResponse('INVALID_APP_ID'),
-              expectedError: AuthException.invalidAppId(),
+              expectedError: FirebaseAuthException.invalidAppId(),
             );
           });
         });
@@ -384,7 +383,7 @@ void main() {
           test('isAndroidPackageNameValid: sha1Cert: error', () async {
             await tester.shouldFail(
               serverResponse: Tester.errorResponse('INVALID_CERT_HASH'),
-              expectedError: AuthException.invalidCertHash(),
+              expectedError: FirebaseAuthException.invalidCertHash(),
             );
           });
         });
@@ -411,7 +410,7 @@ void main() {
         test('isOAuthCliendIdValid: error', () async {
           await tester.shouldFail(
             serverResponse: Tester.errorResponse('INVALID_OAUTH_CLIENT_ID'),
-            expectedError: AuthException.invalidOAuthClientId(),
+            expectedError: FirebaseAuthException.invalidOAuthClientId(),
           );
         });
       });
@@ -487,8 +486,8 @@ void main() {
 
         test('fetchSignInMethodsForIdentifier: server caught error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
-            'INVALID_IDENTIFIER': AuthException.invalidEmail(),
-            'MISSING_CONTINUE_URI': AuthException.internalError(),
+            'INVALID_IDENTIFIER': FirebaseAuthException.invalidEmail(),
+            'MISSING_CONTINUE_URI': FirebaseAuthException.internalError(),
           });
         });
       });
@@ -560,8 +559,8 @@ void main() {
 
         test('fetchProvidersForIdentifier: server caught error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
-            'INVALID_IDENTIFIER': AuthException.invalidEmail(),
-            'MISSING_CONTINUE_URI': AuthException.internalError(),
+            'INVALID_IDENTIFIER': FirebaseAuthException.invalidEmail(),
+            'MISSING_CONTINUE_URI': FirebaseAuthException.internalError(),
           });
         });
       });
@@ -626,7 +625,7 @@ void main() {
 
         test('verifyCustomToken: multi factor required', () async {
           await tester.shouldFail(
-            expectedError: AuthException.mfaRequired(),
+            expectedError: FirebaseAuthException.mfaRequired(),
             serverResponse: pendingCredResponse,
           );
         });
@@ -651,17 +650,17 @@ void main() {
             'tenantId': '123456789012'
           }, errorMap: {
             'UNSUPPORTED_TENANT_OPERATION':
-                AuthException.unsupportedTenantOperation(),
+                FirebaseAuthException.unsupportedTenantOperation(),
           });
         });
 
         test('verifyCustomToken: server caught error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
-            'MISSING_CUSTOM_TOKEN': AuthException.internalError(),
-            'INVALID_CUSTOM_TOKEN': AuthException.invalidCustomToken(),
-            'CREDENTIAL_MISMATCH': AuthException.credentialMismatch(),
-            'INVALID_TENANT_ID': AuthException.invalidTenantId(),
-            'TENANT_ID_MISMATCH': AuthException.tenantIdMismatch(),
+            'MISSING_CUSTOM_TOKEN': FirebaseAuthException.internalError(),
+            'INVALID_CUSTOM_TOKEN': FirebaseAuthException.invalidCustomToken(),
+            'CREDENTIAL_MISMATCH': FirebaseAuthException.credentialMismatch(),
+            'INVALID_TENANT_ID': FirebaseAuthException.invalidTenantId(),
+            'TENANT_ID_MISMATCH': FirebaseAuthException.tenantIdMismatch(),
           });
         });
 
@@ -672,7 +671,7 @@ void main() {
                 'returnSecureToken': true
               },
               serverResponse: {},
-              expectedError: AuthException.internalError(),
+              expectedError: FirebaseAuthException.internalError(),
               action: () => rpcHandler.verifyCustomToken('CUSTOM_TOKEN'));
         });
       });
@@ -699,7 +698,7 @@ void main() {
 
         test('emailLinkSignIn: multi factor required', () async {
           await tester.shouldFail(
-            expectedError: AuthException.mfaRequired(),
+            expectedError: FirebaseAuthException.mfaRequired(),
             serverResponse: pendingCredResponse,
           );
         });
@@ -719,26 +718,26 @@ void main() {
 
         test('emailLinkSignIn: server caught error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
-            'INVALID_EMAIL': AuthException.invalidEmail(),
+            'INVALID_EMAIL': FirebaseAuthException.invalidEmail(),
           });
         });
 
         test('emailLinkSignIn: unknown server response', () async {
           await tester.shouldFail(
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
 
         test('emailLinkSignIn: empty action code error', () async {
           // Test when empty action code is passed in emailLinkSignIn request.
           expect(() => rpcHandler.emailLinkSignIn('user@example.com', ''),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
         test('emailLinkSignIn: invalid email error', () async {
           // Test when invalid email is passed in emailLinkSignIn request.
           expect(() => rpcHandler.emailLinkSignIn('user.invalid', 'OTP_CODE'),
-              throwsA(AuthException.invalidEmail()));
+              throwsA(FirebaseAuthException.invalidEmail()));
         });
       });
 
@@ -778,12 +777,15 @@ void main() {
         test('createAccount: server caught error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
-              'EMAIL_EXISTS': AuthException.emailExists(),
-              'PASSWORD_LOGIN_DISABLED': AuthException.operationNotAllowed(),
-              'OPERATION_NOT_ALLOWED': AuthException.operationNotAllowed(),
-              'WEAK_PASSWORD': AuthException.weakPassword(),
-              'ADMIN_ONLY_OPERATION': AuthException.adminOnlyOperation(),
-              'INVALID_TENANT_ID': AuthException.invalidTenantId(),
+              'EMAIL_EXISTS': FirebaseAuthException.emailExists(),
+              'PASSWORD_LOGIN_DISABLED':
+                  FirebaseAuthException.operationNotAllowed(),
+              'OPERATION_NOT_ALLOWED':
+                  FirebaseAuthException.operationNotAllowed(),
+              'WEAK_PASSWORD': FirebaseAuthException.weakPassword(),
+              'ADMIN_ONLY_OPERATION':
+                  FirebaseAuthException.adminOnlyOperation(),
+              'INVALID_TENANT_ID': FirebaseAuthException.invalidTenantId(),
             },
           );
         });
@@ -791,19 +793,19 @@ void main() {
           // Test when server returns unexpected response with no error message.
           await tester.shouldFail(
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
 
         test('createAccount: no password error', () async {
           expect(() => rpcHandler.createAccount('uid123@fake.com', ''),
-              throwsA(AuthException.weakPassword()));
+              throwsA(FirebaseAuthException.weakPassword()));
         });
         test('createAccount: invalid email error', () async {
           expect(
               () => rpcHandler.createAccount(
                   'uid123.invalid', 'mysupersecretpassword'),
-              throwsA(AuthException.invalidEmail()));
+              throwsA(FirebaseAuthException.invalidEmail()));
         });
       });
 
@@ -823,19 +825,20 @@ void main() {
           await tester.shouldFailWithServerErrors(
             errorMap: {
               'CREDENTIAL_TOO_OLD_LOGIN_AGAIN':
-                  AuthException.credentialTooOldLoginAgain(),
-              'INVALID_ID_TOKEN': AuthException.invalidAuth(),
-              'USER_NOT_FOUND': AuthException.tokenExpired(),
-              'TOKEN_EXPIRED': AuthException.tokenExpired(),
-              'USER_DISABLED': AuthException.userDisabled(),
-              'ADMIN_ONLY_OPERATION': AuthException.adminOnlyOperation(),
+                  FirebaseAuthException.credentialTooOldLoginAgain(),
+              'INVALID_ID_TOKEN': FirebaseAuthException.invalidAuth(),
+              'USER_NOT_FOUND': FirebaseAuthException.tokenExpired(),
+              'TOKEN_EXPIRED': FirebaseAuthException.tokenExpired(),
+              'USER_DISABLED': FirebaseAuthException.userDisabled(),
+              'ADMIN_ONLY_OPERATION':
+                  FirebaseAuthException.adminOnlyOperation(),
             },
           );
         });
 
         test('deleteAccount: invalid request error', () async {
           expect(() => rpcHandler.deleteAccount(null),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
       });
 
@@ -863,7 +866,7 @@ void main() {
 
         test('verifyPassword: multi factor required', () async {
           await tester.shouldFail(
-            expectedError: AuthException.mfaRequired(),
+            expectedError: FirebaseAuthException.mfaRequired(),
             serverResponse: pendingCredResponse,
           );
         });
@@ -886,12 +889,12 @@ void main() {
         test('verifyPassword: server caught error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
-              'INVALID_EMAIL': AuthException.invalidEmail(),
-              'INVALID_PASSWORD': AuthException.invalidPassword(),
+              'INVALID_EMAIL': FirebaseAuthException.invalidEmail(),
+              'INVALID_PASSWORD': FirebaseAuthException.invalidPassword(),
               'TOO_MANY_ATTEMPTS_TRY_LATER':
-                  AuthException.tooManyAttemptsTryLater(),
-              'USER_DISABLED': AuthException.userDisabled(),
-              'INVALID_TENANT_ID': AuthException.invalidTenantId(),
+                  FirebaseAuthException.tooManyAttemptsTryLater(),
+              'USER_DISABLED': FirebaseAuthException.userDisabled(),
+              'INVALID_TENANT_ID': FirebaseAuthException.invalidTenantId(),
             },
           );
         });
@@ -904,7 +907,7 @@ void main() {
               'returnSecureToken': true
             },
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
             action: () => rpcHandler.verifyPassword(
                 'uid123@fake.com', 'mysupersecretpassword'),
           );
@@ -912,7 +915,7 @@ void main() {
 
         test('verifyPassword: invalid password request', () async {
           expect(() => rpcHandler.verifyPassword('uid123@fake.com', ''),
-              throwsA(AuthException.invalidPassword()));
+              throwsA(FirebaseAuthException.invalidPassword()));
         });
 
         test('verifyPassword: invalid email error', () async {
@@ -921,7 +924,7 @@ void main() {
           expect(
               () => rpcHandler.verifyPassword(
                   'uid123.invalid', 'mysupersecretpassword'),
-              throwsA(AuthException.invalidEmail()));
+              throwsA(FirebaseAuthException.invalidEmail()));
         });
       });
 
@@ -964,7 +967,7 @@ void main() {
             },
             errorMap: {
               'UNSUPPORTED_TENANT_OPERATION':
-                  AuthException.unsupportedTenantOperation(),
+                  FirebaseAuthException.unsupportedTenantOperation(),
             },
           );
         });
@@ -972,7 +975,7 @@ void main() {
           // Test when server returns unexpected response with no error message.
           await tester.shouldFail(
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
       });
@@ -1113,8 +1116,10 @@ void main() {
                 requestUri: 'http://localhost',
               ),
               errorMap: {
-                'INVALID_IDP_RESPONSE': AuthException.invalidIdpResponse(),
-                'INVALID_PENDING_TOKEN': AuthException.invalidIdpResponse(),
+                'INVALID_IDP_RESPONSE':
+                    FirebaseAuthException.invalidIdpResponse(),
+                'INVALID_PENDING_TOKEN':
+                    FirebaseAuthException.invalidIdpResponse(),
               },
             );
           });
@@ -1140,7 +1145,7 @@ void main() {
                 'oauthAuthorizationCode': 'AUTHORIZATION_CODE',
                 'errorMessage': 'USER_DISABLED'
               },
-              expectedError: AuthException.userDisabled(),
+              expectedError: FirebaseAuthException.userDisabled(),
               action: () => rpcHandler.verifyAssertion(
                   sessionId: 'SESSION_ID',
                   requestUri: 'http://localhost/callback#oauthResponse'),
@@ -1151,7 +1156,7 @@ void main() {
           expect(
               () => rpcHandler.verifyAssertion(
                   requestUri: 'http://localhost/callback#oauthResponse'),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
         test('verifyAssertion: server caught error', () async {
           await tester.shouldFailWithServerErrors(
@@ -1168,20 +1173,23 @@ void main() {
               requestUri: 'http://localhost',
             ),
             errorMap: {
-              'INVALID_IDP_RESPONSE': AuthException.invalidIdpResponse(),
-              'USER_DISABLED': AuthException.userDisabled(),
+              'INVALID_IDP_RESPONSE':
+                  FirebaseAuthException.invalidIdpResponse(),
+              'USER_DISABLED': FirebaseAuthException.userDisabled(),
               'FEDERATED_USER_ID_ALREADY_LINKED':
-                  AuthException.credentialAlreadyInUse(),
-              'OPERATION_NOT_ALLOWED': AuthException.operationNotAllowed(),
-              'USER_CANCELLED': AuthException.userCancelled(),
-              'MISSING_OR_INVALID_NONCE': AuthException.missingOrInvalidNonce()
+                  FirebaseAuthException.credentialAlreadyInUse(),
+              'OPERATION_NOT_ALLOWED':
+                  FirebaseAuthException.operationNotAllowed(),
+              'USER_CANCELLED': FirebaseAuthException.userCancelled(),
+              'MISSING_OR_INVALID_NONCE':
+                  FirebaseAuthException.missingOrInvalidNonce()
             },
           );
         });
         test('verifyAssertion: invalid request error', () async {
           // Test when request is invalid.
           expect(() => rpcHandler.verifyAssertion(postBody: '....'),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
 
         group('verifyAssertion: need confirmation error', () {
@@ -1189,8 +1197,8 @@ void main() {
               'verifyAssertion: need confirmation error: oauth response and email',
               () {
             // Test Auth linking error when need confirmation flag is returned.
-            var credential = GoogleAuthProvider.getCredential(
-                accessToken: 'googleAccessToken');
+            var credential =
+                GoogleAuthProvider.credential(accessToken: 'googleAccessToken');
 
             tester.shouldFail(
               expectedBody: {
@@ -1208,7 +1216,7 @@ void main() {
                 'oauthAccessToken': 'googleAccessToken',
                 'providerId': 'google.com'
               },
-              expectedError: AuthException.needConfirmation()
+              expectedError: FirebaseAuthException.needConfirmation()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody:
@@ -1219,8 +1227,8 @@ void main() {
           test('verifyAssertion: need confirmation error: nonce id token',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider(providerId: 'oidc.provider')
-                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
 
             await tester.shouldFail(
               expectedBody: {
@@ -1236,7 +1244,7 @@ void main() {
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'providerId': 'oidc.provider'
               },
-              expectedError: AuthException.needConfirmation()
+              expectedError: FirebaseAuthException.needConfirmation()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody:
@@ -1248,8 +1256,8 @@ void main() {
           test('verifyAssertion: need confirmation error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider(providerId: 'oidc.provider')
-                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
 
             await tester.shouldFail(
               expectedBody: {
@@ -1265,7 +1273,7 @@ void main() {
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'providerId': 'oidc.provider'
               },
-              expectedError: AuthException.needConfirmation()
+              expectedError: FirebaseAuthException.needConfirmation()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
@@ -1277,9 +1285,11 @@ void main() {
               () async {
             // Expected error thrown with OIDC credential containing pending token and
             // no nonce.
-            var credential = OAuthProvider(providerId: 'oidc.provider')
-                .getCredential(
-                    idToken: 'OIDC_ID_TOKEN', pendingToken: 'PENDING_TOKEN');
+            var credential = OAuthCredential(
+                providerId: 'oidc.provider',
+                signInMethod: 'oauth',
+                idToken: 'OIDC_ID_TOKEN',
+                secret: 'PENDING_TOKEN');
 
             await tester.shouldFail(
                 expectedBody: {
@@ -1296,7 +1306,7 @@ void main() {
                   'providerId': 'oidc.provider',
                   'pendingToken': 'PENDING_TOKEN'
                 },
-                expectedError: AuthException.needConfirmation()
+                expectedError: FirebaseAuthException.needConfirmation()
                     .replace(email: 'user@example.com', credential: credential),
                 action: () => rpcHandler.verifyAssertion(
                     postBody:
@@ -1322,7 +1332,7 @@ void main() {
                   'idToken': 'PENDING_TOKEN',
                   'email': 'user@example.com'
                 },
-                expectedError: AuthException.needConfirmation()
+                expectedError: FirebaseAuthException.needConfirmation()
                     .replace(email: 'user@example.com'),
                 action: () => rpcHandler.verifyAssertion(
                     postBody:
@@ -1347,7 +1357,7 @@ void main() {
                 serverResponse: {
                   'needConfirmation': true
                 },
-                expectedError: AuthException.needConfirmation(),
+                expectedError: FirebaseAuthException.needConfirmation(),
                 action: () => rpcHandler.verifyAssertion(
                     postBody:
                         'id_token=googleIdToken&access_token=accessToken&provider_id=google.com',
@@ -1361,8 +1371,8 @@ void main() {
               () async {
             // Test Auth linking error when FEDERATED_USER_ID_ALREADY_LINKED errorMessage
             // is returned.
-            var credential = GoogleAuthProvider.getCredential(
-                accessToken: 'googleAccessToken');
+            var credential =
+                GoogleAuthProvider.credential(accessToken: 'googleAccessToken');
             await tester.shouldFail(
                 expectedBody: {
                   'postBody':
@@ -1380,7 +1390,7 @@ void main() {
                   'oauthExpireIn': 5183999,
                   'providerId': 'google.com'
                 },
-                expectedError: AuthException.credentialAlreadyInUse()
+                expectedError: FirebaseAuthException.credentialAlreadyInUse()
                     .replace(email: 'user@example.com', credential: credential),
                 action: () => rpcHandler.verifyAssertion(
                     postBody:
@@ -1391,8 +1401,8 @@ void main() {
               'verifyAssertion: credentials already in use error: nonce id token',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider(providerId: 'oidc.provider')
-                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
             await tester.shouldFail(
                 expectedBody: {
                   'postBody':
@@ -1409,7 +1419,7 @@ void main() {
                   'oauthIdToken': 'OIDC_ID_TOKEN',
                   'providerId': 'oidc.provider'
                 },
-                expectedError: AuthException.credentialAlreadyInUse()
+                expectedError: FirebaseAuthException.credentialAlreadyInUse()
                     .replace(email: 'user@example.com', credential: credential),
                 action: () => rpcHandler.verifyAssertion(
                     postBody:
@@ -1420,8 +1430,8 @@ void main() {
               'verifyAssertion: credentials already in use error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider(providerId: 'oidc.provider')
-                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
             await tester.shouldFail(
               expectedBody: {
                 'postBody': 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
@@ -1438,7 +1448,7 @@ void main() {
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'providerId': 'oidc.provider'
               },
-              expectedError: AuthException.credentialAlreadyInUse()
+              expectedError: FirebaseAuthException.credentialAlreadyInUse()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
@@ -1451,9 +1461,11 @@ void main() {
               () async {
             // Expected error thrown with OIDC credential containing pending token and no
             // nonce.
-            var credential = OAuthProvider(providerId: 'oidc.provider')
-                .getCredential(
-                    pendingToken: 'PENDING_TOKEN', idToken: 'OIDC_ID_TOKEN');
+            var credential = OAuthCredential(
+                providerId: 'oidc.provider',
+                signInMethod: 'oauth',
+                secret: 'PENDING_TOKEN',
+                idToken: 'OIDC_ID_TOKEN');
             await tester.shouldFail(
               expectedBody: {
                 'postBody':
@@ -1471,7 +1483,7 @@ void main() {
                 'providerId': 'oidc.provider',
                 'pendingToken': 'PENDING_TOKEN'
               },
-              expectedError: AuthException.credentialAlreadyInUse()
+              expectedError: FirebaseAuthException.credentialAlreadyInUse()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody:
@@ -1485,8 +1497,8 @@ void main() {
           test('verifyAssertion: email exists error: oauth response and email',
               () async {
             // Test Auth linking error when EMAIL_EXISTS errorMessage is returned.
-            var credential = FacebookAuthProvider.getCredential(
-                accessToken: 'facebookAccessToken');
+            var credential =
+                FacebookAuthProvider.credential('facebookAccessToken');
             await tester.shouldFail(
               expectedBody: {
                 'postBody': 'access_token=accessToken&provider_id=facebook.com',
@@ -1502,7 +1514,7 @@ void main() {
                 'oauthExpireIn': 5183999,
                 'providerId': 'facebook.com'
               },
-              expectedError: AuthException.emailExists()
+              expectedError: FirebaseAuthException.emailExists()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody: 'access_token=accessToken&provider_id=facebook.com',
@@ -1511,8 +1523,8 @@ void main() {
           });
           test('verifyAssertion: email exists error: nonce id token', () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider(providerId: 'oidc.provider')
-                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
             await tester.shouldFail(
                 expectedBody: {
                   'postBody':
@@ -1529,7 +1541,7 @@ void main() {
                   'oauthIdToken': 'OIDC_ID_TOKEN',
                   'providerId': 'oidc.provider'
                 },
-                expectedError: AuthException.emailExists()
+                expectedError: FirebaseAuthException.emailExists()
                     .replace(email: 'user@example.com', credential: credential),
                 action: () => rpcHandler.verifyAssertion(
                     postBody:
@@ -1539,8 +1551,8 @@ void main() {
           test('verifyAssertion: email exists error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider(providerId: 'oidc.provider')
-                .getCredential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider('oidc.provider')
+                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
             await tester.shouldFail(
               expectedBody: {
                 'postBody': 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
@@ -1557,7 +1569,7 @@ void main() {
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'providerId': 'oidc.provider'
               },
-              expectedError: AuthException.emailExists()
+              expectedError: FirebaseAuthException.emailExists()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
@@ -1568,9 +1580,11 @@ void main() {
           test('verifyAssertion: email exists error: pending token', () async {
             // Expected error thrown with OIDC credential containing no nonce since
             // pending token returned from server.
-            var credential = OAuthProvider(providerId: 'oidc.provider')
-                .getCredential(
-                    pendingToken: 'PENDING_TOKEN', idToken: 'OIDC_ID_TOKEN');
+            var credential = OAuthCredential(
+                providerId: 'oidc.provider',
+                signInMethod: 'oauth',
+                secret: 'PENDING_TOKEN',
+                idToken: 'OIDC_ID_TOKEN');
             await tester.shouldFail(
               expectedBody: {
                 'postBody':
@@ -1589,7 +1603,7 @@ void main() {
                 'providerId': 'oidc.provider',
                 'pendingToken': 'PENDING_TOKEN'
               },
-              expectedError: AuthException.emailExists()
+              expectedError: FirebaseAuthException.emailExists()
                   .replace(email: 'user@example.com', credential: credential),
               action: () => rpcHandler.verifyAssertion(
                   postBody:
@@ -1777,7 +1791,7 @@ void main() {
                 'oauthAuthorizationCode': 'AUTHORIZATION_CODE',
                 'errorMessage': 'USER_DISABLED'
               },
-              expectedError: AuthException.userDisabled(),
+              expectedError: FirebaseAuthException.userDisabled(),
             );
           });
         });
@@ -1787,7 +1801,7 @@ void main() {
               () => rpcHandler.verifyAssertionForLinking(
                   sessionId: 'SESSION_ID',
                   requestUri: 'http://localhost/callback#oauthResponse'),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
       });
 
@@ -1968,7 +1982,7 @@ void main() {
                 'oauthAuthorizationCode': 'AUTHORIZATION_CODE',
                 'errorMessage': 'USER_DISABLED'
               },
-              expectedError: AuthException.userDisabled(),
+              expectedError: FirebaseAuthException.userDisabled(),
             );
           });
         });
@@ -1992,7 +2006,7 @@ void main() {
             expect(
                 () => rpcHandler.verifyAssertionForExisting(
                     requestUri: 'http://localhost/callback#oauthResponse'),
-                throwsA(AuthException.internalError()));
+                throwsA(FirebaseAuthException.internalError()));
           });
           test('verifyAssertionForExisting: error: user not found', () async {
             // No user is found. No idToken returned.
@@ -2003,7 +2017,7 @@ void main() {
                 'oauthAuthorizationCode': 'AUTHORIZATION_CODE',
                 'errorMessage': 'USER_NOT_FOUND'
               },
-              expectedError: AuthException.userDeleted(),
+              expectedError: FirebaseAuthException.userDeleted(),
             );
           });
           test('verifyAssertionForExisting: error: no idToken', () async {
@@ -2014,21 +2028,22 @@ void main() {
                 'oauthExpireIn': 3600,
                 'oauthAuthorizationCode': 'AUTHORIZATION_CODE'
               },
-              expectedError: AuthException.internalError(),
+              expectedError: FirebaseAuthException.internalError(),
             );
           });
         });
         test('verifyAssertionForExisting: invalid request error', () async {
           // Test when request is invalid.
           expect(() => rpcHandler.verifyAssertionForExisting(postBody: '....'),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
         test('verifyAssertionForExisting: server caught error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
-            'INVALID_IDP_RESPONSE': AuthException.invalidIdpResponse(),
-            'USER_DISABLED': AuthException.userDisabled(),
-            'OPERATION_NOT_ALLOWED': AuthException.operationNotAllowed(),
-            'USER_CANCELLED': AuthException.userCancelled(),
+            'INVALID_IDP_RESPONSE': FirebaseAuthException.invalidIdpResponse(),
+            'USER_DISABLED': FirebaseAuthException.userDisabled(),
+            'OPERATION_NOT_ALLOWED':
+                FirebaseAuthException.operationNotAllowed(),
+            'USER_CANCELLED': FirebaseAuthException.userCancelled(),
           });
         });
       });
@@ -2059,13 +2074,14 @@ void main() {
           },
           action: () => rpcHandler.sendSignInLinkToEmail(
               email: 'user@example.com',
-              continueUrl: 'https://www.example.com/?state=abc',
-              iOSBundleId: 'com.example.ios',
-              androidPackageName: 'com.example.android',
-              androidInstallApp: true,
-              androidMinimumVersion: '12',
-              canHandleCodeInApp: true,
-              dynamicLinkDomain: 'example.page.link'),
+              actionCodeSettings: ActionCodeSettings(
+                  url: 'https://www.example.com/?state=abc',
+                  iOSBundleId: 'com.example.ios',
+                  androidPackageName: 'com.example.android',
+                  androidInstallApp: true,
+                  androidMinimumVersion: '12',
+                  handleCodeInApp: true,
+                  dynamicLinkDomain: 'example.page.link')),
         );
         group('sendSignInLinkToEmail: success', () {
           test('sendSignInLinkToEmail: success: action code settings',
@@ -2091,27 +2107,31 @@ void main() {
           // Test when invalid email is passed in getOobCode request.
 
           expect(() => rpcHandler.sendSignInLinkToEmail(email: 'user.invalid'),
-              throwsA(AuthException.invalidEmail()));
+              throwsA(FirebaseAuthException.invalidEmail()));
         });
         test('sendSignInLinkToEmail: unknown server response', () async {
           await tester.shouldFail(
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
         test('sendSignInLinkToEmail: server caught error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
-              'INVALID_RECIPIENT_EMAIL': AuthException.invalidRecipientEmail(),
-              'INVALID_SENDER': AuthException.invalidSender(),
-              'INVALID_MESSAGE_PAYLOAD': AuthException.invalidMessagePayload(),
-              'INVALID_CONTINUE_URI': AuthException.invalidContinueUri(),
+              'INVALID_RECIPIENT_EMAIL':
+                  FirebaseAuthException.invalidRecipientEmail(),
+              'INVALID_SENDER': FirebaseAuthException.invalidSender(),
+              'INVALID_MESSAGE_PAYLOAD':
+                  FirebaseAuthException.invalidMessagePayload(),
+              'INVALID_CONTINUE_URI':
+                  FirebaseAuthException.invalidContinueUri(),
               'MISSING_ANDROID_PACKAGE_NAME':
-                  AuthException.missingAndroidPackageName(),
-              'MISSING_IOS_BUNDLE_ID': AuthException.missingIosBundleId(),
-              'UNAUTHORIZED_DOMAIN': AuthException.unauthorizedDomain(),
+                  FirebaseAuthException.missingAndroidPackageName(),
+              'MISSING_IOS_BUNDLE_ID':
+                  FirebaseAuthException.missingIosBundleId(),
+              'UNAUTHORIZED_DOMAIN': FirebaseAuthException.unauthorizedDomain(),
               'INVALID_DYNAMIC_LINK_DOMAIN':
-                  AuthException.invalidDynamicLinkDomain(),
+                  FirebaseAuthException.invalidDynamicLinkDomain(),
             },
           );
         });
@@ -2134,13 +2154,14 @@ void main() {
             expectedResult: (_) => userEmail,
             action: () => rpcHandler.sendPasswordResetEmail(
                 email: 'user@example.com',
-                continueUrl: 'https://www.example.com/?state=abc',
-                iOSBundleId: 'com.example.ios',
-                androidPackageName: 'com.example.android',
-                androidInstallApp: true,
-                androidMinimumVersion: '12',
-                canHandleCodeInApp: true,
-                dynamicLinkDomain: 'example.page.link'));
+                actionCodeSettings: ActionCodeSettings(
+                    url: 'https://www.example.com/?state=abc',
+                    iOSBundleId: 'com.example.ios',
+                    androidPackageName: 'com.example.android',
+                    androidInstallApp: true,
+                    androidMinimumVersion: '12',
+                    handleCodeInApp: true,
+                    dynamicLinkDomain: 'example.page.link')));
 
         test('sendPasswordResetEmail: success: action code settings', () async {
           await tester.shouldSucceed(
@@ -2180,29 +2201,31 @@ void main() {
           // Test when invalid email is passed in getOobCode request.
 
           expect(() => rpcHandler.sendPasswordResetEmail(email: 'user.invalid'),
-              throwsA(AuthException.invalidEmail()));
+              throwsA(FirebaseAuthException.invalidEmail()));
         });
         test('sendPasswordResetEmail: unknown server response', () async {
           await tester.shouldFail(
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
         test('sendPasswordResetEmail: caught server error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
-            'EMAIL_NOT_FOUND': AuthException.userDeleted(),
+            'EMAIL_NOT_FOUND': FirebaseAuthException.userDeleted(),
             'RESET_PASSWORD_EXCEED_LIMIT':
-                AuthException.tooManyAttemptsTryLater(),
-            'INVALID_RECIPIENT_EMAIL': AuthException.invalidRecipientEmail(),
-            'INVALID_SENDER': AuthException.invalidSender(),
-            'INVALID_MESSAGE_PAYLOAD': AuthException.invalidMessagePayload(),
-            'INVALID_CONTINUE_URI': AuthException.invalidContinueUri(),
+                FirebaseAuthException.tooManyAttemptsTryLater(),
+            'INVALID_RECIPIENT_EMAIL':
+                FirebaseAuthException.invalidRecipientEmail(),
+            'INVALID_SENDER': FirebaseAuthException.invalidSender(),
+            'INVALID_MESSAGE_PAYLOAD':
+                FirebaseAuthException.invalidMessagePayload(),
+            'INVALID_CONTINUE_URI': FirebaseAuthException.invalidContinueUri(),
             'MISSING_ANDROID_PACKAGE_NAME':
-                AuthException.missingAndroidPackageName(),
-            'MISSING_IOS_BUNDLE_ID': AuthException.missingIosBundleId(),
-            'UNAUTHORIZED_DOMAIN': AuthException.unauthorizedDomain(),
+                FirebaseAuthException.missingAndroidPackageName(),
+            'MISSING_IOS_BUNDLE_ID': FirebaseAuthException.missingIosBundleId(),
+            'UNAUTHORIZED_DOMAIN': FirebaseAuthException.unauthorizedDomain(),
             'INVALID_DYNAMIC_LINK_DOMAIN':
-                AuthException.invalidDynamicLinkDomain(),
+                FirebaseAuthException.invalidDynamicLinkDomain(),
           });
         });
       });
@@ -2225,13 +2248,14 @@ void main() {
           expectedResult: (_) => userEmail,
           action: () => rpcHandler.sendEmailVerification(
               idToken: idToken,
-              continueUrl: 'https://www.example.com/?state=abc',
-              iOSBundleId: 'com.example.ios',
-              androidPackageName: 'com.example.android',
-              androidInstallApp: true,
-              androidMinimumVersion: '12',
-              canHandleCodeInApp: true,
-              dynamicLinkDomain: 'example.page.link'),
+              actionCodeSettings: ActionCodeSettings(
+                  url: 'https://www.example.com/?state=abc',
+                  iOSBundleId: 'com.example.ios',
+                  androidPackageName: 'com.example.android',
+                  androidInstallApp: true,
+                  androidMinimumVersion: '12',
+                  handleCodeInApp: true,
+                  dynamicLinkDomain: 'example.page.link')),
         );
         test('sendEmailVerification: success: action code settings', () async {
           await tester.shouldSucceed(
@@ -2266,20 +2290,22 @@ void main() {
         test('sendEmailVerification: unknown server response', () async {
           await tester.shouldFail(
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
         test('sendEmailVerification: caught server error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
-              'EMAIL_NOT_FOUND': AuthException.userDeleted(),
-              'INVALID_CONTINUE_URI': AuthException.invalidContinueUri(),
+              'EMAIL_NOT_FOUND': FirebaseAuthException.userDeleted(),
+              'INVALID_CONTINUE_URI':
+                  FirebaseAuthException.invalidContinueUri(),
               'MISSING_ANDROID_PACKAGE_NAME':
-                  AuthException.missingAndroidPackageName(),
-              'MISSING_IOS_BUNDLE_ID': AuthException.missingIosBundleId(),
-              'UNAUTHORIZED_DOMAIN': AuthException.unauthorizedDomain(),
+                  FirebaseAuthException.missingAndroidPackageName(),
+              'MISSING_IOS_BUNDLE_ID':
+                  FirebaseAuthException.missingIosBundleId(),
+              'UNAUTHORIZED_DOMAIN': FirebaseAuthException.unauthorizedDomain(),
               'INVALID_DYNAMIC_LINK_DOMAIN':
-                  AuthException.invalidDynamicLinkDomain(),
+                  FirebaseAuthException.invalidDynamicLinkDomain(),
             },
           );
         });
@@ -2301,21 +2327,21 @@ void main() {
 
         test('confirmPasswordReset: missing code', () async {
           expect(() => rpcHandler.confirmPasswordReset('', 'myPassword'),
-              throwsA(AuthException.invalidOobCode()));
+              throwsA(FirebaseAuthException.invalidOobCode()));
         });
 
         test('confirmPasswordReset: unknown server response', () async {
           await tester.shouldFail(
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
         test('confirmPasswordReset: caught server error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
-              'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
-              'INVALID_OOB_CODE': AuthException.invalidOobCode(),
-              'MISSING_OOB_CODE': AuthException.internalError(),
+              'EXPIRED_OOB_CODE': FirebaseAuthException.expiredOobCode(),
+              'INVALID_OOB_CODE': FirebaseAuthException.invalidOobCode(),
+              'MISSING_OOB_CODE': FirebaseAuthException.internalError(),
             },
           );
         });
@@ -2347,14 +2373,14 @@ void main() {
 
         test('checkActionCode: missing code', () async {
           expect(() => rpcHandler.checkActionCode(''),
-              throwsA(AuthException.invalidOobCode()));
+              throwsA(FirebaseAuthException.invalidOobCode()));
         });
         test('checkActionCode: uncaught server error', () async {
           // Required fields missing in response.
           await tester.shouldFail(
             expectedBody: {'oobCode': code},
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
         test('checkActionCode: uncaught server error', () async {
@@ -2364,16 +2390,16 @@ void main() {
               'email': 'user@example.com',
               'newEmail': 'fake@example.com'
             },
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
         test('checkActionCode: caught server error', () async {
           var code = 'REVOKE_EMAIL_OOB_CODE';
           await tester.shouldFailWithServerErrors(
             errorMap: {
-              'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
-              'INVALID_OOB_CODE': AuthException.invalidOobCode(),
-              'MISSING_OOB_CODE': AuthException.internalError()
+              'EXPIRED_OOB_CODE': FirebaseAuthException.expiredOobCode(),
+              'INVALID_OOB_CODE': FirebaseAuthException.invalidOobCode(),
+              'MISSING_OOB_CODE': FirebaseAuthException.internalError()
             },
           );
         });
@@ -2396,23 +2422,23 @@ void main() {
 
         test('applyActionCode: missing code', () async {
           expect(() => rpcHandler.applyActionCode(''),
-              throwsA(AuthException.invalidOobCode()));
+              throwsA(FirebaseAuthException.invalidOobCode()));
         });
 
         test('applyActionCode: unknown server response', () async {
           await tester.shouldFail(
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
 
         test('applyActionCode: caught server error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
-              'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
-              'EMAIL_NOT_FOUND': AuthException.userDeleted(),
-              'INVALID_OOB_CODE': AuthException.invalidOobCode(),
-              'USER_DISABLED': AuthException.userDisabled(),
+              'EXPIRED_OOB_CODE': FirebaseAuthException.expiredOobCode(),
+              'EMAIL_NOT_FOUND': FirebaseAuthException.userDeleted(),
+              'INVALID_OOB_CODE': FirebaseAuthException.invalidOobCode(),
+              'USER_DISABLED': FirebaseAuthException.userDisabled(),
             },
           );
         });
@@ -2440,12 +2466,12 @@ void main() {
 
         test('deleteLinkedAccounts: invalid request error', () async {
           expect(() => rpcHandler.deleteLinkedAccounts('ID_TOKEN', null),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
 
         test('deleteLinkedAccounts: server caught errors', () async {
           await tester.shouldFailWithServerErrors(
-            errorMap: {'USER_NOT_FOUND': AuthException.tokenExpired()},
+            errorMap: {'USER_NOT_FOUND': FirebaseAuthException.tokenExpired()},
           );
         });
       });
@@ -2524,7 +2550,7 @@ void main() {
         test('updateProfile: error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
-              'INTERNAL_ERROR': AuthException.internalError().replace(
+              'INTERNAL_ERROR': FirebaseAuthException.internalError().replace(
                   message:
                       '{"error":{"errors":[{"message":"INTERNAL_ERROR"}],"code":400,"message":"INTERNAL_ERROR"}}')
             },
@@ -2562,7 +2588,7 @@ void main() {
 
         test('updateEmail: invalid email', () async {
           expect(() => rpcHandler.updateEmail('ID_TOKEN', 'newuser.invalid'),
-              throwsA(AuthException.invalidEmail()));
+              throwsA(FirebaseAuthException.invalidEmail()));
         });
       });
 
@@ -2584,7 +2610,7 @@ void main() {
 
         test('updatePassword: no password', () async {
           expect(() => rpcHandler.updatePassword('ID_TOKEN', ''),
-              throwsA(AuthException.weakPassword()));
+              throwsA(FirebaseAuthException.weakPassword()));
         });
       });
 
@@ -2609,13 +2635,13 @@ void main() {
         test('updateEmailAndPassword: no email', () async {
           expect(
               rpcHandler.updateEmailAndPassword('ID_TOKEN', '', 'newPassword'),
-              throwsA(AuthException.invalidEmail()));
+              throwsA(FirebaseAuthException.invalidEmail()));
         });
         test('updateEmailAndPassword: no password', () async {
           expect(
               () => rpcHandler.updateEmailAndPassword(
                   'ID_TOKEN', 'me@gmail.com', ''),
-              throwsA(AuthException.weakPassword()));
+              throwsA(FirebaseAuthException.weakPassword()));
         });
       });
 
@@ -2640,10 +2666,10 @@ void main() {
         test('emailLinkSignInForLinking: server caught error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
-              'INVALID_EMAIL': AuthException.invalidEmail(),
+              'INVALID_EMAIL': FirebaseAuthException.invalidEmail(),
               'TOO_MANY_ATTEMPTS_TRY_LATER':
-                  AuthException.tooManyAttemptsTryLater(),
-              'USER_DISABLED': AuthException.userDisabled()
+                  FirebaseAuthException.tooManyAttemptsTryLater(),
+              'USER_DISABLED': FirebaseAuthException.userDisabled()
             },
           );
         });
@@ -2653,7 +2679,7 @@ void main() {
 
           await tester.shouldFail(
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
 
@@ -2663,7 +2689,7 @@ void main() {
           expect(
               () => rpcHandler.emailLinkSignInForLinking(
                   'ID_TOKEN', 'user@example.com', ''),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
         test('emailLinkSignInForLinking: invalid email error', () async {
           // Test when invalid email is passed in emailLinkSignInForLinking request.
@@ -2671,7 +2697,7 @@ void main() {
           expect(
               () => rpcHandler.emailLinkSignInForLinking(
                   'ID_TOKEN', 'user.invalid', 'OTP_CODE'),
-              throwsA(AuthException.invalidEmail()));
+              throwsA(FirebaseAuthException.invalidEmail()));
         });
         test('emailLinkSignInForLinking: empty idToken error', () async {
           // Test when empty ID token is passed in emailLinkSignInForLinking request.
@@ -2679,7 +2705,7 @@ void main() {
           expect(
               () => rpcHandler.emailLinkSignInForLinking(
                   '', 'user@example.com', 'OTP_CODE'),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
       });
 
@@ -2753,7 +2779,7 @@ void main() {
                   // Scopes should be ignored.
                   ['scope1', 'scope2', 'scope3'],
                   'user@example.com'),
-              throwsA(AuthException.missingContinueUri()));
+              throwsA(FirebaseAuthException.missingContinueUri()));
         });
         test('getAuthUri: error missing provider id', () async {
           expect(
@@ -2766,14 +2792,14 @@ void main() {
                   // Scopes should be ignored.
                   ['scope1', 'scope2', 'scope3'],
                   'user@example.com'),
-              throwsA(AuthException.internalError().replace(
+              throwsA(FirebaseAuthException.internalError().replace(
                   message: 'A provider ID must be provided in the request.')));
         });
 
         test('getAuthUri: caught server error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
-              'INVALID_PROVIDER_ID': AuthException.invalidProviderId()
+              'INVALID_PROVIDER_ID': FirebaseAuthException.invalidProviderId()
             },
           );
         });
@@ -2838,7 +2864,7 @@ void main() {
 
         test('getAuthUri: error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
-            'INTERNAL_ERROR': AuthException.internalError().replace(
+            'INTERNAL_ERROR': FirebaseAuthException.internalError().replace(
                 message:
                     '{"error":{"errors":[{"message":"INTERNAL_ERROR"}],"code":400,"message":"INTERNAL_ERROR"}}')
           });
@@ -2867,7 +2893,7 @@ void main() {
               'forExistingProvider': true,
               'sessionId': 'SESSION_ID'
             },
-            expectedError: AuthException.internalError().replace(
+            expectedError: FirebaseAuthException.internalError().replace(
                 message:
                     'Unable to determine the authorization endpoint for the specified '
                     'provider. This may be an issue in the provider configuration.'),
@@ -2897,33 +2923,35 @@ void main() {
           expect(
               () => rpcHandler.sendVerificationCode(
                   recaptchaToken: 'RECAPTCHA_TOKEN'),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
 
         test('sendVerificationCode: invalid request missing recaptcha token',
             () async {
           expect(
               () => rpcHandler.sendVerificationCode(phoneNumber: '15551234567'),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
 
         test('sendVerificationCode: unknown server response', () async {
           await tester.shouldFail(
             // No sessionInfo returned.
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
 
         test('sendVerificationCode: caught server error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
-            'CAPTCHA_CHECK_FAILED': AuthException.captchaCheckFailed(),
-            'INVALID_APP_CREDENTIAL': AuthException.invalidAppCredential(),
-            'INVALID_PHONE_NUMBER': AuthException.invalidPhoneNumber(),
-            'MISSING_APP_CREDENTIAL': AuthException.missingAppCredential(),
-            'MISSING_PHONE_NUMBER': AuthException.missingPhoneNumber(),
-            'QUOTA_EXCEEDED': AuthException.quotaExceeded(),
-            'REJECTED_CREDENTIAL': AuthException.rejectedCredential(),
+            'CAPTCHA_CHECK_FAILED': FirebaseAuthException.captchaCheckFailed(),
+            'INVALID_APP_CREDENTIAL':
+                FirebaseAuthException.invalidAppCredential(),
+            'INVALID_PHONE_NUMBER': FirebaseAuthException.invalidPhoneNumber(),
+            'MISSING_APP_CREDENTIAL':
+                FirebaseAuthException.missingAppCredential(),
+            'MISSING_PHONE_NUMBER': FirebaseAuthException.missingPhoneNumber(),
+            'QUOTA_EXCEEDED': FirebaseAuthException.quotaExceeded(),
+            'REJECTED_CREDENTIAL': FirebaseAuthException.rejectedCredential(),
           });
         });
       });
@@ -2970,29 +2998,32 @@ void main() {
           test('verifyPhoneNumber: invalid request missing session info',
               () async {
             expect(() => rpcHandler.verifyPhoneNumber(code: '123456'),
-                throwsA(AuthException.missingSessionInfo()));
+                throwsA(FirebaseAuthException.missingSessionInfo()));
           });
           test('verifyPhoneNumber: invalid request missing code', () async {
             expect(
                 () => rpcHandler.verifyPhoneNumber(sessionInfo: 'SESSION_INFO'),
-                throwsA(AuthException.missingCode()));
+                throwsA(FirebaseAuthException.missingCode()));
           });
           test('verifyPhoneNumber: unknown server response', () async {
             await tester.shouldFail(
               serverResponse: {},
-              expectedError: AuthException.internalError(),
+              expectedError: FirebaseAuthException.internalError(),
             );
           });
 
           test('verifyPhoneNumber: caught server error', () async {
             await tester.shouldFailWithServerErrors(errorMap: {
-              'INVALID_CODE': AuthException.invalidCode(),
-              'INVALID_SESSION_INFO': AuthException.invalidSessionInfo(),
-              'INVALID_TEMPORARY_PROOF': AuthException.invalidIdpResponse(),
-              'MISSING_CODE': AuthException.missingCode(),
-              'MISSING_SESSION_INFO': AuthException.missingSessionInfo(),
-              'SESSION_EXPIRED': AuthException.codeExpired(),
-              'REJECTED_CREDENTIAL': AuthException.rejectedCredential(),
+              'INVALID_CODE': FirebaseAuthException.invalidCode(),
+              'INVALID_SESSION_INFO':
+                  FirebaseAuthException.invalidSessionInfo(),
+              'INVALID_TEMPORARY_PROOF':
+                  FirebaseAuthException.invalidIdpResponse(),
+              'MISSING_CODE': FirebaseAuthException.missingCode(),
+              'MISSING_SESSION_INFO':
+                  FirebaseAuthException.missingSessionInfo(),
+              'SESSION_EXPIRED': FirebaseAuthException.codeExpired(),
+              'REJECTED_CREDENTIAL': FirebaseAuthException.rejectedCredential(),
             });
           });
         });
@@ -3020,12 +3051,12 @@ void main() {
             expect(
                 () => rpcHandler.verifyPhoneNumber(
                     temporaryProof: 'TEMPORARY_PROOF'),
-                throwsA(AuthException.internalError()));
+                throwsA(FirebaseAuthException.internalError()));
           });
           test('verifyPhoneNumber: error no temporary proof', () async {
             expect(
                 () => rpcHandler.verifyPhoneNumber(phoneNumber: '16505550101'),
-                throwsA(AuthException.internalError()));
+                throwsA(FirebaseAuthException.internalError()));
           });
         });
       });
@@ -3067,7 +3098,7 @@ void main() {
           expect(
               () => rpcHandler.verifyPhoneNumberForLinking(
                   code: '123456', idToken: 'ID_TOKEN'),
-              throwsA(AuthException.missingSessionInfo()));
+              throwsA(FirebaseAuthException.missingSessionInfo()));
         });
 
         test('verifyPhoneNumberForLinking: invalid request missing code',
@@ -3075,7 +3106,7 @@ void main() {
           expect(
               () => rpcHandler.verifyPhoneNumberForLinking(
                   sessionInfo: 'SESSION_INFO', idToken: 'ID_TOKEN'),
-              throwsA(AuthException.missingCode()));
+              throwsA(FirebaseAuthException.missingCode()));
         });
 
         test('verifyPhoneNumberForLinking: invalid request missing id token',
@@ -3083,24 +3114,25 @@ void main() {
           expect(
               () => rpcHandler.verifyPhoneNumberForLinking(
                   sessionInfo: 'SESSION_INFO', code: '123456'),
-              throwsA(AuthException.internalError()));
+              throwsA(FirebaseAuthException.internalError()));
         });
 
         test('verifyPhoneNumberForLinking: unknown server response', () async {
           await tester.shouldFail(
             serverResponse: {},
-            expectedError: AuthException.internalError(),
+            expectedError: FirebaseAuthException.internalError(),
           );
         });
 
         test('verifyPhoneNumberForLinking: caught server error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
-            'INVALID_CODE': AuthException.invalidCode(),
-            'INVALID_SESSION_INFO': AuthException.invalidSessionInfo(),
-            'INVALID_TEMPORARY_PROOF': AuthException.invalidIdpResponse(),
-            'MISSING_CODE': AuthException.missingCode(),
-            'MISSING_SESSION_INFO': AuthException.missingSessionInfo(),
-            'SESSION_EXPIRED': AuthException.codeExpired(),
+            'INVALID_CODE': FirebaseAuthException.invalidCode(),
+            'INVALID_SESSION_INFO': FirebaseAuthException.invalidSessionInfo(),
+            'INVALID_TEMPORARY_PROOF':
+                FirebaseAuthException.invalidIdpResponse(),
+            'MISSING_CODE': FirebaseAuthException.missingCode(),
+            'MISSING_SESSION_INFO': FirebaseAuthException.missingSessionInfo(),
+            'SESSION_EXPIRED': FirebaseAuthException.codeExpired(),
           });
         });
 
@@ -3111,11 +3143,12 @@ void main() {
               'temporaryProof': 'theTempProof',
               'phoneNumber': '16505550101'
             },
-            expectedError: AuthException.credentialAlreadyInUse().replace(
-                phoneNumber: '16505550101',
-                credential: PhoneAuthCredential.temporaryProof(
-                    temporaryProof: 'theTempProof',
-                    phoneNumber: '16505550101')),
+            expectedError: FirebaseAuthException.credentialAlreadyInUse()
+                .replace(
+                    phoneNumber: '16505550101',
+                    credential: PhoneAuthProvider.credentialFromTemporaryProof(
+                        temporaryProof: 'theTempProof',
+                        phoneNumber: '16505550101')),
           );
         });
       });
@@ -3158,7 +3191,7 @@ void main() {
                 () => rpcHandler.verifyPhoneNumberForExisting(
                       code: '123456',
                     ),
-                throwsA(AuthException.missingSessionInfo()));
+                throwsA(FirebaseAuthException.missingSessionInfo()));
           });
 
           test('verifyPhoneNumberForExisting: invalid request missing code',
@@ -3167,27 +3200,30 @@ void main() {
                 () => rpcHandler.verifyPhoneNumberForExisting(
                       sessionInfo: 'SESSION_INFO',
                     ),
-                throwsA(AuthException.missingCode()));
+                throwsA(FirebaseAuthException.missingCode()));
           });
 
           test('verifyPhoneNumberForExisting: unknown server response',
               () async {
             await tester.shouldFail(
               serverResponse: {},
-              expectedError: AuthException.internalError(),
+              expectedError: FirebaseAuthException.internalError(),
             );
           });
 
           test('verifyPhoneNumberForExisting: caught server error', () async {
             await tester.shouldFailWithServerErrors(errorMap: {
               // This should be overridden from the default error mapping.
-              'USER_NOT_FOUND': AuthException.userDeleted(),
-              'INVALID_CODE': AuthException.invalidCode(),
-              'INVALID_SESSION_INFO': AuthException.invalidSessionInfo(),
-              'INVALID_TEMPORARY_PROOF': AuthException.invalidIdpResponse(),
-              'MISSING_CODE': AuthException.missingCode(),
-              'MISSING_SESSION_INFO': AuthException.missingSessionInfo(),
-              'SESSION_EXPIRED': AuthException.codeExpired(),
+              'USER_NOT_FOUND': FirebaseAuthException.userDeleted(),
+              'INVALID_CODE': FirebaseAuthException.invalidCode(),
+              'INVALID_SESSION_INFO':
+                  FirebaseAuthException.invalidSessionInfo(),
+              'INVALID_TEMPORARY_PROOF':
+                  FirebaseAuthException.invalidIdpResponse(),
+              'MISSING_CODE': FirebaseAuthException.missingCode(),
+              'MISSING_SESSION_INFO':
+                  FirebaseAuthException.missingSessionInfo(),
+              'SESSION_EXPIRED': FirebaseAuthException.codeExpired(),
             });
           });
         });
@@ -3219,7 +3255,7 @@ void main() {
                 () => rpcHandler.verifyPhoneNumberForExisting(
                       temporaryProof: 'TEMPORARY_PROOF',
                     ),
-                throwsA(AuthException.internalError()));
+                throwsA(FirebaseAuthException.internalError()));
           });
 
           test(
@@ -3229,7 +3265,7 @@ void main() {
                 () => rpcHandler.verifyPhoneNumberForExisting(
                       phoneNumber: '16505550101',
                     ),
-                throwsA(AuthException.internalError()));
+                throwsA(FirebaseAuthException.internalError()));
           });
         });
       });
@@ -3249,7 +3285,7 @@ void main() {
           fakeAsync((fake) {
             tester.shouldFail(
               serverResponse: Future.delayed(Duration(days: 1)),
-              expectedError: AuthException.networkRequestFailed(),
+              expectedError: FirebaseAuthException.networkRequestFailed(),
             );
 
             // This will cause the timeout above to fire immediately, without waiting
@@ -3299,7 +3335,7 @@ void main() {
                           'forExistingProvider': true,
                           'sessionId': 'MY_SESSION_ID'
                         }),
-                expectedError: AuthException.networkRequestFailed(),
+                expectedError: FirebaseAuthException.networkRequestFailed(),
               );
 
               fake.elapse(Duration(minutes: 1));

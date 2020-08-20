@@ -4,133 +4,143 @@ import 'package:firebase_dart/src/auth/error.dart';
 
 final _serverErrors = {
   // Custom token errors.
-  'INVALID_CUSTOM_TOKEN': AuthException.invalidCustomToken(),
-  'CREDENTIAL_MISMATCH': AuthException.credentialMismatch(),
+  'INVALID_CUSTOM_TOKEN': FirebaseAuthException.invalidCustomToken(),
+  'CREDENTIAL_MISMATCH': FirebaseAuthException.credentialMismatch(),
 
   // This can only happen if the SDK sends a bad request.
-  'MISSING_CUSTOM_TOKEN': AuthException.internalError(),
+  'MISSING_CUSTOM_TOKEN': FirebaseAuthException.internalError(),
 
   // Create Auth URI errors.
-  'INVALID_IDENTIFIER': AuthException.invalidEmail(),
+  'INVALID_IDENTIFIER': FirebaseAuthException.invalidEmail(),
 
   // This can only happen if the SDK sends a bad request.
-  'MISSING_CONTINUE_URI': AuthException.internalError(),
+  'MISSING_CONTINUE_URI': FirebaseAuthException.internalError(),
 
   // Sign in with email and password errors (some apply to sign up too).
-  'INVALID_EMAIL': AuthException.invalidEmail(),
-  'INVALID_PASSWORD': AuthException.invalidPassword(),
-  'USER_DISABLED': AuthException.userDisabled(),
+  'INVALID_EMAIL': FirebaseAuthException.invalidEmail(),
+  'INVALID_PASSWORD': FirebaseAuthException.invalidPassword(),
+  'USER_DISABLED': FirebaseAuthException.userDisabled(),
 
   // This can only happen if the SDK sends a bad request.
-  'MISSING_PASSWORD': AuthException.internalError(),
+  'MISSING_PASSWORD': FirebaseAuthException.internalError(),
 
   // Sign up with email and password errors.
-  'EMAIL_EXISTS': AuthException.emailExists(),
-  'PASSWORD_LOGIN_DISABLED': AuthException.operationNotAllowed(),
+  'EMAIL_EXISTS': FirebaseAuthException.emailExists(),
+  'PASSWORD_LOGIN_DISABLED': FirebaseAuthException.operationNotAllowed(),
 
   // Verify assertion for sign in with credential errors:
-  'INVALID_IDP_RESPONSE': AuthException.invalidIdpResponse(),
-  'INVALID_PENDING_TOKEN': AuthException.invalidIdpResponse(),
-  'FEDERATED_USER_ID_ALREADY_LINKED': AuthException.credentialAlreadyInUse(),
-  'MISSING_OR_INVALID_NONCE': AuthException.missingOrInvalidNonce(),
+  'INVALID_IDP_RESPONSE': FirebaseAuthException.invalidIdpResponse(),
+  'INVALID_PENDING_TOKEN': FirebaseAuthException.invalidIdpResponse(),
+  'FEDERATED_USER_ID_ALREADY_LINKED':
+      FirebaseAuthException.credentialAlreadyInUse(),
+  'MISSING_OR_INVALID_NONCE': FirebaseAuthException.missingOrInvalidNonce(),
 
   // Email template errors while sending emails:
-  'INVALID_MESSAGE_PAYLOAD': AuthException.invalidMessagePayload(),
-  'INVALID_RECIPIENT_EMAIL': AuthException.invalidRecipientEmail(),
-  'INVALID_SENDER': AuthException.invalidSender(),
+  'INVALID_MESSAGE_PAYLOAD': FirebaseAuthException.invalidMessagePayload(),
+  'INVALID_RECIPIENT_EMAIL': FirebaseAuthException.invalidRecipientEmail(),
+  'INVALID_SENDER': FirebaseAuthException.invalidSender(),
 
   // Send Password reset email errors:
-  'EMAIL_NOT_FOUND': AuthException.userDeleted(),
-  'RESET_PASSWORD_EXCEED_LIMIT': AuthException.tooManyAttemptsTryLater(),
+  'EMAIL_NOT_FOUND': FirebaseAuthException.userDeleted(),
+  'RESET_PASSWORD_EXCEED_LIMIT':
+      FirebaseAuthException.tooManyAttemptsTryLater(),
 
   // Reset password errors:
-  'EXPIRED_OOB_CODE': AuthException.expiredOobCode(),
-  'INVALID_OOB_CODE': AuthException.invalidOobCode(),
+  'EXPIRED_OOB_CODE': FirebaseAuthException.expiredOobCode(),
+  'INVALID_OOB_CODE': FirebaseAuthException.invalidOobCode(),
 
   // This can only happen if the SDK sends a bad request.
-  'MISSING_OOB_CODE': AuthException.internalError(),
+  'MISSING_OOB_CODE': FirebaseAuthException.internalError(),
 
   // Get Auth URI errors:
-  'INVALID_PROVIDER_ID': AuthException.invalidProviderId(),
+  'INVALID_PROVIDER_ID': FirebaseAuthException.invalidProviderId(),
 
   // Operations that require ID token in request:
-  'CREDENTIAL_TOO_OLD_LOGIN_AGAIN': AuthException.credentialTooOldLoginAgain(),
-  'INVALID_ID_TOKEN': AuthException.invalidAuth(),
-  'TOKEN_EXPIRED': AuthException.tokenExpired(),
-  'USER_NOT_FOUND': AuthException.userDeleted(),
+  'CREDENTIAL_TOO_OLD_LOGIN_AGAIN':
+      FirebaseAuthException.credentialTooOldLoginAgain(),
+  'INVALID_ID_TOKEN': FirebaseAuthException.invalidAuth(),
+  'TOKEN_EXPIRED': FirebaseAuthException.tokenExpired(),
+  'USER_NOT_FOUND': FirebaseAuthException.userDeleted(),
 
   // CORS issues.
-  'CORS_UNSUPPORTED': AuthException.corsUnsupported(),
+  'CORS_UNSUPPORTED': FirebaseAuthException.corsUnsupported(),
 
   // Dynamic link not activated.
-  'DYNAMIC_LINK_NOT_ACTIVATED': AuthException.dynamicLinkNotActivated(),
+  'DYNAMIC_LINK_NOT_ACTIVATED': FirebaseAuthException.dynamicLinkNotActivated(),
 
   // iosBundleId or androidPackageName not valid error.
-  'INVALID_APP_ID': AuthException.invalidAppId(),
+  'INVALID_APP_ID': FirebaseAuthException.invalidAppId(),
 
   // Other errors.
-  'TOO_MANY_ATTEMPTS_TRY_LATER': AuthException.tooManyAttemptsTryLater(),
-  'WEAK_PASSWORD': AuthException.weakPassword(),
-  'OPERATION_NOT_ALLOWED': AuthException.operationNotAllowed(),
-  'USER_CANCELLED': AuthException.userCancelled(),
+  'TOO_MANY_ATTEMPTS_TRY_LATER':
+      FirebaseAuthException.tooManyAttemptsTryLater(),
+  'WEAK_PASSWORD': FirebaseAuthException.weakPassword(),
+  'OPERATION_NOT_ALLOWED': FirebaseAuthException.operationNotAllowed(),
+  'USER_CANCELLED': FirebaseAuthException.userCancelled(),
 
   // Phone Auth related errors.
-  'CAPTCHA_CHECK_FAILED': AuthException.captchaCheckFailed(),
-  'INVALID_APP_CREDENTIAL': AuthException.invalidAppCredential(),
-  'INVALID_CODE': AuthException.invalidCode(),
-  'INVALID_PHONE_NUMBER': AuthException.invalidPhoneNumber(),
-  'INVALID_SESSION_INFO': AuthException.invalidSessionInfo(),
-  'INVALID_TEMPORARY_PROOF': AuthException.invalidIdpResponse(),
-  'MISSING_APP_CREDENTIAL': AuthException.missingAppCredential(),
-  'MISSING_CODE': AuthException.missingCode(),
-  'MISSING_PHONE_NUMBER': AuthException.missingPhoneNumber(),
-  'MISSING_SESSION_INFO': AuthException.missingSessionInfo(),
-  'QUOTA_EXCEEDED': AuthException.quotaExceeded(),
-  'SESSION_EXPIRED': AuthException.codeExpired(),
-  'REJECTED_CREDENTIAL': AuthException.rejectedCredential(),
+  'CAPTCHA_CHECK_FAILED': FirebaseAuthException.captchaCheckFailed(),
+  'INVALID_APP_CREDENTIAL': FirebaseAuthException.invalidAppCredential(),
+  'INVALID_CODE': FirebaseAuthException.invalidCode(),
+  'INVALID_PHONE_NUMBER': FirebaseAuthException.invalidPhoneNumber(),
+  'INVALID_SESSION_INFO': FirebaseAuthException.invalidSessionInfo(),
+  'INVALID_TEMPORARY_PROOF': FirebaseAuthException.invalidIdpResponse(),
+  'MISSING_APP_CREDENTIAL': FirebaseAuthException.missingAppCredential(),
+  'MISSING_CODE': FirebaseAuthException.missingCode(),
+  'MISSING_PHONE_NUMBER': FirebaseAuthException.missingPhoneNumber(),
+  'MISSING_SESSION_INFO': FirebaseAuthException.missingSessionInfo(),
+  'QUOTA_EXCEEDED': FirebaseAuthException.quotaExceeded(),
+  'SESSION_EXPIRED': FirebaseAuthException.codeExpired(),
+  'REJECTED_CREDENTIAL': FirebaseAuthException.rejectedCredential(),
 
   // Other action code errors when additional settings passed.
-  'INVALID_CONTINUE_URI': AuthException.invalidContinueUri(),
+  'INVALID_CONTINUE_URI': FirebaseAuthException.invalidContinueUri(),
 
   // MISSING_CONTINUE_URI is getting mapped to INTERNAL_ERROR above.
   // This is OK as this error will be caught by client side validation.
-  'MISSING_ANDROID_PACKAGE_NAME': AuthException.missingAndroidPackageName(),
-  'MISSING_IOS_BUNDLE_ID': AuthException.missingIosBundleId(),
-  'UNAUTHORIZED_DOMAIN': AuthException.unauthorizedDomain(),
-  'INVALID_DYNAMIC_LINK_DOMAIN': AuthException.invalidDynamicLinkDomain(),
+  'MISSING_ANDROID_PACKAGE_NAME':
+      FirebaseAuthException.missingAndroidPackageName(),
+  'MISSING_IOS_BUNDLE_ID': FirebaseAuthException.missingIosBundleId(),
+  'UNAUTHORIZED_DOMAIN': FirebaseAuthException.unauthorizedDomain(),
+  'INVALID_DYNAMIC_LINK_DOMAIN':
+      FirebaseAuthException.invalidDynamicLinkDomain(),
 
   // getProjectConfig errors when clientId is passed.
-  'INVALID_OAUTH_CLIENT_ID': AuthException.invalidOAuthClientId(),
+  'INVALID_OAUTH_CLIENT_ID': FirebaseAuthException.invalidOAuthClientId(),
 
   // getProjectConfig errors when sha1Cert is passed.
-  'INVALID_CERT_HASH': AuthException.invalidCertHash(),
+  'INVALID_CERT_HASH': FirebaseAuthException.invalidCertHash(),
 
   // Multi-tenant related errors.
-  'UNSUPPORTED_TENANT_OPERATION': AuthException.unsupportedTenantOperation(),
-  'INVALID_TENANT_ID': AuthException.invalidTenantId(),
-  'TENANT_ID_MISMATCH': AuthException.tenantIdMismatch(),
+  'UNSUPPORTED_TENANT_OPERATION':
+      FirebaseAuthException.unsupportedTenantOperation(),
+  'INVALID_TENANT_ID': FirebaseAuthException.invalidTenantId(),
+  'TENANT_ID_MISMATCH': FirebaseAuthException.tenantIdMismatch(),
 
   // User actions (sign-up or deletion) disabled errors.
-  'ADMIN_ONLY_OPERATION': AuthException.adminOnlyOperation(),
+  'ADMIN_ONLY_OPERATION': FirebaseAuthException.adminOnlyOperation(),
 
   // Multi-factor related errors.
-  'INVALID_MFA_PENDING_CREDENTIAL': AuthException.invalidMfaPendingCredential(),
-  'MFA_ENROLLMENT_NOT_FOUND': AuthException.mfaEnrollmentNotFound(),
-  'MISSING_MFA_PENDING_CREDENTIAL': AuthException.missingMfaPendingCredential(),
-  'MISSING_MFA_ENROLLMENT_ID': AuthException.missingMfaEnrollmentId(),
+  'INVALID_MFA_PENDING_CREDENTIAL':
+      FirebaseAuthException.invalidMfaPendingCredential(),
+  'MFA_ENROLLMENT_NOT_FOUND': FirebaseAuthException.mfaEnrollmentNotFound(),
+  'MISSING_MFA_PENDING_CREDENTIAL':
+      FirebaseAuthException.missingMfaPendingCredential(),
+  'MISSING_MFA_ENROLLMENT_ID': FirebaseAuthException.missingMfaEnrollmentId(),
   'EMAIL_CHANGE_NEEDS_VERIFICATION':
-      AuthException.emailChangeNeedsVerification(),
-  'SECOND_FACTOR_EXISTS': AuthException.secondFactorExists(),
-  'SECOND_FACTOR_LIMIT_EXCEEDED': AuthException.secondFactorLimitExceeded(),
-  'UNSUPPORTED_FIRST_FACTOR': AuthException.unsupportedFirstFactor(),
-  'UNVERIFIED_EMAIL': AuthException.unverifiedEmail(),
+      FirebaseAuthException.emailChangeNeedsVerification(),
+  'SECOND_FACTOR_EXISTS': FirebaseAuthException.secondFactorExists(),
+  'SECOND_FACTOR_LIMIT_EXCEEDED':
+      FirebaseAuthException.secondFactorLimitExceeded(),
+  'UNSUPPORTED_FIRST_FACTOR': FirebaseAuthException.unsupportedFirstFactor(),
+  'UNVERIFIED_EMAIL': FirebaseAuthException.unverifiedEmail(),
 };
 
-AuthException authErrorFromServerErrorCode(String errorCode) {
+FirebaseAuthException authErrorFromServerErrorCode(String errorCode) {
   return _serverErrors[errorCode];
 }
 
-Map<String, dynamic> errorToServerResponse(AuthException error) {
+Map<String, dynamic> errorToServerResponse(FirebaseAuthException error) {
   var code = _serverErrors.entries
       .firstWhere((element) => element.value.code == error.code)
       .key;
@@ -140,8 +150,8 @@ Map<String, dynamic> errorToServerResponse(AuthException error) {
   };
 }
 
-AuthException authErrorFromResponse(Map<String, dynamic> data,
-    [AuthException Function(String) errorMapper]) {
+FirebaseAuthException authErrorFromResponse(Map<String, dynamic> data,
+    [FirebaseAuthException Function(String) errorMapper]) {
   var error = data['error'] is Map && data['error']['errors'] is List
       ? data['error']['errors'][0]
       : {};
@@ -149,16 +159,16 @@ AuthException authErrorFromResponse(Map<String, dynamic> data,
 
   switch (reason) {
     case 'keyInvalid':
-      return AuthException.invalidApiKey();
+      return FirebaseAuthException.invalidApiKey();
     case 'ipRefererBlocked':
-      return AuthException.appNotAuthorized();
+      return FirebaseAuthException.appNotAuthorized();
   }
   var errorCode = data['error'] is Map
       ? data['error']['message']
       : data['error'] is String ? data['error'] : null;
 
   if (errorCode == null) {
-    throw AuthException.internalError().replace(
+    throw FirebaseAuthException.internalError().replace(
       message: 'An internal error occurred while attempting to extract the '
           'errorcode from the error.',
     );
@@ -189,5 +199,5 @@ AuthException authErrorFromResponse(Map<String, dynamic> data,
   }
 // The backend returned some error we don't recognize; this is an error on
 // our side.
-  return AuthException.internalError().replace(message: errorMessage);
+  return FirebaseAuthException.internalError().replace(message: errorMessage);
 }

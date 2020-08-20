@@ -7,9 +7,7 @@ import 'package:openid_client/openid_client.dart' as openid;
 import 'package:pedantic/pedantic.dart';
 
 import '../auth.dart';
-import '../authcredential.dart';
 import '../rpc/rpc_handler.dart';
-import '../user.dart';
 import '../usermanager.dart';
 import 'user.dart';
 
@@ -43,7 +41,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  Future<AuthResult> signInAnonymously() async {
+  Future<UserCredential> signInAnonymously() async {
     await _onReady;
 
     var user = _currentUser;
@@ -51,7 +49,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
     // If an anonymous user is already signed in, no need to sign him again.
     if (user != null && user.isAnonymous) {
       var additionalUserInfo = createAdditionalUserInfo(isNewUser: false);
-      return AuthResultImpl(
+      return UserCredentialImpl(
           // Return the signed in user reference.
           user: user,
           // Do not return credential for anonymous user.
@@ -59,7 +57,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
           // Return any additional IdP data.
           additionalUserInfo: additionalUserInfo,
           // Sign in operation type.
-          operationType: AuthResultImpl.operationTypeSignIn);
+          operationType: UserCredentialImpl.operationTypeSignIn);
     } else {
       // No anonymous user currently signed in.
       var r = await _rpcHandler.signInAnonymously();
@@ -73,7 +71,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  Future<AuthResult> signInWithEmailAndPassword({
+  Future<UserCredential> signInWithEmailAndPassword({
     String email,
     String password,
   }) async {
@@ -86,12 +84,12 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   /// Handles user state changes.
-  Future<void> _handleUserStateChange(FirebaseUser user) {
+  Future<void> _handleUserStateChange(User user) {
     return _userStorageManager.setCurrentUser(user);
   }
 
   /// Signs in with ID token promise provider.
-  Future<AuthResult> _signInWithIdTokenProvider(
+  Future<UserCredential> _signInWithIdTokenProvider(
       {@required openid.Credential openidCredential,
       String provider,
       AuthCredential credential,
@@ -109,7 +107,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
     await _signInWithIdTokenResponse(openidCredential);
 
     // Resolve promise with a readonly user credential object.
-    return AuthResultImpl(
+    return UserCredentialImpl(
       // Return the current user reference.
       user: _currentUser,
       // Return any credential passed from the backend.
@@ -117,7 +115,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
       // Return any additional IdP data passed from the backend.
       additionalUserInfo: additionalUserInfo,
       // Sign in operation type.
-      operationType: AuthResultImpl.operationTypeSignIn,
+      operationType: UserCredentialImpl.operationTypeSignIn,
     );
   }
 
@@ -152,7 +150,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  Future<AuthResult> createUserWithEmailAndPassword(
+  Future<UserCredential> createUserWithEmailAndPassword(
       {String email, String password}) async {
     await _onReady;
 
@@ -165,62 +163,49 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  Future<FirebaseUser> currentUser() async {
-    await _onReady;
-    return _currentUser;
-  }
+  User get currentUser => _currentUser;
 
   @override
-  Future<List<String>> fetchSignInMethodsForEmail({String email}) {
+  Future<List<String>> fetchSignInMethodsForEmail(String email) {
     return _rpcHandler.fetchSignInMethodsForIdentifier(email);
   }
 
   @override
-  Future<bool> isSignInWithEmailLink(String link) {
+  bool isSignInWithEmailLink(String link) {
     // TODO: implement isSignInWithEmailLink
     throw UnimplementedError();
   }
 
   @override
-  Stream<FirebaseUser> get onAuthStateChanged async* {
+  Stream<User> authStateChanges() async* {
     yield await _userStorageManager.getCurrentUser();
     yield* _userStorageManager.onCurrentUserChanged;
   }
 
   @override
-  Future<void> sendPasswordResetEmail({String email}) {
-    return rpcHandler.sendPasswordResetEmail(email: email);
+  Future<void> sendPasswordResetEmail(
+      {String email, ActionCodeSettings actionCodeSettings}) {
+    return rpcHandler.sendPasswordResetEmail(
+        email: email, actionCodeSettings: actionCodeSettings);
   }
 
   @override
-  Future<void> sendSignInWithEmailLink(
-      {String email,
-      String url,
-      bool handleCodeInApp = true,
-      String iOSBundleID,
-      String androidPackageName,
-      bool androidInstallIfNotAvailable,
-      String androidMinimumVersion}) async {
-    if (url == null) {
-      throw AuthException.missingContinueUri();
+  Future<void> sendSignInLinkToEmail(
+      {String email, ActionCodeSettings actionCodeSettings}) async {
+    if (actionCodeSettings.url == null) {
+      throw FirebaseAuthException.missingContinueUri();
     }
-    if (url.isEmpty) {
-      throw AuthException.invalidContinueUri();
+    if (actionCodeSettings.url.isEmpty) {
+      throw FirebaseAuthException.invalidContinueUri();
     }
 
-    if (handleCodeInApp == false) {
-      throw AuthException.argumentError(
+    if (actionCodeSettings.handleCodeInApp == false) {
+      throw FirebaseAuthException.argumentError(
           'handleCodeInApp true when sending sign in link to email.');
     }
 
     await rpcHandler.sendSignInLinkToEmail(
-        email: email,
-        continueUrl: url,
-        canHandleCodeInApp: handleCodeInApp,
-        iOSBundleId: iOSBundleID,
-        androidPackageName: androidPackageName,
-        androidInstallApp: androidInstallIfNotAvailable,
-        androidMinimumVersion: androidMinimumVersion);
+        email: email, actionCodeSettings: actionCodeSettings);
   }
 
   @override
@@ -230,7 +215,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  Future<AuthResult> signInWithCredential(AuthCredential credential) async {
+  Future<UserCredential> signInWithCredential(AuthCredential credential) async {
     await _onReady;
 
     if (credential is PhoneAuthCredential) {
@@ -242,13 +227,13 @@ class FirebaseAuthImpl extends FirebaseAuth {
         isNewUser: false,
         provider: credential.providerId,
       );
-/*
-*/
     }
+
+    throw UnimplementedError();
   }
 
   @override
-  Future<AuthResult> signInWithCustomToken({String token}) async {
+  Future<UserCredential> signInWithCustomToken(String token) async {
     // Wait for the redirect state to be determined before proceeding. If critical
     // errors like web storage unsupported are detected, fail before RPC, instead
     // of after.
@@ -258,12 +243,6 @@ class FirebaseAuthImpl extends FirebaseAuth {
         await _signInWithIdTokenProvider(openidCredential: r, isNewUser: false);
 
     return result;
-  }
-
-  @override
-  Future<AuthResult> signInWithEmailAndLink({String email, String link}) {
-    // TODO: implement signInWithEmailAndLink
-    throw UnimplementedError();
   }
 
   @override
@@ -280,28 +259,94 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  Future<void> verifyPhoneNumber(
-      {@required String phoneNumber,
-      @required Duration timeout,
-      int forceResendingToken,
-      @required PhoneVerificationCompleted verificationCompleted,
-      @required PhoneVerificationFailed verificationFailed,
-      PhoneCodeSent codeSent,
-      PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout}) async {
+  Future<void> verifyPhoneNumber({
+    @required String phoneNumber,
+    @required PhoneVerificationCompleted verificationCompleted,
+    @required PhoneVerificationFailed verificationFailed,
+    @required PhoneCodeSent codeSent,
+    @required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
+    @visibleForTesting String autoRetrievedSmsCodeForTesting,
+    Duration timeout = const Duration(seconds: 30),
+    int forceResendingToken,
+  }) async {
     var assertion = await ApplicationVerifier.instance.verify(this);
     var v = await rpcHandler.sendVerificationCode(
         phoneNumber: phoneNumber, recaptchaToken: assertion);
 
-    if (codeSent != null) codeSent(v);
+    if (codeSent != null) codeSent(v, 0 /*TODO*/);
 
     if (codeAutoRetrievalTimeout != null) {
       unawaited(
           Future.delayed(timeout).then((_) => codeAutoRetrievalTimeout(v)));
     }
   }
+
+  @override
+  Future<void> applyActionCode(String code) {
+    // TODO: implement applyActionCode
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ActionCodeInfo> checkActionCode(String code) {
+    // TODO: implement checkActionCode
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<UserCredential> getRedirectResult() {
+    // TODO: implement getRedirectResult
+    throw UnimplementedError();
+  }
+
+  @override
+  Stream<User> idTokenChanges() {
+    // TODO: implement idTokenChanges
+    throw UnimplementedError();
+  }
+
+  @override
+  // TODO: implement languageCode
+  String get languageCode => throw UnimplementedError();
+
+  @override
+  Future<void> setPersistence(Persistence persistence) {
+    // TODO: implement setPersistence
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<UserCredential> signInWithEmailLink({String email, String emailLink}) {
+    // TODO: implement signInWithEmailLink
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<UserCredential> signInWithPopup(AuthProvider provider) {
+    // TODO: implement signInWithPopup
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> signInWithRedirect(AuthProvider provider) {
+    // TODO: implement signInWithRedirect
+    throw UnimplementedError();
+  }
+
+  @override
+  Stream<User> userChanges() {
+    // TODO: implement userChanges
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<String> verifyPasswordResetCode(String code) {
+    // TODO: implement verifyPasswordResetCode
+    throw UnimplementedError();
+  }
 }
 
-class AuthResultImpl extends AuthResult {
+class UserCredentialImpl extends UserCredential {
   static const operationTypeSignIn = 'signIn';
 
   @override
@@ -310,13 +355,13 @@ class AuthResultImpl extends AuthResult {
   @override
   final AdditionalUserInfo additionalUserInfo;
 
-  /// Returns the auth credential.
+  @override
   final AuthCredential credential;
 
   /// Returns the operation type.
   final String operationType;
 
-  AuthResultImpl(
+  UserCredentialImpl(
       {this.user,
       this.additionalUserInfo,
       this.credential,

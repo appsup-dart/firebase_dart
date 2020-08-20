@@ -2,7 +2,6 @@ import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
-import 'package:firebase_dart/src/auth/user.dart' show UserUpdateInfo;
 import 'package:test/test.dart';
 
 import 'auth_test.dart';
@@ -59,7 +58,7 @@ void main() async {
       expect(user.uid, 'defaultUserId');
       expect(user.displayName, 'defaultDisplayName');
       expect(user.email, isNull);
-      expect(user.photoUrl, 'https://www.default.com/default/default.png');
+      expect(user.photoURL, 'https://www.default.com/default/default.png');
       expect(user.providerId, 'firebase');
       expect(user.isAnonymous, isFalse);
       expect(user.metadata.creationTime.millisecondsSinceEpoch, 1506044998000);
@@ -168,7 +167,7 @@ void main() async {
         var providerIds = user.providerData.map((v) => v.providerId).toSet();
         expect(providerIds, ['providerId1', 'providerId2', 'phone']);
 
-        await user.unlinkFromProvider('providerId2');
+        await user.unlink('providerId2');
         providerIds = user.providerData.map((v) => v.providerId).toSet();
         expect(providerIds, ['providerId1', 'phone']);
       });
@@ -187,8 +186,8 @@ void main() async {
             .removeWhere((element) => element.providerId != 'providerId1');
         await tester.backend.storeUser(backendUser);
 
-        expect(() => user.unlinkFromProvider('providerId2'),
-            throwsA(AuthException.noSuchProvider()));
+        expect(() => user.unlink('providerId2'),
+            throwsA(FirebaseAuthException.noSuchProvider()));
       });
       test('unlinkFromProvider: phone', () async {
         var r = await auth.signInWithEmailAndPassword(
@@ -200,7 +199,7 @@ void main() async {
 
         expect(user.phoneNumber, '+16505550101');
 
-        await user.unlinkFromProvider('phone');
+        await user.unlink('phone');
         providerIds = user.providerData.map((v) => v.providerId).toSet();
         expect(providerIds, ['providerId1', 'providerId2']);
 
@@ -222,17 +221,17 @@ void main() async {
 
         var user = r.user;
 
-        await user.updateProfile(UserUpdateInfo()
-          ..displayName = 'Jack Smith'
-          ..photoUrl = 'http://www.example.com/photo/photo.png');
+        await user.updateProfile(
+            displayName: 'Jack Smith',
+            photoURL: 'http://www.example.com/photo/photo.png');
 
         expect(user.displayName, 'Jack Smith');
-        expect(user.photoUrl, 'http://www.example.com/photo/photo.png');
+        expect(user.photoURL, 'http://www.example.com/photo/photo.png');
 
         await user.reload();
 
         expect(user.displayName, 'Jack Smith');
-        expect(user.photoUrl, 'http://www.example.com/photo/photo.png');
+        expect(user.photoURL, 'http://www.example.com/photo/photo.png');
       });
       test('updateProfile: with password provider', () async {
         var u = await tester.backend.getUserById('user1');
@@ -242,14 +241,14 @@ void main() async {
 
         var user = r.user;
 
-        await user.updateProfile(UserUpdateInfo()
-          ..displayName = 'Jack Smith'
-          ..photoUrl = 'http://www.example.com/photo/photo.png');
+        await user.updateProfile(
+            displayName: 'Jack Smith',
+            photoURL: 'http://www.example.com/photo/photo.png');
 
         var p = user.providerData
             .firstWhere((element) => element.providerId == 'password');
         expect(p.displayName, 'Jack Smith');
-        expect(p.photoUrl, 'http://www.example.com/photo/photo.png');
+        expect(p.photoURL, 'http://www.example.com/photo/photo.png');
       });
       test('updateProfile: empty change', () async {
         var u = await tester.backend.getUserById('user1');
@@ -259,7 +258,7 @@ void main() async {
 
         var user = r.user;
 
-        await user.updateProfile(UserUpdateInfo());
+        await user.updateProfile();
       });
     });
 
@@ -272,14 +271,14 @@ void main() async {
             email: u.email, password: u.rawPassword);
         var user = r.user;
         expect(user.email, 'user@example.com');
-        expect(user.isEmailVerified, isTrue);
+        expect(user.emailVerified, isTrue);
 
         var newEmail = 'newuser@example.com';
 
         await user.updateEmail(newEmail);
 
         expect(user.email, newEmail);
-        expect(user.isEmailVerified, isFalse);
+        expect(user.emailVerified, isFalse);
       });
       test('updateEmail: user destroyed', () async {
         var u = await tester.backend.getUserById('user1');
@@ -292,7 +291,7 @@ void main() async {
         await auth.signOut();
 
         expect(() => user.updateEmail('newuser@example.com'),
-            throwsA(AuthException.moduleDestroyed()));
+            throwsA(FirebaseAuthException.moduleDestroyed()));
       });
     });
 
@@ -318,7 +317,7 @@ void main() async {
         await auth.signOut();
 
         expect(() => user.updatePassword('newPassword'),
-            throwsA(AuthException.moduleDestroyed()));
+            throwsA(FirebaseAuthException.moduleDestroyed()));
       });
     });
   });

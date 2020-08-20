@@ -45,20 +45,20 @@ class Repo {
     var url = Uri.parse(db.databaseURL ?? db.app.options.databaseURL);
 
     return _repos.putIfAbsent(db, () {
-      var auth = FirebaseAuth.fromApp(db.app);
+      var auth = FirebaseAuth.instanceFor(app: db.app);
 
       var connection =
           PersistentConnection(url, authTokenProvider: (refresh) async {
-        var user = await auth.currentUser();
+        var user = auth.currentUser;
         if (user == null) return null;
-        var token = await user.getIdToken(refresh: refresh);
-        return token.token;
+        var token = await user.getIdToken(refresh);
+        return token;
       })
             ..initialize();
 
-      auth.onAuthStateChanged.listen((user) async {
-        return connection.refreshAuthToken(
-            user == null ? null : (await user.getIdToken()).token);
+      auth.authStateChanges().listen((user) async {
+        return connection
+            .refreshAuthToken(user == null ? null : (await user.getIdToken()));
       }); // TODO cancel this somewhere
 
       return Repo._(url, connection);

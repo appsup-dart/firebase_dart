@@ -44,7 +44,7 @@ class MemoryBackend extends BaseBackend {
   Future<String> sendVerificationCode(String phoneNumber) async {
     var user = await getUserByPhoneNumber(phoneNumber);
     if (user == null) {
-      throw AuthException.userDeleted();
+      throw FirebaseAuthException.userDeleted();
     }
 
     var max = 100000;
@@ -64,7 +64,7 @@ class MemoryBackend extends BaseBackend {
 
     var v = await _smsCodes.remove(phoneNumber);
     if (v != code) {
-      throw AuthException.invalidCode();
+      throw FirebaseAuthException.invalidCode();
     }
     return getUserByPhoneNumber(phoneNumber);
   }

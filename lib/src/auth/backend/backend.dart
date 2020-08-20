@@ -58,7 +58,7 @@ class BackendConnection {
         ..refreshToken = refreshToken;
     }
 
-    throw AuthException.invalidPassword();
+    throw FirebaseAuthException.invalidPassword();
   }
 
   Future<CreateAuthUriResponse> createAuthUri(
@@ -105,7 +105,7 @@ class BackendConnection {
         ? await _userFromIdToken(request.idToken)
         : await backend.getUserByEmail(request.email);
     if (user == null) {
-      throw AuthException.userDeleted();
+      throw FirebaseAuthException.userDeleted();
     }
     return GetOobConfirmationCodeResponse()
       ..kind = 'identitytoolkit#GetOobConfirmationCodeResponse'
@@ -118,7 +118,7 @@ class BackendConnection {
     try {
       user = await _userFromIdToken(request.oobCode);
     } on ArgumentError {
-      throw AuthException.invalidOobCode();
+      throw FirebaseAuthException.invalidOobCode();
     }
     await backend.updateUser(user..rawPassword = request.newPassword);
     return ResetPasswordResponse()
@@ -260,7 +260,7 @@ class BackendConnection {
     try {
       return http.Response(json.encode(await _handle(method, body)), 200,
           headers: {'content-type': 'application/json'});
-    } on AuthException catch (e) {
+    } on FirebaseAuthException catch (e) {
       return http.Response(json.encode(errorToServerResponse(e)), 400,
           headers: {'content-type': 'application/json'});
     }

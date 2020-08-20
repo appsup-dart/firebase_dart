@@ -20,11 +20,11 @@ class FirebaseStorageImpl implements FirebaseStorage {
       : _bucket =
             Location.fromBucketSpec(storageBucket ?? app.options.storageBucket),
         httpClient = HttpClient(httpClient ?? http.Client(), () async {
-          var user = await FirebaseAuth.fromApp(app).currentUser();
+          var user = FirebaseAuth.instanceFor(app: app).currentUser;
           if (user == null) return null;
 
           var token = await user.getIdToken();
-          return token.token;
+          return token;
         });
 
   /// Returns a firebaseStorage.Reference for the given path in the default

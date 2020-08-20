@@ -14,18 +14,18 @@ void main() async {
       options: FirebaseOptions.fromMap(json
           .decode(File('example/firebase-config.json').readAsStringSync())));
 
-  var auth = FirebaseAuth.fromApp(app);
+  var auth = FirebaseAuth.instanceFor(app: app);
 
-  var user = await auth.currentUser();
+  var user = auth.currentUser;
 
   print('current user (from cache) = ${user?.uid}');
 
   await auth.signInAnonymously();
 
-  user = await auth.currentUser();
+  user = auth.currentUser;
   print('current user (after sign in anonymously) = ${user.uid}');
 
-  await user.updateProfile(UserUpdateInfo()..displayName = 'Jane Doe');
+  await user.updateProfile(displayName: 'Jane Doe');
 
   print('display name = ${user.displayName}');
 
@@ -49,7 +49,7 @@ void main() async {
 
   await user.delete();
 
-  user = await auth.currentUser();
+  user = auth.currentUser;
   print('current user (after delete) = ${user?.uid}');
 
   await app.delete();

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:firebase_dart/src/auth/auth.dart';
-import 'package:firebase_dart/src/auth/authcredential.dart';
+import 'package:firebase_dart/src/auth/providers/saml.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/util/proxy.dart';
 import 'package:googleapis_auth/auth_io.dart';
@@ -9,7 +9,6 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 import 'package:openid_client/openid_client.dart' as openid;
 
-import '../error.dart';
 import 'error.dart';
 import 'identitytoolkit.dart';
 
@@ -59,7 +58,7 @@ class RpcHandler {
     var response = await relyingparty.getRecaptchaParam();
 
     if (response.recaptchaSiteKey == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
 
     return response;
@@ -71,7 +70,7 @@ class RpcHandler {
         $fields: _toQueryString({'returnDynamicLink': 'true'}));
 
     if (response.dynamicLinksDomain == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     return response.dynamicLinksDomain;
   }
@@ -136,7 +135,7 @@ class RpcHandler {
   /// Returns a future that resolves with the ID token.
   Future<openid.Credential> verifyCustomToken(String token) async {
     if (token == null) {
-      throw AuthException.invalidCustomToken();
+      throw FirebaseAuthException.invalidCustomToken();
     }
     var response = await relyingparty
         .verifyCustomToken(IdentitytoolkitRelyingpartyVerifyCustomTokenRequest()
@@ -154,7 +153,7 @@ class RpcHandler {
       String email, String oobCode) async {
     _validateEmail(email);
     if (oobCode == null || oobCode.isEmpty) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     var response = await relyingparty
         .emailLinkSignin(IdentitytoolkitRelyingpartyEmailLinkSigninRequest()
@@ -203,14 +202,14 @@ class RpcHandler {
   /// Deletes the user's account corresponding to the idToken given.
   Future<void> deleteAccount(String idToken) async {
     if (idToken == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     try {
       await relyingparty.deleteAccount(
           IdentitytoolkitRelyingpartyDeleteAccountRequest()..idToken = idToken);
-    } on AuthException catch (e) {
-      if (e.code == AuthException.userDeleted().code) {
-        throw AuthException.tokenExpired();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == FirebaseAuthException.userDeleted().code) {
+        throw FirebaseAuthException.tokenExpired();
       }
       rethrow;
     }
@@ -226,7 +225,7 @@ class RpcHandler {
           ..tenantId = tenantId);
 
     if (response.idToken == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
 
     return _credentialFromIdToken(
@@ -268,7 +267,7 @@ class RpcHandler {
       String postBody,
       String pendingToken}) async {
     if (idToken == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     return _verifyAssertion(IdentitytoolkitRelyingpartyVerifyAssertionRequest()
       ..postBody = postBody
@@ -303,7 +302,7 @@ class RpcHandler {
       ..returnIdpCredential = true
       ..returnSecureToken = true);
     if (response.errorMessage == 'USER_NOT_FOUND') {
-      throw AuthException.userDeleted();
+      throw FirebaseAuthException.userDeleted();
     }
     response = _processVerifyAssertionResponse(request, response);
     _validateVerifyAssertionResponse(response);
@@ -341,7 +340,7 @@ class RpcHandler {
 
       var error = authErrorFromServerErrorCode(errorCode);
       if (error == null) {
-        error = AuthException.internalError();
+        error = FirebaseAuthException.internalError();
         errorMessage ??= json.encode(e.jsonResponse);
       }
       throw error.replace(message: errorMessage);
@@ -361,58 +360,44 @@ class RpcHandler {
   ///
   /// Returns future that resolves with user's email.
   Future<String> sendSignInLinkToEmail(
-      {String email,
-      String continueUrl,
-      String iOSBundleId,
-      String androidPackageName,
-      bool androidInstallApp,
-      String androidMinimumVersion,
-      bool canHandleCodeInApp,
-      String dynamicLinkDomain}) async {
+      {String email, ActionCodeSettings actionCodeSettings}) async {
     _validateEmail(email);
-    var response = await relyingparty.getOobConfirmationCode(Relyingparty()
-      ..requestType = 'EMAIL_SIGNIN'
-      ..email = email
-      ..continueUrl = continueUrl
-      ..iOSBundleId = iOSBundleId
-      ..androidPackageName = androidPackageName
-      ..androidInstallApp = androidInstallApp
-      ..androidMinimumVersion = androidMinimumVersion
-      ..canHandleCodeInApp = canHandleCodeInApp
-      ..dynamicLinkDomain = dynamicLinkDomain);
+    var response = await relyingparty
+        .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
+          ..requestType = 'EMAIL_SIGNIN'
+          ..email = email);
 
     if (response.email == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     return response.email;
+  }
+
+  Relyingparty _createRelyingparty(ActionCodeSettings actionCodeSettings) {
+    if (actionCodeSettings == null) return Relyingparty();
+    return Relyingparty()
+      ..continueUrl = actionCodeSettings.url
+      ..iOSBundleId = actionCodeSettings.iOSBundleId
+      ..androidPackageName = actionCodeSettings.androidPackageName
+      ..androidInstallApp = actionCodeSettings.androidInstallApp
+      ..androidMinimumVersion = actionCodeSettings.androidMinimumVersion
+      ..canHandleCodeInApp = actionCodeSettings.handleCodeInApp
+      ..dynamicLinkDomain = actionCodeSettings.dynamicLinkDomain;
   }
 
   /// Requests getOobCode endpoint for password reset.
   ///
   /// Returns future that resolves with user's email.
   Future<String> sendPasswordResetEmail(
-      {String email,
-      String continueUrl,
-      String iOSBundleId,
-      String androidPackageName,
-      bool androidInstallApp,
-      String androidMinimumVersion,
-      bool canHandleCodeInApp,
-      String dynamicLinkDomain}) async {
+      {String email, ActionCodeSettings actionCodeSettings}) async {
     _validateEmail(email);
-    var response = await relyingparty.getOobConfirmationCode(Relyingparty()
-      ..requestType = 'PASSWORD_RESET'
-      ..email = email
-      ..continueUrl = continueUrl
-      ..iOSBundleId = iOSBundleId
-      ..androidPackageName = androidPackageName
-      ..androidInstallApp = androidInstallApp
-      ..androidMinimumVersion = androidMinimumVersion
-      ..canHandleCodeInApp = canHandleCodeInApp
-      ..dynamicLinkDomain = dynamicLinkDomain);
+    var response = await relyingparty
+        .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
+          ..requestType = 'PASSWORD_RESET'
+          ..email = email);
 
     if (response.email == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     return response.email;
   }
@@ -421,27 +406,14 @@ class RpcHandler {
   ///
   /// Returns future that resolves with user's email.
   Future<String> sendEmailVerification(
-      {String idToken,
-      String continueUrl,
-      String iOSBundleId,
-      String androidPackageName,
-      bool androidInstallApp,
-      String androidMinimumVersion,
-      bool canHandleCodeInApp,
-      String dynamicLinkDomain}) async {
-    var response = await relyingparty.getOobConfirmationCode(Relyingparty()
-      ..requestType = 'VERIFY_EMAIL'
-      ..idToken = idToken
-      ..continueUrl = continueUrl
-      ..iOSBundleId = iOSBundleId
-      ..androidPackageName = androidPackageName
-      ..androidInstallApp = androidInstallApp
-      ..androidMinimumVersion = androidMinimumVersion
-      ..canHandleCodeInApp = canHandleCodeInApp
-      ..dynamicLinkDomain = dynamicLinkDomain);
+      {String idToken, ActionCodeSettings actionCodeSettings}) async {
+    var response = await relyingparty
+        .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
+          ..requestType = 'VERIFY_EMAIL'
+          ..idToken = idToken);
 
     if (response.email == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     return response.email;
   }
@@ -457,7 +429,7 @@ class RpcHandler {
           ..newPassword = newPassword);
 
     if (response.email == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     return response.email;
   }
@@ -481,7 +453,7 @@ class RpcHandler {
         IdentitytoolkitRelyingpartySetAccountInfoRequest()..oobCode = code);
 
     if (response.email == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     return response.email;
   }
@@ -490,16 +462,16 @@ class RpcHandler {
   Future<SetAccountInfoResponse> deleteLinkedAccounts(
       String idToken, List<String> providersToDelete) async {
     if (providersToDelete == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     try {
       return await relyingparty
           .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
             ..idToken = idToken
             ..deleteProvider = providersToDelete);
-    } on AuthException catch (e) {
-      if (e.code == AuthException.userDeleted().code) {
-        throw AuthException.tokenExpired();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == FirebaseAuthException.userDeleted().code) {
+        throw FirebaseAuthException.tokenExpired();
       }
       rethrow;
     }
@@ -550,7 +522,7 @@ class RpcHandler {
   Future<SetAccountInfoResponse> updateEmail(
       String idToken, String newEmail) async {
     if (idToken == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     _validateEmail(newEmail);
     var response = await relyingparty
@@ -565,7 +537,7 @@ class RpcHandler {
   Future<SetAccountInfoResponse> updatePassword(
       String idToken, String newPassword) async {
     if (idToken == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     _validateStrongPassword(newPassword);
     var response = await relyingparty
@@ -582,7 +554,7 @@ class RpcHandler {
   Future<SetAccountInfoResponse> updateEmailAndPassword(
       String idToken, String newEmail, String newPassword) async {
     if (idToken == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     _validateEmail(newEmail);
     _validateStrongPassword(newPassword);
@@ -604,7 +576,7 @@ class RpcHandler {
         idToken.isEmpty ||
         oobCode == null ||
         oobCode.isEmpty) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     _validateEmail(email);
     var response = await relyingparty
@@ -626,11 +598,11 @@ class RpcHandler {
       String email,
       String sessionId]) async {
     if (continueUri == null) {
-      throw AuthException.missingContinueUri();
+      throw FirebaseAuthException.missingContinueUri();
     }
     // Either a SAML or non SAML providerId must be provided.
     if (providerId == null) {
-      throw AuthException.internalError()
+      throw FirebaseAuthException.internalError()
           .replace(message: 'A provider ID must be provided in the request.');
     }
 
@@ -645,7 +617,7 @@ class RpcHandler {
     if (sessionId != null) request.sessionId = sessionId;
 
     // Custom parameters and OAuth scopes should be ignored.
-    if (SAMLAuthProvider.isSaml(providerId)) {
+    if (isSaml(providerId)) {
       request
         ..customParameter = null
         ..oauthScope = null;
@@ -653,7 +625,7 @@ class RpcHandler {
     // When sessionId is provided, mobile flow (Cordova) is being used, force
     // code flow and not implicit flow. All other providers use code flow by
     // default.
-    if (sessionId != null && providerId == GoogleAuthProvider.providerId) {
+    if (sessionId != null && providerId == GoogleAuthProvider.PROVIDER_ID) {
       request.authFlowType = 'CODE_FLOW';
     }
     var response = await relyingparty.createAuthUri(request);
@@ -669,14 +641,14 @@ class RpcHandler {
     // we are keeping the request an object.
 
     if (phoneNumber == null || recaptchaToken == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     var request = IdentitytoolkitRelyingpartySendVerificationCodeRequest()
       ..phoneNumber = phoneNumber
       ..recaptchaToken = recaptchaToken;
     var response = await relyingparty.sendVerificationCode(request);
     if (response.sessionInfo == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     return response.sessionInfo;
   }
@@ -709,7 +681,7 @@ class RpcHandler {
       String idToken}) async {
     // idToken should be required here.
     if (idToken == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
     var request = IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest()
       ..sessionInfo = sessionInfo
@@ -723,7 +695,7 @@ class RpcHandler {
 
     if (response.temporaryProof != null) {
       throw _errorInfoFromResponse(
-          AuthException.credentialAlreadyInUse(), response);
+          FirebaseAuthException.credentialAlreadyInUse(), response);
     }
 
     return handleIdTokenResponse(response);
@@ -748,7 +720,7 @@ class RpcHandler {
 
     if (response.temporaryProof != null) {
       throw _errorInfoFromResponse(
-          AuthException.credentialAlreadyInUse(), response);
+          FirebaseAuthException.credentialAlreadyInUse(), response);
     }
 
     return handleIdTokenResponse(response);
@@ -769,15 +741,15 @@ class RpcHandler {
     if (request.phoneNumber != null || request.temporaryProof != null) {
       // Case 2. Both phoneNumber and temporaryProof should be set.
       if (request.phoneNumber == null || request.temporaryProof == null) {
-        throw AuthException.internalError();
+        throw FirebaseAuthException.internalError();
       }
     } else {
       // Otherwise it's case 1, so we expect sessionInfo and code.
       if (request.sessionInfo == null) {
-        throw AuthException.missingSessionInfo();
+        throw FirebaseAuthException.missingSessionInfo();
       }
       if (request.code == null) {
-        throw AuthException.missingCode();
+        throw FirebaseAuthException.missingCode();
       }
     }
   }
@@ -795,16 +767,16 @@ class RpcHandler {
   /// Validates a response from getAuthUri.
   void _validateGetAuthResponse(CreateAuthUriResponse response) {
     if (response.authUri == null) {
-      throw AuthException.internalError().replace(
+      throw FirebaseAuthException.internalError().replace(
           message:
               'Unable to determine the authorization endpoint for the specified '
               'provider. This may be an issue in the provider configuration.');
     } else if (response.sessionId == null) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
   }
 
-  AuthException _errorFromVerifyAssertionResponse(
+  FirebaseAuthException _errorFromVerifyAssertionResponse(
       VerifyAssertionResponse response) {
     if (response.needConfirmation ?? false) {
       // Account linking required, previously logged in to another account
@@ -814,7 +786,7 @@ class RpcHandler {
       // error. This will be used by developer after reauthenticating with email
       // provided by error to link using the credentials in Auth linking error.
       // If missing information, return regular Auth error.
-      return AuthException.needConfirmation();
+      return FirebaseAuthException.needConfirmation();
     } else {
       switch (response.errorMessage) {
         case 'FEDERATED_USER_ID_ALREADY_LINKED':
@@ -823,13 +795,13 @@ class RpcHandler {
           // case.
           // In this case the developer needs to signInWithCredential to the returned
           // credentials.
-          return AuthException.credentialAlreadyInUse();
+          return FirebaseAuthException.credentialAlreadyInUse();
         case 'EMAIL_EXISTS':
           // When EMAIL_EXISTS returned in error message, Auth credential and email
           // will also be returned, throw relevant error in that case.
           // In this case, the developers needs to sign in the user to the original
           // owner of the account and then link to the returned credential here.
-          return AuthException.emailExists();
+          return FirebaseAuthException.emailExists();
       }
       if (response.errorMessage != null) {
         // Construct developer facing error message from server code in errorMessage
@@ -839,7 +811,7 @@ class RpcHandler {
     }
     // If no error found and ID token is missing, throw an internal error.
     if (response.idToken == null) {
-      return AuthException.internalError();
+      return FirebaseAuthException.internalError();
     }
     return null;
   }
@@ -853,8 +825,8 @@ class RpcHandler {
     }
   }
 
-  AuthException _errorInfoFromResponse(
-      AuthException error, IdTokenResponse response) {
+  FirebaseAuthException _errorInfoFromResponse(
+      FirebaseAuthException error, IdTokenResponse response) {
     var message, email, phoneNumber;
     if (response is VerifyAssertionResponse) {
       email = response.email;
@@ -878,7 +850,7 @@ class RpcHandler {
     // Handle phone Auth credential responses, as they have a different format
     // from other backend responses (i.e. no providerId).
     if (response is IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse) {
-      return PhoneAuthCredential.temporaryProof(
+      return PhoneAuthProvider.credentialFromTemporaryProof(
           temporaryProof: response.temporaryProof,
           phoneNumber: response.phoneNumber);
     }
@@ -889,29 +861,27 @@ class RpcHandler {
 
       // Email and password is not supported as there is no situation where the
       // server would return the password to the client.
-      if (providerId == null || providerId == EmailAuthProvider.providerId) {
+      if (providerId == null || providerId == EmailAuthProvider.PROVIDER_ID) {
         return null;
       }
 
       try {
         switch (providerId) {
-          case GoogleAuthProvider.providerId:
-            return GoogleAuthProvider.getCredential(
+          case GoogleAuthProvider.PROVIDER_ID:
+            return GoogleAuthProvider.credential(
                 idToken: response.oauthIdToken,
                 accessToken: response.oauthAccessToken);
 
-          case FacebookAuthProvider.providerId:
-            return FacebookAuthProvider.getCredential(
-                accessToken: response.oauthAccessToken);
+          case FacebookAuthProvider.PROVIDER_ID:
+            return FacebookAuthProvider.credential(response.oauthAccessToken);
 
-          case GithubAuthProvider.providerId:
-            return GithubAuthProvider.getCredential(
-                token: response.oauthAccessToken);
+          case GithubAuthProvider.PROVIDER_ID:
+            return GithubAuthProvider.credential(response.oauthAccessToken);
 
-          case TwitterAuthProvider.providerId:
-            return TwitterAuthProvider.getCredential(
-                authToken: response.oauthAccessToken,
-                authTokenSecret: response.oauthTokenSecret);
+          case TwitterAuthProvider.PROVIDER_ID:
+            return TwitterAuthProvider.credential(
+                accessToken: response.oauthAccessToken,
+                secret: response.oauthTokenSecret);
 
           default: // TODO: is this still VerifyAssertionResponse?
             if (response.oauthAccessToken == null &&
@@ -921,19 +891,19 @@ class RpcHandler {
               return null;
             }
             if (response.pendingToken != null) {
-              if (SAMLAuthProvider.isSaml(providerId)) {
+              if (isSaml(providerId)) {
                 return SAMLAuthCredential(providerId, response.pendingToken);
               } else {
                 // OIDC and non-default providers excluding Twitter.
-                return OAuthCredential({
-                  'providerId': providerId,
-                  'pendingToken': response.pendingToken,
-                  'idToken': response.oauthIdToken,
-                  'accessToken': response.oauthAccessToken
-                });
+                return OAuthCredential(
+                    providerId: providerId,
+                    signInMethod: 'oauth',
+                    secret: response.pendingToken,
+                    idToken: response.oauthIdToken,
+                    accessToken: response.oauthAccessToken);
               }
             }
-            return OAuthProvider(providerId: providerId).getCredential(
+            return OAuthProvider(providerId).credential(
                 idToken: response.oauthIdToken,
                 accessToken: response.oauthAccessToken,
                 rawNonce: response.nonce);
@@ -953,7 +923,7 @@ class RpcHandler {
   }
 
   /// Returns the developer facing error corresponding to the server code provided
-  AuthException _getDeveloperErrorFromCode(String serverErrorCode) {
+  FirebaseAuthException _getDeveloperErrorFromCode(String serverErrorCode) {
     // Encapsulate the server error code in a typical server error response with
     // the code populated within. This will convert the response to a developer
     // facing one.
@@ -1008,7 +978,7 @@ class RpcHandler {
         (request.sessionId == null &&
             request.postBody == null &&
             request.pendingIdToken == null)) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
   }
 
@@ -1021,28 +991,28 @@ class RpcHandler {
     var operation = response.requestType;
     if (operation == null ||
         (response.email == null && operation != 'EMAIL_SIGNIN')) {
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
   }
 
   /// Validates an action code.
   void _validateApplyActionCode(String oobCode) {
     if (oobCode == null || oobCode.isEmpty) {
-      throw AuthException.invalidOobCode();
+      throw FirebaseAuthException.invalidOobCode();
     }
   }
 
   /// Validates an email
   void _validateEmail(String email) {
     if (!isValidEmailAddress(email)) {
-      throw AuthException.invalidEmail();
+      throw FirebaseAuthException.invalidEmail();
     }
   }
 
   /// Validates a password
   void _validatePassword(String password) {
     if (password == null || password.isEmpty) {
-      throw AuthException.invalidPassword();
+      throw FirebaseAuthException.invalidPassword();
     }
   }
 
@@ -1055,16 +1025,16 @@ class RpcHandler {
       // User could be a second factor user.
       // When second factor is required, a pending credential is returned.
       if (response.mfaPendingCredential != null) {
-        throw AuthException.mfaRequired();
+        throw FirebaseAuthException.mfaRequired();
       }
-      throw AuthException.internalError();
+      throw FirebaseAuthException.internalError();
     }
   }
 
   /// Validates a password
   void _validateStrongPassword(String password) {
     if (password == null || password.isEmpty) {
-      throw AuthException.weakPassword();
+      throw FirebaseAuthException.weakPassword();
     }
   }
 }

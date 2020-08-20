@@ -1,36 +1,91 @@
-library firebase_dart.auth;
+library firebase_auth;
 
 import 'package:firebase_dart/core.dart';
-import 'package:firebase_dart/src/auth/authcredential.dart';
-import 'package:firebase_dart/src/auth/error.dart';
-import 'package:firebase_dart/src/implementation.dart';
 import 'package:meta/meta.dart';
 
+import '../implementation.dart';
+import 'auth_credential.dart';
+import 'auth_provider.dart';
+import 'error.dart';
 import 'user.dart';
 
-export 'auth_providers.dart';
-export 'authcredential.dart';
+export 'auth_credential.dart';
+export 'auth_provider.dart';
 export 'error.dart';
 export 'user.dart';
 
 /// The entry point of the Firebase Authentication SDK.
-/// The entry point of the Firebase Authentication SDK.
 abstract class FirebaseAuth {
   FirebaseAuth();
 
-  /// Provides an instance of this class corresponding to `app`.
-  factory FirebaseAuth.fromApp(FirebaseApp app) {
+  /// Returns an instance using a specified [FirebaseApp].
+  factory FirebaseAuth.instanceFor({@required FirebaseApp app}) {
     assert(app != null);
     return FirebaseImplementation.installation.createAuth(app);
   }
 
-  /// Provides an instance of this class corresponding to the default app.
-  static final FirebaseAuth instance = FirebaseAuth.fromApp(Firebase.app());
+  /// Returns an instance using the default [FirebaseApp].
+  static final FirebaseAuth instance =
+      FirebaseAuth.instanceFor(app: Firebase.app());
 
+  /// The [FirebaseApp] for this current Auth instance.
   FirebaseApp get app;
 
-  /// Receive [FirebaseUser] each time the user signIn or signOut
-  Stream<FirebaseUser> get onAuthStateChanged;
+  /// Notifies about changes to the user's sign-in state (such as sign-in or
+  /// sign-out).
+  Stream<User> authStateChanges();
+
+  /// Notifies about changes to the user's sign-in state (such as sign-in or
+  /// sign-out) and also token refresh events.
+  Stream<User> idTokenChanges();
+
+  /// Notifies about changes to any user updates.
+  ///
+  /// This is a superset of both [authStateChanges] and [idTokenChanges]. It
+  /// provides events on all user changes, such as when credentials are linked,
+  /// unlinked and when updates to the user profile are made. The purpose of
+  /// this Stream is to for listening to realtime updates to the user without
+  /// manually having to call [reload] and then rehydrating changes to your
+  /// application.
+  Stream<User> userChanges();
+
+  /// Applies a verification code sent to the user by email or other out-of-band
+  /// mechanism.
+  ///
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **expired-action-code**:
+  ///  - Thrown if the action code has expired.
+  /// - **invalid-action-code**:
+  ///  - Thrown if the action code is invalid. This can happen if the code is
+  ///    malformed or has already been used.
+  /// - **user-disabled**:
+  ///  - Thrown if the user corresponding to the given action code has been
+  ///    disabled.
+  /// - **user-not-found**:
+  ///  - Thrown if there is no user corresponding to the action code. This may
+  ///    have happened if the user was deleted between when the action code was
+  ///    issued and when this method was called.
+  Future<void> applyActionCode(String code);
+
+  /// Checks a verification code sent to the user by email or other out-of-band
+  /// mechanism.
+  ///
+  /// Returns [ActionCodeInfo] about the code.
+  ///
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **expired-action-code**:
+  ///  - Thrown if the action code has expired.
+  /// - **invalid-action-code**:
+  ///  - Thrown if the action code is invalid. This can happen if the code is
+  ///    malformed or has already been used.
+  /// - **user-disabled**:
+  ///  - Thrown if the user corresponding to the given action code has been
+  ///    disabled.
+  /// - **user-not-found**:
+  ///  - Thrown if there is no user corresponding to the action code. This may
+  ///    have happened if the user was deleted between when the action code was
+  ///    issued and when this method was called.
+  Future<ActionCodeInfo> checkActionCode(String code);
 
   /// Asynchronously creates and becomes an anonymous user.
   ///
@@ -41,22 +96,26 @@ abstract class FirebaseAuth {
   /// **Important**: You must enable Anonymous accounts in the Auth section
   /// of the Firebase console before being able to use them.
   ///
-  /// Errors:
-  ///
-  ///  * `ERROR_OPERATION_NOT_ALLOWED` - Indicates that Anonymous accounts are not enabled.
-  Future<AuthResult> signInAnonymously();
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **operation-not-allowed**:
+  ///  - Thrown if anonymous accounts are not enabled. Enable anonymous accounts
+  /// in the Firebase Console, under the Auth tab.
+  Future<UserCredential> signInAnonymously();
 
-  /// Tries to create a new user account with the given email address and password.
+  /// Tries to create a new user account with the given email address and
+  /// password.
   ///
-  /// If successful, it also signs the user in into the app and updates
-  /// the [onAuthStateChanged] stream.
-  ///
-  /// Errors:
-  ///
-  ///  * `ERROR_WEAK_PASSWORD` - If the password is not strong enough.
-  ///  * `ERROR_INVALID_EMAIL` - If the email address is malformed.
-  ///  * `ERROR_EMAIL_ALREADY_IN_USE` - If the email is already in use by a different account.
-  Future<AuthResult> createUserWithEmailAndPassword({
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **email-already-in-use**:
+  ///  - Thrown if there already exists an account with the given email address.
+  /// - **invalid-email**:
+  ///  - Thrown if the email address is not valid.
+  /// - **operation-not-allowed**:
+  ///  - Thrown if email/password accounts are not enabled. Enable
+  ///    email/password accounts in the Firebase Console, under the Auth tab.
+  /// - **weak-password**:
+  ///  - Thrown if the password is not strong enough.
+  Future<UserCredential> createUserWithEmailAndPassword({
     @required String email,
     @required String password,
   });
@@ -69,155 +128,161 @@ abstract class FirebaseAuth {
   ///
   /// An empty `List` is returned if the user could not be found.
   ///
-  /// Errors:
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **invalid-email**:
+  ///  - Thrown if the email address is not valid.
+  Future<List<String>> fetchSignInMethodsForEmail(String email);
+
+  /// Returns a UserCredential from the redirect-based sign-in flow.
   ///
-  ///  * `ERROR_INVALID_CREDENTIAL` - If the [email] address is malformed.
-  Future<List<String>> fetchSignInMethodsForEmail({
-    @required String email,
-  });
+  /// If sign-in succeeded, returns the signed in user. If sign-in was
+  /// unsuccessful, fails with an error. If no redirect operation was called,
+  /// returns a [UserCredential] with a null User.
+  ///
+  /// This method is only support on web platforms.
+  Future<UserCredential> getRedirectResult();
 
   /// Triggers the Firebase Authentication backend to send a password-reset
   /// email to the given email address, which must correspond to an existing
   /// user of your app.
-  ///
-  /// Errors:
-  ///
-  ///  * `ERROR_INVALID_EMAIL` - If the [email] address is malformed.
-  ///  * `ERROR_USER_NOT_FOUND` - If there is no user corresponding to the given [email] address.
   Future<void> sendPasswordResetEmail({
     @required String email,
+    ActionCodeSettings actionCodeSettings,
   });
 
   /// Sends a sign in with email link to provided email address.
-  Future<void> sendSignInWithEmailLink({
+  ///
+  /// To complete the password reset, call [confirmPasswordReset] with the code
+  /// supplied in the email sent to the user, along with the new password
+  /// specified by the user.
+  ///
+  /// The [handleCodeInApp] of [actionCodeSettings] must be set to `true`
+  /// otherwise an [ArgumentError] will be thrown.
+  ///
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **invalid-email**:
+  ///  - Thrown if the email address is not valid.
+  /// - **user-not-found**:
+  ///  - Thrown if there is no user corresponding to the email address.
+  Future<void> sendSignInLinkToEmail({
     @required String email,
-    @required String url,
-    @required bool handleCodeInApp,
-    @required String iOSBundleID,
-    @required String androidPackageName,
-    @required bool androidInstallIfNotAvailable,
-    @required String androidMinimumVersion,
+    @required ActionCodeSettings actionCodeSettings,
   });
 
-  /// Checks if link is an email sign-in link.
-  Future<bool> isSignInWithEmailLink(String link);
+  /// Checks if an incoming link is a sign-in with email link.
+  bool isSignInWithEmailLink(String link);
 
-  /// Signs in using an email address and email sign-in link.
-  ///
-  /// Errors:
-  ///
-  ///  * `ERROR_NOT_ALLOWED` - Indicates that email and email sign-in link
-  ///      accounts are not enabled. Enable them in the Auth section of the
-  ///      Firebase console.
-  ///  * `ERROR_DISABLED` - Indicates the user's account is disabled.
-  ///  * `ERROR_INVALID` - Indicates the email address is invalid.
-  Future<AuthResult> signInWithEmailAndLink({String email, String link});
-
-  /// Tries to sign in a user with the given email address and password.
+  /// Attempts to sign in a user with the given email address and password.
   ///
   /// If successful, it also signs the user in into the app and updates
-  /// the [onAuthStateChanged] stream.
+  /// any [authStateChanges], [idTokenChanges] or [userChanges] stream
+  /// listeners.
   ///
   /// **Important**: You must enable Email & Password accounts in the Auth
   /// section of the Firebase console before being able to use them.
   ///
-  /// Errors:
-  ///
-  ///  * `ERROR_INVALID_EMAIL` - If the [email] address is malformed.
-  ///  * `ERROR_WRONG_PASSWORD` - If the [password] is wrong.
-  ///  * `ERROR_USER_NOT_FOUND` - If there is no user corresponding to the given [email] address, or if the user has been deleted.
-  ///  * `ERROR_USER_DISABLED` - If the user has been disabled (for example, in the Firebase console)
-  ///  * `ERROR_TOO_MANY_REQUESTS` - If there was too many attempts to sign in as this user.
-  ///  * `ERROR_OPERATION_NOT_ALLOWED` - Indicates that Email & Password accounts are not enabled.
-  Future<AuthResult> signInWithEmailAndPassword({
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **invalid-email**:
+  ///  - Thrown if the email address is not valid.
+  /// - **user-disabled**:
+  ///  - Thrown if the user corresponding to the given email has been disabled.
+  /// - **user-not-found**:
+  ///  - Thrown if there is no user corresponding to the given email.
+  /// - **wrong-password**:
+  ///  - Thrown if the password is invalid for the given email, or the account
+  ///    corresponding to the email does not have a password set.
+  Future<UserCredential> signInWithEmailAndPassword({
     @required String email,
     @required String password,
   });
+
+  /// Signs in using an email address and email sign-in link.
+  ///
+  /// Fails with an error if the email address is invalid or OTP in email link
+  /// expires.
+  ///
+  /// Confirm the link is a sign-in email link before calling this method,
+  /// using [isSignInWithEmailLink].
+  ///
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **expired-action-code**:
+  ///  - Thrown if OTP in email link expires.
+  /// - **invalid-email**:
+  ///  - Thrown if the email address is not valid.
+  /// - **user-disabled**:
+  ///  - Thrown if the user corresponding to the given email has been disabled.
+  Future<UserCredential> signInWithEmailLink(
+      {@required String email, @required String emailLink});
 
   /// Asynchronously signs in to Firebase with the given 3rd-party credentials
   /// (e.g. a Facebook login Access Token, a Google ID Token/Access Token pair,
   /// etc.) and returns additional identity provider data.
   ///
   /// If successful, it also signs the user in into the app and updates
-  /// the [onAuthStateChanged] stream.
+  /// any [authStateChanges], [idTokenChanges] or [userChanges] stream
+  /// listeners.
   ///
-  /// If the user doesn't have an account already, one will be created automatically.
+  /// If the user doesn't have an account already, one will be created
+  /// automatically.
   ///
   /// **Important**: You must enable the relevant accounts in the Auth section
   /// of the Firebase console before being able to use them.
   ///
-  /// Errors:
-  ///
-  ///  * `ERROR_INVALID_CREDENTIAL` - If the credential data is malformed or has expired.
-  ///  * `ERROR_USER_DISABLED` - If the user has been disabled (for example, in the Firebase console)
-  ///  * `ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL` - If there already exists an account with the email address asserted by Google.
-  ///       Resolve this case by calling [fetchSignInMethodsForEmail] and then asking the user to sign in using one of them.
-  ///       This error will only be thrown if the "One account per email address" setting is enabled in the Firebase console (recommended).
-  ///  * `ERROR_OPERATION_NOT_ALLOWED` - Indicates that Google accounts are not enabled.
-  ///  * `ERROR_INVALID_ACTION_CODE` - If the action code in the link is malformed, expired, or has already been used.
-  ///       This can only occur when using [EmailAuthProvider.getCredentialWithLink] to obtain the credential.
-  Future<AuthResult> signInWithCredential(AuthCredential credential);
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **account-exists-with-different-credential**:
+  ///  - Thrown if there already exists an account with the email address
+  ///    asserted by the credential.
+  ///    Resolve this by calling [fetchSignInMethodsForEmail] and then asking
+  ///    the user to sign in using one of the returned providers.
+  ///    Once the user is signed in, the original credential can be linked to
+  ///    the user with [linkWithCredential].
+  /// - **invalid-credential**:
+  ///  - Thrown if the credential is malformed or has expired.
+  /// - **operation-not-allowed**:
+  ///  - Thrown if the type of account corresponding to the credential is not
+  ///    enabled. Enable the account type in the Firebase Console, under the
+  ///    Auth tab.
+  /// - **user-disabled**:
+  ///  - Thrown if the user corresponding to the given credential has been
+  ///    disabled.
+  /// - **user-not-found**:
+  ///  - Thrown if signing in with a credential from [EmailAuthProvider.credential]
+  ///    and there is no user corresponding to the given email.
+  /// - **wrong-password**:
+  ///  - Thrown if signing in with a credential from [EmailAuthProvider.credential]
+  ///    and the password is invalid for the given email, or if the account
+  ///    corresponding to the email does not have a password set.
+  /// - **invalid-verification-code**:
+  ///  - Thrown if the credential is a [PhoneAuthProvider.credential] and the
+  ///    verification code of the credential is not valid.
+  /// - **invalid-verification-id**:
+  ///  - Thrown if the credential is a [PhoneAuthProvider.credential] and the
+  ///    verification ID of the credential is not valid.id.
+  Future<UserCredential> signInWithCredential(AuthCredential credential);
 
-  /// Starts the phone number verification process for the given phone number.
+  /// Authenticates a Firebase client using a popup-based OAuth authentication
+  /// flow.
   ///
-  /// Either sends an SMS with a 6 digit code to the phone number specified,
-  /// or sign's the user in and [verificationCompleted] is called.
+  /// If succeeds, returns the signed in user along with the provider's
+  /// credential.
   ///
-  /// No duplicated SMS will be sent out upon re-entry (before timeout).
-  ///
-  /// Make sure to test all scenarios below:
-  ///
-  ///  * You directly get logged in if Google Play Services verified the phone
-  ///     number instantly or helped you auto-retrieve the verification code.
-  ///  * Auto-retrieve verification code timed out.
-  ///  * Error cases when you receive [verificationFailed] callback.
-  ///
-  /// [phoneNumber] The phone number for the account the user is signing up
-  ///   for or signing into. Make sure to pass in a phone number with country
-  ///   code prefixed with plus sign ('+').
-  ///
-  /// [timeout] The maximum amount of time you are willing to wait for SMS
-  ///   auto-retrieval to be completed by the library. Maximum allowed value
-  ///   is 2 minutes. Use 0 to disable SMS-auto-retrieval. Setting this to 0
-  ///   will also cause [codeAutoRetrievalTimeout] to be called immediately.
-  ///   If you specified a positive value less than 30 seconds, library will
-  ///   default to 30 seconds.
-  ///
-  /// [forceResendingToken] The [forceResendingToken] obtained from [codeSent]
-  ///   callback to force re-sending another verification SMS before the
-  ///   auto-retrieval timeout.
-  ///
-  /// [verificationCompleted] This callback must be implemented.
-  ///   It will trigger when an SMS is auto-retrieved or the phone number has
-  ///   been instantly verified. The callback will receive an [AuthCredential]
-  ///   that can be passed to [signInWithCredential] or [linkWithCredential].
-  ///
-  /// [verificationFailed] This callback must be implemented.
-  ///   Triggered when an error occurred during phone number verification.
-  ///
-  /// [codeSent] Optional callback.
-  ///   It will trigger when an SMS has been sent to the users phone,
-  ///   and will include a [verificationId] and [forceResendingToken].
-  ///
-  /// [codeAutoRetrievalTimeout] Optional callback.
-  ///   It will trigger when SMS auto-retrieval times out and provide a
-  ///   [verificationId].
-  Future<void> verifyPhoneNumber({
-    @required String phoneNumber,
-    @required Duration timeout,
-    int forceResendingToken,
-    @required PhoneVerificationCompleted verificationCompleted,
-    @required PhoneVerificationFailed verificationFailed,
-    @required PhoneCodeSent codeSent,
-    @required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
-  });
+  /// This method is only available on web based platforms.
+  Future<UserCredential> signInWithPopup(AuthProvider provider);
 
-  /// Tries to sign in a user with a given Custom Token [token].
+  /// Authenticates a Firebase client using a full-page redirect flow.
+  ///
+  /// To handle the results and errors for this operation, refer to
+  /// [getRedirectResult].
+  Future<void> signInWithRedirect(AuthProvider provider);
+
+  /// Tries to sign in a user with a given custom token.
+  ///
+  /// Custom tokens are used to integrate Firebase Auth with existing auth
+  /// systems, and must be generated by the auth backend.
   ///
   /// If successful, it also signs the user in into the app and updates
-  /// the [onAuthStateChanged] stream.
-  ///
-  /// Use this method after you retrieve a Firebase Auth Custom Token from your server.
+  /// any [authStateChanges], [idTokenChanges] or [userChanges] stream
+  /// listeners.
   ///
   /// If the user identified by the [uid] specified in the token doesn't
   /// have an account already, one will be created automatically.
@@ -225,55 +290,309 @@ abstract class FirebaseAuth {
   /// Read how to use Custom Token authentication and the cases where it is
   /// useful in [the guides](https://firebase.google.com/docs/auth/android/custom-auth).
   ///
-  /// Errors:
-  ///
-  ///  * `ERROR_INVALID_CUSTOM_TOKEN` - The custom token format is incorrect.
-  ///     Please check the documentation.
-  ///  * `ERROR_CUSTOM_TOKEN_MISMATCH` - Invalid configuration.
-  ///     Ensure your app's SHA1 is correct in the Firebase console.
-  Future<AuthResult> signInWithCustomToken({@required String token});
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **custom-token-mismatch**:
+  ///  - Thrown if the custom token is for a different Firebase App.
+  /// - **invalid-custom-token**:
+  ///  - Thrown if the custom token format is incorrect.
+  Future<UserCredential> signInWithCustomToken(String token);
 
-  /// Signs out the current user and clears it from the disk cache.
+  /// Signs out the current user.
   ///
-  /// If successful, it signs the user out of the app and updates
-  /// the [onAuthStateChanged] stream.
+  /// If successful, it also signs the user in into the app and updates
+  /// any [authStateChanges], [idTokenChanges] or [userChanges] stream
+  /// listeners.
   Future<void> signOut();
 
-  /// Returns the currently signed-in [FirebaseUser] or [null] if there is none.
-  Future<FirebaseUser> currentUser();
+  /// Checks a password reset code sent to the user by email or other
+  /// out-of-band mechanism.
+  ///
+  /// Returns the user's email address if valid.
+  ///
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **expired-action-code**:
+  ///  - Thrown if the password reset code has expired.
+  /// - **invalid-action-code**:
+  ///  - Thrown if the password reset code is invalid. This can happen if the
+  ///    code is malformed or has already been used.
+  /// - **user-disabled**:
+  ///  - Thrown if the user corresponding to the given email has been disabled.
+  /// - **user-not-found**:
+  ///  - Thrown if there is no user corresponding to the password reset code.
+  ///    This may have happened if the user was deleted between when the code
+  ///    was issued and when this method was called.
+  Future<String> verifyPasswordResetCode(String code);
 
-  /// Sets the user-facing language code for auth operations that can be
-  /// internationalized, such as [sendEmailVerification]. This language
-  /// code should follow the conventions defined by the IETF in BCP47.
+  /// Starts a phone number verification process for the given phone number.
+  ///
+  /// This method is used to verify that the user-provided phone number belongs
+  /// to the user. Firebase sends a code via SMS message to the phone number,
+  /// where you must then prompt the user to enter the code. The code can be
+  /// combined with the verification ID to create a [PhoneAuthProvider.credential]
+  /// which you can then use to sign the user in, or link with their account (
+  /// see [signInWithCredential] or [linkWithCredential]).
+  ///
+  /// On some Android devices, auto-verification can be handled by the device
+  /// and a [PhoneAuthCredential] will be automatically provided.
+  ///
+  /// No duplicated SMS will be sent out unless a [forceResendingToken] is
+  /// provided.
+  ///
+  /// [phoneNumber] The phone number for the account the user is signing up
+  ///   for or signing into. Make sure to pass in a phone number with country
+  ///   code prefixed with plus sign ('+').
+  ///
+  /// [timeout] The maximum amount of time you are willing to wait for SMS
+  ///   auto-retrieval to be completed by the library. Maximum allowed value
+  ///   is 2 minutes.
+  ///
+  /// [forceResendingToken] The [forceResendingToken] obtained from [codeSent]
+  ///   callback to force re-sending another verification SMS before the
+  ///   auto-retrieval timeout.
+  ///
+  /// [verificationCompleted] Triggered when an SMS is auto-retrieved or the
+  ///   phone number has been instantly verified. The callback will receive an
+  ///   [PhoneAuthCredential] that can be passed to [signInWithCredential] or
+  ///   [linkWithCredential].
+  ///
+  /// [verificationFailed] Triggered when an error occurred during phone number
+  ///   verification. A [FirebaseAuthException] is provided when this is
+  ///   triggered.
+  ///
+  /// [codeSent] Triggered when an SMS has been sent to the users phone, and
+  ///   will include a [verificationId] and [forceResendingToken].
+  ///
+  /// [codeAutoRetrievalTimeout] Triggered when SMS auto-retrieval times out and
+  ///   provide a [verificationId].
+  Future<void> verifyPhoneNumber({
+    @required String phoneNumber,
+    @required PhoneVerificationCompleted verificationCompleted,
+    @required PhoneVerificationFailed verificationFailed,
+    @required PhoneCodeSent codeSent,
+    @required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
+    @visibleForTesting String autoRetrievedSmsCodeForTesting,
+    Duration timeout = const Duration(seconds: 30),
+    int forceResendingToken,
+  });
+
+  /// Returns the current [User] if they are currently signed-in, or `null` if
+  /// not.
+  ///
+  /// You should not use this getter to determine the users current state,
+  /// instead use [authStateChanges], [idTokenChanges] or [userChanges] to
+  /// subscribe to updates.
+  User get currentUser;
+
+  /// The current Auth instance's language code.
+  ///
+  /// See [setLanguageCode] to update the language code.
+  String get languageCode;
+
+  /// When set to null, the default Firebase Console language setting is
+  /// applied.
+  ///
+  /// The language code will propagate to email action templates (password
+  /// reset, email verification and email change revocation), SMS templates for
+  /// phone authentication, reCAPTCHA verifier and OAuth popup/redirect
+  /// operations provided the specified providers support localization with the
+  /// language code specified.
   Future<void> setLanguageCode(String language);
 
-  /// Completes the password reset process, given a confirmation code and new password.
+  /// Completes the password reset process, given a confirmation code and new
+  /// password.
   ///
-  /// Errors:
-  /// `EXPIRED_ACTION_CODE` - if the password reset code has expired.
-  /// `INVALID_ACTION_CODE` - if the password reset code is invalid. This can happen if the code is malformed or has already been used.
-  /// `USER_DISABLED` - if the user corresponding to the given password reset code has been disabled.
-  /// `USER_NOT_FOUND` - if there is no user corresponding to the password reset code. This may have happened if the user was deleted between when the code was issued and when this method was called.
-  /// `WEAK_PASSWORD` - if the new password is not strong enough.
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **expired-action-code**:
+  ///  - Thrown if the action code has expired.
+  /// - **invalid-action-code**:
+  ///  - Thrown if the action code is invalid. This can happen if the code is
+  ///    malformed or has already been used.
+  /// - **user-disabled**:
+  ///  - Thrown if the user corresponding to the given action code has been
+  ///    disabled.
+  /// - **user-not-found**:
+  ///  - Thrown if there is no user corresponding to the action code. This may
+  ///    have happened if the user was deleted between when the action code was
+  ///    issued and when this method was called.
+  /// - **weak-password**:
+  ///  - Thrown if the new password is not strong enough.
   Future<void> confirmPasswordReset(String oobCode, String newPassword);
+
+  /// Changes the current type of persistence on the current Auth instance for
+  /// the currently saved Auth session and applies this type of persistence for
+  /// future sign-in requests, including sign-in with redirect requests.
+  ///
+  /// This will return a promise that will resolve once the state finishes
+  /// copying from one type of storage to the other. Calling a sign-in method
+  /// after changing persistence will wait for that persistence change to
+  /// complete before applying it on the new Auth state.
+  ///
+  /// This makes it easy for a user signing in to specify whether their session
+  /// should be remembered or not. It also makes it easier to never persist the
+  /// Auth state for applications that are shared by other users or have
+  /// sensitive data.
+  ///
+  /// This is only supported on web based platforms.
+  Future<void> setPersistence(Persistence persistence);
+
+  @override
+  String toString() {
+    return 'FirebaseAuth(app: ${app.name})';
+  }
 }
 
-/// Result object obtained from operations that can affect the authentication
-/// state. Contains a method that returns the currently signed-in user after
-/// the operation has completed.
-abstract class AuthResult {
-  /// Returns the currently signed-in [FirebaseUser], or `null` if there isn't
-  /// any (i.e. the user is signed out).
-  FirebaseUser get user;
+/// A UserCredential is returned from authentication requests such as
+/// [createUserWithEmailAndPassword].
+abstract class UserCredential {
+  /// Returns a [User] containing additional information and user specific
+  /// methods.
+  User get user;
 
-  /// Returns IDP-specific information for the user if the provider is one of
-  /// Facebook, Github, Google, or Twitter.
+  /// Returns additional information about the user, such as whether they are a
+  /// newly created one.
   AdditionalUserInfo get additionalUserInfo;
+
+  /// The users [AuthCredential].
+  AuthCredential get credential;
+
+  @override
+  String toString() {
+    return 'UserCredential(additionalUserInfo: ${additionalUserInfo.toString()}, credential: ${credential.toString()}, user: ${user})';
+  }
 }
 
+/// Typedef for handling automatic phone number timeout resolution.
 typedef PhoneCodeAutoRetrievalTimeout = void Function(String verificationId);
-typedef PhoneCodeSent = void Function(String verificationId,
-    [int forceResendingToken]);
+
+/// Typedef for handling when Firebase sends a SMS code to the provided phone
+/// number.
+typedef PhoneCodeSent = void Function(
+    String verificationId, int forceResendingToken);
+
+/// Typedef for a automatic phone number resolution.
+///
+/// This handler can only be called on supported Android devices.
 typedef PhoneVerificationCompleted = void Function(
-    AuthCredential phoneAuthCredential);
-typedef PhoneVerificationFailed = void Function(AuthException error);
+    PhoneAuthCredential phoneAuthCredential);
+
+/// Typedef for handling errors via phone number verification.
+typedef PhoneVerificationFailed = void Function(FirebaseAuthException error);
+
+/// An enumeration of the possible persistence mechanism types.
+///
+/// Setting a persistence type is only available on web based platforms.
+enum Persistence {
+  /// Indicates that the state will be persisted even when the browser window is
+  /// closed.
+  local,
+
+  /// Indicates that the state will only be stored in memory and will be
+  /// cleared when the window or activity is refreshed.
+  none,
+
+  /// Indicates that the state will only persist in current session/tab,
+  /// relevant to web only, and will be cleared when the tab is closed.
+  session,
+}
+
+/// The type of operation that generated the action code from calling
+/// [checkActionCode].
+enum ActionCodeInfoOperation {
+  /// Unknown operation.
+  unknown,
+
+  /// Password reset code generated via [sendPasswordResetEmail].
+  passwordReset,
+
+  /// Email verification code generated via [User.sendEmailVerification].
+  verifyEmail,
+
+  /// Email change revocation code generated via [User.updateEmail].
+  recoverEmail,
+
+  /// Email sign in code generated via [sendSignInLinkToEmail].
+  emailSignIn,
+
+  /// Verify and change email code generated via [User.verifyBeforeUpdateEmail].
+  verifyAndChangeEmail,
+
+  /// Action code for reverting second factor addition.
+  revertSecondFactorAddition,
+}
+
+/// A response from calling [checkActionCode].
+abstract class ActionCodeInfo {
+  /// The type of operation that generated the action code.
+  ActionCodeInfoOperation get operation;
+
+  /// The data associated with the action code.
+  ///
+  /// Depending on the [ActionCodeInfoOperation], `email` and `previousEmail`
+  /// may be available.
+  Map<String, dynamic> get data;
+}
+
+/// Interface that defines the required continue/state URL with optional
+/// Android and iOS bundle identifiers.
+class ActionCodeSettings {
+  @protected
+  ActionCodeSettings({
+    this.androidPackageName,
+    this.androidMinimumVersion,
+    this.androidInstallApp,
+    this.dynamicLinkDomain,
+    this.handleCodeInApp,
+    this.iOSBundleId,
+    @required this.url,
+  }) : assert(url != null);
+
+  /// The Android package name of the application to open when the URL is pressed.
+  final String androidPackageName;
+
+  /// The minimum app version which must be installed on the device.
+  ///
+  /// This argument is only set if [androidPackageName] is also set. If the user
+  /// has the application on the device but it is a lower version number than the
+  /// one specified they will be taken to the Play Store to upgrade the application.
+  final String androidMinimumVersion;
+
+  /// Whether or not the user should be automatically prompted to install the app
+  /// via the Play Store if it is not already installed.
+  final bool androidInstallApp;
+
+  /// The iOS app to open if it is installed on the device.
+  final String iOSBundleId;
+
+  /// Sets an optional Dynamic Link domain.
+  final String dynamicLinkDomain;
+
+  /// The default is false. When true, the action code link will be sent
+  /// as a Universal Link or Android App Link and will be opened by the
+  /// app if installed.
+  final bool handleCodeInApp;
+
+  /// Sets the link continue/state URL
+  final String url;
+
+  /// Returns the current instance as a [Map].
+  Map<String, dynamic> asMap() {
+    return <String, dynamic>{
+      'url': url,
+      'dynamicLinkDomain': dynamicLinkDomain,
+      'handleCodeInApp': handleCodeInApp,
+      'android': <String, dynamic>{
+        'installApp': androidInstallApp,
+        'minimumVersion': androidMinimumVersion,
+        'packageName': androidPackageName,
+      },
+      'iOS': <String, dynamic>{
+        'bundleId': iOSBundleId,
+      }
+    };
+  }
+
+  @override
+  String toString() {
+    return 'ActionCodeSettings(${asMap()})';
+  }
+}
