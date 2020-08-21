@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/auth.dart';
@@ -22,8 +22,8 @@ class FirebaseTesting {
   static final JsonWebKey _tokenSigningKey = JsonWebKey.generate('RS256');
 
   static Future<void> setup() async {
-    Hive.init(Directory.systemTemp.path);
-    await Hive.deleteBoxFromDisk('firebase_auth');
+    // this forces to create an in-memory box
+    await Hive.openBox('firebase_auth', bytes: Uint8List(0));
 
     var openIdClient = ProxyClient({
       RegExp('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'):

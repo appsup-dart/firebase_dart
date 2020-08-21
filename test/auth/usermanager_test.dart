@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/usermanager.dart';
 import 'package:hive/hive.dart';
@@ -55,8 +57,13 @@ void main() async {
       ]
     };
 
+    Box storage;
+
+    setUp(() async {
+      await storage?.close();
+      storage = await Hive.openBox('test', bytes: Uint8List(0));
+    });
     test('get, set and remove current user', () async {
-      var storage = await Hive.openBox('test');
       var userManager = UserManager(auth, storage);
 
       // Expected user with authDomain.
@@ -85,7 +92,6 @@ void main() async {
     });
 
     test('add/remove current user change listener', () async {
-      var storage = await Hive.openBox('test');
       var userManager = UserManager(auth, storage);
 
       var key1 = 'firebase:FirebaseUser:${appId}';
