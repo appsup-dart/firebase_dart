@@ -335,12 +335,11 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   String get providerId => 'firebase';
 
   @override
-  // TODO: implement refreshToken
-  String get refreshToken => throw UnimplementedError();
+  String get refreshToken => _credential.refreshToken;
 
   @override
   // TODO: implement tenantId
-  String get tenantId => throw UnimplementedError();
+  String get tenantId => null;
 
   @override
   Future<void> updatePhoneNumber(PhoneAuthCredential phoneCredential) {
