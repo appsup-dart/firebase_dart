@@ -56,10 +56,15 @@ class RetryHelper {
     }
     _lastWasSuccess = false;
     _logger.fine('Scheduling retry in $delay');
-    _scheduledRetry = Timer(delay, () {
-      _scheduledRetry = null;
+    if (delay == Duration()) {
+      // run outside Timer to work with fakeAsync
       runnable();
-    });
+    } else {
+      _scheduledRetry = Timer(delay, () {
+        _scheduledRetry = null;
+        runnable();
+      });
+    }
   }
 
   void signalSuccess() {
