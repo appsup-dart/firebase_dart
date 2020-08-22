@@ -113,16 +113,16 @@ class FirebaseTesting {
         PureDartFirebaseImplementation.withHttpClient(httpClient));
   }
 
-  static Backend getBackend(FirebaseApp app) => Backend(app);
+  static Backend getBackend(FirebaseOptions options) => Backend(options);
 }
 
 class Backend {
-  final FirebaseApp _app;
+  final FirebaseOptions options;
 
-  Backend(this._app) {
-    var existing = _apiKeys[_app.options.apiKey];
-    assert(existing == null || existing == _app.options.projectId);
-    _apiKeys[_app.options.apiKey] = _app.options.projectId;
+  Backend(this.options) {
+    var existing = _apiKeys[options.apiKey];
+    assert(existing == null || existing == options.projectId);
+    _apiKeys[options.apiKey] = options.projectId;
   }
 
   static final Map<String, String> _apiKeys = {};
@@ -141,8 +141,8 @@ class Backend {
   static storage.MemoryBackend getStorageBackend(String bucket) =>
       _storageBackends.putIfAbsent(bucket, () => storage.MemoryBackend());
 
-  auth.MemoryBackend get authBackend => getAuthBackend(_app.options.projectId);
+  auth.MemoryBackend get authBackend => getAuthBackend(options.projectId);
 
   storage.MemoryBackend get storageBackend =>
-      getStorageBackend(_app.options.storageBucket);
+      getStorageBackend(options.storageBucket);
 }

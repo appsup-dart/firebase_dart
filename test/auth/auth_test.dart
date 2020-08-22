@@ -298,7 +298,7 @@ class Tester {
 
     var app = await Firebase.initializeApp(options: getOptions());
 
-    var backend = FirebaseTesting.getBackend(app);
+    var backend = FirebaseTesting.getBackend(app.options);
 
     await backend.authBackend.storeUser(BackendUser()
       ..localId = 'user1'

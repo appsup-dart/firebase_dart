@@ -189,7 +189,7 @@ class Tester {
 
     var app = await Firebase.initializeApp(options: getOptions());
 
-    var backend = FirebaseTesting.getBackend(app);
+    var backend = FirebaseTesting.getBackend(app.options);
     return Tester._(app, backend.storageBackend);
   }
 }
