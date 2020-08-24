@@ -21,34 +21,54 @@ class UserManager {
   /// The underlying storage manager.
   final FutureOr<Box> storage;
 
-  Stream<User> get onCurrentUserChanged {
-    return Stream.fromFuture(Future.value(storage))
-        .asyncExpand((event) async* {
-          yield* event.watch(key: _key).map((v) => v?.value);
-        })
-        .distinct()
-        .cast<Map>()
-        .map((v) =>
-            v == null ? null : FirebaseUserImpl.fromJson(v.cast(), auth: auth));
-  }
+  final StreamController<User> _controller = StreamController.broadcast();
+
+  StreamSubscription _subscription;
+
+  Future<void> _onReady;
+
+  Future<void> get onReady => _onReady ??= Future(() async {
+        var storage = await this.storage;
+
+        _subscription = storage
+            .watch(key: _key)
+            .map((v) => v?.value)
+            .distinct()
+            .cast<Map>()
+            .map((v) => v == null
+                ? null
+                : FirebaseUserImpl.fromJson(v.cast(), auth: auth))
+            .listen(_controller.add);
+      });
+
+  Stream<User> get onCurrentUserChanged => _controller.stream;
 
   UserManager(this.auth, [FutureOr<Box> storage])
-      : storage = storage ?? Hive.openBox('firebase_auth');
+      : storage = storage ?? Hive.openBox('firebase_auth') {
+    _init();
+  }
+
+  void _init() async {
+    await onReady;
+  }
 
   String get _key => 'firebase:FirebaseUser:$appId';
 
   /// Stores the current Auth user for the provided application ID.
   Future<void> setCurrentUser(User currentUser) async {
+    await onReady;
     // Wait for any pending persistence change to be resolved.
     await (await storage).put(_key, currentUser?.toJson());
   }
 
   /// Removes the stored current user for provided app ID.
   Future<void> removeCurrentUser() async {
+    await onReady;
     await (await storage).delete(_key);
   }
 
   Future<User> getCurrentUser([String authDomain]) async {
+    await onReady;
     var response = await (await storage).get(_key);
 
     return response == null
@@ -57,5 +77,11 @@ class UserManager {
             ...response,
             if (authDomain != null) 'authDomain': authDomain,
           }, auth: auth);
+  }
+
+  Future<void> close() async {
+    await onReady;
+    await _subscription.cancel();
+    await _controller.close();
   }
 }

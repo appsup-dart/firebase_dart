@@ -63,6 +63,9 @@ void main() async {
       await storage?.close();
       storage = await Hive.openBox('test', bytes: Uint8List(0));
     });
+
+    var exampleUser = FirebaseUserImpl.fromJson(expectedUser, auth: auth);
+
     test('get, set and remove current user', () async {
       var userManager = UserManager(auth, storage);
 
@@ -72,8 +75,7 @@ void main() async {
         'authDomain': 'project.firebaseapp.com'
       };
 
-      await userManager
-          .setCurrentUser(FirebaseUserImpl.fromJson(expectedUser, auth: auth));
+      await userManager.setCurrentUser(exampleUser);
 
       var user = await userManager.getCurrentUser();
       expect(user.toJson(), expectedUser);
@@ -129,6 +131,78 @@ void main() async {
       // Simulate new user saved for appId1.
       // This should not trigger listener.
       await storage.put(key1, expectedUser);
+    });
+
+    group('UserManager.onCurrentUserChanged', () {
+      test('UserManager.onCurrentUserChanged should fire when user is changed',
+          () async {
+        var userManager = UserManager(auth, storage);
+
+        var values = <String>[];
+        userManager.onCurrentUserChanged.listen((v) => values.add(v?.uid));
+
+        await userManager.setCurrentUser(exampleUser);
+
+        expect(values, [exampleUser.uid]);
+        values.clear();
+
+        await userManager.removeCurrentUser();
+        expect(values, [null]);
+      });
+
+      test(
+          'UserManager.onCurrentUserChanged should fire when user is changed in other user manager',
+          () async {
+        var userManager1 = UserManager(auth, storage);
+        var userManager2 = UserManager(auth, storage);
+
+        var values = <String>[];
+        userManager1.onCurrentUserChanged.listen((v) => values.add(v?.uid));
+
+        await userManager2.setCurrentUser(exampleUser);
+
+        expect(values, [exampleUser.uid]);
+        values.clear();
+
+        await userManager2.removeCurrentUser();
+        expect(values, [null]);
+      });
+    });
+
+    group('UserManager.close', () {
+      test('UserManager.close should fire onDone on onCurrentUserChanged',
+          () async {
+        var userManager = UserManager(auth, storage);
+
+        var isDone = false;
+        userManager.onCurrentUserChanged
+            .listen((_) => null, onDone: () => isDone = true);
+
+        await userManager.close();
+
+        expect(isDone, true);
+      });
+      test(
+          'UserManager.close should not end onCurrentUserChanged on other user manager',
+          () async {
+        var userManager = UserManager(auth, storage);
+        var userManager2 = UserManager(auth, storage);
+
+        var isDone = false;
+
+        var last;
+        var s = userManager2.onCurrentUserChanged
+            .listen((v) => last = v, onDone: () => isDone = true);
+
+        await userManager.close();
+
+        await userManager2.setCurrentUser(exampleUser);
+
+        expect(isDone, false);
+        expect(last.uid, exampleUser.uid);
+
+        await s.cancel();
+      });
     });
   });
 }
