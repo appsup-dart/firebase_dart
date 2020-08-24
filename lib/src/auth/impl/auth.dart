@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/error.dart';
+import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 import 'package:pedantic/pedantic.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../auth.dart';
 import '../rpc/rpc_handler.dart';
@@ -12,10 +16,8 @@ import '../usermanager.dart';
 import 'user.dart';
 
 /// The entry point of the Firebase Authentication SDK.
-class FirebaseAuthImpl extends FirebaseAuth {
+class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   final RpcHandler _rpcHandler;
-
-  FirebaseUserImpl _currentUser;
 
   UserManager _userStorageManager;
 
@@ -26,25 +28,31 @@ class FirebaseAuthImpl extends FirebaseAuth {
   /// Completes when latest logged in user is loaded from storage
   Future<void> _onReady;
 
-  FirebaseAuthImpl(this.app, {Client httpClient})
-      : _rpcHandler = RpcHandler(app.options.apiKey, httpClient: httpClient) {
+  StreamSubscription _storageManagerUserChangedSubscription;
+
+  final BehaviorSubject<FirebaseUserImpl> _currentUser = BehaviorSubject();
+
+  FirebaseAuthImpl(FirebaseApp app, {Client httpClient})
+      : _rpcHandler = RpcHandler(app.options.apiKey, httpClient: httpClient),
+        super(app) {
     _userStorageManager = UserManager(this);
     _onReady = _init();
   }
 
   Future<void> _init() async {
-    _currentUser = await _userStorageManager.getCurrentUser();
+    _currentUser.add(await _userStorageManager.getCurrentUser());
 
-    _userStorageManager.onCurrentUserChanged.listen((user) {
-      _currentUser = user;
-    }); // TODO cancel subscription
+    _storageManagerUserChangedSubscription =
+        _userStorageManager.onCurrentUserChanged.listen((user) {
+      _currentUser.add(user);
+    });
   }
 
   @override
   Future<UserCredential> signInAnonymously() async {
     await _onReady;
 
-    var user = _currentUser;
+    var user = currentUser;
 
     // If an anonymous user is already signed in, no need to sign him again.
     if (user != null && user.isAnonymous) {
@@ -109,7 +117,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
     // Resolve promise with a readonly user credential object.
     return UserCredentialImpl(
       // Return the current user reference.
-      user: _currentUser,
+      user: currentUser,
       // Return any credential passed from the backend.
       credential: credential,
       // Return any additional IdP data passed from the backend.
@@ -131,18 +139,15 @@ class FirebaseAuthImpl extends FirebaseAuth {
         await FirebaseUserImpl.initializeFromOpenidCredential(this, credential);
 
     // Check if the same user is already signed in.
-    if (_currentUser != null && user.uid == _currentUser.uid) {
+    if (currentUser != null && user.uid == currentUser.uid) {
       // Same user signed in. Update user data and notify Auth listeners.
       // No need to resubscribe to user events.
-      user = _currentUser..copy(user);
-      return _handleUserStateChange(_currentUser);
+      user = currentUser..copy(user);
+      return _handleUserStateChange(currentUser);
     }
 
     await _handleUserStateChange(user);
   }
-
-  @override
-  final FirebaseApp app;
 
   @override
   Future<void> confirmPasswordReset(String oobCode, String newPassword) async {
@@ -163,7 +168,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  User get currentUser => _currentUser;
+  FirebaseUserImpl get currentUser => _currentUser.value;
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String email) {
@@ -177,10 +182,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
   }
 
   @override
-  Stream<User> authStateChanges() async* {
-    yield await _userStorageManager.getCurrentUser();
-    yield* _userStorageManager.onCurrentUserChanged;
-  }
+  Stream<User> authStateChanges() => _currentUser.stream;
 
   @override
   Future<void> sendPasswordResetEmail(
@@ -253,7 +255,7 @@ class FirebaseAuthImpl extends FirebaseAuth {
       return;
     }
     // Detach all event listeners.
-    _currentUser.destroy();
+    currentUser.destroy();
     // Set current user to null.
     await _userStorageManager.removeCurrentUser();
   }
@@ -343,6 +345,20 @@ class FirebaseAuthImpl extends FirebaseAuth {
   Future<String> verifyPasswordResetCode(String code) {
     // TODO: implement verifyPasswordResetCode
     throw UnimplementedError();
+  }
+
+  @override
+  String toString() {
+    return 'FirebaseAuth(app: ${app.name})';
+  }
+
+  @override
+  Future<void> delete() async {
+    await _onReady;
+    await _userStorageManager.close();
+    await _storageManagerUserChangedSubscription.cancel();
+    await _currentUser.close();
+    await super.delete();
   }
 }
 

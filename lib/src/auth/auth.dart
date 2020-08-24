@@ -16,8 +16,6 @@ export 'user.dart';
 
 /// The entry point of the Firebase Authentication SDK.
 abstract class FirebaseAuth {
-  FirebaseAuth();
-
   /// Returns an instance using a specified [FirebaseApp].
   factory FirebaseAuth.instanceFor({@required FirebaseApp app}) {
     assert(app != null);
@@ -434,11 +432,6 @@ abstract class FirebaseAuth {
   ///
   /// This is only supported on web based platforms.
   Future<void> setPersistence(Persistence persistence);
-
-  @override
-  String toString() {
-    return 'FirebaseAuth(app: ${app.name})';
-  }
 }
 
 /// A UserCredential is returned from authentication requests such as

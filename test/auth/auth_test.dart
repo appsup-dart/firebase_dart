@@ -288,6 +288,43 @@ void main() async {
       });
     });
   });
+
+  group('FirebaseAuthImpl', () {
+    group('FirebaseAuthImpl.delete', () {
+      test('FirebaseAuthImpl.delete should trigger onDone on authStateChanges',
+          () async {
+        var app =
+            await Firebase.initializeApp(options: getOptions(), name: 'app1');
+
+        var auth = FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
+
+        var isDone = false;
+        auth
+            .authStateChanges()
+            .listen((_) => null, onDone: () => isDone = true);
+        await app.delete();
+
+        expect(auth.isDeleted, isTrue);
+        expect(isDone, isTrue);
+      });
+      test('FirebaseAuthImpl.delete: recreating a deleted app should function',
+          () async {
+        var app =
+            await Firebase.initializeApp(options: getOptions(), name: 'app1');
+        var auth = FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
+        await auth.currentUser;
+
+        await app.delete();
+        app = await Firebase.initializeApp(options: getOptions(), name: 'app1');
+
+        var auth2 = FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
+        expect(auth2.currentUser, isNull);
+        await auth2.signInAnonymously();
+        expect(auth2.currentUser, isNotNull);
+        await app.delete();
+      });
+    });
+  });
 }
 
 class Tester {
