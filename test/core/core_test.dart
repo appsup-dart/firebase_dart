@@ -1,6 +1,7 @@
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/core.dart';
+import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:test/test.dart';
 
 import '../util.dart';
@@ -63,6 +64,46 @@ void main() async {
 
         await app2.delete();
         expect(Firebase.apps, []);
+      });
+    });
+  });
+
+  group('FirebaseApp', () {
+    group('FirebaseApp.delete', () {
+      test('FirebaseApp.delete should call delete on services', () async {
+        var app = await Firebase.initializeApp(options: getOptions());
+
+        var service = FirebaseService(app);
+
+        expect(service.isDeleted, isFalse);
+
+        await app.delete();
+
+        expect(service.isDeleted, isTrue);
+      });
+
+      test('FirebaseApp.delete should call delete on services', () async {
+        var app = await Firebase.initializeApp(options: getOptions());
+
+        var service = FirebaseService(app);
+
+        expect(service.isDeleted, isFalse);
+
+        await app.delete();
+
+        expect(service.isDeleted, isTrue);
+      });
+    });
+  });
+
+  group('FirebaseService', () {
+    group('FirebaseService()', () {
+      test('FirebaseService() should fail on deleted app', () async {
+        var app = await Firebase.initializeApp(options: getOptions());
+
+        await app.delete();
+        expect(() => FirebaseService(app),
+            throwsA(FirebaseCoreException.noAppExists(app.name)));
       });
     });
   });
