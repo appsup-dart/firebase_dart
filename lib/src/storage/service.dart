@@ -1,5 +1,6 @@
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -8,15 +9,13 @@ import 'impl/location.dart';
 import 'reference.dart';
 
 /// A service that provides firebaseStorage.Reference instances.
-class FirebaseStorageImpl implements FirebaseStorage {
-  @override
-  final FirebaseApp app;
-
+class FirebaseStorageImpl extends FirebaseService implements FirebaseStorage {
   final Location _bucket;
 
   final HttpClient httpClient;
 
-  FirebaseStorageImpl(this.app, String storageBucket, {http.Client httpClient})
+  FirebaseStorageImpl(FirebaseApp app, String storageBucket,
+      {http.Client httpClient})
       : _bucket =
             Location.fromBucketSpec(storageBucket ?? app.options.storageBucket),
         httpClient = HttpClient(httpClient ?? http.Client(), () async {
@@ -25,7 +24,8 @@ class FirebaseStorageImpl implements FirebaseStorage {
 
           var token = await user.getIdToken();
           return token;
-        });
+        }),
+        super(app);
 
   /// Returns a firebaseStorage.Reference for the given path in the default
   /// bucket.
@@ -42,8 +42,6 @@ class FirebaseStorageImpl implements FirebaseStorage {
       return ref;
     }
   }
-
-  Future<void> delete() async {}
 
   @override
   Future<int> getMaxDownloadRetryTimeMillis() {
