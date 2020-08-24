@@ -1,21 +1,20 @@
 import 'dart:async';
 
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:quiver/core.dart' as quiver;
 
 import '../../database.dart';
 import 'repo.dart';
 import 'treestructureddata.dart';
 
-class FirebaseDatabaseImpl implements FirebaseDatabase {
+class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
   @override
   final String databaseURL;
 
-  @override
-  final FirebaseApp app;
-
-  FirebaseDatabaseImpl({this.app, String databaseURL})
-      : databaseURL = _normalizeUrl(databaseURL ?? app.options.databaseURL);
+  FirebaseDatabaseImpl({FirebaseApp app, String databaseURL})
+      : databaseURL = _normalizeUrl(databaseURL ?? app.options.databaseURL),
+        super(app);
 
   @override
   DatabaseReference reference() => ReferenceImpl(this, <String>[]);
@@ -38,6 +37,7 @@ class FirebaseDatabaseImpl implements FirebaseDatabase {
     await repo.purgeOutstandingWrites();
   }
 
+  @override
   Future<bool> setPersistenceEnabled(bool enabled) async {
     // TODO: implement setPersistenceEnabled: do nothing for now
 
@@ -58,6 +58,12 @@ class FirebaseDatabaseImpl implements FirebaseDatabase {
       throw ArgumentError.value(url, 'databaseURL', 'Paths are not allowed');
     }
     return Uri.parse(url).replace(path: '').toString();
+  }
+
+  @override
+  Future<void> delete() async {
+    await Repo(this).close();
+    return super.delete();
   }
 
   @override

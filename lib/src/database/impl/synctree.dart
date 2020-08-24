@@ -1,18 +1,19 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
+import 'dart:async';
 
-import 'event.dart';
+import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
+import 'package:logging/logging.dart';
+import 'package:sortedmap/sortedmap.dart';
+
 import 'data_observer.dart';
+import 'event.dart';
 import 'events/cancel.dart';
+import 'operations/tree.dart';
+import 'tree.dart';
 import 'treestructureddata.dart';
 import 'view.dart';
-import 'operations/tree.dart';
-import 'package:sortedmap/sortedmap.dart';
-import 'tree.dart';
-import 'dart:async';
-import 'package:logging/logging.dart';
 
 final _logger = Logger('firebase-synctree');
 
@@ -454,5 +455,15 @@ class SyncTree {
     var operation = TreeOperation.ack(path, success);
     _applyOperationToSyncPoints(
         root, null, operation, ViewOperationSource.ack, writeId);
+  }
+
+  void destroy() {
+    root.forEachNode((key, value) {
+      for (var v in value.views.values) {
+        for (var o in v.observers.values) {
+          o.dispatchEvent(CancelEvent(null, null));
+        }
+      }
+    });
   }
 }

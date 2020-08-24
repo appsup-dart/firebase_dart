@@ -12,6 +12,13 @@ class Transport {
 
   Transport(this.url);
 
+  static final List<Transport> _openTransports = [];
+
+  @visibleForTesting
+  static Iterable<Transport> get openTransports sync* {
+    yield* _openTransports;
+  }
+
   /// The channel to send to and receive from
   StreamChannel<Message> get channel => _channel;
 
@@ -37,9 +44,11 @@ class Transport {
       default:
         throw UnsupportedError('Unsupported scheme ${url.scheme}');
     }
+    _openTransports.add(this);
   }
 
-  void close() {
-    channel.sink.close();
+  void close() async {
+    await channel.sink.close();
+    _openTransports.remove(this);
   }
 }

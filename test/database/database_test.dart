@@ -9,6 +9,7 @@ import 'package:firebase_dart/core.dart' hide Firebase;
 import 'package:firebase_dart/core.dart' as core;
 import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/implementation/testing.dart';
+import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:logging/logging.dart';
@@ -37,6 +38,94 @@ void main() async {
 
   group('https', () {
     testsWith(s.secrets);
+  });
+
+  group('FirebaseDatabase.delete', () {
+    var testUrl = 'mem://test2';
+    test('FirebaseDatabase.delete should trigger onDone on streams', () async {
+      var app = await core.Firebase.initializeApp(
+          name: 'my_app', options: getOptions());
+
+      var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+
+      var ref = db.reference().child('test/some-key');
+
+      var isDone = false;
+      ref.onValue.listen((_) => null, onDone: () => isDone = true);
+
+      await app.delete();
+
+      expect(isDone, true);
+    });
+
+    test('FirebaseDatabase.delete should close transports', () async {
+      var app = await core.Firebase.initializeApp(
+          name: 'my_app', options: getOptions());
+
+      var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+      var ref = db.reference().child('test/some-key');
+      await ref.once();
+
+      expect(
+          Transport.openTransports
+              .any((v) => v.url.host == Uri.parse(testUrl).host),
+          isTrue);
+
+      await app.delete();
+
+      expect(
+          Transport.openTransports
+              .any((v) => v.url.host == Uri.parse(testUrl).host),
+          isFalse);
+    });
+
+    test('FirebaseDatabase.delete should remove Repo', () async {
+      var app = await core.Firebase.initializeApp(
+          name: 'my_app', options: getOptions());
+
+      var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+      var ref = db.reference().child('test/some-key');
+      await ref.once();
+
+      expect(Repo.hasInstance(db), isTrue);
+
+      await app.delete();
+
+      expect(Repo.hasInstance(db), isFalse);
+    });
+
+    test('FirebaseDatabase.delete should stop all timers', () async {
+      var timers = <Timer, StackTrace>{};
+
+      await runZoned(() async {
+        var app = await core.Firebase.initializeApp(
+            name: 'my_app', options: getOptions());
+
+        var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+        var ref = db.reference().child('test/some-key');
+        await ref.once();
+
+        await app.delete();
+      },
+          zoneSpecification: ZoneSpecification(
+            createTimer: (self, parent, zone, duration, f) {
+              var timer = parent.createTimer(zone, duration, f);
+              timers[timer] = StackTrace.current;
+              return timer;
+            },
+            createPeriodicTimer: (self, parent, zone, duration, f) {
+              var timer = parent.createPeriodicTimer(zone, duration, f);
+              timers[timer] = StackTrace.current;
+              return timer;
+            },
+          ));
+
+      timers.forEach((key, value) {
+        if (key.isActive) {
+          fail('Timer still active: created here $value');
+        }
+      });
+    });
   });
 }
 

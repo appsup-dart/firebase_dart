@@ -109,7 +109,7 @@ class PersistentConnectionImpl extends PersistentConnection
             path,
             message.body.data,
             query);
-        _onDataOperation.add(event);
+        if (!_onDataOperation.isClosed) _onDataOperation.add(event);
         break;
       case DataMessage.actionAuthRevoked:
         _onAuth.add(null);
@@ -235,10 +235,10 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Future<Null> close() async {
+    await interrupt('close');
     await _onDataOperation.close();
     await _onAuth.close();
     await _onConnect.close();
-    await disconnect();
   }
 
   @override

@@ -33,6 +33,9 @@ class Repo {
 
   static final Map<firebase.FirebaseDatabase, Repo> _repos = {};
 
+  @visibleForTesting
+  static bool hasInstance(firebase.FirebaseDatabase db) => _repos[db] != null;
+
   final SyncTree _syncTree;
 
   final PushIdGenerator pushIds = PushIdGenerator();
@@ -40,6 +43,8 @@ class Repo {
   int _nextWriteId = 0;
   TransactionsTree _transactions;
   final SparseSnapshotTree _onDisconnect = SparseSnapshotTree();
+
+  StreamSubscription _authStateChangesSubscription;
 
   factory Repo(firebase.FirebaseDatabase db) {
     var url = Uri.parse(db.databaseURL ?? db.app.options.databaseURL);
@@ -56,17 +61,17 @@ class Repo {
       })
             ..initialize();
 
-      auth.authStateChanges().listen((user) async {
-        return connection
-            .refreshAuthToken(user == null ? null : (await user.getIdToken()));
-      }); // TODO cancel this somewhere
-
-      return Repo._(url, connection);
+      return Repo._(url, connection, auth.authStateChanges());
     });
   }
 
-  Repo._(this.url, this._connection)
+  Repo._(this.url, this._connection, Stream<User> authStateChanges)
       : _syncTree = SyncTree(url.toString(), RemoteListeners(_connection)) {
+    _authStateChangesSubscription = authStateChanges.listen((user) async {
+      return _connection
+          .refreshAuthToken(user == null ? null : (await user.getIdToken()));
+    });
+
     _transactions = TransactionsTree(this);
     _connection.onConnect.listen((v) {
       if (!v) {
@@ -97,8 +102,13 @@ class Repo {
     _connection.purgeOutstandingWrites();
   }
 
-  Future close() async {
+  /// Destroys this Repo permanently
+  Future<void> close() async {
+    await _authStateChangesSubscription.cancel();
     await _connection.close();
+    await _syncTree.destroy();
+    _unlistenTimers.forEach((v)=>v.cancel());
+    _repos.removeWhere((key, value) => value == this);
   }
 
   void resume() => _connection.resume(_interruptReason);
@@ -193,17 +203,23 @@ class Repo {
         type, Name.parsePath(path), filter ?? QueryFilter(), cb);
   }
 
+  final List<Timer> _unlistenTimers = [];
+
   /// Unlistens to changes of [type] at location [path] for data matching [filter].
   ///
   /// Returns a future that completes when the listener has been successfully
   /// unregistered at the server.
-  Future unlisten(
+  void unlisten(
       String path, QueryFilter filter, String type, EventListener cb) {
     path = _preparePath(path);
-    return Future.delayed(
-        Duration(milliseconds: 2000),
-        () => _syncTree.removeEventListener(
-            type, Name.parsePath(path), filter ?? QueryFilter(), cb));
+
+    var self;
+    var timer = Timer(Duration(milliseconds: 2000), () {
+      _unlistenTimers.remove(self);
+      _syncTree.removeEventListener(
+          type, Name.parsePath(path), filter ?? QueryFilter(), cb);
+    });
+    _unlistenTimers.add(timer);
   }
 
   /// Gets the current cached value at location [path] with [filter].
@@ -360,8 +376,10 @@ class StreamFactory {
   void addError(Event error) {
     assert(error is CancelEvent);
     stopListen();
-    controller.addError(
-        (error as CancelEvent).error, (error as CancelEvent).stackTrace);
+    var event = error as CancelEvent;
+    if (event.error != null) {
+      controller.addError(event.error, event.stackTrace);
+    }
     controller.close();
   }
 

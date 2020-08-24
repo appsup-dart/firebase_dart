@@ -21,6 +21,8 @@ class Connection {
 
   final StreamController<FutureOr<Message>> _outputSink = StreamController();
 
+  StreamSubscription _keepAlivePeriodicStreamSubscription;
+
   ConnectionState _state;
   ConnectionState get state => _state;
 
@@ -41,9 +43,10 @@ class Connection {
       transport.close();
     });
 
-    Stream.periodic(Duration(seconds: 45))
-        .takeWhile((element) => !_outputSink.isClosed)
-        .listen((_) => _outputSink.add(KeepAliveMessage()));
+    _keepAlivePeriodicStreamSubscription =
+        Stream.periodic(Duration(seconds: 45))
+            .takeWhile((element) => !_outputSink.isClosed)
+            .listen((_) => _outputSink.add(KeepAliveMessage()));
   }
 
   /// Closes the connection
@@ -58,6 +61,8 @@ class Connection {
       await _outputSink.close();
 
       delegate.onDisconnect(reason);
+
+      await _keepAlivePeriodicStreamSubscription.cancel();
     }
   }
 
