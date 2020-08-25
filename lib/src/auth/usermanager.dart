@@ -27,29 +27,26 @@ class UserManager {
 
   Future<void> _onReady;
 
-  Future<void> get onReady => _onReady ??= Future(() async {
-        var storage = await this.storage;
-
-        _subscription = storage
-            .watch(key: _key)
-            .map((v) => v?.value)
-            .distinct()
-            .cast<Map>()
-            .map((v) => v == null
-                ? null
-                : FirebaseUserImpl.fromJson(v.cast(), auth: auth))
-            .listen(_controller.add);
-      });
+  Future<void> get onReady => _onReady;
 
   Stream<User> get onCurrentUserChanged => _controller.stream;
 
   UserManager(this.auth, [FutureOr<Box> storage])
       : storage = storage ?? Hive.openBox('firebase_auth') {
-    _init();
+    _onReady = _init();
   }
 
-  void _init() async {
-    await onReady;
+  Future<void> _init() async {
+    var storage = await this.storage;
+
+    _subscription = storage
+        .watch(key: _key)
+        .map((v) => v?.value)
+        .distinct()
+        .cast<Map>()
+        .map((v) =>
+            v == null ? null : FirebaseUserImpl.fromJson(v.cast(), auth: auth))
+        .listen(_controller.add);
   }
 
   String get _key => 'firebase:FirebaseUser:$appId';
