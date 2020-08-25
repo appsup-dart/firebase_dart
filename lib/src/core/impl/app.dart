@@ -36,4 +36,11 @@ class FirebaseService {
   Future<void> delete() async {
     _isDeleted = true;
   }
+
+  static T findService<T extends FirebaseService>(FirebaseApp app,
+          [bool Function(T service) predicate]) =>
+      _services[app]?.firstWhere(
+          (element) =>
+              element is T && (predicate == null || predicate(element)),
+          orElse: () => null);
 }

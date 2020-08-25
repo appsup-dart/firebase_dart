@@ -19,7 +19,9 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
 
   @override
   FirebaseDatabase createDatabase(FirebaseApp app, {String databaseURL}) {
-    return FirebaseDatabaseImpl(app: app, databaseURL: databaseURL);
+    return FirebaseService.findService<FirebaseDatabaseImpl>(app,
+            (s) => s.databaseURL == databaseURL ?? app.options.databaseURL) ??
+        FirebaseDatabaseImpl(app: app, databaseURL: databaseURL);
   }
 
   @override
@@ -29,11 +31,17 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
 
   @override
   FirebaseAuth createAuth(FirebaseApp app) {
-    return FirebaseAuthImpl(app, httpClient: _httpClient);
+    return FirebaseService.findService<FirebaseAuthImpl>(app) ??
+        FirebaseAuthImpl(app, httpClient: _httpClient);
   }
 
   @override
   FirebaseStorage createStorage(FirebaseApp app, {String storageBucket}) {
-    return FirebaseStorageImpl(app, storageBucket, httpClient: _httpClient);
+    return FirebaseService.findService<FirebaseStorageImpl>(
+            app,
+            (s) =>
+                s.storageBucket == storageBucket ??
+                app.options.storageBucket) ??
+        FirebaseStorageImpl(app, storageBucket, httpClient: _httpClient);
   }
 }
