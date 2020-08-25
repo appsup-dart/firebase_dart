@@ -251,7 +251,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   Future<void> signOut() async {
     await _onReady;
     // Ignore if already signed out.
-    if (_currentUser == null) {
+    if (currentUser == null) {
       return;
     }
     // Detach all event listeners.
