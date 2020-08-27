@@ -6,8 +6,9 @@ class FirebaseAppImpl extends FirebaseApp {
 
   @override
   Future<void> delete() async {
+    // first call super to remove from list of apps, so it is no longer available
+    await super.delete();
     await FirebaseService._deleteAllForApp(this);
-    return super.delete();
   }
 }
 
