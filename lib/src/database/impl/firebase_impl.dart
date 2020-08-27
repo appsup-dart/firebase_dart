@@ -14,7 +14,10 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
 
   FirebaseDatabaseImpl({FirebaseApp app, String databaseURL})
       : databaseURL = _normalizeUrl(databaseURL ?? app.options.databaseURL),
-        super(app);
+        super(app) {
+    // immediately create the repo to assure it will not be created during delete
+    Repo(this);
+  }
 
   @override
   DatabaseReference reference() => ReferenceImpl(this, <String>[]);
