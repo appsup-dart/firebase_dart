@@ -1,7 +1,6 @@
 name: firebase_dart
 description: A port of the Firebase database, auth and storage client to pure Dart code, usable on different platforms
 version: 1.0.0-dev.1
-author: Rik Bellens <rik.bellens@appsup.be>
 homepage: https://github.com/appsup-dart/firebase_dart
 
 environment:
@@ -24,8 +23,10 @@ dependencies:
   openid_client: ^0.3.0
   hive: ^1.4.2
   rxdart: ^0.24.1
+  http: ^0.12.2
+  pedantic: ^1.9.0
+  _discoveryapis_commons: ^0.2.0
 
 dev_dependencies:
   test: '>=0.12.0 <2.0.0'
-  pedantic: ^1.9.0
   fake_async: ^1.1.0
