@@ -42,7 +42,7 @@ class RpcHandler {
                 }),
                 200);
           }),
-          RegExp('.*'): httpClient,
+          RegExp('.*'): httpClient ?? http.Client(),
         }),
         identitytoolkitApi =
             IdentitytoolkitApi(clientViaApiKey(apiKey, baseClient: httpClient));
