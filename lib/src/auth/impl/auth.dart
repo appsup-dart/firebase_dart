@@ -231,6 +231,27 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       );
     }
 
+    if (credential is OAuthCredential) {
+      var openidCredential = await rpcHandler.verifyAssertion(
+          postBody: Uri(queryParameters: {
+            if (credential.idToken != null) 'id_token': credential.idToken,
+            if (credential.accessToken != null)
+              'access_token': credential.accessToken,
+            if (credential.secret != null)
+              'oauth_token_secret': credential.secret,
+            if (credential.providerId != null)
+              'providerId': credential.providerId,
+            if (credential.rawNonce != null) 'nonce': credential.rawNonce
+          }).query,
+          requestUri: 'http://localhost');
+      return _signInWithIdTokenProvider(
+        openidCredential: openidCredential,
+        credential: credential,
+        isNewUser: false,
+        provider: credential.providerId,
+      );
+    }
+
     throw UnimplementedError();
   }
 

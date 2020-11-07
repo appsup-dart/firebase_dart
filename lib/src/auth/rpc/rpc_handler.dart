@@ -247,16 +247,22 @@ class RpcHandler {
   }
 
   /// Requests verifyAssertion endpoint
-  Future<VerifyAssertionResponse> verifyAssertion(
+  Future<openid.Credential> verifyAssertion(
       {String sessionId,
       String requestUri,
       String postBody,
       String pendingIdToken}) async {
-    return _verifyAssertion(IdentitytoolkitRelyingpartyVerifyAssertionRequest()
-      ..postBody = postBody
-      ..sessionId = sessionId
-      ..requestUri = requestUri
-      ..pendingIdToken = pendingIdToken);
+    var response = await _verifyAssertion(
+        IdentitytoolkitRelyingpartyVerifyAssertionRequest()
+          ..postBody = postBody
+          ..sessionId = sessionId
+          ..requestUri = requestUri
+          ..pendingIdToken = pendingIdToken);
+
+    return _credentialFromIdToken(
+        idToken: response.idToken,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn);
   }
 
   /// Requests verifyAssertion endpoint for federated account linking
