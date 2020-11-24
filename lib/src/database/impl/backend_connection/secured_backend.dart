@@ -1,7 +1,8 @@
 part of firebase_dart.database.backend_connection;
 
 class SecuredBackend extends Backend {
-  SecurityTree _securityTree = SecurityTree.fromJson({});
+  SecurityTree _securityTree =
+      SecurityTree.fromJson({'.read': 'true', '.write': 'true'});
 
   final Backend unsecuredBackend;
 
@@ -15,18 +16,29 @@ class SecuredBackend extends Backend {
   }
 
   @override
+  Future<void> auth(Auth auth) {
+    return super.auth(auth);
+    // TODO reevaluate listeners
+  }
+
+  @override
   Future<void> listen(String path, EventListener listener,
       {Query query = const Query(), String hash}) async {
     var completer = Completer();
 
     var root = RuleDataSnapshotFromBackend.root(unsecuredBackend);
-    securityTree.canRead(auth: null, path: path, root: root).listen((canRead) {
+    securityTree
+        .canRead(auth: currentAuth, path: path, root: root)
+        .listen((canRead) {
       if (!canRead) {
-        listener(CancelEvent(
-            FirebaseDatabaseException.permissionDenied(), StackTrace.current));
-        unlisten(path, listener, query: query);
-        completer.completeError(
-            FirebaseDatabaseException.permissionDenied(), StackTrace.current);
+        if (completer.isCompleted) {
+          listener(CancelEvent(FirebaseDatabaseException.permissionDenied(),
+              StackTrace.current));
+          unlisten(path, listener, query: query);
+        } else {
+          completer.completeError(
+              FirebaseDatabaseException.permissionDenied(), StackTrace.current);
+        }
       } else {
         completer.complete();
       }

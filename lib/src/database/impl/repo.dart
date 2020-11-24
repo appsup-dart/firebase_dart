@@ -107,7 +107,7 @@ class Repo {
     await _authStateChangesSubscription.cancel();
     await _connection.close();
     await _syncTree.destroy();
-    _unlistenTimers.forEach((v)=>v.cancel());
+    _unlistenTimers.forEach((v) => v.cancel());
     _repos.removeWhere((key, value) => value == this);
   }
 
@@ -146,6 +146,11 @@ class Repo {
   /// server and fails when data could not be written.
   Future<void> setWithPriority(
       String path, dynamic value, dynamic priority) async {
+    // possibly the user starts this write in response of an auth event
+    // so, wait until all microtasks are processed to make sure that the
+    // database also received the auth event
+    await Future.microtask(() => null);
+
     path = _preparePath(path);
     var newValue = TreeStructuredData.fromJson(value, priority);
     var writeId = _nextWriteId++;
@@ -168,6 +173,11 @@ class Repo {
   /// Returns a future that completes when the data has been written to the
   /// server and fails when data could not be written.
   Future<void> update(String path, Map<String, dynamic> value) async {
+    // possibly the user starts this write in response of an auth event
+    // so, wait until all microtasks are processed to make sure that the
+    // database also received the auth event
+    await Future.microtask(() => null);
+
     if (value.isNotEmpty) {
       path = _preparePath(path);
       var serverValues = _connection.serverValues;
@@ -196,10 +206,15 @@ class Repo {
   ///
   /// Returns a future that completes when the listener has been successfully
   /// registered at the server.
-  Future listen(
-      String path, QueryFilter filter, String type, EventListener cb) {
+  Future<void> listen(
+      String path, QueryFilter filter, String type, EventListener cb) async {
+    // possibly the user started listening in response of an auth event
+    // so, wait until all microtasks are processed to make sure that the
+    // database also received the auth event
+    await Future.microtask(() => null);
+
     path = _preparePath(path);
-    return _syncTree.addEventListener(
+    await _syncTree.addEventListener(
         type, Name.parsePath(path), filter ?? QueryFilter(), cb);
   }
 
@@ -241,20 +256,31 @@ class Repo {
       _transactions.startTransaction(
           Name.parsePath(_preparePath(path)), update, applyLocally);
 
-  Future onDisconnectSetWithPriority(
-      String path, dynamic value, dynamic priority) {
+  Future<void> onDisconnectSetWithPriority(
+      String path, dynamic value, dynamic priority) async {
+    // possibly the user starts this write in response of an auth event
+    // so, wait until all microtasks are processed to make sure that the
+    // database also received the auth event
+    await Future.microtask(() => null);
+
     path = _preparePath(path);
     var newNode = TreeStructuredData.fromJson(value, priority);
-    return _connection.onDisconnectPut(path, newNode.toJson(true)).then((_) {
+    await _connection.onDisconnectPut(path, newNode.toJson(true)).then((_) {
       _onDisconnect.remember(Name.parsePath(path), newNode);
     });
   }
 
-  Future onDisconnectUpdate(String path, Map<String, dynamic> childrenToMerge) {
+  Future<void> onDisconnectUpdate(
+      String path, Map<String, dynamic> childrenToMerge) async {
+    // possibly the user starts this write in response of an auth event
+    // so, wait until all microtasks are processed to make sure that the
+    // database also received the auth event
+    await Future.microtask(() => null);
+
     path = _preparePath(path);
     if (childrenToMerge.isEmpty) return Future.value();
 
-    return _connection.onDisconnectMerge(path, childrenToMerge).then((_) {
+    await _connection.onDisconnectMerge(path, childrenToMerge).then((_) {
       childrenToMerge.forEach((childName, child) {
         _onDisconnect.remember(Name.parsePath(path).child(Name(childName)),
             TreeStructuredData.fromJson(child));
@@ -262,9 +288,14 @@ class Repo {
     });
   }
 
-  Future onDisconnectCancel(String path) {
+  Future<void> onDisconnectCancel(String path) async {
+    // possibly the user starts this write in response of an auth event
+    // so, wait until all microtasks are processed to make sure that the
+    // database also received the auth event
+    await Future.microtask(() => null);
+
     path = _preparePath(path);
-    return _connection.onDisconnectCancel(path).then((_) {
+    await _connection.onDisconnectCancel(path).then((_) {
       _onDisconnect.forget(Name.parsePath(path));
     });
   }

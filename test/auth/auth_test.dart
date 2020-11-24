@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart';
@@ -11,6 +12,9 @@ import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
+import 'package:firebase_dart/src/database/impl/memory_backend.dart'
+    as database;
+import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 import 'jwt_util.dart';
@@ -323,6 +327,23 @@ void main() async {
         expect(auth2.currentUser, isNotNull);
         await app.delete();
       });
+    });
+  });
+
+  group('Pass authentication to other services', () {
+    test('Should auth before listen on database', () async {
+      FirebaseDatabase db;
+      var backend = database.MemoryBackend.getInstance('test');
+      backend.securityRules = {'.read': 'auth!=null'};
+      var s = auth.authStateChanges().listen((user) async {
+        if (user == null) return;
+        await db.reference().child('users').child(user.uid).once();
+      });
+      db = FirebaseDatabase(app: tester.app, databaseURL: 'mem://test');
+
+      await auth.signInAnonymously();
+
+      await s.cancel();
     });
   });
 }

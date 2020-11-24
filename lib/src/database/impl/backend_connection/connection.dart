@@ -55,8 +55,13 @@ class BackendConnection {
         case DataMessage.actionGauth:
           var t = JsonWebToken.unverified(message.body.cred);
           data = {'auth': t.claims['d']};
+          await backend.auth(Auth(
+              uid: t.claims.subject,
+              provider: t.claims['provider_id'],
+              token: t.claims));
           break;
         case DataMessage.actionUnauth:
+          await backend.auth(null);
           break;
         case DataMessage.actionListen:
           var listener =
@@ -64,15 +69,19 @@ class BackendConnection {
                   message.body.query,
                   () => (Event event) {
                         sendMessage(DataMessage(
-                            DataMessage.actionSet,
+                            event is CancelEvent
+                                ? DataMessage.actionListenRevoked
+                                : DataMessage.actionSet,
                             MessageBody(
                                 tag: message.body.query.toFilter().limits
                                     ? message.body.tag
                                     : null,
                                 path: message.body.path,
-                                data: (event as ValueEvent<TreeStructuredData>)
-                                    .value
-                                    .toJson(true))));
+                                data: event is CancelEvent
+                                    ? 'permission denied'
+                                    : (event as ValueEvent<TreeStructuredData>)
+                                        .value
+                                        .toJson(true))));
                       });
 
           await backend.listen(

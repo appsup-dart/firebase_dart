@@ -23,10 +23,13 @@ class MemoryBackend extends SecuredBackend {
 
   MemoryBackend() : super.from(UnsecuredMemoryBackend());
 
+  static MemoryBackend getInstance(String namespace) =>
+      _instances.putIfAbsent(namespace, () => MemoryBackend());
+
   static StreamChannel<Message> connect(Uri url) {
     var namespace = url.queryParameters['ns'] ?? url.host.split('.').first;
 
-    var backend = _instances.putIfAbsent(namespace, () => MemoryBackend());
+    var backend = getInstance(namespace);
 
     var connection = BackendConnection(backend, url.host)..open();
 

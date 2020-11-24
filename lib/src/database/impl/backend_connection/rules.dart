@@ -5,8 +5,8 @@ import 'package:firebase_dart/src/database/impl/events/cancel.dart';
 import 'package:firebase_dart/src/database/impl/events/value.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
+import 'package:jose/jose.dart';
 import 'package:meta/meta.dart';
-import 'package:openid_client/openid_client_io.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../backend_connection.dart';
@@ -393,7 +393,7 @@ class Auth {
   final String uid;
 
   /// The contents of the Firebase Auth ID token.
-  final OpenIdClaims token;
+  final JsonWebTokenClaims token;
 
   Auth({@required this.provider, @required this.uid, @required this.token})
       : assert(uid != null),
