@@ -125,10 +125,10 @@ class Query {
   final dynamic startValue;
   final String startName;
 
-  Query(
+  const Query(
       {this.limit,
       this.isViewFromRight = false,
-      this.index,
+      this.index = '.priority',
       this.endName,
       this.endValue,
       this.startName,
