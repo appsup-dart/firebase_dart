@@ -61,10 +61,7 @@ void main() {
         await testRead(
             tree: tree,
             root: root,
-            auth: Auth(
-                provider: 'password',
-                uid: 'me',
-                token: OpenIdClaims.fromJson({})),
+            auth: Auth(provider: 'password', uid: 'me', token: {}),
             paths: {
               '/': true,
               '/persons': true,
