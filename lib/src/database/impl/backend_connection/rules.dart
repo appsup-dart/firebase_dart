@@ -240,7 +240,7 @@ class _ExpressionEvaluator extends ExpressionEvaluator {
         case 'uid':
           return v.uid;
         case 'token':
-          return v.token.toJson();
+          return v.token;
       }
     } else if (v is Map) {
       return v[name];
@@ -393,7 +393,7 @@ class Auth {
   final String uid;
 
   /// The contents of the Firebase Auth ID token.
-  final JsonWebTokenClaims token;
+  final Map<String, dynamic> token;
 
   Auth({@required this.provider, @required this.uid, @required this.token})
       : assert(uid != null),

@@ -54,11 +54,11 @@ class BackendConnection {
         case DataMessage.actionAuth:
         case DataMessage.actionGauth:
           var t = JsonWebToken.unverified(message.body.cred);
-          data = {'auth': t.claims['d']};
+          data = {'auth': t.claims['d'] ?? t.claims.toJson()};
           await backend.auth(Auth(
-              uid: t.claims.subject,
-              provider: t.claims['provider_id'],
-              token: t.claims));
+              uid: t.claims.subject ?? t.claims['d']['uid'],
+              provider: t.claims['provider_id'] ?? t.claims['d']['provider'],
+              token: t.claims['d'] ?? t.claims.toJson()));
           break;
         case DataMessage.actionUnauth:
           await backend.auth(null);
