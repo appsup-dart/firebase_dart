@@ -29,7 +29,7 @@ void main() async {
 
   print('display name = ${user.displayName}');
 
-  var storage = FirebaseStorage(app: app);
+  var storage = FirebaseStorage.instanceFor(app: app);
 
   var ref = storage.ref().child('test.txt');
 

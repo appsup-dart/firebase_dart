@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 void main() async {
   var tester = await Tester.create();
   var app = tester.app;
-  var storage = FirebaseStorage(app: app);
+  var storage = FirebaseStorage.instanceFor(app: app);
   var root = storage.ref();
   var child = root.child('hello');
 
