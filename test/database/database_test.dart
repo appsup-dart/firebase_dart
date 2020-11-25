@@ -1325,6 +1325,7 @@ void testsWith(Map<String, dynamic> secrets) {
           expect(() => r.set('test-value-${refs.indexOf(r)}'),
               throwsFirebaseDatabaseException());
         }
+        await Future.microtask(() => null);
 
         await db.purgeOutstandingWrites();
 
@@ -1368,6 +1369,14 @@ void testsWith(Map<String, dynamic> secrets) {
           return data..value = 2;
         });
 
+        await Future.microtask(() => null);
+
+        expect(events, [
+          'value-null',
+          'value-1',
+          'value-2',
+        ]);
+
         await db.purgeOutstandingWrites();
 
         await wait(200);
@@ -1377,12 +1386,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
         expect(await ref.get(), null);
 
-        expect(events, [
-          'value-null',
-          'value-1',
-          'value-2',
-          'value-null',
-        ]);
+        expect(events.last, 'value-null');
 
         await db.goOnline();
       });
