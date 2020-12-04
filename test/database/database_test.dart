@@ -156,6 +156,16 @@ void testsWith(Map<String, dynamic> secrets) {
         FutureOr<void> Function(FirebaseDatabase db)
             connectionDestroyer) async {
       var db = FirebaseDatabase(app: app1, databaseURL: testUrl);
+
+      var connectionStates = <bool>[];
+      db
+          .reference()
+          .child('.info/connected')
+          .onValue
+          .map((s) => s.snapshot.value)
+          .skipWhile((v) => !v)
+          .take(2)
+          .listen(connectionStates.add);
       var ref = db.reference().child('test');
 
       var db2 = FirebaseDatabase(app: app2, databaseURL: testUrl);
@@ -163,6 +173,8 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await ref2.set('hello');
       await wait(200);
+
+      expect(connectionStates, [true]);
 
       var f = ref.onValue
           .map((v) {
@@ -174,6 +186,9 @@ void testsWith(Map<String, dynamic> secrets) {
       await wait(200);
 
       await connectionDestroyer(db);
+
+      await wait(200);
+      expect(connectionStates, [true, false]);
 
       await ref2.set('world');
 

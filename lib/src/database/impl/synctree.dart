@@ -260,6 +260,12 @@ class SyncPoint {
 abstract class RemoteListenerRegistrar {
   final TreeNode<Name, Map<QueryFilter, Future<Null>>> _queries = TreeNode({});
 
+  RemoteListenerRegistrar();
+
+  factory RemoteListenerRegistrar.fromCallbacks(
+      {RemoteRegister remoteRegister,
+      RemoteUnregister remoteUnregister}) = _RemoteListenerRegistrarImpl;
+
   Future<Null> registerAll(Path<Name> path, Iterable<QueryFilter> filters,
       String Function(QueryFilter filter) hashFcn) async {
     var node = _queries.subtree(
@@ -297,6 +303,33 @@ abstract class RemoteListenerRegistrar {
     if (!node.value.containsKey(filter)) return;
     node.value.remove(filter); // ignore: unawaited_futures
     await remoteUnregister(path, filter);
+  }
+}
+
+typedef RemoteRegister = Future<Null> Function(
+    Path<Name> path, QueryFilter filter, String hash);
+typedef RemoteUnregister = Future<Null> Function(
+    Path<Name> path, QueryFilter filter);
+
+class _RemoteListenerRegistrarImpl extends RemoteListenerRegistrar {
+  final RemoteRegister _remoteRegister;
+  final RemoteUnregister _remoteUnregister;
+
+  _RemoteListenerRegistrarImpl(
+      {RemoteRegister remoteRegister, RemoteUnregister remoteUnregister})
+      : _remoteRegister = remoteRegister,
+        _remoteUnregister = remoteUnregister;
+  @override
+  Future<Null> remoteRegister(
+      Path<Name> path, QueryFilter filter, String hash) async {
+    if (_remoteRegister == null) return;
+    return _remoteRegister(path, filter, hash);
+  }
+
+  @override
+  Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) async {
+    if (_remoteUnregister == null) return;
+    return _remoteUnregister(path, filter);
   }
 }
 

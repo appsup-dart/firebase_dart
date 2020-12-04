@@ -26,6 +26,11 @@ import 'treestructureddata.dart';
 final _logger = Logger('firebase-repo');
 
 class Repo {
+  static const dotInfo = '.info';
+  static const dotInfoServerTimeOffset = 'serverTimeOffset';
+  static const dotInfoAuthenticated = 'authenticated';
+  static const dotInfoConnected = 'connected';
+
   static const _interruptReason = 'repo_interrupt';
 
   final PersistentConnection _connection;
@@ -37,6 +42,8 @@ class Repo {
   static bool hasInstance(firebase.FirebaseDatabase db) => _repos[db] != null;
 
   final SyncTree _syncTree;
+
+  final SyncTree _infoSyncTree;
 
   final PushIdGenerator pushIds = PushIdGenerator();
 
@@ -66,14 +73,26 @@ class Repo {
   }
 
   Repo._(this.url, this._connection, Stream<User> authStateChanges)
-      : _syncTree = SyncTree(url.toString(), RemoteListeners(_connection)) {
+      : _syncTree = SyncTree(url.toString(), RemoteListeners(_connection)),
+        _infoSyncTree =
+            SyncTree(url.toString(), RemoteListenerRegistrar.fromCallbacks()) {
+    _infoSyncTree.addEventListener(
+        'value', Path.from([]), QueryFilter(), (event) {});
+    _updateInfo(dotInfoAuthenticated, false);
+    _updateInfo(dotInfoConnected, false);
     _authStateChangesSubscription = authStateChanges.listen((user) async {
+      _updateInfo(dotInfoAuthenticated, user != null);
       return _connection
           .refreshAuthToken(user == null ? null : (await user.getIdToken()));
     });
 
     _transactions = TransactionsTree(this);
     _connection.onConnect.listen((v) {
+      _updateInfo(dotInfoConnected, v);
+      if (v) {
+        _updateInfo(dotInfoServerTimeOffset,
+            _connection.serverTime?.difference(DateTime.now())?.inMilliseconds);
+      }
       if (!v) {
         _runOnDisconnectEvents();
       }
@@ -214,8 +233,15 @@ class Repo {
     await Future.microtask(() => null);
 
     path = _preparePath(path);
-    await _syncTree.addEventListener(
-        type, Name.parsePath(path), filter ?? QueryFilter(), cb);
+
+    var p = Name.parsePath(path);
+    if (p.isNotEmpty && p.first.asString() == dotInfo) {
+      await _infoSyncTree.addEventListener(
+          type, Name.parsePath(path), filter ?? QueryFilter(), cb);
+    } else {
+      await _syncTree.addEventListener(
+          type, Name.parsePath(path), filter ?? QueryFilter(), cb);
+    }
   }
 
   final List<Timer> _unlistenTimers = [];
@@ -228,13 +254,20 @@ class Repo {
       String path, QueryFilter filter, String type, EventListener cb) {
     path = _preparePath(path);
 
-    var self;
-    var timer = Timer(Duration(milliseconds: 2000), () {
-      _unlistenTimers.remove(self);
-      _syncTree.removeEventListener(
+    var p = Name.parsePath(path);
+    if (p.isNotEmpty && p.first.asString() == dotInfo) {
+      _infoSyncTree.removeEventListener(
           type, Name.parsePath(path), filter ?? QueryFilter(), cb);
-    });
-    _unlistenTimers.add(timer);
+    } else {
+      var self;
+      var timer = Timer(Duration(milliseconds: 2000), () {
+        _unlistenTimers.remove(self);
+        _syncTree.removeEventListener(
+            type, Name.parsePath(path), filter ?? QueryFilter(), cb);
+      });
+      self = timer;
+      _unlistenTimers.add(timer);
+    }
   }
 
   /// Gets the current cached value at location [path] with [filter].
@@ -317,6 +350,13 @@ class Repo {
 
   @visibleForTesting
   void mockResetMessage() => _connection.mockResetMessage();
+
+  void _updateInfo(String pathString, dynamic value) {
+    _infoSyncTree.applyServerOperation(
+        TreeOperation.overwrite(Name.parsePath('$dotInfo/$pathString'),
+            TreeStructuredData.fromJson(value)),
+        null);
+  }
 }
 
 class RemoteListeners extends RemoteListenerRegistrar {
@@ -338,6 +378,21 @@ class RemoteListeners extends RemoteListenerRegistrar {
   @override
   Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) async {
     await connection.unlisten(path.join('/'), query: filter);
+  }
+}
+
+class InfoRemoteListeners extends RemoteListenerRegistrar {
+  @override
+  Future<Null> remoteRegister(
+      Path<Name> path, QueryFilter filter, String hash) {
+    // TODO: implement remoteRegister
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) {
+    // TODO: implement remoteUnregister
+    throw UnimplementedError();
   }
 }
 

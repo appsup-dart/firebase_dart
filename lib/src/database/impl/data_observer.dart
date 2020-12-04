@@ -20,9 +20,9 @@ class IncompleteData {
   final TreeStructuredData value;
 
   IncompleteData(this.value, [TreeNode<Name, bool> states])
-      : _states = states ?? TreeNode(false) {
-    assert(value != null);
-  }
+      : _states = states ?? TreeNode(false),
+        assert(value != null),
+        assert(states == null || states.value != null);
 
   bool get isComplete => _states.value == true;
 
@@ -54,7 +54,7 @@ class IncompleteData {
     var c = path.first;
     return states.clone()
       ..children[c] =
-          _completePath(states.children[c] ?? TreeNode(), path.skip(1));
+          _completePath(states.children[c] ?? TreeNode(states.value), path.skip(1));
   }
 
   @override
