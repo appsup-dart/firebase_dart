@@ -15,7 +15,7 @@ class Path<K> extends UnmodifiableListView<K> {
 
   Path<K> child(K child) => Path.from(List.from(this)..add(child));
 
-  Path<K> get parent => Path.from(take(length - 1));
+  Path<K> get parent => isEmpty ? null : Path.from(take(length - 1));
 
   @override
   int get hashCode => const ListEquality().hash(this);
