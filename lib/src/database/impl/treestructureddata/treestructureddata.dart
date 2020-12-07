@@ -19,6 +19,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
                 FilteredMap<Name, TreeStructuredData>(const QueryFilter())) {
     assert(children == null || children is FilteredMap);
     assert(this.children == null || this.children is FilteredMap);
+    assert(children == null || children.values.every((v) => !v.isNil));
   }
 
   TreeStructuredData.leaf(Value value, [Value priority])
