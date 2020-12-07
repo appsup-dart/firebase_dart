@@ -102,9 +102,7 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
 
   void forEachNode(void Function(Path<K> key, V value) f) {
     void _forEach(TreeNode<K, V> node, Path<K> p) {
-      node.children.forEach((c, v) {
-        f(p.child(c), v.value);
-      });
+      f(p, node.value);
       node.children.forEach((c, v) {
         _forEach(v, p.child(c));
       });
