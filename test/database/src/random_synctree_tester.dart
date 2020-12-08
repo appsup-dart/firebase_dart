@@ -37,6 +37,8 @@ class RandomSyncTreeTester {
 
   final List<QuerySpec> outstandingListens = [];
 
+  final Map<QuerySpec, TreeStructuredData> registeredListens = {};
+
   TreeStructuredData _currentServerState = TreeStructuredData();
 
   final List<MapEntry<int, TreeOperation>> outstandingWrites = [];
@@ -82,10 +84,7 @@ class RandomSyncTreeTester {
     _logger.fine('handle outstanding listen');
     var query = outstandingListens.removeAt(0);
     _logger.fine('* $query');
-    var v = _currentServerState.getChild(query.path);
-    v = v.withFilter(query.params);
-    syncTree.applyServerOperation(
-        TreeOperation(query.path, Overwrite(v)), query.params);
+    _updateCurrentServerStateToQuery(query);
   }
 
   void _handleOutstandingWrite() {
@@ -102,38 +101,25 @@ class RandomSyncTreeTester {
     if (random.nextDouble() < revertProbability || isEmptyPriorityError) {
       syncTree.applyAck(op.value.path, op.key, false);
     } else {
-      _currentServerState = op.value.apply(_currentServerState);
-      _notifyServerOperation(op.value.path);
+      _updateServerState(op.value.apply(_currentServerState));
       syncTree.applyAck(op.value.path, op.key, true);
     }
   }
 
-  void _notifyServerOperation(Path path) {
-    var tree = syncTree.root.subtree(path);
-    if (tree != null) {
-      tree.forEachNode((subPath, node) {
-        var fullPath = Path<Name>.from([...path, ...subPath]);
-        node.views.forEach((params, view) {
-          syncTree.applyServerOperation(
-              TreeOperation.overwrite(fullPath,
-                  currentServerState.getChild(fullPath).withFilter(params)),
-              params);
-        });
-      });
-    }
-    var p = path.parent;
-    while (p != null) {
-      var tree = syncTree.root.subtree(p);
-      if (tree != null) {
-        var node = tree.value;
-        node.views.forEach((params, view) {
-          syncTree.applyServerOperation(
-              TreeOperation.overwrite(
-                  p, currentServerState.getChild(p).withFilter(params)),
-              params);
-        });
-      }
-      p = p.parent;
+  void _updateCurrentServerStateToQuery(QuerySpec query) {
+    var v = currentServerState.getChild(query.path).withFilter(query.params);
+    if (registeredListens[query] == v) return;
+    // TODO only send difference
+    syncTree.applyServerOperation(
+        TreeOperation(query.path, Overwrite(v)), query.params);
+    registeredListens[query] = v;
+  }
+
+  void _updateServerState(TreeStructuredData newState) {
+    if (newState == _currentServerState) return;
+    _currentServerState = newState;
+    for (var q in registeredListens.keys) {
+      _updateCurrentServerStateToQuery(q);
     }
   }
 
@@ -142,9 +128,7 @@ class RandomSyncTreeTester {
     var op = random.nextOperation();
     _logger.fine('* $op');
     var newState = op.apply(_currentServerState);
-    if (newState == _currentServerState) return;
-    _currentServerState = newState;
-    _notifyServerOperation(op.path);
+    _updateServerState(newState);
   }
 
   void checkAllViewsComplete() {
@@ -155,10 +139,12 @@ class RandomSyncTreeTester {
     syncTree.root.forEachNode((path, node) {
       node.views.forEach((params, view) {
         if (!view.data.localVersion.isComplete) {
-          throw StateError('Local version should be complete');
+          throw StateError(
+              'Local version should be complete at path ${path.join('/')}');
         }
         if (!view.data.serverVersion.isComplete) {
-          throw StateError('Server version should be complete');
+          throw StateError(
+              'Server version should be complete at path ${path.join('/')}');
         }
       });
     });
