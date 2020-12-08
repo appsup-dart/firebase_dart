@@ -8,15 +8,23 @@ import 'operations/tree.dart';
 
 /// Contains a view of a remote resource
 class ViewCache {
-  IncompleteData localVersion;
-  IncompleteData serverVersion;
+  IncompleteData _localVersion;
 
-  SortedMap<int, TreeOperation> pendingOperations;
+  /// The current view we have of the server
+  final IncompleteData serverVersion;
 
-  ViewCache(this.localVersion, this.serverVersion, [this.pendingOperations]) {
-    pendingOperations ??= SortedMap();
-  }
+  /// User operations that are not yet acknowledged by the server
+  final SortedMap<int, TreeOperation> pendingOperations;
 
+  ViewCache(this._localVersion, this.serverVersion,
+      [SortedMap<int, TreeOperation> pendingOperations])
+      : pendingOperations = pendingOperations ?? SortedMap();
+
+  /// The local version of the data, i.e. the server version with the pending
+  /// operations applied to
+  IncompleteData get localVersion => _localVersion;
+
+  /// Returns a local version of the data for an alternate filter
   IncompleteData valueForFilter(Filter<Name, TreeStructuredData> filter) {
     return localVersion.update(localVersion.value.view(
         start: filter.validInterval.start,
@@ -25,11 +33,13 @@ class ViewCache {
         reversed: filter.reversed));
   }
 
+  /// Returns a view for an alternate filter
   ViewCache withFilter(Filter<Name, TreeStructuredData> filter) => ViewCache(
       localVersion.update(localVersion.value.withFilter(filter)),
       serverVersion.update(serverVersion.value.withFilter(filter)),
       SortedMap.from(pendingOperations));
 
+  /// Returns a view for a child
   ViewCache child(Name c) {
     var childPendingOperations = SortedMap<int, TreeOperation>();
     for (var k in pendingOperations.keys) {
@@ -46,42 +56,59 @@ class ViewCache {
     return v;
   }
 
+  /// Recalculates the local version
   void recalcLocalVersion() {
-    localVersion = pendingOperations.values.fold<IncompleteData>(
-        serverVersion, (IncompleteData v, o) => v.applyOperation(o));
+    _localVersion = serverVersion;
+    for (var op in pendingOperations.values) {
+      _applyPendingOperation(op);
+    }
   }
 
+  void _applyPendingOperation(TreeOperation operation) {
+    // TODO: the operation might influence completeness
+    // we ignore this for now and allow some queries to return incorrect intermediate values
+    _localVersion = localVersion.applyOperation(operation);
+  }
+
+  /// Updates the server version
   ViewCache updateServerVersion(IncompleteData newValue) {
     return ViewCache(localVersion, newValue, pendingOperations)
       ..recalcLocalVersion();
   }
 
+  /// Add a user operation
+  ///
+  /// The operation will be applied to the local version
   ViewCache addOperation(int writeId, Operation op) {
-    if (op == null) throw ArgumentError('Trying to add null operation');
-    return ViewCache(localVersion.applyOperation(op), serverVersion,
-        pendingOperations.clone()..[writeId] = op);
+    assert(op != null);
+    return ViewCache(
+        localVersion, serverVersion, pendingOperations.clone()..[writeId] = op)
+      .._applyPendingOperation(op);
   }
 
-  ViewCache removeOperation(int writeId, bool recalc) {
+  /// Remove a user operation
+  ///
+  /// This will cause the local version to be recalculated
+  ViewCache removeOperation(int writeId) {
     var viewCache = ViewCache(localVersion, serverVersion,
         pendingOperations.clone()..remove(writeId));
-    if (recalc) viewCache.recalcLocalVersion();
+    viewCache.recalcLocalVersion();
     return viewCache;
   }
 
+  /// Applies a user or server operation to this view and returns the updated
+  /// view
   ViewCache applyOperation(
       Operation operation, ViewOperationSource source, int writeId) {
     switch (source) {
       case ViewOperationSource.user:
         return addOperation(writeId, operation);
       case ViewOperationSource.ack:
-        return removeOperation(writeId,
-            true); // TODO doesn't need recalculate when no server values?
+        return removeOperation(writeId);
       case ViewOperationSource.server:
+      default:
         var result = serverVersion.applyOperation(operation);
         return updateServerVersion(result);
-      default:
-        throw Exception('SHOULD NEVER HAPPEN');
     }
   }
 }
