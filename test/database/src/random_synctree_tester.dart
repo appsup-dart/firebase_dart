@@ -55,10 +55,14 @@ class RandomSyncTreeTester {
       this.serverOperationProbability = 0.1})
       : random =
             RandomGenerator(seed ?? DateTime.now().millisecondsSinceEpoch) {
-    _syncTree = SyncTree('test:///', RemoteListenerRegistrar.fromCallbacks(
-        remoteRegister: (path, query, tag) async {
-      outstandingListens.add(QuerySpec(path, query));
-    }));
+    _syncTree = SyncTree(
+        'test:///',
+        RemoteListenerRegistrar.fromCallbacks(
+            remoteRegister: (path, query, tag) async {
+          outstandingListens.add(QuerySpec(path, query));
+        }, remoteUnregister: (path, query) async {
+          registeredListens.remove(QuerySpec(path, query));
+        }));
   }
 
   void _generateUserListen() {
@@ -110,8 +114,8 @@ class RandomSyncTreeTester {
     var v = currentServerState.getChild(query.path).withFilter(query.params);
     if (registeredListens[query] == v) return;
     // TODO only send difference
-    syncTree.applyServerOperation(
-        TreeOperation(query.path, Overwrite(v)), query.params);
+    syncTree.applyServerOperation(TreeOperation(query.path, Overwrite(v)),
+        query.params == QueryFilter() ? null : query.params);
     registeredListens[query] = v;
   }
 
