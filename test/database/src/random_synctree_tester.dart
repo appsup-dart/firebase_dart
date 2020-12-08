@@ -164,12 +164,7 @@ class RandomSyncTreeTester {
     });
   }
 
-  void checkStateMatches() {
-    var v = currentServerState;
-    for (var w in outstandingWrites) {
-      v = w.value.apply(v);
-    }
-
+  void checkServerVersions() {
     syncTree.root.forEachNode((path, node) {
       node.views.forEach((params, view) {
         if (view.data.serverVersion.isComplete) {
@@ -181,6 +176,18 @@ class RandomSyncTreeTester {
             throw StateError('SyncTree has an incorrect view of the server');
           }
         }
+      });
+    });
+  }
+
+  void checkLocalVersions() {
+    var v = currentServerState;
+    for (var w in outstandingWrites) {
+      v = w.value.apply(v);
+    }
+
+    syncTree.root.forEachNode((path, node) {
+      node.views.forEach((params, view) {
         if (view.data.localVersion.isComplete) {
           // complete data should match with value on server
           var serverValue = v.getChild(path).withFilter(params);
