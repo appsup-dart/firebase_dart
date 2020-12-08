@@ -43,6 +43,7 @@ class MasterView {
 
   bool contains(QueryFilter f) {
     if (f == masterFilter) return true;
+    // TODO: return true when loads all data even when other ordering
     if (f.orderBy != masterFilter.orderBy) return false;
     if (!masterFilter.limits) return true;
     return _data.localVersion.value.children
@@ -203,6 +204,7 @@ class SyncPoint {
     filter ??= QueryFilter();
     var unlimitedFilter =
         views.keys.firstWhere((q) => !q.limits, orElse: () => null);
+    // TODO: do not create new master views when already an unlimited view exists
     if (unlimitedFilter != null) {
       filter = QueryFilter(ordering: filter.ordering);
       return views[filter] = views[unlimitedFilter].withFilter(filter);
