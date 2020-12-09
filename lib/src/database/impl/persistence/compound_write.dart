@@ -38,16 +38,13 @@ class CompoundWrite {
   }
 
   CompoundWrite addWrite(Path<Name> path, TreeStructuredData node) {
-    print('addWrite $path $node');
     if (path.isEmpty) {
       return CompoundWrite._(TreeNode(node));
     } else {
       Path rootMostPath = _writeTree.findRootMostPathWithValue(path);
-      print('rootMostPath $rootMostPath');
       if (rootMostPath != null) {
         var relativePath = path.skip(rootMostPath.length);
         var value = _writeTree.subtree(rootMostPath).value;
-        print('relativePath $relativePath $value');
         var back = relativePath.last;
         if (back != null &&
             back.isPriorityChildName &&
@@ -56,13 +53,11 @@ class CompoundWrite {
           return this;
         } else {
           value = value.updateChild(relativePath, node);
-          print('new value $value');
           return CompoundWrite._(_writeTree.setValue(rootMostPath, value));
         }
       } else {
         var subtree = TreeNode<Name, TreeStructuredData>(node);
         var newWriteTree = _writeTree.setPath(path, subtree);
-        print('new tree $newWriteTree');
         return CompoundWrite._(newWriteTree);
       }
     }
