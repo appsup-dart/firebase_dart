@@ -227,7 +227,7 @@ extension SyncTreeX on SyncTree {
           writeId);
     } else if (op is SetPriority) {
       applyUserOverwrite(operation.path.child(Name('.priority')),
-          TreeStructuredData.leaf(op.value), writeId);
+          TreeStructuredData.leaf(op.priority), writeId);
     } else {
       applyUserOverwrite(operation.path, (op as Overwrite).value, writeId);
     }

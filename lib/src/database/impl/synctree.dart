@@ -25,11 +25,9 @@ class MasterView {
   final Map<QueryFilter, EventTarget> observers = {};
 
   MasterView(this.masterFilter)
-      : _data = ViewCache(
-            IncompleteData(TreeStructuredData(filter: masterFilter)),
-            IncompleteData(TreeStructuredData(filter: masterFilter))) {
-    assert(masterFilter != null);
-  }
+      : _data = ViewCache(IncompleteData.empty(masterFilter),
+            IncompleteData.empty(masterFilter)),
+        assert(masterFilter != null);
 
   MasterView withFilter(QueryFilter filter) =>
       MasterView(filter).._data = _data.withFilter(filter);
@@ -80,8 +78,8 @@ class MasterView {
         .putIfAbsent(filter, () => EventTarget())
         .addEventListener(type, listener);
 
-    var events = const TreeEventGenerator().generateEvents(type,
-        IncompleteData(TreeStructuredData()), _data.valueForFilter(filter));
+    var events = const TreeEventGenerator().generateEvents(
+        type, IncompleteData.empty(), _data.valueForFilter(filter));
     events.where((e) => e.type == type).forEach((e) => listener(e));
     return true;
   }

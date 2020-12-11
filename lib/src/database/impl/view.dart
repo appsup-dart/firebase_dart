@@ -25,18 +25,13 @@ class ViewCache {
   IncompleteData get localVersion => _localVersion;
 
   /// Returns a local version of the data for an alternate filter
-  IncompleteData valueForFilter(Filter<Name, TreeStructuredData> filter) {
-    return localVersion.update(localVersion.value.view(
-        start: filter.validInterval.start,
-        end: filter.validInterval.end,
-        limit: filter.limit,
-        reversed: filter.reversed));
-  }
+  IncompleteData valueForFilter(Filter<Name, TreeStructuredData> filter) =>
+      localVersion.withFilter(filter);
 
   /// Returns a view for an alternate filter
   ViewCache withFilter(Filter<Name, TreeStructuredData> filter) => ViewCache(
-      localVersion.update(localVersion.value.withFilter(filter)),
-      serverVersion.update(serverVersion.value.withFilter(filter)),
+      localVersion.withFilter(filter),
+      serverVersion.withFilter(filter),
       SortedMap.from(pendingOperations));
 
   /// Returns a view for a child
@@ -49,8 +44,8 @@ class ViewCache {
       }
     }
     var v = ViewCache(
-      localVersion.child(c),
-      serverVersion.child(c),
+      localVersion.directChild(c),
+      serverVersion.directChild(c),
       childPendingOperations,
     );
     return v;

@@ -95,12 +95,15 @@ class Merge extends Operation {
   TreeStructuredData apply(TreeStructuredData value) {
     // first do remove operations then set operations, otherwise filtered views
     // might remove some values
+    var setPriorityOperations =
+        overwrites.where((t) => (t.nodeOperation is SetPriority));
     var removeOperations =
         overwrites.where((t) => (t.nodeOperation as Overwrite).value.isNil);
     var setOperations =
         overwrites.where((t) => !(t.nodeOperation as Overwrite).value.isNil);
     var v = removeOperations.fold(value, (v, o) => o.apply(v));
     v = setOperations.fold(v, (v, o) => o.apply(v));
+    v = setPriorityOperations.fold(v, (v, o) => o.apply(v));
     return v;
   }
 
@@ -143,24 +146,29 @@ class Overwrite extends Operation {
   }
 }
 
-class SetPriority extends Operation {
-  final Value value;
+class SetPriority extends Operation implements Overwrite {
+  final Value priority;
 
-  SetPriority(this.value);
+  SetPriority(this.priority);
 
   @override
   TreeStructuredData apply(TreeStructuredData value) {
-    return value.clone()..priority = this.value;
+    return value.clone()..priority = priority;
   }
 
   @override
-  String toString() => 'SetPriority[$value]';
+  String toString() => 'SetPriority[$priority]';
 
   @override
-  Iterable<Path<Name>> get completesPaths => [];
+  Iterable<Path<Name>> get completesPaths => [
+        Path.from([Name('.priority')])
+      ];
 
   @override
   Operation operationForChild(Name key) => null;
+
+  @override
+  TreeStructuredData get value => TreeStructuredData.leaf(priority);
 }
 
 class TreeEventGenerator extends EventGenerator {
