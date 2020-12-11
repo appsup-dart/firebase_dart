@@ -1,6 +1,9 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
+import 'package:quiver/core.dart';
+
 import '../data_observer.dart';
 import '../event.dart';
 import '../events/child.dart';
@@ -67,6 +70,15 @@ class TreeOperation extends Operation {
       return newValue;
     }
   }
+
+  @override
+  int get hashCode => hash2(path, nodeOperation);
+
+  @override
+  bool operator ==(other) =>
+      other is TreeOperation &&
+      other.path == path &&
+      other.nodeOperation == nodeOperation;
 }
 
 class Ack extends TreeOperation {
@@ -80,6 +92,13 @@ class Ack extends TreeOperation {
     if (path.first != key) return null;
     return Ack(path.skip(1), success);
   }
+
+  @override
+  int get hashCode => hash2(path, success);
+
+  @override
+  bool operator ==(other) =>
+      other is Ack && other.path == path && other.success == success;
 }
 
 class Merge extends Operation {
@@ -121,6 +140,14 @@ class Merge extends Operation {
 
   @override
   String toString() => 'Merge[$overwrites]';
+
+  @override
+  int get hashCode => const ListEquality().hash(overwrites);
+
+  @override
+  bool operator ==(other) =>
+      other is Merge &&
+      const ListEquality().equals(overwrites, other.overwrites);
 }
 
 class Overwrite extends Operation {
@@ -144,6 +171,12 @@ class Overwrite extends Operation {
     var child = value.children[key] ?? TreeStructuredData();
     return Overwrite(child);
   }
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  bool operator ==(other) => other is Overwrite && other.value == value;
 }
 
 class SetPriority extends Operation implements Overwrite {
@@ -169,6 +202,12 @@ class SetPriority extends Operation implements Overwrite {
 
   @override
   TreeStructuredData get value => TreeStructuredData.leaf(priority);
+
+  @override
+  int get hashCode => priority.hashCode;
+
+  @override
+  bool operator ==(other) => other is SetPriority && other.priority == priority;
 }
 
 class TreeEventGenerator extends EventGenerator {

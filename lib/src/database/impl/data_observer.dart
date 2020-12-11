@@ -136,6 +136,16 @@ class IncompleteData {
     }
   }
 
+  void forEachCompleteNode(Function(Path<Name> k, TreeStructuredData v) f) =>
+      _writeTree.forEachNode((k, v) {
+        if (v == null) return;
+        if (k.isEmpty) {
+          f(k, value);
+        } else {
+          f(k, v);
+        }
+      });
+
   TreeOperation toOperation() {
     var overwrites = <Path<Name>, TreeStructuredData>{};
     _writeTree.forEachNode((key, value) {

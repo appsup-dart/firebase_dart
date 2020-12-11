@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
+import 'package:firebase_dart/src/database/impl/persistence/default_manager.dart';
+import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
 import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
@@ -9,6 +11,9 @@ import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:logging/logging.dart';
 import 'package:sortedmap/sortedmap.dart';
+import 'package:test/test.dart';
+
+import '../persistence/mock.dart';
 
 final _logger = Logger('firebase.test.random_synctree');
 
@@ -62,7 +67,9 @@ class RandomSyncTreeTester {
           outstandingListens.add(QuerySpec(path, query));
         }, remoteUnregister: (path, query) async {
           registeredListens.remove(QuerySpec(path, query));
-        }));
+        }),
+        persistenceManager: DefaultPersistenceManager(
+            MockPersistenceStorageEngine(), TestCachePolicy(0.1)));
   }
 
   void _generateUserListen() {
@@ -168,6 +175,12 @@ class RandomSyncTreeTester {
         }
       });
     });
+  }
+
+  void checkPersistedWrites() {
+    var engine = (_syncTree.persistenceManager as DefaultPersistenceManager)
+        .storageLayer as MockPersistenceStorageEngine;
+    expect(engine.writes, Map.fromEntries(outstandingWrites));
   }
 
   void checkLocalVersions() {

@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
+import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:logging/logging.dart';
 import 'package:sortedmap/sortedmap.dart';
 
@@ -339,7 +340,11 @@ class SyncTree {
 
   final TreeNode<Name, SyncPoint> root;
 
-  SyncTree(this.name, this.registrar) : root = TreeNode(SyncPoint(name));
+  final PersistenceManager persistenceManager;
+
+  SyncTree(this.name, this.registrar, {PersistenceManager persistenceManager})
+      : root = TreeNode(SyncPoint(name)),
+        persistenceManager = persistenceManager ?? NoopPersistenceManager();
 
   static TreeNode<Name, SyncPoint> _createNode(
       SyncPoint parent, Name childName) {
@@ -426,8 +431,15 @@ class SyncTree {
       Path<Name> path, TreeStructuredData newData, int writeId) {
     _logger.fine(() => 'apply user overwrite ($writeId) $path -> $newData');
     var operation = TreeOperation.overwrite(path, newData);
-    _applyOperationToSyncPoints(
-        root, null, operation, ViewOperationSource.user, writeId);
+    _applyUserOperation(operation, writeId);
+  }
+
+  void _applyUserOperation(TreeOperation operation, int writeId) {
+    persistenceManager.runInTransaction(() {
+      persistenceManager.saveUserOperation(operation, writeId);
+      _applyOperationToSyncPoints(
+          root, null, operation, ViewOperationSource.user, writeId);
+    });
   }
 
   void applyServerOperation(TreeOperation operation, Filter filter) {
@@ -449,8 +461,7 @@ class SyncTree {
       Map<Path<Name>, TreeStructuredData> changedChildren, int writeId) {
     _logger.fine(() => 'apply user merge ($writeId) $path -> $changedChildren');
     var operation = TreeOperation.merge(path, changedChildren);
-    _applyOperationToSyncPoints(
-        root, null, operation, ViewOperationSource.user, writeId);
+    _applyUserOperation(operation, writeId);
   }
 
   /// Helper function to recursively apply an operation to a node in the
@@ -486,8 +497,11 @@ class SyncTree {
   void applyAck(Path<Name> path, int writeId, bool success) {
     _logger.fine(() => 'apply ack ($writeId) $path -> $success');
     var operation = TreeOperation.ack(path, success);
-    _applyOperationToSyncPoints(
-        root, null, operation, ViewOperationSource.ack, writeId);
+    persistenceManager.runInTransaction(() {
+      persistenceManager.removeUserOperation(writeId);
+      _applyOperationToSyncPoints(
+          root, null, operation, ViewOperationSource.ack, writeId);
+    });
   }
 
   void destroy() {
