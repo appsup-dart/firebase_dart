@@ -177,10 +177,25 @@ class RandomSyncTreeTester {
     });
   }
 
+  MockPersistenceStorageEngine get storageEngine =>
+      (_syncTree.persistenceManager as DefaultPersistenceManager).storageLayer;
+
   void checkPersistedWrites() {
-    var engine = (_syncTree.persistenceManager as DefaultPersistenceManager)
-        .storageLayer as MockPersistenceStorageEngine;
-    expect(engine.writes, Map.fromEntries(outstandingWrites));
+    expect(storageEngine.writes, Map.fromEntries(outstandingWrites));
+  }
+
+  void checkPersistedServerCache() {
+    var v = storageEngine.serverCache.value;
+    syncTree.root.forEachNode((path, node) {
+      node.views.forEach((params, view) {
+        if (view.data.localVersion.isComplete) {
+          // complete data should match with value on server
+          var persistedValue = v.getChild(path).withFilter(params);
+          var serverView = view.data.serverVersion.value;
+          expect(persistedValue, serverView);
+        }
+      });
+    });
   }
 
   void checkLocalVersions() {

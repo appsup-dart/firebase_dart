@@ -444,8 +444,11 @@ class SyncTree {
 
   void applyServerOperation(TreeOperation operation, Filter filter) {
     _logger.fine(() => 'apply server operation $operation');
-    _applyOperationToSyncPoints(
-        root, filter, operation, ViewOperationSource.server, null);
+    persistenceManager.runInTransaction(() {
+      persistenceManager.updateServerCache(operation, filter);
+      _applyOperationToSyncPoints(
+          root, filter, operation, ViewOperationSource.server, null);
+    });
   }
 
   void applyListenRevoked(Path<Name> path, Filter filter) {

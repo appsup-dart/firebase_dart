@@ -14,6 +14,12 @@ void main() {
     test('Random synctree test seed=1607288421899', () {
       _doTest(1607344606058);
     });
+
+    test('Random synctree test seed=epoch', () {
+      for (var i = 0; i < 10; i++) {
+        _doTest(null);
+      }
+    });
   });
 }
 
@@ -26,6 +32,10 @@ void _doTest(int seed) {
       fakeAsync.flushMicrotasks();
 
       tester.checkPersistedWrites();
+
+      if (tester.outstandingListens.isEmpty) {
+        tester.checkPersistedServerCache();
+      }
     }
     tester.flush();
   });
