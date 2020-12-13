@@ -1,9 +1,9 @@
 import 'dart:math';
 
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
+import 'package:firebase_dart/src/database/impl/event.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/persistence/default_manager.dart';
-import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
 import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
@@ -28,6 +28,8 @@ class RandomSyncTreeTester {
 
   final double listenProbability;
 
+  final double unlistenProbability;
+
   final double userOperationProbability;
 
   final double serverOperationProbability;
@@ -42,6 +44,8 @@ class RandomSyncTreeTester {
 
   final List<QuerySpec> outstandingListens = [];
 
+  final Map<QuerySpec, EventListener> userListens = {};
+
   final Map<QuerySpec, TreeStructuredData> registeredListens = {};
 
   TreeStructuredData _currentServerState = TreeStructuredData();
@@ -53,6 +57,7 @@ class RandomSyncTreeTester {
   RandomSyncTreeTester(
       {int seed,
       this.listenProbability = 0.1,
+      this.unlistenProbability = 0.0,
       this.userOperationProbability = 0.1,
       this.serverListenResponseProbability = 0.1,
       this.serverAckProbability = 0.9,
@@ -63,18 +68,31 @@ class RandomSyncTreeTester {
     _syncTree = SyncTree('test:///', remoteRegister: (path, query, tag) async {
       outstandingListens.add(QuerySpec(path, query));
     }, remoteUnregister: (path, query) async {
-      registeredListens.remove(QuerySpec(path, query));
+      var spec = QuerySpec(path, query);
+      outstandingListens.remove(spec);
+      registeredListens.remove(spec);
     },
         persistenceManager: DefaultPersistenceManager(
             MockPersistenceStorageEngine(), TestCachePolicy(0.1)));
+  }
+
+  void _generateUserUnlisten() {
+    _logger.fine('generate user unlisten');
+    var query = userListens.keys.toList()[random.nextInt(userListens.length)];
+    _logger.fine('* $query');
+    syncTree.removeEventListener(
+        'cancel', query.path, query.params, userListens.remove(query));
   }
 
   void _generateUserListen() {
     _logger.fine('generate user listen');
     var query = random.nextQuerySpec();
     _logger.fine('* $query');
-
-    syncTree.addEventListener('value', query.path, query.params, (event) {});
+    userListens[query] ??= (event) {
+      userListens.remove(query);
+    };
+    syncTree.addEventListener(
+        'cancel', query.path, query.params, userListens[query]);
   }
 
   void _generateUserOperation() {
@@ -158,6 +176,15 @@ class RandomSyncTreeTester {
     });
   }
 
+  void checkPersistedActiveQueries() {
+    var trackedQueries = storageEngine.trackedQueries.entries
+        .map((v) => v.value)
+        .where((v) => v.active)
+        .map((v) => v.querySpec);
+    expect(trackedQueries.toSet(),
+        <QuerySpec>{...outstandingListens, ...registeredListens.keys});
+  }
+
   void checkServerVersions() {
     syncTree.root.forEachNode((path, node) {
       node.views.forEach((params, view) {
@@ -218,6 +245,10 @@ class RandomSyncTreeTester {
   void next() {
     if (random.nextDouble() < listenProbability) {
       _generateUserListen();
+    } else if (unlistenProbability != 0 &&
+        userListens.isNotEmpty &&
+        random.nextDouble() < unlistenProbability) {
+      _generateUserUnlisten();
     } else if (random.nextDouble() < userOperationProbability) {
       _generateUserOperation();
     } else if (random.nextDouble() < serverListenResponseProbability) {

@@ -25,12 +25,13 @@ void main() {
 
 void _doTest(int seed) {
   fakeAsync((fakeAsync) {
-    var tester = RandomSyncTreeTester(seed: seed);
+    var tester = RandomSyncTreeTester(seed: seed, unlistenProbability: 0.1);
 
     for (var i = 0; i < 1000; i++) {
       tester.next();
       fakeAsync.flushMicrotasks();
 
+      tester.checkPersistedActiveQueries();
       tester.checkPersistedWrites();
 
       if (tester.outstandingListens.isEmpty) {

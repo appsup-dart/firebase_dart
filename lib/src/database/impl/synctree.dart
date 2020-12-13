@@ -260,10 +260,12 @@ class SyncPoint {
 
 abstract class RemoteListenerRegistrar {
   final TreeNode<Name, Map<QueryFilter, Future<Null>>> _queries = TreeNode({});
+  final PersistenceManager persistenceManager;
 
-  RemoteListenerRegistrar();
+  RemoteListenerRegistrar(this.persistenceManager);
 
   factory RemoteListenerRegistrar.fromCallbacks(
+      PersistenceManager persistenceManager,
       {RemoteRegister remoteRegister,
       RemoteUnregister remoteUnregister}) = _RemoteListenerRegistrarImpl;
 
@@ -287,6 +289,9 @@ abstract class RemoteListenerRegistrar {
     return node.value.putIfAbsent(filter, () async {
       try {
         await remoteRegister(path, filter, hash);
+        persistenceManager.runInTransaction(() {
+          persistenceManager.setQueryActive(path, filter);
+        });
       } catch (e) {
         node.value.remove(filter); // ignore: unawaited_futures
         rethrow;
@@ -304,6 +309,9 @@ abstract class RemoteListenerRegistrar {
     if (!node.value.containsKey(filter)) return;
     node.value.remove(filter); // ignore: unawaited_futures
     await remoteUnregister(path, filter);
+    persistenceManager.runInTransaction(() {
+      persistenceManager.setQueryInactive(path, filter);
+    });
   }
 }
 
@@ -316,10 +324,11 @@ class _RemoteListenerRegistrarImpl extends RemoteListenerRegistrar {
   final RemoteRegister _remoteRegister;
   final RemoteUnregister _remoteUnregister;
 
-  _RemoteListenerRegistrarImpl(
+  _RemoteListenerRegistrarImpl(PersistenceManager persistenceManager,
       {RemoteRegister remoteRegister, RemoteUnregister remoteUnregister})
       : _remoteRegister = remoteRegister,
-        _remoteUnregister = remoteUnregister;
+        _remoteUnregister = remoteUnregister,
+        super(persistenceManager);
   @override
   Future<Null> remoteRegister(
       Path<Name> path, QueryFilter filter, String hash) async {
@@ -348,7 +357,7 @@ class SyncTree {
       PersistenceManager persistenceManager})
       : root = TreeNode(SyncPoint(name)),
         persistenceManager = persistenceManager ?? NoopPersistenceManager(),
-        registrar = RemoteListenerRegistrar.fromCallbacks(
+        registrar = RemoteListenerRegistrar.fromCallbacks(persistenceManager,
             remoteRegister: remoteRegister, remoteUnregister: remoteUnregister);
 
   static TreeNode<Name, SyncPoint> _createNode(

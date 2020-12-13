@@ -48,6 +48,16 @@ class DefaultPersistenceManager implements PersistenceManager {
   }
 
   @override
+  void setQueryActive(Path<Name> path, QueryFilter filter) {
+    _trackedQueryManager.setQueryActive(QuerySpec(path, filter));
+  }
+
+  @override
+  void setQueryInactive(Path<Name> path, QueryFilter filter) {
+    _trackedQueryManager.setQueryInactive(QuerySpec(path, filter));
+  }
+
+  @override
   void setQueryComplete(Path<Name> path, QueryFilter filter) {
     if (!filter.limits) {
       _trackedQueryManager.setQueriesComplete(path);

@@ -15,6 +15,10 @@ abstract class PersistenceManager {
   /// complete after saving this node.
   void updateServerCache(TreeOperation operation, [QueryFilter filter]);
 
+  void setQueryActive(Path<Name> path, QueryFilter filter);
+
+  void setQueryInactive(Path<Name> path, QueryFilter filter);
+
   void setQueryComplete(Path<Name> path, QueryFilter filter);
 
   T runInTransaction<T>(T Function() callable);
@@ -35,6 +39,16 @@ class NoopPersistenceManager implements PersistenceManager {
 
   @override
   void updateServerCache(TreeOperation operation, [QueryFilter filter]) {
+    _verifyInsideTransaction();
+  }
+
+  @override
+  void setQueryActive(Path<Name> path, QueryFilter filter) {
+    _verifyInsideTransaction();
+  }
+
+  @override
+  void setQueryInactive(Path<Name> path, QueryFilter filter) {
     _verifyInsideTransaction();
   }
 
