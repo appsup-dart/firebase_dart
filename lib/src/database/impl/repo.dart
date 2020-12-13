@@ -73,9 +73,18 @@ class Repo {
   }
 
   Repo._(this.url, this._connection, Stream<User> authStateChanges)
-      : _syncTree = SyncTree(url.toString(), RemoteListeners(_connection)),
-        _infoSyncTree =
-            SyncTree(url.toString(), RemoteListenerRegistrar.fromCallbacks()) {
+      : _syncTree = SyncTree(url.toString(),
+            remoteRegister: (path, filter, hash) async {
+          var warnings = await _connection.listen(path.join('/'),
+                  query: filter, hash: hash) ??
+              [];
+          for (var w in warnings) {
+            _logger.warning(w);
+          }
+        }, remoteUnregister: (path, filter) async {
+          await _connection.unlisten(path.join('/'), query: filter);
+        }),
+        _infoSyncTree = SyncTree(url.toString()) {
     _infoSyncTree.addEventListener(
         'value', Path.from([]), QueryFilter(), (event) {});
     _updateInfo(dotInfoAuthenticated, false);
@@ -108,7 +117,7 @@ class Repo {
 
   SyncTree get syncTree => _syncTree;
 
-  RemoteListeners get registrar => _syncTree.registrar;
+  RemoteListenerRegistrar get registrar => _syncTree.registrar;
 
   Future triggerDisconnect() => _connection.disconnect();
 
@@ -356,43 +365,6 @@ class Repo {
         TreeOperation.overwrite(Name.parsePath('$dotInfo/$pathString'),
             TreeStructuredData.fromJson(value)),
         null);
-  }
-}
-
-class RemoteListeners extends RemoteListenerRegistrar {
-  final PersistentConnection connection;
-
-  RemoteListeners(this.connection);
-
-  @override
-  Future<Null> remoteRegister(
-      Path<Name> path, QueryFilter filter, String hash) async {
-    var warnings =
-        await connection.listen(path.join('/'), query: filter, hash: hash) ??
-            [];
-    for (var w in warnings) {
-      _logger.warning(w);
-    }
-  }
-
-  @override
-  Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) async {
-    await connection.unlisten(path.join('/'), query: filter);
-  }
-}
-
-class InfoRemoteListeners extends RemoteListenerRegistrar {
-  @override
-  Future<Null> remoteRegister(
-      Path<Name> path, QueryFilter filter, String hash) {
-    // TODO: implement remoteRegister
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) {
-    // TODO: implement remoteUnregister
-    throw UnimplementedError();
   }
 }
 

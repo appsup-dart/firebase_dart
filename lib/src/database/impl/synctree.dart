@@ -342,9 +342,14 @@ class SyncTree {
 
   final PersistenceManager persistenceManager;
 
-  SyncTree(this.name, this.registrar, {PersistenceManager persistenceManager})
+  SyncTree(this.name,
+      {RemoteRegister remoteRegister,
+      RemoteUnregister remoteUnregister,
+      PersistenceManager persistenceManager})
       : root = TreeNode(SyncPoint(name)),
-        persistenceManager = persistenceManager ?? NoopPersistenceManager();
+        persistenceManager = persistenceManager ?? NoopPersistenceManager(),
+        registrar = RemoteListenerRegistrar.fromCallbacks(
+            remoteRegister: remoteRegister, remoteUnregister: remoteUnregister);
 
   static TreeNode<Name, SyncPoint> _createNode(
       SyncPoint parent, Name childName) {

@@ -60,14 +60,11 @@ class RandomSyncTreeTester {
       this.serverOperationProbability = 0.1})
       : random =
             RandomGenerator(seed ?? DateTime.now().millisecondsSinceEpoch) {
-    _syncTree = SyncTree(
-        'test:///',
-        RemoteListenerRegistrar.fromCallbacks(
-            remoteRegister: (path, query, tag) async {
-          outstandingListens.add(QuerySpec(path, query));
-        }, remoteUnregister: (path, query) async {
-          registeredListens.remove(QuerySpec(path, query));
-        }),
+    _syncTree = SyncTree('test:///', remoteRegister: (path, query, tag) async {
+      outstandingListens.add(QuerySpec(path, query));
+    }, remoteUnregister: (path, query) async {
+      registeredListens.remove(QuerySpec(path, query));
+    },
         persistenceManager: DefaultPersistenceManager(
             MockPersistenceStorageEngine(), TestCachePolicy(0.1)));
   }

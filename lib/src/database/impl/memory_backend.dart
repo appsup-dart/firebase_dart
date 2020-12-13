@@ -9,7 +9,7 @@ import 'package:firebase_dart/src/database/impl/tree.dart';
 
 class UnsecuredMemoryBackend extends SyncTreeBackend {
   UnsecuredMemoryBackend()
-      : super(SyncTree('', _MemRegistrar())
+      : super(SyncTree('')
           ..root.value.isCompleteFromParent = true
           ..addEventListener('value', Path.from([]), QueryFilter(), (event) {})
           ..applyServerOperation(
@@ -34,18 +34,5 @@ class MemoryBackend extends SecuredBackend {
     var connection = BackendConnection(backend, url.host)..open();
 
     return connection.transport.foreignChannel;
-  }
-}
-
-class _MemRegistrar extends RemoteListenerRegistrar {
-  @override
-  Future<Null> remoteRegister(
-      Path<Name> path, QueryFilter filter, String hash) async {
-    // TODO: implement remoteRegister
-  }
-
-  @override
-  Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) async {
-    // TODO: implement remoteUnregister
   }
 }

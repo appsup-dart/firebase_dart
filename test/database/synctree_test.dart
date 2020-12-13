@@ -12,7 +12,7 @@ void main() {
       MasterView view;
 
       setUp(() {
-        syncTree = SyncTree('mem:///', RemoteListenerRegistrar.fromCallbacks());
+        syncTree = SyncTree('mem:///');
 
         var query1 = QueryFilter().copyWith(orderBy: '.key', limit: 1);
         syncTree.addEventListener('value', Path(), query1, (event) {});
