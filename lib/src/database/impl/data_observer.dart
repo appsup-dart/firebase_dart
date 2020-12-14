@@ -134,14 +134,11 @@ class IncompleteData {
     }
   }
 
-  void forEachCompleteNode(Function(Path<Name> k, TreeStructuredData v) f) =>
-      _writeTree.forEachNode((k, v) {
+  void forEachCompleteNode(Function(Path<Name> k, TreeStructuredData v) f,
+          [Path<Name> path]) =>
+      _writeTree.subtree(path ?? Path()).forEachNode((k, v) {
         if (v == null) return;
-        if (k.isEmpty) {
-          f(k, value);
-        } else {
-          f(k, v);
-        }
+        f(Path.from([...path, ...k]), v);
       });
 
   TreeOperation toOperation() {
