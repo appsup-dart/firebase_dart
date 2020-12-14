@@ -37,10 +37,6 @@ abstract class PersistenceStorageEngine {
 
   void resetPreviouslyActiveTrackedQueries(DateTime lastUse);
 
-  void saveTrackedQueryKeys(int trackedQueryId, Set<Name> keys);
-
-  Set<Name> loadTrackedQueryKeys(Iterable<int> trackedQueryIds);
-
   void pruneCache(Path<Name> root, PruneForest pruneForest);
 
   void beginTransaction();

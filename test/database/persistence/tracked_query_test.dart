@@ -261,33 +261,6 @@ void main() {
       });
     });
 
-    test('get known complete children', () {
-      var engine = MockPersistenceStorageEngine();
-      engine.disableTransactionCheck = true;
-
-      var manager = newManager(engine);
-
-      expect(manager.getKnownCompleteChildren(Name.parsePath('foo')), isEmpty);
-
-      manager.setQueryActive(QuerySpec(Name.parsePath('foo/a')));
-      manager.setQueryCompleteIfExists(QuerySpec(Name.parsePath('foo/a')));
-      manager.setQueryActive(QuerySpec(Name.parsePath('foo/not-included')));
-      manager
-          .setQueryActive(QuerySpec(Name.parsePath('foo/deep/not-included')));
-      manager.setQueryCompleteIfExists(
-          QuerySpec(Name.parsePath('foo/deep/not-included')));
-
-      manager.setQueryActive(sampleFooQuery);
-      var trackedQuery = manager.findTrackedQuery(sampleFooQuery);
-      engine.saveTrackedQueryKeys(trackedQuery.id, {Name('d'), Name('e')});
-
-      expect(manager.getKnownCompleteChildren(Name.parsePath('foo')),
-          {Name('a'), Name('d'), Name('e')});
-      expect(manager.getKnownCompleteChildren(Name.parsePath('')), isEmpty);
-      expect(
-          manager.getKnownCompleteChildren(Name.parsePath('foo/baz')), isEmpty);
-    });
-
     test('ensure tracked query for new query', () {
       fakeAsync((fakeAsync) {
         var manager = newManager();

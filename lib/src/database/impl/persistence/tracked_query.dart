@@ -281,33 +281,6 @@ class TrackedQueryManager {
     return prunableCount - countToKeep;
   }
 
-  /// Uses our tracked queries to figure out what complete children we have.
-  Set<Name> getKnownCompleteChildren(Path<Name> path) {
-    assert(!isQueryComplete(QuerySpec(path)), 'Path is fully complete.');
-
-    var completeChildren = <Name>{};
-    // First, get complete children from any queries at this location.
-    var queryIds = filteredQueryIdsAtPath(path);
-    if (queryIds.isNotEmpty) {
-      completeChildren.addAll(storageLayer.loadTrackedQueryKeys(queryIds));
-    }
-
-    // Second, get any complete default queries immediately below us.
-    var subtree = trackedQueryTree.subtree(path);
-    if (subtree != null) {
-      for (var childEntry in subtree.children.entries) {
-        var childKey = childEntry.key;
-        var childTree = childEntry.value;
-        if (childTree.value != null &&
-            _hasDefaultCompletePredicate(childTree.value)) {
-          completeChildren.add(childKey);
-        }
-      }
-    }
-
-    return completeChildren;
-  }
-
   void ensureCompleteTrackedQuery(Path path) {
     if (!includedInDefaultCompleteQuery(path)) {
       // TODO[persistence]: What if it's included in the tracked keys of a query?  Do we still want
