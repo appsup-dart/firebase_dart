@@ -3,6 +3,7 @@ import 'package:firebase_dart/src/database/impl/persistence/prune_forest.dart';
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 
+import '../data_observer.dart';
 import '../treestructureddata.dart';
 
 /// This class provides an interface to a persistent cache.
@@ -17,6 +18,11 @@ abstract class PersistenceStorageEngine {
 
   /// Remove a write with the given write id.
   void removeUserOperation(int writeId);
+
+  /// Loads all data at a path.
+  ///
+  /// It has no knowledge of whether the data is "complete" or not.
+  IncompleteData serverCache(Path<Name> path);
 
   /// Overwrite the server cache at the given path with the given node.
   void overwriteServerCache(TreeOperation operation);

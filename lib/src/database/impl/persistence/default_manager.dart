@@ -2,6 +2,7 @@ import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:logging/logging.dart';
 
+import '../data_observer.dart';
 import '../query_spec.dart';
 import '../treestructureddata.dart';
 import 'engine.dart';
@@ -45,6 +46,42 @@ class DefaultPersistenceManager implements PersistenceManager {
     storageLayer.overwriteServerCache(operation);
     setQueryComplete(operation.path, filter);
     _doPruneCheckAfterServerUpdate();
+  }
+
+  bool _completeQueryContains(
+      QueryFilter masterFilter, IncompleteData data, QueryFilter f) {
+    if (f == masterFilter) return true;
+    if (f.orderBy != masterFilter.orderBy) return false;
+    if (!masterFilter.limits) return true;
+    return data.value.children
+        .filteredMapView(
+            start: f.validInterval.start,
+            end: f.validInterval.end,
+            limit: f.limit,
+            reversed: f.reversed)
+        .isComplete;
+  }
+
+  @override
+  IncompleteData serverCache(Path<Name> path,
+      [QueryFilter filter = const QueryFilter()]) {
+    var query = QuerySpec(path, filter);
+    var v = storageLayer.serverCache(path);
+    if (_trackedQueryManager.isQueryComplete(query)) {
+      return IncompleteData.complete(v.value).withFilter(filter);
+    } else {
+      var queries =
+          _trackedQueryManager.trackedQueryTree.subtree(path)?.value ?? {};
+      for (var p in queries.keys) {
+        if (p.ordering == filter.ordering &&
+            queries[p].complete &&
+            _completeQueryContains(p, v, filter)) {
+          return IncompleteData.complete(v.value).withFilter(filter);
+        }
+      }
+
+      return v.withFilter(filter);
+    }
   }
 
   @override

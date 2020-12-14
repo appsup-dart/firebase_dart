@@ -227,7 +227,8 @@ class TrackedQueryManager {
       // We didn't find a default complete query, so must not be complete.
       return false;
     } else {
-      var trackedQueries = trackedQueryTree.subtree(query.path).value;
+      var trackedQueries = trackedQueryTree.subtree(query.path)?.value;
+      if (trackedQueries == null) return false;
       return trackedQueries != null &&
           trackedQueries.containsKey(query.params) &&
           trackedQueries[query.params].complete;

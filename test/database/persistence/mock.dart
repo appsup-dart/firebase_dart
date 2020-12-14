@@ -75,7 +75,7 @@ class MockPersistenceStorageEngine implements PersistenceStorageEngine {
     _serverCache = _serverCache.applyOperation(operation);
   }
 
-  IncompleteData get serverCache => _serverCache;
+  IncompleteData get currentServerCache => _serverCache;
 
   @override
   void pruneCache(Path<Name> prunePath, PruneForest pruneForest) {
@@ -153,6 +153,7 @@ class MockPersistenceStorageEngine implements PersistenceStorageEngine {
 
   @override
   void saveTrackedQueryKeys(int trackedQueryId, Set<Name> keys) {
+    // TODO: is saveTrackedQueryKeys necessary?
     _verifyInsideTransaction();
     assert(trackedQueries.containsKey(trackedQueryId),
         "Can't track keys for an untracked query.");
@@ -168,6 +169,11 @@ class MockPersistenceStorageEngine implements PersistenceStorageEngine {
   @override
   int serverCacheEstimatedSizeInBytes() {
     return json.encode(_serverCache.value).length;
+  }
+
+  @override
+  IncompleteData serverCache(Path<Name> path) {
+    return _serverCache.child(path);
   }
 
   @override

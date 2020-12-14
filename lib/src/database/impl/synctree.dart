@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:sortedmap/sortedmap.dart';
 
 import 'data_observer.dart';
@@ -134,14 +135,19 @@ class SyncPoint {
 
   bool _isCompleteFromParent = false;
 
-  SyncPoint(this.name, [ViewCache data]) {
+  final PersistenceManager persistenceManager;
+
+  final Path<Name> path;
+
+  SyncPoint(this.name, this.path, {ViewCache data, this.persistenceManager}) {
     if (data == null) return;
     var q = QueryFilter();
     views[q] = MasterView(q).._data = data;
   }
 
   SyncPoint child(Name child) {
-    var p = SyncPoint('$name/$child', viewCacheForChild(child));
+    var p = SyncPoint('$name/$child', path.child(child),
+        data: viewCacheForChild(child), persistenceManager: persistenceManager);
     p.isCompleteFromParent = isCompleteForChild(child);
     return p;
   }
@@ -208,7 +214,11 @@ class SyncPoint {
       filter = QueryFilter(ordering: filter.ordering);
       return views[filter] = views[unlimitedFilter].withFilter(filter);
     }
-    return views[filter] = MasterView(filter);
+
+    var serverVersion = persistenceManager.serverCache(path).withFilter(filter);
+    var cache = ViewCache(serverVersion, serverVersion);
+    // TODO: apply user operations from persistence storage
+    return views[filter] = MasterView(filter).._data = cache;
   }
 
   /// Removes an event listener for events of [type] and for data filtered by
@@ -351,12 +361,23 @@ class SyncTree {
 
   final PersistenceManager persistenceManager;
 
-  SyncTree(this.name,
+  SyncTree(String name,
       {RemoteRegister remoteRegister,
       RemoteUnregister remoteUnregister,
       PersistenceManager persistenceManager})
-      : root = TreeNode(SyncPoint(name)),
-        persistenceManager = persistenceManager ?? NoopPersistenceManager(),
+      : this._(name,
+            remoteRegister: remoteRegister,
+            remoteUnregister: remoteUnregister,
+            persistenceManager: persistenceManager ?? NoopPersistenceManager());
+
+  SyncTree._(this.name,
+      {RemoteRegister remoteRegister,
+      RemoteUnregister remoteUnregister,
+      @required PersistenceManager persistenceManager})
+      : assert(persistenceManager != null),
+        root = TreeNode(
+            SyncPoint(name, Path(), persistenceManager: persistenceManager)),
+        persistenceManager = persistenceManager,
         registrar = RemoteListenerRegistrar.fromCallbacks(persistenceManager,
             remoteRegister: remoteRegister, remoteUnregister: remoteUnregister);
 

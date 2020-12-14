@@ -1,7 +1,7 @@
-import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 
+import '../data_observer.dart';
 import '../treestructureddata.dart';
 
 abstract class PersistenceManager {
@@ -11,8 +11,16 @@ abstract class PersistenceManager {
   /// Remove a user operation with the given write id.
   void removeUserOperation(int writeId);
 
-  /// Overwrite the server cache with the given node for a given query. The query is considered to be
-  /// complete after saving this node.
+  /// Returns any cached node or children as a [IncompleteData].
+  ///
+  /// The query is *not* used to filter the node but rather to determine if it
+  /// can be considered complete.
+  IncompleteData serverCache(Path<Name> path,
+      [QueryFilter filter = const QueryFilter()]);
+
+  /// Overwrite the server cache with the given node for a given query.
+  ///
+  /// The query is considered to be complete after saving this node.
   void updateServerCache(TreeOperation operation, [QueryFilter filter]);
 
   void setQueryActive(Path<Name> path, QueryFilter filter);
@@ -35,6 +43,12 @@ class NoopPersistenceManager implements PersistenceManager {
   @override
   void removeUserOperation(int writeId) {
     _verifyInsideTransaction();
+  }
+
+  @override
+  IncompleteData serverCache(Path<Name> path,
+      [QueryFilter filter = const QueryFilter()]) {
+    return IncompleteData.empty();
   }
 
   @override

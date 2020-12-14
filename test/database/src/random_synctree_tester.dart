@@ -209,7 +209,7 @@ class RandomSyncTreeTester {
   }
 
   void checkPersistedServerCache() {
-    var v = storageEngine.serverCache.value;
+    var v = storageEngine.currentServerCache.value;
     syncTree.root.forEachNode((path, node) {
       node.views.forEach((params, view) {
         if (view.data.localVersion.isComplete) {
