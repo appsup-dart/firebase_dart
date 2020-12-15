@@ -4,11 +4,13 @@ import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/event.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/persistence/default_manager.dart';
+import 'package:firebase_dart/src/database/impl/persistence/hive_engine.dart';
 import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
+import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'package:test/test.dart';
@@ -73,7 +75,9 @@ class RandomSyncTreeTester {
       registeredListens.remove(spec);
     },
         persistenceManager: DefaultPersistenceManager(
-            MockPersistenceStorageEngine(), TestCachePolicy(0.1)));
+            HivePersistenceStorageEngine(
+                KeyValueDatabase(Hive.box('firebase-db-storage'))),
+            TestCachePolicy(0.1)));
   }
 
   void _generateUserUnlisten() {
@@ -177,8 +181,8 @@ class RandomSyncTreeTester {
   }
 
   void checkPersistedActiveQueries() {
-    var trackedQueries = storageEngine.trackedQueries.entries
-        .map((v) => v.value)
+    var trackedQueries = storageEngine
+        .loadTrackedQueries()
         .where((v) => v.active)
         .map((v) => v.querySpec);
     expect(trackedQueries.toSet(),
@@ -201,11 +205,12 @@ class RandomSyncTreeTester {
     });
   }
 
-  MockPersistenceStorageEngine get storageEngine =>
+  HivePersistenceStorageEngine get storageEngine =>
       (_syncTree.persistenceManager as DefaultPersistenceManager).storageLayer;
 
   void checkPersistedWrites() {
-    expect(storageEngine.writes, Map.fromEntries(outstandingWrites));
+    expect(
+        storageEngine.loadUserOperations(), Map.fromEntries(outstandingWrites));
   }
 
   void checkPersistedServerCache() {
@@ -216,7 +221,8 @@ class RandomSyncTreeTester {
           // complete data should match with value on server
           var persistedValue = v.getChild(path).withFilter(params);
           var serverView = view.data.serverVersion.value;
-          expect(persistedValue, serverView);
+          expect(persistedValue, serverView,
+              reason: 'No match at path $path with params $params');
         }
       });
     });
@@ -339,10 +345,11 @@ class RandomGenerator {
       return QueryFilter();
     } else {
       var ordering = nextOrdering();
+      var limit = nextBool();
       return QueryFilter(
           ordering: ordering,
-          limit: nextBool() ? null : nextInt(30) + 1,
-          reversed: nextBool(),
+          limit: !limit ? null : nextInt(30) + 1,
+          reversed: limit && nextBool(),
           validInterval:
               nextKeyValueInterval(keyOnly: ordering is KeyOrdering));
     }

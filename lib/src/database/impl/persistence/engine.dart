@@ -24,6 +24,9 @@ abstract class PersistenceStorageEngine {
   /// It has no knowledge of whether the data is "complete" or not.
   IncompleteData serverCache(Path<Name> path);
 
+  /// Return all writes that were persisted
+  Map<int, TreeOperation> loadUserOperations();
+
   /// Overwrite the server cache at the given path with the given node.
   void overwriteServerCache(TreeOperation operation);
 

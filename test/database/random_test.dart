@@ -1,10 +1,15 @@
+import 'dart:typed_data';
+
 import 'package:fake_async/fake_async.dart';
+import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 import 'src/random_synctree_tester.dart';
 
-void main() {
+void main() async {
+  await Hive.openBox('firebase-db-storage', bytes: Uint8List(0));
+
   hierarchicalLoggingEnabled = true;
   RandomSyncTreeTester.logger
 //    ..level = Level.ALL

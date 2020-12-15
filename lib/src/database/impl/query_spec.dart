@@ -25,7 +25,7 @@ class QuerySpec {
   }
 
   Map<String, dynamic> toJson() => {
-        'p': path.toString(),
+        'p': path.join('/'),
         if (params != const QueryFilter())
           'q': Query.fromFilter(params).toJson()
       };

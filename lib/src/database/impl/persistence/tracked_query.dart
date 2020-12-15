@@ -42,7 +42,7 @@ class TrackedQuery {
       : this(
             id: json['k'],
             querySpec: QuerySpec.fromJson(json['q']),
-            lastUse: DateTime.fromMillisecondsSinceEpoch(json['u']),
+            lastUse: DateTime.fromMicrosecondsSinceEpoch(json['u']),
             complete: json['c'],
             active: json['a']);
 
@@ -63,7 +63,7 @@ class TrackedQuery {
   Map<String, dynamic> toJson() => {
         'k': id,
         'q': querySpec.toJson(),
-        'u': lastUse.millisecondsSinceEpoch,
+        'u': lastUse.microsecondsSinceEpoch,
         'c': complete,
         'a': active
       };
@@ -316,19 +316,6 @@ class TrackedQueryManager {
   /// Used for tests to assert we're still in-sync with the DB.
   ///
   /// Don't call it in production, since it's slow.
-  @visibleForTesting
-  void verifyCache() {
-    var storedTrackedQueries = storageLayer.loadTrackedQueries();
-
-    final trackedQueries = <TrackedQuery>[
-      ...trackedQueryTree.allNonNullValues.expand((v) => v.values)
-    ];
-    trackedQueries.sort((o1, o2) => Comparable.compare(o1.id, o2.id));
-
-    assert(const ListEquality().equals(storedTrackedQueries, trackedQueries),
-        'Tracked queries out of sync.  Tracked queries: $trackedQueries. Stored queries: $storedTrackedQueries');
-  }
-
   bool includedInDefaultCompleteQuery(Path path) {
     return trackedQueryTree.findRootMostMatchingPath(
             path, _hasDefaultCompletePredicate) !=
@@ -352,7 +339,7 @@ class TrackedQueryManager {
   void cacheTrackedQuery(TrackedQuery query) {
     assertValidTrackedQuery(query.querySpec);
 
-    var trackedSet = trackedQueryTree.subtree(query.querySpec.path).value;
+    var trackedSet = trackedQueryTree.subtree(query.querySpec.path)?.value;
     if (trackedSet == null) {
       trackedSet = <QueryFilter, TrackedQuery>{};
       trackedQueryTree =

@@ -94,7 +94,8 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
       bool reversed = false,
       TreeStructuredDataOrdering ordering =
           const TreeStructuredDataOrdering.byPriority()})
-      : super(
+      : assert(!reversed || limit != null),
+        super(
             ordering: ordering,
             limit: limit,
             reversed: reversed,

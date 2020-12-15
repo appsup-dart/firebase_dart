@@ -6,6 +6,7 @@ import 'package:firebase_dart/src/database/impl/persistence/prune_forest.dart';
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 
 import '../data_observer.dart';
 import '../tree.dart';
@@ -21,6 +22,8 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
   static const _userWritesPrefix = 'W';
 
   IncompleteData _serverCache = IncompleteData.empty();
+
+  IncompleteData get currentServerCache => _serverCache;
 
   final KeyValueDatabase database;
 
@@ -49,7 +52,17 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
               startKey: '$_trackedQueryPrefix:',
               endKey: '$_trackedQueryPrefix;')
           .map((v) => TrackedQuery.fromJson(v))
-    ];
+    ]..sort((a, b) => Comparable.compare(a.id, b.id));
+  }
+
+  @override
+  Map<int, TreeOperation> loadUserOperations() {
+    return {
+      for (var k in database.keysBetween(
+          startKey: '$_userWritesPrefix:', endKey: '$_userWritesPrefix;'))
+        int.parse(k.substring('$_userWritesPrefix:'.length)):
+            TreeOperationX.fromJson(database.box.get(k))
+    };
   }
 
   @override
@@ -134,17 +147,7 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
   @override
   void saveUserOperation(TreeOperation operation, int writeId) {
-    var o = operation.nodeOperation;
-    var json = {
-      'p': operation.path.join('/'),
-      if (o is Overwrite) 's': o.value.toJson(true),
-      if (o is Merge)
-        'm': {
-          for (var c in o.overwrites)
-            c.path.join('/'): (c as Overwrite).value.toJson(true)
-        }
-    };
-    database.put('$_userWritesPrefix:$writeId', json);
+    database.put('$_userWritesPrefix:$writeId', operation.toJson());
   }
 
   @override
@@ -174,7 +177,8 @@ class KeyValueDatabase {
 
   Iterable<dynamic> valuesBetween({String startKey, String endKey}) {
     // TODO merge transaction data
-    return box.valuesBetween(startKey: startKey, endKey: endKey);
+    return keysBetween(startKey: startKey, endKey: endKey)
+        .map((k) => box.get(k));
   }
 
   Iterable<String> keysBetween({String startKey, String endKey}) sync* {
@@ -243,5 +247,31 @@ extension IncompleteDataX on IncompleteData {
           k.join('/').length + json.encode(v.toJson(true)).toString().length;
     });
     return bytes;
+  }
+}
+
+extension TreeOperationX on TreeOperation {
+  static TreeOperation fromJson(Map<String, dynamic> json) {
+    if (json.containsKey('s')) {
+      return TreeOperation.overwrite(
+          Name.parsePath(json['p']), TreeStructuredData.fromJson(json['s']));
+    }
+    var v = json['m'] as Map;
+    return TreeOperation.merge(Name.parsePath(json['p']), {
+      for (var k in v.keys) Name.parsePath(k): TreeStructuredData.fromJson(v[k])
+    });
+  }
+
+  Map<String, dynamic> toJson() {
+    var o = nodeOperation;
+    return {
+      'p': path.join('/'),
+      if (o is Overwrite) 's': o.value.toJson(true),
+      if (o is Merge)
+        'm': {
+          for (var c in o.overwrites)
+            c.path.join('/'): (c.nodeOperation as Overwrite).value.toJson(true)
+        }
+    };
   }
 }

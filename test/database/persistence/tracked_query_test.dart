@@ -1,16 +1,22 @@
+import 'dart:typed_data';
+
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
-import 'package:firebase_dart/src/database/impl/persistence/engine.dart';
+import 'package:firebase_dart/src/database/impl/persistence/hive_engine.dart';
 import 'package:firebase_dart/src/database/impl/persistence/prune_forest.dart';
 import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
+import 'package:firebase_dart/src/database/impl/utils.dart';
+import 'package:hive/hive.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'package:test/test.dart';
 
 import 'mock.dart';
 
-void main() {
+void main() async {
+  await Hive.openBox('firebase-db-storage', bytes: Uint8List(0));
+
   var sampleQueryParams = QueryFilter(
       ordering: TreeStructuredDataOrdering.byChild('child'),
       limit: 5,
@@ -25,17 +31,24 @@ void main() {
   var sampleFooQuery = QuerySpec(Name.parsePath('foo'), sampleQueryParams);
 
   group('TrackedQueryManager', () {
+    tearDown(() async {
+      await Hive.box('firebase-db-storage').clear();
+    });
     test('find tracked query', () {
       var manager = newManager();
       expect(manager.findTrackedQuery(sampleFooQuery), null);
+      manager.storageLayer.beginTransaction();
       manager.setQueryActive(sampleFooQuery);
+      manager.storageLayer.endTransaction();
       expect(manager.findTrackedQuery(sampleFooQuery), isNot(null));
     });
     test('remove tracked query', () {
       var manager = newManager();
+      manager.storageLayer.beginTransaction();
       manager.setQueryActive(sampleFooQuery);
       expect(manager.findTrackedQuery(sampleFooQuery), isNot(null));
       manager.removeTrackedQuery(sampleFooQuery);
+      manager.storageLayer.endTransaction();
       expect(manager.findTrackedQuery(sampleFooQuery), null);
       manager.verifyCache();
     });
@@ -44,14 +57,18 @@ void main() {
       fakeAsync((fakeAsync) {
         var manager = newManager();
 
+        manager.storageLayer.beginTransaction();
         manager.setQueryActive(sampleFooQuery);
+        manager.storageLayer.endTransaction();
         var q = manager.findTrackedQuery(sampleFooQuery);
         expect(q.active, true);
         expect(clock.now(), q.lastUse);
         manager.verifyCache();
 
         fakeAsync.elapse(Duration(seconds: 2));
+        manager.storageLayer.beginTransaction();
         manager.setQueryInactive(sampleFooQuery);
+        manager.storageLayer.endTransaction();
         q = manager.findTrackedQuery(sampleFooQuery);
         expect(q.active, false);
         expect(clock.now(), q.lastUse);
@@ -61,14 +78,17 @@ void main() {
 
     test('set query complete', () {
       var manager = newManager();
+      manager.storageLayer.beginTransaction();
       manager.setQueryActive(sampleFooQuery);
       manager.setQueryCompleteIfExists(sampleFooQuery);
+      manager.storageLayer.endTransaction();
       expect(manager.findTrackedQuery(sampleFooQuery).complete, true);
       manager.verifyCache();
     });
 
     test('set queries complete', () {
       var manager = newManager();
+      manager.storageLayer.beginTransaction();
       manager.setQueryActive(QuerySpec(Name.parsePath('foo')));
       manager.setQueryActive(QuerySpec(Name.parsePath('foo/bar')));
       manager.setQueryActive(QuerySpec(Name.parsePath('elsewhere')));
@@ -80,6 +100,7 @@ void main() {
           QuerySpec(Name.parsePath('elsewhere'), sampleQueryParams));
 
       manager.setQueriesComplete(Name.parsePath('foo'));
+      manager.storageLayer.endTransaction();
 
       expect(
           manager.findTrackedQuery(QuerySpec(Name.parsePath('foo'))).complete,
@@ -118,6 +139,7 @@ void main() {
     test('is query complete', () {
       var manager = newManager();
 
+      manager.storageLayer.beginTransaction();
       manager.setQueryActive(sampleFooQuery);
       manager.setQueryCompleteIfExists(sampleFooQuery);
 
@@ -125,6 +147,7 @@ void main() {
 
       manager.setQueryActive(QuerySpec(Name.parsePath('baz')));
       manager.setQueryCompleteIfExists(QuerySpec(Name.parsePath('baz')));
+      manager.storageLayer.endTransaction();
 
       expect(manager.isQueryComplete(sampleFooQuery), true);
       expect(manager.isQueryComplete(QuerySpec(Name.parsePath('bar'))), false);
@@ -139,6 +162,7 @@ void main() {
       fakeAsync((fakeAsync) {
         var manager = newManager();
 
+        manager.storageLayer.beginTransaction();
         manager.setQueryActive(QuerySpec(Name.parsePath('active1')));
         manager.setQueryActive(QuerySpec(Name.parsePath('active2')));
         manager.setQueryActive(QuerySpec(Name.parsePath('inactive1')));
@@ -181,6 +205,7 @@ void main() {
 
         forest = manager.pruneOldQueries(TestCachePolicy(1.0));
         expect(forest.prunesAnything(), false);
+        manager.storageLayer.endTransaction();
 
         manager.verifyCache();
       });
@@ -190,14 +215,18 @@ void main() {
       fakeAsync((fakeAsync) {
         var manager = newManager();
 
+        manager.storageLayer.beginTransaction();
         // Create a bunch of inactive queries.
         for (var i = 0; i < 15; i++) {
           manager.setQueryActive(QuerySpec(Name.parsePath('$i')));
           manager.setQueryInactive(QuerySpec(Name.parsePath('$i')));
           fakeAsync.elapse(Duration(seconds: i + 1));
         }
+        manager.storageLayer.endTransaction();
 
+        manager.storageLayer.beginTransaction();
         var forest = manager.pruneOldQueries(TestCachePolicy(0.2, 10));
+        manager.storageLayer.endTransaction();
 
         // Should prune down to the max of 10, so 5 pruned.
         var expected = PruneForest();
@@ -218,6 +247,7 @@ void main() {
       fakeAsync((fakeAsync) {
         var manager = newManager();
 
+        manager.storageLayer.beginTransaction();
         manager.setQueryActive(QuerySpec(Name.parsePath('foo')));
         manager.setQueryActive(
             QuerySpec(Name.parsePath('foo/a'), sampleQueryParams));
@@ -227,6 +257,7 @@ void main() {
 
         // prune foo, but keep foo/a and foo/b
         var forest = manager.pruneOldQueries(TestCachePolicy(1.0));
+        manager.storageLayer.endTransaction();
         var expected = PruneForest()
             .prune(Name.parsePath('foo'))
             .keep(Name.parsePath('foo/a'))
@@ -240,6 +271,7 @@ void main() {
       fakeAsync((fakeAsync) {
         var manager = newManager();
 
+        manager.storageLayer.beginTransaction();
         manager.setQueryActive(QuerySpec(Name.parsePath('foo')));
         manager.setQueryActive(
             QuerySpec(Name.parsePath('foo/a'), sampleQueryParams));
@@ -249,9 +281,12 @@ void main() {
             QuerySpec(Name.parsePath('foo/a'), sampleQueryParams));
         manager.setQueryInactive(
             QuerySpec(Name.parsePath('foo/b'), sampleQueryParams));
+        manager.storageLayer.endTransaction();
 
         // prune foo/a and foo/b, but keep foo
+        manager.storageLayer.beginTransaction();
         var forest = manager.pruneOldQueries(TestCachePolicy(1.0));
+        manager.storageLayer.endTransaction();
         var expected = PruneForest()
             .prune(Name.parsePath('foo/a'))
             .prune(Name.parsePath('foo/b'))
@@ -265,7 +300,9 @@ void main() {
       fakeAsync((fakeAsync) {
         var manager = newManager();
 
+        manager.storageLayer.beginTransaction();
         manager.ensureCompleteTrackedQuery(Name.parsePath('foo'));
+        manager.storageLayer.endTransaction();
         var query = manager.findTrackedQuery(QuerySpec(Name.parsePath('foo')));
         expect(query.complete, true);
         expect(query.lastUse, clock.now());
@@ -276,6 +313,7 @@ void main() {
       fakeAsync((fakeAsync) {
         var manager = newManager();
 
+        manager.storageLayer.beginTransaction();
         manager.setQueryActive(QuerySpec(Name.parsePath('foo')));
 
         var lastTick = clock.now();
@@ -283,6 +321,7 @@ void main() {
         fakeAsync.elapse(Duration(seconds: 2));
 
         manager.ensureCompleteTrackedQuery(Name.parsePath('foo'));
+        manager.storageLayer.endTransaction();
         expect(
             manager.findTrackedQuery(QuerySpec(Name.parsePath('foo'))).lastUse,
             lastTick);
@@ -292,9 +331,11 @@ void main() {
     test('has active default query', () {
       var manager = newManager();
 
+      manager.storageLayer.beginTransaction();
       manager.setQueryActive(sampleFooQuery);
 
       manager.setQueryActive(QuerySpec(Name.parsePath('bar')));
+      manager.storageLayer.endTransaction();
 
       expect(manager.hasActiveDefaultQuery(Name.parsePath('foo')), false);
       expect(manager.hasActiveDefaultQuery(Name.parsePath('')), false);
@@ -303,18 +344,22 @@ void main() {
     });
 
     test('cache sanity check', () {
-      var engine = MockPersistenceStorageEngine();
-      engine.disableTransactionCheck = true;
       var manager = newManager();
 
+      manager.storageLayer.beginTransaction();
       manager.setQueryActive(sampleFooQuery);
       manager.setQueryActive(QuerySpec(Name.parsePath('foo')));
+      manager.storageLayer.endTransaction();
       manager.verifyCache();
 
+      manager.storageLayer.beginTransaction();
       manager.setQueryCompleteIfExists(sampleFooQuery);
+      manager.storageLayer.endTransaction();
       manager.verifyCache();
 
+      manager.storageLayer.beginTransaction();
       manager.setQueryInactive(QuerySpec(Name.parsePath('foo')));
+      manager.storageLayer.endTransaction();
       manager.verifyCache();
 
       var manager2 = newManager();
@@ -323,11 +368,21 @@ void main() {
   });
 }
 
-TrackedQueryManager newManager([PersistenceStorageEngine engine]) {
-  if (engine == null) {
-    var e = MockPersistenceStorageEngine();
-    e.disableTransactionCheck = true;
-    engine = e;
-  }
+TrackedQueryManager newManager() {
+  var engine = HivePersistenceStorageEngine(
+      KeyValueDatabase(Hive.box('firebase-db-storage')));
   return TrackedQueryManager(engine);
+}
+
+extension TrackedQueryManagerTestX on TrackedQueryManager {
+  void verifyCache() {
+    var storedTrackedQueries = storageLayer.loadTrackedQueries();
+
+    final trackedQueries = <TrackedQuery>[
+      ...trackedQueryTree.allNonNullValues.expand((v) => v.values)
+    ];
+    trackedQueries.sort((o1, o2) => Comparable.compare(o1.id, o2.id));
+
+    expect(storedTrackedQueries, trackedQueries);
+  }
 }

@@ -138,7 +138,7 @@ class IncompleteData {
           [Path<Name> path]) =>
       _writeTree.subtree(path ?? Path()).forEachNode((k, v) {
         if (v == null) return;
-        f(Path.from([...path, ...k]), v);
+        f(Path.from([...?path, ...k]), v);
       });
 
   TreeOperation toOperation() {
