@@ -2,6 +2,11 @@ import 'dart:async';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
+import 'package:firebase_dart/src/database/impl/persistence/default_manager.dart';
+import 'package:firebase_dart/src/database/impl/persistence/hive_engine.dart';
+import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
+import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
+import 'package:hive/hive.dart';
 import 'package:quiver/core.dart' as quiver;
 
 import '../../database.dart';
@@ -40,11 +45,31 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
     await repo.purgeOutstandingWrites();
   }
 
+  PersistenceManager _persistenceManager;
+
+  int _persistenceCacheSize = 10 * 1024 * 1024;
+
+  bool _persistenceEnabled = false;
+
+  PersistenceManager get persistenceManager =>
+      _persistenceManager ??= _persistenceEnabled
+          ? DefaultPersistenceManager(
+              HivePersistenceStorageEngine(KeyValueDatabase(
+                  Hive.box('firebase-db-persistence-storage-${app.name}'))),
+              LRUCachePolicy(_persistenceCacheSize))
+          : NoopPersistenceManager();
+
   @override
   Future<bool> setPersistenceEnabled(bool enabled) async {
-    // TODO: implement setPersistenceEnabled: do nothing for now
-
-    return false;
+    if (_persistenceManager != null) return false;
+    if (_persistenceEnabled == enabled) return true;
+    if (enabled) {
+      await Hive.openBox('firebase-db-persistence-storage-${app.name}');
+    } else if (Hive.isBoxOpen('firebase-db-persistence-storage-${app.name}')) {
+      await Hive.box('firebase-db-persistence-storage-${app.name}').close();
+    }
+    _persistenceEnabled = enabled;
+    return true;
   }
 
   static String _normalizeUrl(String url) {
@@ -77,6 +102,12 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
       other is FirebaseDatabase &&
       other.app == app &&
       other.databaseURL == databaseURL;
+
+  @override
+  void setPersistenceCacheSizeBytes(int cacheSizeInBytes) {
+    assert(cacheSizeInBytes != null);
+    _persistenceCacheSize = cacheSizeInBytes;
+  }
 }
 
 class DataSnapshotImpl extends DataSnapshot {

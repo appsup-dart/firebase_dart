@@ -64,4 +64,18 @@ abstract class FirebaseDatabase {
   /// thus be available again when the app is restarted (even when there is no
   /// network connectivity at that time).
   Future<bool> setPersistenceEnabled(bool enabled);
+
+  /// By default Firebase Database will use up to 10MB of disk space to cache
+  /// data.
+  ///
+  /// If the cache grows beyond this size, Firebase Database will start removing
+  /// data that hasn't been recently used. If you find that your application
+  /// caches too little or too much data, call this method to change the cache
+  /// size. This method must be called before creating your first Database
+  /// reference and only needs to be called once per application.
+  ///
+  /// Note that the specified cache size is only an approximation and the size
+  /// on disk may temporarily exceed it at times. Cache sizes smaller than 1 MB
+  /// or greater than 100 MB are not supported.
+  void setPersistenceCacheSizeBytes(int cacheSizeInBytes);
 }

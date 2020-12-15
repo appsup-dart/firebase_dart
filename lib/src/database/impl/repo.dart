@@ -7,6 +7,7 @@ import 'dart:math';
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/database.dart'
     show FirebaseDatabaseException, MutableData, TransactionHandler;
+import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:sortedmap/sortedmap.dart';
@@ -18,6 +19,7 @@ import 'events/cancel.dart';
 import 'events/child.dart';
 import 'events/value.dart';
 import 'firebase_impl.dart' as firebase;
+import 'firebase_impl.dart';
 import 'operations/tree.dart';
 import 'synctree.dart';
 import 'tree.dart';
@@ -68,11 +70,13 @@ class Repo {
       })
             ..initialize();
 
-      return Repo._(url, connection, auth.authStateChanges());
+      return Repo._(url, connection, auth.authStateChanges(),
+          (db as FirebaseDatabaseImpl).persistenceManager);
     });
   }
 
-  Repo._(this.url, this._connection, Stream<User> authStateChanges)
+  Repo._(this.url, this._connection, Stream<User> authStateChanges,
+      PersistenceManager persistenceManager)
       : _syncTree = SyncTree(url.toString(),
             remoteRegister: (path, filter, hash) async {
           var warnings = await _connection.listen(path.join('/'),
@@ -83,7 +87,7 @@ class Repo {
           }
         }, remoteUnregister: (path, filter) async {
           await _connection.unlisten(path.join('/'), query: filter);
-        }),
+        }, persistenceManager: persistenceManager),
         _infoSyncTree = SyncTree(url.toString()) {
     _infoSyncTree.addEventListener(
         'value', Path.from([]), QueryFilter(), (event) {});
