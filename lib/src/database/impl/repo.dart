@@ -63,7 +63,7 @@ class Repo {
 
       var connection =
           PersistentConnection(url, authTokenProvider: (refresh) async {
-        var user = auth.currentUser;
+        var user = await auth.authStateChanges().first;
         if (user == null) return null;
         var token = await user.getIdToken(refresh);
         return token;
