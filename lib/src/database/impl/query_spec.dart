@@ -11,12 +11,12 @@ class QuerySpec {
 
   QuerySpec(this.path, [this.params = const QueryFilter()]);
 
-  QuerySpec.fromJson(Map<String, dynamic> json)
+  QuerySpec.fromJson(Map<dynamic, dynamic> json)
       : this(
             Name.parsePath(json['p']),
             json['q'] == null
                 ? const QueryFilter()
-                : Query.fromJson(json['q']).toFilter());
+                : Query.fromJson((json['q'] as Map).cast()).toFilter());
 
   QuerySpec normalize() {
     // If the query loadsAllData, we don't care about orderBy.

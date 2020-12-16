@@ -19,8 +19,12 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
 
   @override
   FirebaseDatabase createDatabase(FirebaseApp app, {String databaseURL}) {
-    return FirebaseService.findService<FirebaseDatabaseImpl>(app,
-            (s) => s.databaseURL == databaseURL ?? app.options.databaseURL) ??
+    return FirebaseService.findService<FirebaseDatabaseImpl>(
+            app,
+            (s) =>
+                s.databaseURL ==
+                FirebaseDatabaseImpl.normalizeUrl(
+                    databaseURL ?? app.options.databaseURL)) ??
         FirebaseDatabaseImpl(app: app, databaseURL: databaseURL);
   }
 

@@ -6,7 +6,6 @@ import 'package:firebase_dart/src/database/impl/persistence/prune_forest.dart';
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
-import 'package:meta/meta.dart';
 
 import '../data_observer.dart';
 import '../tree.dart';
@@ -27,7 +26,22 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
   final KeyValueDatabase database;
 
-  HivePersistenceStorageEngine(this.database);
+  HivePersistenceStorageEngine(this.database) {
+    _loadServerCache();
+  }
+
+  void _loadServerCache() {
+    var keys = database.keysBetween(
+      startKey: '$_serverCachePrefix:',
+      endKey: '$_serverCachePrefix;',
+    );
+
+    for (var k in keys) {
+      var p = Name.parsePath(k.substring('$_serverCachePrefix:'.length));
+      _serverCache = _serverCache.applyOperation(TreeOperation.overwrite(
+          p, TreeStructuredData.fromJson(database.box.get(k))));
+    }
+  }
 
   @override
   void beginTransaction() {
@@ -70,11 +84,12 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
     var newValue = _serverCache.applyOperation(operation);
 
     newValue.forEachCompleteNode((k, v) {
+      var p = k.join('/');
       database.deleteAll(database.keysBetween(
-        startKey: '$_serverCachePrefix:$k/',
-        endKey: '$_serverCachePrefix:${k}0',
+        startKey: '$_serverCachePrefix:$p/',
+        endKey: '$_serverCachePrefix:${p}0',
       ));
-      database.put('$_serverCachePrefix:$k/', v.toJson(true));
+      database.put('$_serverCachePrefix:$p/', v.toJson(true));
     });
     _serverCache = newValue;
   }
@@ -105,12 +120,13 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
               .removeWrite(absoluteDataPath)
               .applyOperation(newCache.toOperation());
 
+          var p = absoluteDataPath.join('/');
           database.deleteAll(database.keysBetween(
-            startKey: '$_serverCachePrefix:$absoluteDataPath/',
-            endKey: '$_serverCachePrefix:${absoluteDataPath}0',
+            startKey: '$_serverCachePrefix:$p/',
+            endKey: '$_serverCachePrefix:${p}0',
           ));
           _serverCache.forEachCompleteNode((k, v) {
-            database.put('$_serverCachePrefix:$k/', v.toJson(true));
+            database.put('$_serverCachePrefix:${k.join('/')}/', v.toJson(true));
           }, absoluteDataPath);
         } else {
           // NOTE: This is technically a valid scenario (e.g. you ask to prune at / but only want to

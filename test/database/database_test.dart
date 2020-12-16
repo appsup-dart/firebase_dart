@@ -94,6 +94,19 @@ void main() async {
       expect(Repo.hasInstance(db), isFalse);
     });
 
+    test(
+        'FirebaseDatabase.delete should not create a Repo when not already exists',
+        () async {
+      var app = await core.Firebase.initializeApp(
+          name: 'my_app', options: getOptions());
+
+      var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+
+      await app.delete();
+
+      expect(Repo.hasInstance(db), isFalse);
+    });
+
     test('FirebaseDatabase.delete should stop all timers', () async {
       var timers = <Timer, StackTrace>{};
 

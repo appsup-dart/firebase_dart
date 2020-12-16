@@ -40,7 +40,6 @@ class Repo {
 
   static final Map<firebase.FirebaseDatabase, Repo> _repos = {};
 
-  @visibleForTesting
   static bool hasInstance(firebase.FirebaseDatabase db) => _repos[db] != null;
 
   final SyncTree _syncTree;

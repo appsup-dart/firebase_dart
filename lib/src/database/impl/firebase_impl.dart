@@ -18,11 +18,8 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
   final String databaseURL;
 
   FirebaseDatabaseImpl({FirebaseApp app, String databaseURL})
-      : databaseURL = _normalizeUrl(databaseURL ?? app.options.databaseURL),
-        super(app) {
-    // immediately create the repo to assure it will not be created during delete
-    Repo(this);
-  }
+      : databaseURL = normalizeUrl(databaseURL ?? app.options.databaseURL),
+        super(app);
 
   @override
   DatabaseReference reference() => ReferenceImpl(this, <String>[]);
@@ -65,6 +62,10 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
     if (_persistenceEnabled == enabled) return true;
     if (enabled) {
       await Hive.openBox('firebase-db-persistence-storage-${app.name}');
+      if (_persistenceManager != null) {
+        await Hive.box('firebase-db-persistence-storage-${app.name}').close();
+        return false;
+      }
     } else if (Hive.isBoxOpen('firebase-db-persistence-storage-${app.name}')) {
       await Hive.box('firebase-db-persistence-storage-${app.name}').close();
     }
@@ -72,7 +73,7 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
     return true;
   }
 
-  static String _normalizeUrl(String url) {
+  static String normalizeUrl(String url) {
     if (url == null) {
       throw ArgumentError.notNull('databaseURL');
     }
@@ -90,7 +91,9 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
 
   @override
   Future<void> delete() async {
-    await Repo(this).close();
+    if (Repo.hasInstance(this)) {
+      await Repo(this).close();
+    }
     return super.delete();
   }
 

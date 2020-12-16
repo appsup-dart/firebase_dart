@@ -38,7 +38,7 @@ class TrackedQuery {
         assert(
             querySpec.params.limits || querySpec.params == const QueryFilter());
 
-  TrackedQuery.fromJson(Map<String, dynamic> json)
+  TrackedQuery.fromJson(Map<dynamic, dynamic> json)
       : this(
             id: json['k'],
             querySpec: QuerySpec.fromJson(json['q']),
