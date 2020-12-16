@@ -10,6 +10,7 @@ import 'package:firebase_dart/database.dart'
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:sortedmap/sortedmap.dart';
 
 import '../../database.dart' as firebase;
@@ -293,7 +294,8 @@ class Repo {
   /// Helper function to create a stream for a particular event type.
   Stream<firebase.Event> createStream(
       firebase.DatabaseReference ref, QueryFilter filter, String type) {
-    return _Stream(() => StreamFactory(this, ref, filter, type)());
+    return DeferStream(() => StreamFactory(this, ref, filter, type)(),
+        reusable: true);
   }
 
   Future<TreeStructuredData> transaction(
@@ -368,22 +370,6 @@ class Repo {
         TreeOperation.overwrite(Name.parsePath('$dotInfo/$pathString'),
             TreeStructuredData.fromJson(value)),
         null);
-  }
-}
-
-typedef _StreamCreator<T> = Stream<T> Function();
-
-class _Stream<T> extends Stream<T> {
-  final _StreamCreator<T> factory;
-
-  _Stream(this.factory);
-
-  @override
-  StreamSubscription<T> listen(void Function(T event) onData,
-      {Function onError, void Function() onDone, bool cancelOnError}) {
-    var stream = factory();
-    return stream.listen(onData,
-        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
 }
 
