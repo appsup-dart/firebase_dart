@@ -89,7 +89,8 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   void onDataMessage(DataMessage message) {
-    var query = message.body.query ?? _tagToQuery[message.body.tag]?.value;
+    var query =
+        message.body.query?.toFilter() ?? _tagToQuery[message.body.tag]?.value;
     if (query == null && message.body.tag != null) {
       // not listening any more.
       return;
