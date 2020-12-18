@@ -59,7 +59,9 @@ class TreeStructuredData extends TreeNode<Name, Value> {
       json = json['.value'];
     }
 
-    if (json is List) json = json.asMap();
+    if (json is List) {
+      json = {...(json as List).asMap()}..removeWhere((k, v) => v == null);
+    }
     if (json is! Map || json.containsKey('.sv')) {
       var value = Value(json);
       return TreeStructuredData.leaf(value, priority);
@@ -139,7 +141,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     });
     return toHash == ''
         ? ''
-        : base64.encode(sha1.convert(toHash.codeUnits).bytes);
+        : base64.encode(sha1.convert(utf8.encode(toHash)).bytes);
   }
 }
 
