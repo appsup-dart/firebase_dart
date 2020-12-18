@@ -215,7 +215,7 @@ class SyncPoint {
       return views[filter] = views[unlimitedFilter].withFilter(filter);
     }
 
-    var serverVersion = persistenceManager.serverCache(path).withFilter(filter);
+    var serverVersion = persistenceManager.serverCache(path, filter).withFilter(filter);
     var cache = ViewCache(serverVersion, serverVersion);
     // TODO: apply user operations from persistence storage
     return views[filter] = MasterView(filter).._data = cache;
