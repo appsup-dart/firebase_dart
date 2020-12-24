@@ -70,7 +70,7 @@ class Repo {
       })
             ..initialize();
 
-      return Repo._(url, connection, auth.authStateChanges(),
+      return Repo._(url, connection, auth.idTokenChanges(),
           (db as FirebaseDatabaseImpl).persistenceManager);
     });
   }

@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
     show SetAccountInfoResponse;
@@ -5,6 +6,7 @@ import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
 import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 import 'package:quiver/core.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../auth.dart';
 
@@ -26,8 +28,12 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   bool get isDestroyed => _destroyed;
 
+  final BehaviorSubject<String> _tokenUpdates = BehaviorSubject();
+
   FirebaseUserImpl(this._auth, this._credential, [this._authDomain])
-      : assert(_auth != null);
+      : assert(_auth != null) {
+    _initializeProactiveRefresh();
+  }
 
   factory FirebaseUserImpl.fromJson(Map<String, dynamic> user,
       {@required FirebaseAuthImpl auth}) {
@@ -54,6 +60,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       }
     }
     firebaseUser._lastAccessToken = credential.response['accessToken'];
+    firebaseUser._tokenUpdates.add(credential.response['accessToken']);
 
     return firebaseUser;
   }
@@ -67,6 +74,8 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     await user.reload();
     return user;
   }
+
+  Stream<String> get accessTokenChanged => _tokenUpdates.stream.distinct();
 
   String get lastAccessToken => _lastAccessToken;
 
@@ -95,7 +104,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     if (response.accessToken != _lastAccessToken) {
       _lastAccessToken = response.accessToken;
       // Auth state change, notify listeners.
-      // TODO notify auth listeners
+      _tokenUpdates.add(response.accessToken);
     }
     return IdTokenResultImpl(response.accessToken);
   }
@@ -328,6 +337,8 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       _credential = await _rpcHandler.handleIdTokenResponse(response);
 
       _lastAccessToken = response.idToken;
+
+      _tokenUpdates.add(response.idToken);
     }
   }
 
@@ -352,6 +363,34 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       [ActionCodeSettings actionCodeSettings]) {
     // TODO: implement verifyBeforeUpdateEmail
     throw UnimplementedError();
+  }
+
+  void _initializeProactiveRefresh() async {
+    var nextMinDuration = Duration();
+    var forceRefresh = false;
+
+    while (!_destroyed) {
+      try {
+        await getIdTokenResult(forceRefresh);
+        var c = await _credential.getTokenResponse();
+        nextMinDuration = Duration();
+        var t =
+            c.expiresAt.subtract(Duration(minutes: 5)).difference(clock.now());
+        forceRefresh = true;
+        if (t.isNegative) t = Duration();
+        await Future.delayed(t);
+      } catch (e) {
+        if (nextMinDuration.inSeconds == 0) {
+          nextMinDuration = Duration(seconds: 30);
+        } else {
+          nextMinDuration *= 2;
+        }
+        if (nextMinDuration > Duration(minutes: 16)) {
+          nextMinDuration = Duration(minutes: 16);
+        }
+        await Future.delayed(nextMinDuration);
+      }
+    }
   }
 }
 
