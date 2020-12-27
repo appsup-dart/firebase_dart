@@ -66,7 +66,8 @@ class KeyOrdering extends TreeStructuredDataOrdering {
   const KeyOrdering() : super._();
 
   @override
-  TreeStructuredData mapValue(TreeStructuredData v) => null;
+  TreeStructuredData mapValue(TreeStructuredData v) =>
+      TreeStructuredData.fromJson(null);
 
   @override
   String get orderBy => '.key';
@@ -136,19 +137,24 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
 
   QueryFilter copyWith(
       {String orderBy,
-      String startAtKey,
-      dynamic startAtValue,
-      String endAtKey,
-      dynamic endAtValue,
+      Name startAtKey,
+      TreeStructuredData startAtValue,
+      Name endAtKey,
+      TreeStructuredData endAtValue,
       int limit,
       bool reverse}) {
     var ordering = TreeStructuredDataOrdering(orderBy) ?? this.ordering;
-    var validInterval = (ordering is KeyOrdering)
-        ? _updateInterval(
-            this.validInterval, startAtValue, null, endAtValue, null)
-        : _updateInterval(
-            this.validInterval, startAtKey, startAtValue, endAtKey, endAtValue);
-
+    var validInterval = this.validInterval;
+    if (startAtKey != null) {
+      validInterval = KeyValueInterval.fromPairs(
+          Pair.min(startAtKey, startAtValue), validInterval.end);
+    }
+    if (endAtKey != null) {
+      validInterval = KeyValueInterval.fromPairs(
+        validInterval.start,
+        Pair.max(endAtKey, endAtValue),
+      );
+    }
     return QueryFilter(
         ordering: ordering,
         validInterval: validInterval,

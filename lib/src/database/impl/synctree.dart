@@ -215,7 +215,8 @@ class SyncPoint {
       return views[filter] = views[unlimitedFilter].withFilter(filter);
     }
 
-    var serverVersion = persistenceManager.serverCache(path, filter).withFilter(filter);
+    var serverVersion =
+        persistenceManager.serverCache(path, filter).withFilter(filter);
     var cache = ViewCache(serverVersion, serverVersion);
     // TODO: apply user operations from persistence storage
     return views[filter] = MasterView(filter).._data = cache;
@@ -446,7 +447,7 @@ class SyncTree {
   /// Adds an event listener for events of [type] and for data at [path] and
   /// filtered by [filter].
   Future<Null> addEventListener(String type, Path<Name> path,
-      Filter<Name, TreeStructuredData> filter, EventListener listener) {
+      QueryFilter filter, EventListener listener) {
     return _doOnSyncPoint(path, (point) {
       point.addEventListener(type, filter, listener);
     });

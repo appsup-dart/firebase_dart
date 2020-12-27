@@ -16,7 +16,7 @@ class QuerySpec {
             Name.parsePath(json['p']),
             json['q'] == null
                 ? const QueryFilter()
-                : Query.fromJson((json['q'] as Map).cast()).toFilter());
+                : QueryFilterCodec.fromJson((json['q'] as Map).cast()));
 
   QuerySpec normalize() {
     // If the query loadsAllData, we don't care about orderBy.
@@ -26,8 +26,7 @@ class QuerySpec {
 
   Map<String, dynamic> toJson() => {
         'p': path.join('/'),
-        if (params != const QueryFilter())
-          'q': Query.fromFilter(params).toJson()
+        if (params != const QueryFilter()) 'q': params.toJson()
       };
 
   @override

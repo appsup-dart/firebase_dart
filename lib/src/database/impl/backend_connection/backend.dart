@@ -4,10 +4,10 @@ abstract class Backend {
   Auth _auth;
 
   Future<void> listen(String path, EventListener listener,
-      {Query query = const Query(), String hash});
+      {QueryFilter query = const QueryFilter(), String hash});
 
   Future<void> unlisten(String path, EventListener listener,
-      {Query query = const Query()});
+      {QueryFilter query = const QueryFilter()});
 
   Future<void> put(String path, dynamic value, {String hash});
 

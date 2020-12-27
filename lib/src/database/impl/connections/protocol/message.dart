@@ -106,7 +106,7 @@ class DataMessage extends _JsonObjectMessage {
 }
 
 /// Represents a query definition
-class Query {
+extension QueryFilterCodec on QueryFilter {
   static const String indexStartValue = 'sp';
   static const String indexStartName = 'sn';
   static const String indexEndValue = 'ep';
@@ -117,92 +117,80 @@ class Query {
   static const String viewFromRight = 'r';
   static const String indexOn = 'i';
 
-  final int limit;
-  final bool isViewFromRight;
-  final String index;
-  final dynamic endValue;
-  final String endName;
-  final dynamic startValue;
-  final String startName;
-
-  const Query(
-      {this.limit,
-      this.isViewFromRight = false,
-      this.index = '.priority',
-      this.endName,
-      this.endValue,
-      this.startName,
-      this.startValue});
-
-  factory Query.fromJson(Map<String, dynamic> json) {
-    return Query(
-        limit: json[limitTo],
-        isViewFromRight: json[viewFrom] == viewFromRight,
-        index: json[indexOn],
-        endName: json[indexEndName],
-        endValue: json[indexEndValue],
-        startName: json[indexStartName],
-        startValue: json[indexStartValue]);
+  Map<String, dynamic> toJson() {
+    if (this == null || this == QueryFilter()) return null;
+    return {
+      if (limit != null) limitTo: limit,
+      if (limit != null) viewFrom: reversed ? viewFromRight : viewFromLeft,
+      if (ordering is! PriorityOrdering) indexOn: orderBy,
+      if (validInterval.start != Pair.min())
+        if (ordering is KeyOrdering)
+          indexStartValue: (validInterval.start.key as Name).asString()
+        else
+          indexStartValue:
+              (validInterval.start.value as TreeStructuredData).toJson(),
+      if (validInterval.start != Pair.min() &&
+          ordering is! KeyOrdering &&
+          validInterval.start.key != Name.min)
+        indexStartName: (validInterval.start.key as Name).asString(),
+      if (validInterval.end != Pair.max())
+        if (ordering is KeyOrdering)
+          indexStartValue: (validInterval.end.key as Name).asString()
+        else
+          indexStartValue:
+              (validInterval.end.value as TreeStructuredData).toJson(),
+      if (validInterval.end != Pair.max() &&
+          ordering is! KeyOrdering &&
+          validInterval.end.key != Name.max)
+        indexStartName: (validInterval.end.key as Name).asString(),
+    };
   }
 
-  factory Query.fromFilter(QueryFilter filter) {
-    if (filter == null) return null;
-    return Query(
-        limit: filter.limit,
-        isViewFromRight: filter.reversed,
-        index: filter.orderBy,
-        endName: filter.orderBy == '.key' ? null : filter.endKey?.asString(),
-        endValue: filter.orderBy != '.key'
-            ? filter.endValue?.value?.value
-            : filter.endKey?.asString(),
-        startName:
-            filter.orderBy == '.key' ? null : filter.startKey?.asString(),
-        startValue: filter.orderBy != '.key'
-            ? filter.startValue?.value?.value
-            : filter.startKey?.asString());
-  }
+  static QueryFilter fromJson(Map<String, dynamic> json) {
+    if (json == null) return QueryFilter();
+    var ordering = TreeStructuredDataOrdering(json[indexOn]) ?? PriorityOrdering();
+    var limit = json[limitTo];
+    var isViewFromRight = json[viewFrom] == viewFromRight;
 
-  QueryFilter toFilter() {
-    var f = QueryFilter(
+    var start = Pair<Name, TreeStructuredData>.min();
+    if (json.containsKey(indexStartValue) || json.containsKey(indexStartName)) {
+      if (ordering is KeyOrdering) {
+        start = Pair<Name, TreeStructuredData>.min(
+          Name(json[indexStartValue]),
+          TreeStructuredData.fromJson(null),
+        );
+      } else {
+        start = Pair<Name, TreeStructuredData>.min(
+            json.containsKey(indexStartName)
+                ? Name(json[indexStartName])
+                : null,
+            json.containsKey(indexStartValue)
+                ? TreeStructuredData.fromJson(json[indexStartValue])
+                : null);
+      }
+    }
+
+    var end = Pair<Name, TreeStructuredData>.max();
+    if (json.containsKey(indexEndValue) || json.containsKey(indexEndName)) {
+      if (ordering is KeyOrdering) {
+        start = Pair<Name, TreeStructuredData>.max(
+          Name(json[indexEndValue]),
+          TreeStructuredData.fromJson(null),
+        );
+      } else {
+        start = Pair<Name, TreeStructuredData>.max(
+            json.containsKey(indexEndName) ? Name(json[indexEndName]) : null,
+            json.containsKey(indexEndValue)
+                ? TreeStructuredData.fromJson(json[indexEndValue])
+                : null);
+      }
+    }
+    var validInterval = KeyValueInterval.fromPairs(start, end);
+    return QueryFilter(
         limit: limit,
         reversed: isViewFromRight,
-        ordering: TreeStructuredDataOrdering(index));
-    return f.copyWith(
-        startAtKey: startName,
-        startAtValue: startValue,
-        endAtKey: endName,
-        endAtValue: endValue);
-  }
-
-  @override
-  int get hashCode => quiver.hash4(limit, isViewFromRight, index,
-      quiver.hash4(endName, endValue, startName, startValue));
-
-  @override
-  bool operator ==(dynamic other) =>
-      other is Query &&
-      other.limit == limit &&
-      other.isViewFromRight == isViewFromRight &&
-      other.index == index &&
-      other.endName == endName &&
-      other.endValue == endValue &&
-      other.startName == startName &&
-      other.startValue == startValue;
-
-  Map<String, dynamic> toJson() {
-    var json = <String, dynamic>{};
-    if (limit != null) {
-      json[limitTo] = limit;
-      json[viewFrom] = isViewFromRight ? viewFromRight : viewFromLeft;
-    }
-    if (index != null) {
-      json[indexOn] = index;
-    }
-    if (endName != null) json[indexEndName] = endName;
-    if (endValue != null) json[indexEndValue] = endValue;
-    if (startName != null) json[indexStartName] = startName;
-    if (startValue != null) json[indexStartValue] = startValue;
-    return json;
+        ordering: ordering,
+        validInterval: validInterval);
   }
 }
 
@@ -211,7 +199,7 @@ class MessageBody {
   static const String statusOk = 'ok';
 
   final int tag;
-  final Query query;
+  final QueryFilter query;
   final String path;
   final String hash;
   final dynamic data;
@@ -235,9 +223,10 @@ class MessageBody {
     return MessageBody(
         tag: json['t'],
         query: json['q'] is Map
-            ? Query.fromJson(json['q'] as Map<String, dynamic>)
+            ? QueryFilterCodec.fromJson(json['q'] as Map<String, dynamic>)
             : json['q'] is List && json['q'].isNotEmpty
-                ? Query.fromJson(json['q'].first as Map<String, dynamic>)
+                ? QueryFilterCodec.fromJson(
+                    json['q'].first as Map<String, dynamic>)
                 : null,
         path: json['p'],
         hash: json['h'],
@@ -257,7 +246,7 @@ class MessageBody {
     if (path != null) json['p'] = path;
     if (hash != null) json['h'] = hash;
     if (tag != null) json['t'] = tag;
-    if (query != null) json['q'] = query;
+    if (query != null) json['q'] = query.toJson();
     if (data != null) json['d'] = data;
     if (stats != null) json['c'] = stats;
     if (message != null) json['msg'] = message;

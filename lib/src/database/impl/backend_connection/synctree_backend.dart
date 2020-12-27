@@ -7,16 +7,16 @@ class SyncTreeBackend extends Backend {
 
   @override
   Future<void> listen(String path, EventListener listener,
-      {Query query = const Query(), String hash}) async {
+      {QueryFilter query = const QueryFilter(), String hash}) async {
     await syncTree.addEventListener(
-        'value', Name.parsePath(path), query.toFilter(), listener);
+        'value', Name.parsePath(path), query, listener);
   }
 
   @override
   Future<void> unlisten(String path, EventListener listener,
-      {Query query = const Query()}) async {
+      {QueryFilter query = const QueryFilter()}) async {
     await syncTree.removeEventListener(
-        'value', Name.parsePath(path), query.toFilter(), listener);
+        'value', Name.parsePath(path), query, listener);
   }
 
   @override

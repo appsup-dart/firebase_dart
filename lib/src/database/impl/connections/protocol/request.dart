@@ -49,11 +49,11 @@ class Request {
 
   Request.unauth() : this(DataMessage.actionUnauth, MessageBody());
 
-  Request.listen(String path, {Query query, int tag, String hash})
+  Request.listen(String path, {QueryFilter query, int tag, String hash})
       : this(DataMessage.actionListen,
             MessageBody(path: path, query: query, tag: tag, hash: hash));
 
-  Request.unlisten(String path, {Query query, int tag})
+  Request.unlisten(String path, {QueryFilter query, int tag})
       : this(DataMessage.actionUnlisten,
             MessageBody(path: path, query: query, tag: tag));
 

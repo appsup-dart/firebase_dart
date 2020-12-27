@@ -922,6 +922,64 @@ void testsWith(Map<String, dynamic> secrets) {
       expect((await q.get()).keys,
           ['c', 'k', 'b', 'e', 'a', '25', '23a', 'f', 'g', 'd', 'h', 'i', 'j']);
     });
+
+    group('local filtering', () {
+      test('local filtering by key', () async {
+        await ref.set({
+          'key-001': 1,
+          'key-002': 2,
+          'key-003': 3,
+        });
+
+        var query = ref.orderByKey();
+
+        var s = query.limitToFirst(2).onValue.listen((event) {});
+        await query.limitToFirst(2).get();
+
+        var v = await query.startAt('key-002').limitToFirst(2).get();
+
+        expect(v, {'key-002': 2, 'key-003': 3});
+
+        await s.cancel();
+      });
+      test('local filtering by child', () async {
+        await ref.set({
+          'key-001': 1,
+          'key-002': 2,
+          'key-003': 3,
+        });
+
+        var query = ref.orderByChild('child');
+
+        var s = query.limitToFirst(2).onValue.listen((event) {});
+        await query.limitToFirst(2).get();
+
+        var v = await query.startAt(null, 'key-002').limitToFirst(2).get();
+
+        expect(v, {'key-002': 2, 'key-003': 3});
+
+        await s.cancel();
+      });
+
+      test('local filtering by priority', () async {
+        await ref.set({
+          'key-001': 1,
+          'key-002': 2,
+          'key-003': 3,
+        });
+
+        var query = ref.orderByPriority();
+
+        var s = query.limitToFirst(2).onValue.listen((event) {});
+        await query.limitToFirst(2).get();
+
+        var v = await query.startAt(null, 'key-002').limitToFirst(2).get();
+
+        expect(v, {'key-002': 2, 'key-003': 3});
+
+        await s.cancel();
+      });
+    });
   });
 
   group('multiple frames', () {

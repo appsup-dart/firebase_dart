@@ -167,13 +167,58 @@ class QueryImpl extends Query {
   Query orderByPriority() =>
       _withFilter(filter.copyWith(orderBy: r'.priority'));
 
-  @override
-  Query startAt(dynamic value, [String key]) =>
-      _withFilter(filter.copyWith(startAtKey: key, startAtValue: value));
+  Name _parseKey(String key, String allowedSpecialName) {
+    if (key == '[MIN_NAME]' && key == allowedSpecialName) return Name.min;
+    if (key == '[MAX_NAME]' && key == allowedSpecialName) return Name.max;
+    if (key == null) {
+      print(key);
+      throw ArgumentError(
+          'When ordering by key, the argument passed to startAt(), endAt(),or equalTo() must be a non null string.');
+    }
+    if (key.contains(RegExp(r'\.\#\$\/\[\]'))) {
+      throw ArgumentError(
+          'Second argument was an invalid key = "[MIN_VALUE]".  Firebase keys must be non-empty strings and can\'t contain ".", "#", "\$", "/", "[", or "]").');
+    }
+    return Name(key);
+  }
 
   @override
-  Query endAt(dynamic value, [String key]) =>
-      _withFilter(filter.copyWith(endAtKey: key, endAtValue: value));
+  Query equalTo(dynamic value, [String key = '[ANY_NAME]']) {
+    if (filter.orderBy == '.key' || key == '[ANY_NAME]') {
+      return endAt(value).startAt(value);
+    }
+    return endAt(value, key).startAt(value, key);
+  }
+
+  @override
+  Query startAt(dynamic value, [String key = '[MIN_NAME]']) {
+    if (filter.orderBy == '.key') {
+      if (key != '[MIN_NAME]') {
+        throw ArgumentError(
+            'When ordering by key, you may only pass one argument to startAt(), endAt(), or equalTo().');
+      }
+      key = value is String ? value : null;
+      value = null;
+    }
+    return _withFilter(filter.copyWith(
+        startAtKey: _parseKey(key, '[MIN_NAME]'),
+        startAtValue: TreeStructuredData.fromJson(value)));
+  }
+
+  @override
+  Query endAt(dynamic value, [String key = '[MAX_NAME]']) {
+    if (filter.orderBy == '.key') {
+      if (key != '[MAX_NAME]') {
+        throw ArgumentError(
+            'When ordering by key, you may only pass one argument to startAt(), endAt(), or equalTo().');
+      }
+      key = value is String ? value : null;
+      value = null;
+    }
+    return _withFilter(filter.copyWith(
+        endAtKey: _parseKey(key, '[MAX_NAME]'),
+        endAtValue: TreeStructuredData.fromJson(value)));
+  }
 
   @override
   Query limitToFirst(int limit) =>

@@ -23,7 +23,7 @@ class SecuredBackend extends Backend {
 
   @override
   Future<void> listen(String path, EventListener listener,
-      {Query query = const Query(), String hash}) async {
+      {QueryFilter query = const QueryFilter(), String hash}) async {
     var completer = Completer();
 
     var root = RuleDataSnapshotFromBackend.root(unsecuredBackend);
@@ -49,7 +49,7 @@ class SecuredBackend extends Backend {
 
   @override
   Future<void> unlisten(String path, EventListener listener,
-      {Query query = const Query()}) async {
+      {QueryFilter query = const QueryFilter()}) async {
     await unsecuredBackend.unlisten(path, listener, query: query);
   }
 

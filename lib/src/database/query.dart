@@ -79,8 +79,7 @@ abstract class Query {
   Query endAt(dynamic value, [String key]);
 
   /// Creates a [Query] which includes children which match the specified value.
-  Query equalTo(dynamic value, [String key]) =>
-      endAt(value, key).startAt(value, key);
+  Query equalTo(dynamic value, [String key]);
 
   /// Generates a new [Query] object limited to the first certain number of
   /// children.

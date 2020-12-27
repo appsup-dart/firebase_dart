@@ -30,15 +30,14 @@ abstract class Operation {
 /// existing write to reflect the write added.
 class IncompleteData {
   final TreeNode<Name, TreeStructuredData> _writeTree;
-  final Filter<Name, TreeStructuredData> filter;
+  final QueryFilter filter;
 
-  IncompleteData.empty([Filter<Name, TreeStructuredData> filter])
-      : this._(TreeNode(), filter);
+  IncompleteData.empty([QueryFilter filter]) : this._(TreeNode(), filter);
   IncompleteData.complete(TreeStructuredData data)
       : this._(TreeNode(data), data.children.filter);
   IncompleteData._(this._writeTree, this.filter) : assert(_writeTree != null);
 
-  IncompleteData withFilter(Filter<Name, TreeStructuredData> filter) {
+  IncompleteData withFilter(QueryFilter filter) {
     return IncompleteData._(_writeTree, filter);
   }
 

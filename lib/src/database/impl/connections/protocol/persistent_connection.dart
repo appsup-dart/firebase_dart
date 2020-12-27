@@ -89,8 +89,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   void onDataMessage(DataMessage message) {
-    var query =
-        message.body.query?.toFilter() ?? _tagToQuery[message.body.tag]?.value;
+    var query = message.body.query ?? _tagToQuery[message.body.tag]?.value;
     if (query == null && message.body.tag != null) {
       // not listening any more.
       return;
@@ -171,8 +170,7 @@ class PersistentConnectionImpl extends PersistentConnection
     var tag = _nextTag++;
     _tagToQuery[tag] = def;
 
-    var r = Request.listen(path,
-        query: Query.fromFilter(query), tag: tag, hash: hash);
+    var r = Request.listen(path, query: query, tag: tag, hash: hash);
     _addListen(r);
     _doIdleCheck();
     try {
@@ -189,7 +187,7 @@ class PersistentConnectionImpl extends PersistentConnection
   Future<Null> unlisten(String path, {QueryFilter query}) async {
     var def = Pair(path, query);
     var tag = _tagToQuery.inverse.remove(def);
-    var r = Request.unlisten(path, query: Query.fromFilter(query), tag: tag);
+    var r = Request.unlisten(path, query: query, tag: tag);
     _removeListen(path, query);
     await _request(r);
     _doIdleCheck();
@@ -395,7 +393,7 @@ class PersistentConnectionImpl extends PersistentConnection
   void _removeListen(String path, QueryFilter query) {
     _listens.removeWhere((element) =>
         element.message.body.path == path &&
-        element.message.body.query.toFilter() == query);
+        element.message.body.query == query);
   }
 
   void _restoreAuth() {

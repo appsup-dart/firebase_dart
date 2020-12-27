@@ -13,7 +13,7 @@ class BackendConnection {
 
   BackendTransport get transport => _transport;
 
-  final Map<String, Map<Query, Function>> _listeners = {};
+  final Map<String, Map<QueryFilter, Function>> _listeners = {};
 
   static int nextSessionId = 0;
 
@@ -73,7 +73,7 @@ class BackendConnection {
                                 ? DataMessage.actionListenRevoked
                                 : DataMessage.actionSet,
                             MessageBody(
-                                tag: message.body.query.toFilter().limits
+                                tag: message.body.query.limits
                                     ? message.body.tag
                                     : null,
                                 path: message.body.path,

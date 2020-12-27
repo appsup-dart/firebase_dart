@@ -61,8 +61,15 @@ class Value implements Comparable<Value> {
 
   bool get isServerValue => value is ServerValue;
 
-  int get typeOrder =>
-      isServerValue ? 0 : isBool ? 1 : isNum ? 2 : isString ? 3 : 4;
+  int get typeOrder => isServerValue
+      ? 0
+      : isBool
+          ? 1
+          : isNum
+              ? 2
+              : isString
+                  ? 3
+                  : 4;
 
   @override
   int compareTo(Value other) {

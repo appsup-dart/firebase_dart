@@ -6,8 +6,7 @@ part of firebase.treestructureddata;
 class TreeStructuredData extends TreeNode<Name, Value> {
   Value priority;
 
-  TreeStructuredData(
-      {Value priority, Value value, Filter<Name, TreeStructuredData> filter})
+  TreeStructuredData({Value priority, Value value, QueryFilter filter})
       : this._(value, FilteredMap(filter ?? const QueryFilter()), priority);
 
   TreeStructuredData._(Value value,
@@ -92,7 +91,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
               start: start, end: end, limit: limit, reversed: reversed),
           priority);
 
-  TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) {
+  TreeStructuredData withFilter(QueryFilter f) {
     if (children.filter == f ||
         (f == null && children.filter == const QueryFilter())) return this;
     return TreeStructuredData(priority: priority, value: value, filter: f)

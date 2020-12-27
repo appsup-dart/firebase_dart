@@ -25,11 +25,11 @@ class ViewCache {
   IncompleteData get localVersion => _localVersion;
 
   /// Returns a local version of the data for an alternate filter
-  IncompleteData valueForFilter(Filter<Name, TreeStructuredData> filter) =>
+  IncompleteData valueForFilter(QueryFilter filter) =>
       localVersion.withFilter(filter);
 
   /// Returns a view for an alternate filter
-  ViewCache withFilter(Filter<Name, TreeStructuredData> filter) => ViewCache(
+  ViewCache withFilter(QueryFilter filter) => ViewCache(
       localVersion.withFilter(filter),
       serverVersion.withFilter(filter),
       SortedMap.from(pendingOperations));
