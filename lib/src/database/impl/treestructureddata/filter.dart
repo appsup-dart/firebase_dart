@@ -66,8 +66,7 @@ class KeyOrdering extends TreeStructuredDataOrdering {
   const KeyOrdering() : super._();
 
   @override
-  TreeStructuredData mapValue(TreeStructuredData v) =>
-      TreeStructuredData.fromJson(null);
+  TreeStructuredData mapValue(TreeStructuredData v) => TreeStructuredData();
 
   @override
   String get orderBy => '.key';

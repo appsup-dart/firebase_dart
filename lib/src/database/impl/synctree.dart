@@ -41,11 +41,28 @@ class MasterView {
     _data = _data.withFilter(masterFilter);
   }
 
+  /// Checks if the filter [f] is contained by the data in this master view
+  ///
+  /// When the filter might be contained, but it cannot be determined yet,
+  /// because the data in this view is not yet complete, it will return true.
   bool contains(QueryFilter f) {
     if (f == masterFilter) return true;
-    // TODO: return true when loads all data even when other ordering
     if (f.orderBy != masterFilter.orderBy) return false;
     if (!masterFilter.limits) return true;
+    if (!_data.localVersion.isComplete) {
+      if (masterFilter.limit == null) {
+        if (masterFilter.validInterval.contains(f.validInterval)) return true;
+      }
+      if (f.limit == null) {
+        if (!masterFilter.validInterval.contains(f.validInterval)) return false;
+      }
+
+      if (masterFilter.validInterval.containsPoint(
+          f.reversed ? f.validInterval.end : f.validInterval.start)) {
+        return true;
+      }
+      return false;
+    }
     return _data.localVersion.value.children
         .filteredMapView(
             start: f.validInterval.start,

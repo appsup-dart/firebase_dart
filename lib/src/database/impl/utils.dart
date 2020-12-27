@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:quiver/core.dart';
+import 'package:sortedmap/sortedmap.dart';
 
 typedef Predicate<T> = bool Function(T);
 
@@ -191,5 +192,48 @@ extension TreeStructuredDataX on TreeStructuredData {
       c = TreeStructuredData.nonLeaf(c.children, priority);
     }
     return updateChild(path, c);
+  }
+}
+
+extension KeyValueIntervalX on KeyValueInterval {
+  bool intersects(KeyValueInterval other) {
+    if (containsPoint(other.start)) return true;
+    if (containsPoint(other.end)) return true;
+    if (other.containsPoint(start)) return true;
+    if (other.containsPoint(end)) return true;
+    return false;
+  }
+
+  static KeyValueInterval coverAll(Iterable<KeyValueInterval> intervals) {
+    assert(intervals != null && intervals.isNotEmpty);
+    var min = intervals
+        .map((i) => i.start)
+        .reduce((a, b) => a.compareTo(b) < 0 ? a : b);
+    var max = intervals
+        .map((i) => i.end)
+        .reduce((a, b) => a.compareTo(b) < 0 ? b : a);
+    return KeyValueInterval.fromPairs(min, max);
+  }
+
+  static Iterable<KeyValueInterval> unionAll(
+      Iterable<KeyValueInterval> intervals) sync* {
+    var ordered = <KeyValueInterval>[...intervals]
+      ..sort((a, b) => Comparable.compare(a.start, b.start));
+
+    KeyValueInterval last;
+    while (ordered.isNotEmpty) {
+      var i = ordered.removeAt(0);
+      if (last == null) {
+        last = i;
+        continue;
+      }
+      if (i.intersects(last)) {
+        last = coverAll([i, last]);
+        continue;
+      }
+      yield last;
+      last = i;
+    }
+    if (last != null) yield last;
   }
 }
