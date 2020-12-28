@@ -372,6 +372,62 @@ void testsWith(Map<String, dynamic> secrets) {
       expect(await keys, ['hello', 'hi']);
     });
 
+    test(
+        'Child added/removed when query changes from contained to not contained',
+        () async {
+      await ref.set({
+        'key-001': 1,
+        'key-002': 2,
+        'key-004': 4,
+      });
+
+      var s = ref.orderByKey().limitToFirst(3).onValue.listen((event) {});
+
+      var childrenAdded = [];
+      var childrenRemoved = [];
+      var s2 = ref
+          .orderByKey()
+          .startAt('key-002')
+          .limitToFirst(2)
+          .onChildAdded
+          .listen((event) {
+        var k = event.snapshot.key;
+        expect(childrenAdded.contains(k), false);
+        childrenAdded.add(event.snapshot.key);
+      });
+
+      var s3 = ref
+          .orderByKey()
+          .startAt('key-002')
+          .limitToFirst(2)
+          .onChildRemoved
+          .listen((event) {
+        childrenRemoved.add(event.snapshot.key);
+      });
+
+      await ref.orderByKey().limitToFirst(3).get();
+      await Future.value();
+      expect(childrenAdded, ['key-002', 'key-004']);
+      expect(childrenRemoved, []);
+
+      await ref.child('key-000').set(0);
+      await ref.orderByKey().startAt('key-002').limitToFirst(2).get();
+      await Future.value();
+      expect(childrenAdded, ['key-002', 'key-004']);
+      expect(childrenRemoved, []);
+
+      await ref.child('key-003').set(3);
+
+      await ref.orderByKey().startAt('key-002').limitToFirst(2).get();
+      await Future.value();
+      expect(childrenAdded, ['key-002', 'key-004', 'key-003']);
+      expect(childrenRemoved, ['key-004']);
+
+      await s.cancel();
+      await s2.cancel();
+      await s3.cancel();
+    });
+
     test('Child removed', () async {
       await ref.set({'hello': 'world', 'hi': 'everyone'});
 

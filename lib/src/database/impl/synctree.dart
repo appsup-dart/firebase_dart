@@ -94,12 +94,12 @@ class MasterView {
       String type, QueryFilter filter, EventListener listener) {
     if (!contains(filter)) return false;
     observers
-        .putIfAbsent(filter, () => EventTarget())
+        .putIfAbsent(
+            filter,
+            () =>
+                EventTarget()..notifyDataChanged(_data.valueForFilter(filter)))
         .addEventListener(type, listener);
 
-    var events = const TreeEventGenerator().generateEvents(
-        type, IncompleteData.empty(), _data.valueForFilter(filter));
-    events.where((e) => e.type == type).forEach((e) => listener(e));
     return true;
   }
 
@@ -118,7 +118,6 @@ class MasterView {
   /// view.
   Map<QueryFilter, EventTarget> applyOperation(
       Operation operation, ViewOperationSource source, int writeId) {
-    var oldData = _data;
     _data = _data.applyOperation(operation, source, writeId);
 
     var out = <QueryFilter, EventTarget>{};
@@ -131,13 +130,8 @@ class MasterView {
     for (var q in observers.keys) {
       var t = observers[q];
 
-      var oldValue = oldData.valueForFilter(q);
       var newValue = _data.valueForFilter(q);
-
-      t.eventTypesWithRegistrations
-          .expand((t) =>
-              const TreeEventGenerator().generateEvents(t, oldValue, newValue))
-          .forEach(t.dispatchEvent);
+      t.notifyDataChanged(newValue);
     }
     return out;
   }
