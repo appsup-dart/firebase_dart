@@ -225,6 +225,115 @@ void main() {
           QueryFilter(ordering: o, validInterval: j, limit: 3)
         ]);
       });
+
+      test('Should merge queries with limit == null', () {
+        var p = SyncPoint('test', Path(),
+            persistenceManager: NoopPersistenceManager());
+
+        for (var i = 0; i < 10; i++) {
+          p.addEventListener(
+              'value',
+              QueryFilter(
+                ordering: o,
+                validInterval: KeyValueInterval(Name('key-${1000 + i * 10}'),
+                    empty, Name('key-${1000 + (i + 1) * 10}'), empty),
+              ),
+              (event) {});
+        }
+
+        expect(p.minimalSetOfQueries, [
+          QueryFilter(
+            ordering: o,
+            validInterval: KeyValueInterval(
+                Name('key-1000'), empty, Name('key-1100'), empty),
+          )
+        ]);
+      });
+
+      test('Should not merge queries with non overlapping intervals', () {
+        var p = SyncPoint('test', Path(),
+            persistenceManager: NoopPersistenceManager());
+
+        for (var i = 0; i < 10; i++) {
+          p.addEventListener(
+              'value',
+              QueryFilter(
+                ordering: o,
+                limit: 1,
+                validInterval: KeyValueInterval(Name('key-${1000 + i * 10}'),
+                    empty, Name('key-${1000 + (i + 1) * 10}'), empty),
+              ),
+              (event) {});
+        }
+
+        expect(p.minimalSetOfQueries, [
+          for (var i = 0; i < 10; i += 2)
+            QueryFilter(
+              ordering: o,
+              limit: 1,
+              validInterval: KeyValueInterval(Name('key-${1000 + i * 10}'),
+                  empty, Name('key-${1000 + (i + 1) * 10}'), empty),
+            ),
+        ]);
+      });
+
+      test(
+          'should use query with max end as master query for reverse ordered queries',
+          () {
+        var p = SyncPoint('test', Path(),
+            persistenceManager: NoopPersistenceManager());
+
+        for (var i = 0; i < 10; i++) {
+          p.addEventListener(
+              'value',
+              QueryFilter(
+                ordering: o,
+                limit: 1,
+                reversed: true,
+                validInterval: KeyValueInterval(
+                    Name.min, empty, Name('key-${1000 + (i + 1) * 10}'), empty),
+              ),
+              (event) {});
+        }
+
+        expect(p.minimalSetOfQueries, [
+          QueryFilter(
+            ordering: o,
+            limit: 1,
+            reversed: true,
+            validInterval:
+                KeyValueInterval(Name.min, empty, Name('key-1100'), empty),
+          )
+        ]);
+      });
+
+      test(
+          'should use query with min start as master query for non-reverse ordered queries',
+          () {
+        var p = SyncPoint('test', Path(),
+            persistenceManager: NoopPersistenceManager());
+
+        for (var i = 9; i >= 0; i--) {
+          p.addEventListener(
+              'value',
+              QueryFilter(
+                ordering: o,
+                limit: 1,
+                validInterval: KeyValueInterval(
+                    Name('key-${1000 + i * 10}'), empty, Name.max, empty),
+              ),
+              (event) {});
+        }
+
+        expect(p.minimalSetOfQueries, [
+          QueryFilter(
+            ordering: o,
+            limit: 1,
+            validInterval:
+                KeyValueInterval(Name('key-1000'), empty, Name.max, empty),
+          )
+        ]);
+      });
     });
   });
 }

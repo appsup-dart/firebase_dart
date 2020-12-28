@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
+import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:sortedmap/sortedmap.dart';
@@ -185,14 +186,93 @@ class SyncPoint {
     return views.values.any((m) => m.isCompleteForChild(child));
   }
 
-  Iterable<QueryFilter> get minimalSetOfQueries sync* {
+  final Set<QueryFilter> _lastMinimalSetOfQueries = {};
+
+  Map<QueryFilter, EventTarget> _removeNewQueries() {
+    return {
+      for (var k in views.keys
+          .toList()
+          .where((k) => !_lastMinimalSetOfQueries.contains(k)))
+        ...views.remove(k).observers
+    };
+  }
+
+  Iterable<QueryFilter> get minimalSetOfQueries {
+    var v = _minimalSetOfQueries.toList();
+    _lastMinimalSetOfQueries
+      ..clear()
+      ..addAll(v);
+    return v;
+  }
+
+  Iterable<QueryFilter> get _minimalSetOfQueries sync* {
     if (isCompleteFromParent) return;
     prune();
     var queries = views.keys;
     if (queries.any((q) => !q.limits)) {
       yield QueryFilter();
     } else {
-      yield* queries;
+      // TODO: move this to a separate class and make it configurable
+      var v = <Ordering, Map<QueryFilter, EventTarget>>{};
+      _removeNewQueries().forEach((key, value) {
+        v.putIfAbsent(key.ordering, () => {})[key] = value;
+      });
+
+      for (var o in v.keys) {
+        var nonLimitingQueries =
+            v[o].keys.where((v) => v.limit == null).toList();
+
+        var intervals = KeyValueIntervalX.unionAll(
+            nonLimitingQueries.map((q) => q.validInterval));
+
+        for (var i in intervals) {
+          createMasterViewForFilter(QueryFilter(ordering: o, validInterval: i));
+        }
+
+        for (var q in v[o].keys.toList()) {
+          var view = views.values
+              .firstWhere((element) => element.contains(q), orElse: () => null);
+          if (view != null) view.observers[q] = v[o].remove(q);
+        }
+
+        var forwardLimitingQueries = v[o]
+            .keys
+            .where((v) => v.limit != null && !v.reversed)
+            .toList()
+              ..sort((a, b) => Comparable.compare(
+                  a.validInterval.start, b.validInterval.start));
+
+        while (forwardLimitingQueries.isNotEmpty) {
+          var view = createMasterViewForFilter(forwardLimitingQueries.first);
+
+          for (var q in forwardLimitingQueries.toList()) {
+            if (view.contains(q)) {
+              forwardLimitingQueries.remove(q);
+              view.observers[q] = v[o].remove(q);
+            }
+          }
+        }
+
+        var backwardLimitingQueries = v[o]
+            .keys
+            .where((v) => v.limit != null && v.reversed)
+            .toList()
+              ..sort((a, b) => -Comparable.compare(
+                  a.validInterval.end, b.validInterval.end));
+
+        if (backwardLimitingQueries.isNotEmpty) {
+          var view = createMasterViewForFilter(backwardLimitingQueries.first);
+
+          for (var q in backwardLimitingQueries.toList()) {
+            if (view.contains(q)) {
+              backwardLimitingQueries.remove(q);
+              view.observers[q] = v[o].remove(q);
+            }
+          }
+        }
+      }
+
+      yield* views.keys;
     }
   }
 
