@@ -64,6 +64,17 @@ class MasterView {
       }
       return false;
     }
+
+    var i = _data.localVersion.value.children.completeInterval;
+    if (i.start == Pair.min()) {
+      if (i.end == Pair.max() || i.containsPoint(f.validInterval.end)) {
+        return true;
+      }
+    } else if (i.end == Pair.max() && i.containsPoint(f.validInterval.start)) {
+      return true;
+    } else if (i.contains(f.validInterval)) {
+      return true;
+    }
     return _data.localVersion.value.children
         .filteredMapView(
             start: f.validInterval.start,

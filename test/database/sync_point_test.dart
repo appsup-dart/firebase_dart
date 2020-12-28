@@ -334,6 +334,126 @@ void main() {
           )
         ]);
       });
+
+      test('Should combine all overlapping intervals', () {
+        var p = SyncPoint('test', Path(),
+            persistenceManager: NoopPersistenceManager());
+
+        for (var i = 0; i < 10; i++) {
+          p.addEventListener(
+              'value',
+              QueryFilter(
+                ordering: o,
+                validInterval: KeyValueInterval(Name('key-${1000 + i * 10}'),
+                    empty, Name('key-${1000 + (i + 1) * 10}'), empty),
+              ),
+              (event) {});
+          p.addEventListener(
+              'value',
+              QueryFilter(
+                ordering: o,
+                limit: 1,
+                validInterval: KeyValueInterval(
+                    Name('key-${1000 + (i + 1) * 10}'), empty, null, null),
+              ),
+              (event) {});
+          p.addEventListener(
+              'value',
+              QueryFilter(
+                ordering: o,
+                limit: 1,
+                reversed: true,
+                validInterval: KeyValueInterval(
+                    null, null, Name('key-${1000 + i * 10}'), empty),
+              ),
+              (event) {});
+        }
+
+        expect(p.minimalSetOfQueries, [
+          QueryFilter(
+            ordering: o,
+            validInterval: KeyValueInterval(
+                Name('key-1000'), empty, Name('key-1100'), empty),
+          ),
+        ]);
+
+        p.applyOperation(
+            TreeOperation.overwrite(Path(), TreeStructuredData()),
+            QueryFilter(
+              ordering: o,
+              validInterval: KeyValueInterval(
+                  Name('key-1000'), empty, Name('key-1100'), empty),
+            ),
+            ViewOperationSource.server,
+            null);
+
+        expect(p.minimalSetOfQueries, [
+          QueryFilter(
+            ordering: o,
+            validInterval: KeyValueInterval(
+                Name('key-1000'), empty, Name('key-1100'), empty),
+          ),
+          QueryFilter(
+            ordering: o,
+            limit: 1,
+            validInterval:
+                KeyValueInterval(Name('key-1010'), empty, null, null),
+          ),
+          QueryFilter(
+            ordering: o,
+            limit: 1,
+            reversed: true,
+            validInterval:
+                KeyValueInterval(null, null, Name('key-1090'), empty),
+          ),
+        ]);
+      });
+
+      test('Should contain when filter within complete interval', () {
+        var p = SyncPoint('test', Path(),
+            persistenceManager: NoopPersistenceManager());
+
+        for (var i = 0; i < 10; i++) {
+          p.addEventListener(
+              'value',
+              QueryFilter(
+                ordering: o,
+                limit: 1,
+                validInterval: KeyValueInterval(
+                    Name('key-${1000 + i * 10}'), empty, null, null),
+              ),
+              (event) {});
+        }
+
+        expect(p.minimalSetOfQueries, [
+          QueryFilter(
+            ordering: o,
+            limit: 1,
+            validInterval:
+                KeyValueInterval(Name('key-1000'), empty, null, null),
+          ),
+        ]);
+
+        p.applyOperation(
+            TreeOperation.overwrite(Path(), TreeStructuredData()),
+            QueryFilter(
+              ordering: o,
+              limit: 1,
+              validInterval:
+                  KeyValueInterval(Name('key-1000'), empty, null, null),
+            ),
+            ViewOperationSource.server,
+            null);
+
+        expect(p.minimalSetOfQueries, [
+          QueryFilter(
+            ordering: o,
+            limit: 1,
+            validInterval:
+                KeyValueInterval(Name('key-1000'), empty, null, null),
+          ),
+        ]);
+      });
     });
   });
 }
