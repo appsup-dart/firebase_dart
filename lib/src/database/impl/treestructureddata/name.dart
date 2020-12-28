@@ -4,7 +4,7 @@
 part of firebase.treestructureddata;
 
 class _SpecialName extends Name {
-  const _SpecialName(String value) : super(value);
+  const _SpecialName(String value) : super._(value);
 
   @override
   Iterable<Match> allMatches(String string, [int start = 0]) => [];
@@ -19,10 +19,18 @@ class _SpecialName extends Name {
 class Name implements Pattern, Comparable<Name> {
   static const Name min = _SpecialName('[MIN_NAME]');
   static const Name max = _SpecialName('[MAX_NAME]');
+  static const Name priorityKey = _SpecialName('.priority');
 
   final String _value;
 
-  const Name(this._value);
+  factory Name(String value) {
+    if (value == '[MIN_NAME]') return min;
+    if (value == '[MAX_NAME]') return max;
+    if (value == '.priority') return priorityKey;
+    return Name._(value);
+  }
+
+  const Name._(this._value);
 
   @override
   String toString() => _value;

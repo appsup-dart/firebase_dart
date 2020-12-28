@@ -16,7 +16,7 @@ void main() async {
     ..onRecord.listen(print);
 
   group('Random synctree test', () {
-    test('Random synctree test seed=1607288421899', () {
+    test('Random synctree test seed=1607344606058', () {
       _doTest(1607344606058);
     });
 

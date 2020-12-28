@@ -135,14 +135,14 @@ extension QueryFilterCodec on QueryFilter {
         indexStartName: (validInterval.start.key as Name).asString(),
       if (validInterval.end != Pair.max())
         if (ordering is KeyOrdering)
-          indexStartValue: (validInterval.end.key as Name).asString()
+          indexEndValue: (validInterval.end.key as Name).asString()
         else
-          indexStartValue:
+          indexEndValue:
               (validInterval.end.value as TreeStructuredData).toJson(),
       if (validInterval.end != Pair.max() &&
           ordering is! KeyOrdering &&
           validInterval.end.key != Name.max)
-        indexStartName: (validInterval.end.key as Name).asString(),
+        indexEndName: (validInterval.end.key as Name).asString(),
     };
   }
 
@@ -164,7 +164,9 @@ extension QueryFilterCodec on QueryFilter {
         start = Pair<Name, TreeStructuredData>.min(
             json.containsKey(indexStartName)
                 ? Name(json[indexStartName])
-                : null,
+                : json.containsKey(indexStartValue)
+                    ? Name.min
+                    : null,
             json.containsKey(indexStartValue)
                 ? TreeStructuredData.fromJson(json[indexStartValue])
                 : null);
@@ -174,13 +176,17 @@ extension QueryFilterCodec on QueryFilter {
     var end = Pair<Name, TreeStructuredData>.max();
     if (json.containsKey(indexEndValue) || json.containsKey(indexEndName)) {
       if (ordering is KeyOrdering) {
-        start = Pair<Name, TreeStructuredData>.max(
+        end = Pair<Name, TreeStructuredData>.max(
           Name(json[indexEndValue]),
           TreeStructuredData.fromJson(null),
         );
       } else {
-        start = Pair<Name, TreeStructuredData>.max(
-            json.containsKey(indexEndName) ? Name(json[indexEndName]) : null,
+        end = Pair<Name, TreeStructuredData>.max(
+            json.containsKey(indexEndName)
+                ? Name(json[indexEndName])
+                : json.containsKey(indexEndValue)
+                    ? Name.max
+                    : null,
             json.containsKey(indexEndValue)
                 ? TreeStructuredData.fromJson(json[indexEndValue])
                 : null);

@@ -10,7 +10,7 @@ void main() {
     var leafNode = TreeStructuredData.fromJson('leaf-node');
     var prioValue = Value.string('prio');
     var prioNode = TreeStructuredData.leaf(prioValue);
-    var priorityPath = Path.from([NameX.priorityKey]);
+    var priorityPath = Path.from([Name.priorityKey]);
 
     var empty = IncompleteData.empty();
 

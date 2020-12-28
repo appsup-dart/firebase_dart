@@ -155,9 +155,7 @@ class TreeNodeEquality<K extends Comparable, V>
 }
 
 extension NameX on Name {
-  static const priorityKey = Name('.priority');
-
-  bool get isPriorityChildName => this == priorityKey;
+  bool get isPriorityChildName => this == Name.priorityKey;
 }
 
 extension TreeStructuredDataX on TreeStructuredData {
