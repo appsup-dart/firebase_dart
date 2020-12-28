@@ -371,10 +371,16 @@ class RandomGenerator {
   }
 
   KeyValueInterval nextKeyValueInterval({bool keyOnly = false}) {
-    var startValue =
-        nextBool() || keyOnly ? null : TreeStructuredData.leaf(nextValue());
-    var endValue =
-        nextBool() || keyOnly ? null : TreeStructuredData.leaf(nextValue());
+    var startValue = keyOnly
+        ? TreeStructuredData()
+        : nextBool()
+            ? null
+            : TreeStructuredData.leaf(nextValue());
+    var endValue = keyOnly
+        ? TreeStructuredData()
+        : nextBool()
+            ? null
+            : TreeStructuredData.leaf(nextValue());
     if (startValue != null &&
         endValue != null &&
         Comparable.compare(startValue, endValue) > 0) {
@@ -383,10 +389,19 @@ class RandomGenerator {
       endValue = v;
     }
 
-    var startKey = startValue == null || nextBool() ? null : nextKey();
-    var endKey = endValue == null || nextBool() ? null : nextKey();
+    var startKey = startValue == null
+        ? null
+        : nextBool()
+            ? Name.min
+            : nextKey();
+    var endKey = endValue == null
+        ? null
+        : nextBool()
+            ? Name.max
+            : nextKey();
     if (startKey != null &&
         endKey != null &&
+        startValue == endValue &&
         Comparable.compare(startKey, endKey) > 0) {
       var v = startKey;
       startKey = endKey;

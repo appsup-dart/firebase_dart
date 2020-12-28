@@ -148,7 +148,8 @@ extension QueryFilterCodec on QueryFilter {
 
   static QueryFilter fromJson(Map<String, dynamic> json) {
     if (json == null) return QueryFilter();
-    var ordering = TreeStructuredDataOrdering(json[indexOn]) ?? PriorityOrdering();
+    var ordering =
+        TreeStructuredDataOrdering(json[indexOn]) ?? PriorityOrdering();
     var limit = json[limitTo];
     var isViewFromRight = json[viewFrom] == viewFromRight;
 
