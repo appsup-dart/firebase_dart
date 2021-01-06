@@ -101,29 +101,6 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
             reversed: reversed,
             validInterval: validInterval);
 
-  static KeyValueInterval _updateInterval(
-      KeyValueInterval validInterval,
-      String startAtKey,
-      dynamic startAtValue,
-      String endAtKey,
-      dynamic endAtValue) {
-    if (startAtKey != null || startAtValue != null) {
-      validInterval = validInterval.startAt(
-          startAtKey == null ? null : Name(startAtKey),
-          startAtValue == null
-              ? null
-              : TreeStructuredData(value: Value(startAtValue)));
-    }
-    if (endAtKey != null || endAtValue != null) {
-      validInterval = validInterval.endAt(
-          endAtKey == null ? null : Name(endAtKey),
-          endAtValue == null
-              ? null
-              : TreeStructuredData(value: Value(endAtValue)));
-    }
-    return validInterval;
-  }
-
   Name get endKey => validInterval?.end?.key;
 
   Name get startKey => validInterval?.start?.key;
