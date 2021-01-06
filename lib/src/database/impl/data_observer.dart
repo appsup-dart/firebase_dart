@@ -41,8 +41,10 @@ class IncompleteData {
     return IncompleteData._(_writeTree, filter);
   }
 
+  TreeStructuredData _cachedValue;
   TreeStructuredData get value {
-    return toOperation().apply(TreeStructuredData(filter: filter));
+    return _cachedValue ??=
+        toOperation().apply(TreeStructuredData(filter: filter));
   }
 
   /// Returns true if all the data is complete

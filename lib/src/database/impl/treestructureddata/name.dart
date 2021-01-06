@@ -14,9 +14,12 @@ class _SpecialName extends Name {
 
   @override
   int get length => 0;
+
+  @override
+  int asInt() => null;
 }
 
-class Name implements Pattern, Comparable<Name> {
+abstract class Name implements Pattern, Comparable<Name> {
   static const Name min = _SpecialName('[MIN_NAME]');
   static const Name max = _SpecialName('[MAX_NAME]');
   static const Name priorityKey = _SpecialName('.priority');
@@ -27,7 +30,7 @@ class Name implements Pattern, Comparable<Name> {
     if (value == '[MIN_NAME]') return min;
     if (value == '[MAX_NAME]') return max;
     if (value == '.priority') return priorityKey;
-    return Name._(value);
+    return _NameImpl(value);
   }
 
   const Name._(this._value);
@@ -57,7 +60,7 @@ class Name implements Pattern, Comparable<Name> {
 
   String asString() => _value;
 
-  int asInt() => int.tryParse(_value);
+  int asInt();
 
   int get length => _value.length;
 
@@ -94,4 +97,13 @@ class Name implements Pattern, Comparable<Name> {
     return Path<Name>.from(
         path.split('/').where((v) => v.isNotEmpty).map<Name>((v) => Name(v)));
   }
+}
+
+class _NameImpl extends Name {
+  _NameImpl(String value) : super._(value);
+
+  MapEntry<Null, int> _intValue;
+
+  @override
+  int asInt() => (_intValue ??= MapEntry(null, int.tryParse(_value))).value;
 }

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:benchmark_harness/benchmark_harness.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
@@ -32,6 +33,30 @@ void main() async {
       }
     });
   });
+
+  group('Performance test', () {
+    test('Performance test seed=1607344606058', () {
+      var result = SyncTreeBenchmark(1607344606058).measure();
+
+      print(Duration(microseconds: result.toInt()));
+    });
+  });
+}
+
+class SyncTreeBenchmark extends BenchmarkBase {
+  final int seed;
+  SyncTreeBenchmark(this.seed) : super('SyncTree');
+
+  @override
+  void run() {
+    fakeAsync((fakeAsync) {
+      var tester = RandomSyncTreeTester(seed: seed);
+      for (var i = 0; i < 1000; i++) {
+        tester.next();
+        fakeAsync.flushMicrotasks();
+      }
+    });
+  }
 }
 
 void _doTest(int seed) {

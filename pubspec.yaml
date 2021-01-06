@@ -31,3 +31,4 @@ dependencies:
 dev_dependencies:
   test: '>=0.12.0 <2.0.0'
   fake_async: ^1.1.0
+  benchmark_harness: ^1.0.5
