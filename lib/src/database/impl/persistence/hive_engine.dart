@@ -84,6 +84,8 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
     var newValue = _serverCache.applyOperation(operation);
 
     newValue.forEachCompleteNode((k, v) {
+      var c = _serverCache.child(k);
+      if (!c.isComplete || c.value == v) return;
       var p = k.join('/');
       database.deleteAll(database.keysBetween(
         startKey: '$_serverCachePrefix:$p/',
