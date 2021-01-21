@@ -181,6 +181,7 @@ class SyncPoint {
     _isCompleteFromParent = v;
     if (_isCompleteFromParent) {
       views.putIfAbsent(QueryFilter(), () => MasterView(QueryFilter()));
+      _prunable = true;
     }
   }
 
@@ -324,10 +325,15 @@ class SyncPoint {
     return views[filter] = MasterView(filter).._data = cache;
   }
 
+  bool _prunable = false;
+
   /// Removes an event listener for events of [type] and for data filtered by
   /// [filter].
   void removeEventListener(String type, Filter filter, EventListener listener) {
-    views.values.forEach((v) => v.removeEventListener(type, filter, listener));
+    views.values.forEach((v) {
+      v.removeEventListener(type, filter, listener);
+      if (v.observers.isEmpty) _prunable = true;
+    });
   }
 
   /// Applies an operation to the view for [filter] at this [SyncPoint] or all
@@ -361,9 +367,12 @@ class SyncPoint {
   }
 
   void prune() {
-    for (var k in views.keys.toList()) {
-      if (views[k].observers.isEmpty &&
-          !(k == QueryFilter() && isCompleteFromParent)) views.remove(k);
+    if (_prunable) return;
+    for (var e in views.entries.toList()) {
+      var k = e.key;
+      var v = e.value;
+      if (v.observers.isEmpty &&
+          !(k == const QueryFilter() && isCompleteFromParent)) views.remove(k);
     }
   }
 
