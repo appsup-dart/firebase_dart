@@ -60,14 +60,11 @@ class TreeOperation extends Operation {
       var k = path.first;
       var child = value.children[k] ?? TreeStructuredData();
       var newChild = _applyOnPath(path.skip(1), child);
-      var newValue = value.clone();
-      if (newValue.isLeaf && !newChild.isNil) newValue.value = null;
       if (newChild.isNil) {
-        newValue.children.remove(k);
+        return value.withoutChild(k);
       } else {
-        newValue.children[k] = newChild;
+        return value.withChild(k, newChild);
       }
-      return newValue;
     }
   }
 
@@ -186,7 +183,7 @@ class SetPriority extends Operation implements Overwrite {
 
   @override
   TreeStructuredData apply(TreeStructuredData value) {
-    return value.clone()..priority = priority;
+    return value.withPriority(priority);
   }
 
   @override

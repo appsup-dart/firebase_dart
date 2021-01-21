@@ -21,11 +21,14 @@ class ServerValue {
           ? TreeStructuredData.leaf(serverValues[value.value.value])
           : value;
     }
-    var newValue = value.clone();
-    for (var k in newValue.children.keys.toList()) {
-      newValue.children[k] = resolve(newValue.children[k], serverValues);
+
+    for (var k in value.children.keys.toList()) {
+      var newChild = resolve(value.children[k], serverValues);
+      if (newChild != value.children[k]) {
+        value = value.withChild(k, newChild);
+      }
     }
-    return newValue;
+    return value;
   }
 }
 
