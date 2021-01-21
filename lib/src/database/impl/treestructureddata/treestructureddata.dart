@@ -4,18 +4,18 @@
 part of firebase.treestructureddata;
 
 class TreeStructuredData extends TreeNode<Name, Value> {
-  Value priority;
+  final Value priority;
 
   TreeStructuredData({Value priority, Value value, QueryFilter filter})
-      : this._(value, FilteredMap(filter ?? const QueryFilter()), priority);
+      : this._(value, FilteredMap(filter ?? QueryFilter()), priority);
 
   TreeStructuredData._(Value value,
       FilteredMap<Name, TreeStructuredData> children, Value priority)
       : priority = priority,
         super(
             value,
-            children ??
-                FilteredMap<Name, TreeStructuredData>(const QueryFilter())) {
+            UnmodifiableFilteredMap<Name, TreeStructuredData>(
+                children ?? FilteredMap(const QueryFilter()))) {
     assert(children == null || children is FilteredMap);
     assert(this.children == null || this.children is FilteredMap);
     assert(children == null || children.values.every((v) => !v.isNil));
@@ -74,11 +74,15 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     return TreeStructuredData.nonLeaf(children, priority);
   }
 
+  TreeStructuredData withPriority(Value priority) =>
+      TreeStructuredData._(value, children, priority);
+
   @override
   TreeStructuredData clone() => TreeStructuredData._(value, children, priority);
 
   @override
-  FilteredMap<Name, TreeStructuredData> get children => super.children;
+  UnmodifiableFilteredMap<Name, TreeStructuredData> get children =>
+      super.children;
 
   TreeStructuredData view(
           {Pair<Comparable, Comparable> start,
@@ -94,8 +98,18 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   TreeStructuredData withFilter(QueryFilter f) {
     if (children.filter == f ||
         (f == null && children.filter == const QueryFilter())) return this;
-    return TreeStructuredData(priority: priority, value: value, filter: f)
-      ..children.addAll(children);
+    if (f.ordering == children.filter.ordering) {
+      return TreeStructuredData._(
+          value,
+          children.filteredMap(
+              start: Pair.min(f.startKey, f.startValue),
+              end: Pair.max(f.endKey, f.endValue),
+              limit: f.limit,
+              reversed: f.reversed),
+          priority);
+    }
+    return TreeStructuredData._(
+        value, FilteredMap(f)..addAll(children), priority);
   }
 
   dynamic toJson([bool exportFormat = false]) {
@@ -112,20 +126,29 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   }
 
   @override
-  bool operator ==(dynamic other) =>
-      other is TreeStructuredData &&
-      (isLeaf
-          ? other.isLeaf && value == other.value
-          : !other.isLeaf &&
-              const MapEquality().equals(children, other.children));
+  bool operator ==(dynamic other) {
+    if (identical(this, other)) return true;
+    return other is TreeStructuredData &&
+        (isLeaf
+            ? other.isLeaf && value == other.value
+            : !other.isLeaf &&
+                const MapEquality().equals(children, other.children));
+  }
+
+  int _hashCode;
 
   @override
-  int get hashCode => quiver.hash2(value, const MapEquality().hash(children));
+  int get hashCode =>
+      _hashCode ??= quiver.hash2(value, const MapEquality().hash(children));
 
   @override
   String toString() => 'TreeStructuredData[${toJson()}]';
 
+  String _hash;
+
   String get hash {
+    if (_hash != null) return _hash;
+
     var toHash = '';
 
     if (priority != null) {
@@ -138,9 +161,20 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     children.forEach((key, child) {
       toHash += ':${key.asString()}:${child.hash}';
     });
-    return toHash == ''
+    return _hash = (toHash == ''
         ? ''
-        : base64.encode(sha1.convert(utf8.encode(toHash)).bytes);
+        : base64.encode(sha1.convert(utf8.encode(toHash)).bytes));
+  }
+
+  TreeStructuredData withoutChild(Name k) {
+    if (!children.containsKey(k)) return this;
+    return TreeStructuredData.nonLeaf(
+        children._map.clone()..remove(k), priority);
+  }
+
+  TreeStructuredData withChild(Name k, TreeStructuredData newChild) {
+    return TreeStructuredData.nonLeaf(
+        children._map.clone()..[k] = newChild, priority);
   }
 }
 
@@ -153,4 +187,64 @@ String _doubleToIEEE754String(num v) {
     hex = '$b$hex';
   }
   return hex;
+}
+
+class UnmodifiableFilteredMap<K extends Comparable, V>
+    extends UnmodifiableMapView<K, V> implements FilteredMap<K, V> {
+  final FilteredMap<K, V> _map;
+
+  factory UnmodifiableFilteredMap(FilteredMap<K, V> map) =>
+      map is UnmodifiableFilteredMap ? map : UnmodifiableFilteredMap._(map);
+
+  UnmodifiableFilteredMap._(FilteredMap<K, V> map)
+      : _map = map,
+        super(map);
+
+  @override
+  SortedMap<K, V> clone() => this;
+
+  @override
+  KeyValueInterval get completeInterval => _map.completeInterval;
+
+  @override
+  Filter<K, V> get filter => _map.filter;
+
+  @override
+  FilteredMap<K, V> filteredMap(
+      {Pair<K, Comparable> start,
+      Pair<K, Comparable> end,
+      int limit,
+      bool reversed = false}) {
+    return _map.filteredMap(
+        start: start, end: end, limit: limit, reversed: reversed);
+  }
+
+  @override
+  FilteredMapView<K, V> filteredMapView(
+      {Pair<Comparable, Comparable> start,
+      Pair<Comparable, Comparable> end,
+      int limit,
+      bool reversed = false}) {
+    return _map.filteredMapView(
+        start: start, end: end, limit: limit, reversed: reversed);
+  }
+
+  @override
+  K firstKeyAfter(K key) => _map.firstKeyAfter(key);
+
+  @override
+  K lastKeyBefore(K key) => _map.lastKeyBefore(key);
+
+  @override
+  Ordering get ordering => _map.ordering;
+
+  @override
+  Iterable<K> subkeys(
+      {Pair<Comparable, Comparable> start,
+      Pair<Comparable, Comparable> end,
+      int limit,
+      bool reversed = false}) {
+    return _map.subkeys(
+        start: start, end: end, limit: limit, reversed: reversed);
+  }
 }
