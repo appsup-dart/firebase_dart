@@ -160,7 +160,10 @@ extension NameX on Name {
 
 extension TreeStructuredDataX on TreeStructuredData {
   TreeStructuredData getChild(Path<Name> path) {
-    return subtree(path) ?? TreeStructuredData();
+    if (path.isEmpty) return this;
+    var c = children[path.first];
+    if (c == null) return TreeStructuredData();
+    return c.getChild(path.skip(1));
   }
 
   TreeStructuredData updateChild(Path<Name> path, TreeStructuredData value) {
@@ -172,13 +175,9 @@ extension TreeStructuredDataX on TreeStructuredData {
     var c = children[path.first] ?? TreeStructuredData();
 
     var newChild = c.updateChild(path.skip(1), value);
-    var newChildren = {...children, path.first: newChild};
-    if (newChild.isNil) newChildren.remove(path.first);
 
-    if (newChildren.isEmpty) {
-      return TreeStructuredData.leaf(this.value, priority);
-    }
-    return TreeStructuredData.nonLeaf(newChildren, priority);
+    if (newChild.isNil) return withoutChild(path.first);
+    return withChild(path.first, newChild);
   }
 
   TreeStructuredData updatePriority(Path<Name> path, Value priority) {

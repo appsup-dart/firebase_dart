@@ -25,6 +25,7 @@ import 'operations/tree.dart';
 import 'synctree.dart';
 import 'tree.dart';
 import 'treestructureddata.dart';
+import 'utils.dart';
 
 final _logger = Logger('firebase-repo');
 
@@ -624,25 +625,6 @@ class Transaction implements Comparable<Transaction> {
   int compareTo(Transaction other) => Comparable.compare(order, other.order);
 }
 
-TreeStructuredData updateChild(
-    TreeStructuredData value, Path<Name> path, TreeStructuredData child) {
-  if (path.isEmpty) {
-    return child;
-  } else {
-    var k = path.first;
-    var c = value.children[k] ?? TreeStructuredData();
-    var newChild = updateChild(c, path.skip(1), child);
-    var newValue = value.clone();
-    if (newValue.isLeaf && !newChild.isNil) newValue.value = null;
-    if (newChild.isNil) {
-      newValue.children.remove(k);
-    } else {
-      newValue.children[k] = newChild;
-    }
-    return newValue;
-  }
-}
-
 class TransactionsTree {
   final Repo repo;
   final TransactionsNode root = TransactionsNode();
@@ -824,10 +806,9 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     var v = input;
     for (var t in transactionsInOrder) {
       var p = t.path.skip(path.length);
-      t.run(
-          v.subtree(p, (a, b) => TreeStructuredData()) ?? TreeStructuredData());
+      t.run(v.getChild(p));
       if (!t.isComplete) {
-        v = updateChild(v, p, t.currentOutputSnapshotResolved);
+        v = v.updateChild(p, t.currentOutputSnapshotResolved);
       }
     }
   }
@@ -847,10 +828,9 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
       v = value.last.currentOutputSnapshotRaw;
       lastId = value.last.order;
     }
-    v = v.clone();
     children.forEach((key, node) {
       if (node.lastId > lastId) {
-        v.children[key] = node.output;
+        v = v.withChild(key, node.output);
       }
     });
     return v;
@@ -882,7 +862,7 @@ class SparseSnapshotTree extends TreeNode<Name, TreeStructuredData> {
       children.clear();
     } else {
       if (value != null) {
-        value = updateChild(value, path, data);
+        value = value.updateChild(path, data);
       } else {
         var childKey = path.first;
         children.putIfAbsent(childKey, () => SparseSnapshotTree());
