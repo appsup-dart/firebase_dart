@@ -95,7 +95,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
               start: start, end: end, limit: limit, reversed: reversed),
           priority);
 
-  TreeStructuredData withFilter(QueryFilter f) {
+  TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) {
     if (children.filter == f ||
         (f == null && children.filter == const QueryFilter())) return this;
     if (f.ordering == children.filter.ordering) {

@@ -98,6 +98,16 @@ class ChildOrdering extends TreeStructuredDataOrdering {
   String get orderBy => child;
 }
 
+extension QueryFilterX on Filter<Name, TreeStructuredData> {
+  Name get endKey => validInterval?.end?.key;
+
+  Name get startKey => validInterval?.start?.key;
+
+  TreeStructuredData get endValue => validInterval?.end?.value;
+
+  TreeStructuredData get startValue => validInterval?.start?.value;
+}
+
 class QueryFilter extends Filter<Name, TreeStructuredData> {
   const QueryFilter(
       {KeyValueInterval validInterval = const KeyValueInterval(),
@@ -111,14 +121,6 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
             limit: limit,
             reversed: reversed,
             validInterval: validInterval);
-
-  Name get endKey => validInterval?.end?.key;
-
-  Name get startKey => validInterval?.start?.key;
-
-  TreeStructuredData get endValue => validInterval?.end?.value;
-
-  TreeStructuredData get startValue => validInterval?.start?.value;
 
   String get orderBy => (ordering as TreeStructuredDataOrdering).orderBy;
 
