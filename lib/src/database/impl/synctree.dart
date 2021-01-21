@@ -178,6 +178,7 @@ class SyncPoint {
   bool get isCompleteFromParent => _isCompleteFromParent;
 
   set isCompleteFromParent(bool v) {
+    if (_isCompleteFromParent == v) return;
     _isCompleteFromParent = v;
     if (_isCompleteFromParent) {
       views.putIfAbsent(QueryFilter(), () => MasterView(QueryFilter()));
