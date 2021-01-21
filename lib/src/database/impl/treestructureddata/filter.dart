@@ -55,18 +55,22 @@ class ValueOrdering extends TreeStructuredDataOrdering {
   const ValueOrdering() : super._();
 
   @override
-  TreeStructuredData mapValue(TreeStructuredData v) =>
-      TreeStructuredData.leaf(v.value);
+  TreeStructuredData mapValue(TreeStructuredData v) {
+    if (v.isEmpty) return v;
+    return ChildOrdering._object;
+  }
 
   @override
   String get orderBy => '.value';
 }
 
 class KeyOrdering extends TreeStructuredDataOrdering {
+  static final _empty = TreeStructuredData();
+
   const KeyOrdering() : super._();
 
   @override
-  TreeStructuredData mapValue(TreeStructuredData v) => TreeStructuredData();
+  TreeStructuredData mapValue(TreeStructuredData v) => _empty;
 
   @override
   String get orderBy => '.key';
@@ -77,10 +81,17 @@ class ChildOrdering extends TreeStructuredDataOrdering {
 
   const ChildOrdering(this.child) : super._();
 
+  static final TreeStructuredData _object =
+      TreeStructuredData.fromJson({'placeholder': 0});
+
   @override
   TreeStructuredData mapValue(TreeStructuredData v) {
     var parts = child.split('/').map((v) => Name(v));
-    return parts.fold(v, (v, c) => v.children[c] ?? TreeStructuredData());
+    var d = parts.fold<TreeStructuredData>(
+        v, (v, c) => v.children[c] ?? TreeStructuredData());
+
+    if (d.isEmpty) return d;
+    return _object;
   }
 
   @override
