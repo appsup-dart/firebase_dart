@@ -46,7 +46,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
         _userStorageManager.onCurrentUserChanged.listen((user) {
       if (_currentUser.value != user) {
         _currentUser.value?.destroy();
-        (user as FirebaseUserImpl).initializeProactiveRefresh();
+        (user as FirebaseUserImpl)?.initializeProactiveRefresh();
       }
       _currentUser.add(user);
     });
