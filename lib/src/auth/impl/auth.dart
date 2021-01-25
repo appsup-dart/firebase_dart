@@ -44,6 +44,10 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
     _storageManagerUserChangedSubscription =
         _userStorageManager.onCurrentUserChanged.listen((user) {
+      if (_currentUser.value != user) {
+        _currentUser.value?.destroy();
+        (user as FirebaseUserImpl).initializeProactiveRefresh();
+      }
       _currentUser.add(user);
     });
   }
@@ -92,7 +96,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   /// Handles user state changes.
-  Future<void> _handleUserStateChange(User user) {
+  Future<void> _handleUserStateChange(User user) async {
     return _userStorageManager.setCurrentUser(user);
   }
 
@@ -378,6 +382,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   @override
   Future<void> delete() async {
     await _onReady;
+    currentUser?.destroy();
     await _userStorageManager.close();
     await _storageManagerUserChangedSubscription.cancel();
     await _currentUser.close();

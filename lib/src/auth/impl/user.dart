@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
@@ -31,9 +33,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   final BehaviorSubject<String> _tokenUpdates = BehaviorSubject();
 
   FirebaseUserImpl(this._auth, this._credential, [this._authDomain])
-      : assert(_auth != null) {
-    _initializeProactiveRefresh();
-  }
+      : assert(_auth != null);
 
   factory FirebaseUserImpl.fromJson(Map<String, dynamic> user,
       {@required FirebaseAuthImpl auth}) {
@@ -111,6 +111,9 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   void destroy() {
     _destroyed = true;
+    _timers
+      ..forEach((t) => t.cancel())
+      ..clear();
   }
 
   /// Refreshes the current user, if signed in.
@@ -211,8 +214,6 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         rethrow;
       }
     }
-
-    _destroyed = true;
 
     // A deleted user will be treated like a sign out event.
     await _auth.signOut();
@@ -365,7 +366,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     throw UnimplementedError();
   }
 
-  void _initializeProactiveRefresh() async {
+  void initializeProactiveRefresh() async {
     var nextMinDuration = Duration();
     var forceRefresh = false;
 
@@ -378,7 +379,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
             c.expiresAt.subtract(Duration(minutes: 5)).difference(clock.now());
         forceRefresh = true;
         if (t.isNegative) t = Duration();
-        await Future.delayed(t);
+        await _wait(t);
       } catch (e) {
         if (nextMinDuration.inSeconds == 0) {
           nextMinDuration = Duration(seconds: 30);
@@ -388,9 +389,25 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         if (nextMinDuration > Duration(minutes: 16)) {
           nextMinDuration = Duration(minutes: 16);
         }
-        await Future.delayed(nextMinDuration);
+        await _wait(nextMinDuration);
       }
     }
+  }
+
+  final List<Timer> _timers = [];
+  Future<void> _wait(Duration duration) {
+    if (duration == Duration()) return Future.microtask(() => null);
+    var completer = Completer<void>();
+    Function() callback;
+    var timer = Timer(duration, () async {
+      callback();
+    });
+    _timers.add(timer);
+    callback = () {
+      _timers.remove(timer);
+      completer.complete();
+    };
+    return completer.future;
   }
 }
 
