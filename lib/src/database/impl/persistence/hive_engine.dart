@@ -27,10 +27,11 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
   final KeyValueDatabase database;
 
   HivePersistenceStorageEngine(this.database) {
-    _loadServerCache();
+    _serverCache = loadServerCache();
   }
 
-  void _loadServerCache() {
+  IncompleteData loadServerCache() {
+    var serverCache = IncompleteData.empty();
     var keys = database.keysBetween(
       startKey: '$_serverCachePrefix:',
       endKey: '$_serverCachePrefix;',
@@ -38,9 +39,10 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
     for (var k in keys) {
       var p = Name.parsePath(k.substring('$_serverCachePrefix:'.length));
-      _serverCache = _serverCache.applyOperation(TreeOperation.overwrite(
+      serverCache = serverCache.applyOperation(TreeOperation.overwrite(
           p, TreeStructuredData.fromJson(database.box.get(k))));
     }
+    return serverCache;
   }
 
   @override
@@ -85,7 +87,7 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
     newValue.forEachCompleteNode((k, v) {
       var c = _serverCache.child(k);
-      if (!c.isComplete || c.value == v) return;
+      if (c.isComplete && c.value == v) return;
       var p = k.join('/');
       database.deleteAll(database.keysBetween(
         startKey: '$_serverCachePrefix:$p/',

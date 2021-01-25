@@ -96,6 +96,9 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
     if (Repo.hasInstance(this)) {
       await Repo(this).close();
     }
+    if (Hive.isBoxOpen('firebase-db-persistence-storage-${app.name}')) {
+      await Hive.box('firebase-db-persistence-storage-${app.name}').close();
+    }
     return super.delete();
   }
 
