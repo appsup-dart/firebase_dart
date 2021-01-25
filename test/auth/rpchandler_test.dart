@@ -988,14 +988,17 @@ void main() {
             'returnIdpCredential': true,
             'returnSecureToken': true
           },
-          action: () => rpcHandler.verifyAssertion(
-              sessionId: 'SESSION_ID',
-              requestUri: 'http://localhost/callback#oauthResponse'),
+          expectedResult: (v) => v['idToken'],
+          action: () => rpcHandler
+              .verifyAssertion(
+                  sessionId: 'SESSION_ID',
+                  requestUri: 'http://localhost/callback#oauthResponse')
+              .then((v) => v.idToken.toCompactSerialization()),
         );
         test('verifyAssertion: success', () async {
           await tester.shouldSucceed(
             serverResponse: {
-              'idToken': 'ID_TOKEN',
+              'idToken': createMockJwt(uid: 'my_id'),
               'oauthAccessToken': 'ACCESS_TOKEN',
               'oauthExpireIn': 3600,
               'oauthAuthorizationCode': 'AUTHORIZATION_CODE'
@@ -1003,6 +1006,7 @@ void main() {
           );
         });
         test('verifyAssertion: with session id nonce: success', () async {
+          var token = createMockJwt(uid: 'my_id');
           await tester.shouldSucceed(
             expectedBody: {
               'sessionId': 'NONCE',
@@ -1012,73 +1016,67 @@ void main() {
               'returnSecureToken': true
             },
             serverResponse: {
-              'idToken': 'ID_TOKEN',
+              'idToken': token,
               'oauthIdToken': 'OIDC_ID_TOKEN',
               'oauthExpireIn': 3600,
               'providerId': 'oidc.provider'
             },
-            expectedResult: (_) => {
-              'idToken': 'ID_TOKEN',
-              'oauthIdToken': 'OIDC_ID_TOKEN',
-              'oauthExpireIn': 3600,
-              'providerId': 'oidc.provider',
-              'nonce': 'NONCE'
-            },
-            action: () => rpcHandler.verifyAssertion(
-                sessionId: 'NONCE',
-                requestUri:
-                    'http://localhost/callback#id_token=ID_TOKEN&state=STATE'),
+            action: () => rpcHandler
+                .verifyAssertion(
+                    sessionId: 'NONCE',
+                    requestUri:
+                        'http://localhost/callback#id_token=ID_TOKEN&state=STATE')
+                .then((v) => v.idToken.toCompactSerialization()),
           );
         });
         test('verifyAssertion: with post body nonce: success', () async {
+          var token = createMockJwt(uid: 'my_id');
           await tester.shouldSucceed(
             expectedBody: {
               'postBody':
-                  'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                  'id_token=$token&providerId=oidc.provider&nonce=NONCE',
               'requestUri': 'http://localhost',
               'returnIdpCredential': true,
               'returnSecureToken': true
             },
             serverResponse: {
-              'idToken': 'ID_TOKEN',
+              'idToken': token,
               'oauthIdToken': 'OIDC_ID_TOKEN',
               'oauthExpireIn': 3600,
               'providerId': 'oidc.provider',
             },
-            expectedResult: (_) => {
-              'idToken': 'ID_TOKEN',
-              'oauthIdToken': 'OIDC_ID_TOKEN',
-              'oauthExpireIn': 3600,
-              'providerId': 'oidc.provider',
-              'nonce': 'NONCE'
-            },
-            action: () => rpcHandler.verifyAssertion(
-                postBody:
-                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
-                requestUri: 'http://localhost'),
+            action: () => rpcHandler
+                .verifyAssertion(
+                    postBody:
+                        'id_token=$token&providerId=oidc.provider&nonce=NONCE',
+                    requestUri: 'http://localhost')
+                .then((v) => v.idToken.toCompactSerialization()),
           );
         });
         test('verifyAssertion: pending token response: success', () async {
+          var token = createMockJwt(uid: 'my_id');
           // Nonce should not be injected since pending token is present in response.
           await tester.shouldSucceed(
             expectedBody: {
               'postBody':
-                  'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                  'id_token=$token&providerId=oidc.provider&nonce=NONCE',
               'requestUri': 'http://localhost',
               'returnIdpCredential': true,
               'returnSecureToken': true
             },
             serverResponse: {
-              'idToken': 'ID_TOKEN',
+              'idToken': token,
               'oauthIdToken': 'OIDC_ID_TOKEN',
               'pendingToken': 'PENDING_TOKEN',
               'oauthExpireIn': 3600,
               'providerId': 'oidc.provider'
             },
-            action: () => rpcHandler.verifyAssertion(
-                postBody:
-                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
-                requestUri: 'http://localhost'),
+            action: () => rpcHandler
+                .verifyAssertion(
+                    postBody:
+                        'id_token=$token&providerId=oidc.provider&nonce=NONCE',
+                    requestUri: 'http://localhost')
+                .then((v) => v.idToken.toCompactSerialization()),
           );
         });
         group('verifyAssertion: pending token request', () {
@@ -1091,14 +1089,16 @@ void main() {
                 'returnSecureToken': true
               },
               serverResponse: {
-                'idToken': 'ID_TOKEN',
+                'idToken': createMockJwt(uid: 'my_id'),
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'pendingToken': 'PENDING_TOKEN2',
                 'oauthExpireIn': 3600,
               },
-              action: () => rpcHandler.verifyAssertion(
-                  pendingIdToken: 'PENDING_TOKEN',
-                  requestUri: 'http://localhost'),
+              action: () => rpcHandler
+                  .verifyAssertion(
+                      pendingIdToken: 'PENDING_TOKEN',
+                      requestUri: 'http://localhost')
+                  .then((v) => v.idToken.toCompactSerialization()),
             );
           });
 

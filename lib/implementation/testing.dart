@@ -1,17 +1,16 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart' as auth;
 import 'package:firebase_dart/src/auth/backend/memory_backend.dart' as auth;
+import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/dart.dart';
 import 'package:firebase_dart/src/storage/backend/backend.dart' as storage;
 import 'package:firebase_dart/src/storage/backend/memory_backend.dart'
     as storage;
 import 'package:firebase_dart/src/util/proxy.dart';
-import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 import 'package:jose/jose.dart';
@@ -23,7 +22,7 @@ class FirebaseTesting {
 
   static Future<void> setup() async {
     // this forces to create an in-memory box
-    await Hive.openBox('firebase_auth', bytes: Uint8List(0));
+    PersistenceStorage.setupMemoryStorage();
 
     var openIdClient = ProxyClient({
       RegExp('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'):

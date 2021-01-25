@@ -11,10 +11,10 @@ void main() async {
   await Hive.openBox('firebase-db-storage', bytes: Uint8List(0));
 
   hierarchicalLoggingEnabled = true;
-  RandomSyncTreeTester.logger
+/*   RandomSyncTreeTester.logger
     ..level = Level.ALL
     ..onRecord.listen(print);
-
+ */
   group('Random synctree test', () {
     test('Random synctree test seed=1607344606058', () {
       _doTest(1607344606058);

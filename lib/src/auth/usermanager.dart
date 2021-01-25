@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/user.dart';
+import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:hive/hive.dart';
 
 import 'impl/user.dart';
@@ -32,7 +33,7 @@ class UserManager {
   Stream<User> get onCurrentUserChanged => _controller.stream;
 
   UserManager(this.auth, [FutureOr<Box> storage])
-      : storage = storage ?? Hive.openBox('firebase_auth') {
+      : storage = storage ?? PersistenceStorage.openBox('firebase_auth') {
     _onReady = _init();
   }
 
