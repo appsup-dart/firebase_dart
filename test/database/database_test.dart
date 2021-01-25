@@ -23,7 +23,7 @@ import '../util.dart';
 void main() async {
   await FirebaseTesting.setup();
 
-  StreamSubscription logSubscription;
+/*   StreamSubscription logSubscription;
   setUp(() {
     Logger.root.level = Level.ALL;
     logSubscription = Logger.root.onRecord.listen(print);
@@ -31,7 +31,7 @@ void main() async {
   tearDown(() async {
     await logSubscription.cancel();
   });
-
+ */
   group('mem', () {
     testsWith({'host': 'mem://test/', 'secret': 'x'});
   });

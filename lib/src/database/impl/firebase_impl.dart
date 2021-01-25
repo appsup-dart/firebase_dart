@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
+import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:firebase_dart/src/database/impl/persistence/default_manager.dart';
 import 'package:firebase_dart/src/database/impl/persistence/hive_engine.dart';
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
@@ -61,7 +62,8 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
     if (_persistenceManager != null) return false;
     if (_persistenceEnabled == enabled) return true;
     if (enabled) {
-      await Hive.openBox('firebase-db-persistence-storage-${app.name}');
+      await PersistenceStorage.openBox(
+          'firebase-db-persistence-storage-${app.name}');
       if (_persistenceManager != null) {
         await Hive.box('firebase-db-persistence-storage-${app.name}').close();
         return false;
