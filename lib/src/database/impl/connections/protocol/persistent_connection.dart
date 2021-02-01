@@ -176,10 +176,15 @@ class PersistentConnectionImpl extends PersistentConnection
     try {
       var body = await _request(r);
       return body.warnings ?? [];
-    } catch (e) {
+    } on FirebaseDatabaseException catch (e) {
       _tagToQuery.remove(tag);
       _removeListen(path, query);
-      rethrow;
+
+      var event = OperationEvent(OperationEventType.listenRevoked,
+          Name.parsePath(path), null, query);
+      if (!_onDataOperation.isClosed) _onDataOperation.add(event);
+
+      return [e.code];
     }
   }
 
