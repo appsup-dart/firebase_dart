@@ -586,11 +586,12 @@ class SyncTree {
   }
 
   void applyListenRevoked(Path<Name> path, Filter filter) {
-    root.subtree(path).value.views.remove(filter).observers.values.forEach(
-        (t) => t.dispatchEvent(CancelEvent(
-            FirebaseDatabaseException.permissionDenied()
-                .replace(message: 'Access to ${path.join('/')} denied'),
-            null))); // TODO is this always because of permission denied?
+    var view = root.subtree(path).value.views.remove(filter);
+    if (view == null) return;
+    view.observers.values.forEach((t) => t.dispatchEvent(CancelEvent(
+        FirebaseDatabaseException.permissionDenied()
+            .replace(message: 'Access to ${path.join('/')} denied'),
+        null))); // TODO is this always because of permission denied?
   }
 
   /// Applies a user merge at [path] with [changedChildren]
