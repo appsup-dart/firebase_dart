@@ -84,11 +84,16 @@ class BackendConnection {
                                         .toJson(true))));
                       });
 
-          await backend.listen(
-            message.body.path,
-            listener,
-            query: message.body.query,
-          );
+          try {
+            await backend.listen(
+              message.body.path,
+              listener,
+              query: message.body.query,
+            );
+          } on FirebaseDatabaseException catch (e) {
+            status = e.code;
+            data = e.message;
+          }
           break;
         case DataMessage.actionUnlisten:
           var listener =

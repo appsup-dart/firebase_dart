@@ -11,6 +11,7 @@ import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
+import 'package:firebase_dart/src/database/impl/memory_backend.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
@@ -138,6 +139,27 @@ void main() async {
           fail('Timer still active: created here $value');
         }
       });
+    });
+  });
+
+  group('Permissions', () {
+    test('Listening without read permission should throw permission denied',
+        () async {
+      var backend = MemoryBackend.getInstance('test_s');
+      backend.securityRules = {
+        'public': {'.read': 'true'},
+        'private': {'.read': 'auth!=null'}
+      };
+
+      var app = await core.Firebase.initializeApp(
+          name: 'my_app', options: getOptions());
+      var db = FirebaseDatabase(app: app, databaseURL: 'mem://test_s');
+      await db.reference().child('public').get();
+      await expectLater(
+          () => db.reference().child('private').get(),
+          throwsA(predicate((v) =>
+              v is FirebaseDatabaseException &&
+              v.code == FirebaseDatabaseException.permissionDenied().code)));
     });
   });
 }

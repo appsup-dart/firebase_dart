@@ -518,27 +518,13 @@ class SyncTree {
         point,
         () => Future<Null>.microtask(() {
               _invalidPoints.remove(point);
-              registrar
-                  .registerAll(
-                      path,
-                      point.minimalSetOfQueries,
-                      (f) => point.views[f]?._data?.serverVersion?.isComplete ==
-                              true
+              registrar.registerAll(
+                  path,
+                  point.minimalSetOfQueries,
+                  (f) =>
+                      point.views[f]?._data?.serverVersion?.isComplete == true
                           ? point.views[f]._data.serverVersion.value.hash
-                          : null)
-                  .catchError((e, tr) {
-                if (e is FirebaseDatabaseException &&
-                    e.code == 'permission_denied') {
-                  point.views.values.expand((v) => v.observers.values).forEach(
-                      (t) => t.dispatchEvent(CancelEvent(
-                          e.replace(
-                              message: 'Access to ${path.join('/')} denied'),
-                          tr)));
-                  point.views.clear();
-                } else {
-                  throw e;
-                }
-              }, test: (e) => e is FirebaseDatabaseException);
+                          : null);
             }));
   }
 
