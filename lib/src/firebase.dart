@@ -4,13 +4,12 @@
 library firebase_dart;
 
 import 'dart:async';
-import 'dart:convert' show Converter, Codec;
+import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'dart:collection';
 import 'firebase_impl.dart';
 import '../firebase_core.dart';
 import 'package:quiver/core.dart' as quiver;
-import 'package:dart2_constant/convert.dart';
 
 part 'firebase/datasnapshot.dart';
 

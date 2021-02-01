@@ -4,6 +4,7 @@
 library firebase.protocol;
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:jose/jose.dart';
 import 'package:quiver/core.dart' as quiver;
 import 'package:quiver/check.dart' as quiver;
@@ -18,7 +19,6 @@ import 'dart:math';
 import '../treestructureddata.dart';
 import 'package:sortedmap/sortedmap.dart';
 import '../connection.dart';
-import 'package:dart2_constant/convert.dart';
 import 'package:meta/meta.dart';
 
 part 'protocol/request.dart';

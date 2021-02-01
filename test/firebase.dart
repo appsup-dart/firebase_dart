@@ -8,11 +8,11 @@ import 'package:firebase_dart/firebase_core.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
 import 'dart:async';
+import 'dart:convert';
 
 import 'secrets.dart'
     if (dart.library.html) 'secrets.dart'
     if (dart.library.io) 'secrets_io.dart' as s;
-import 'package:dart2_constant/convert.dart';
 import 'package:firebase_dart/src/connections/protocol.dart';
 
 void main() {

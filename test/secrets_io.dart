@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:dart2_constant/convert.dart';
+import 'dart:convert';
 
 Map get secrets {
   var f = File('test/secrets.json');

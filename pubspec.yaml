@@ -18,7 +18,6 @@ dependencies:
   isolate: '>=1.1.0 <3.0.0'
   collection: '^1.9.1'
   meta: '^1.1.5'
-  dart2_constant: ^1.0.0
   jose: ^0.1.2
 
 dev_dependencies:
