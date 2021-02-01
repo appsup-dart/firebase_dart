@@ -35,6 +35,8 @@ class Connection {
     transport.open();
     transport.channel.stream.listen(_onMessage, onDone: () {
       close();
+    }, onError: (e, tr) {
+      _logger.fine('Connection error', e, tr);
     });
 
     _outputSink.stream.asyncMap((v) => v).listen((v) {
