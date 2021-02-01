@@ -129,6 +129,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   bool operator ==(dynamic other) {
     if (identical(this, other)) return true;
     return other is TreeStructuredData &&
+        other.priority == priority &&
         (isLeaf
             ? other.isLeaf && value == other.value
             : !other.isLeaf &&
@@ -138,11 +139,11 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   int _hashCode;
 
   @override
-  int get hashCode =>
-      _hashCode ??= quiver.hash2(value, const MapEquality().hash(children));
+  int get hashCode => _hashCode ??=
+      quiver.hash3(value, priority, const MapEquality().hash(children));
 
   @override
-  String toString() => 'TreeStructuredData[${toJson()}]';
+  String toString() => 'TreeStructuredData[${toJson(true)}]';
 
   String _hash;
 
