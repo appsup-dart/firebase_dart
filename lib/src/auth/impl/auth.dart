@@ -394,7 +394,7 @@ class UserCredentialImpl extends UserCredential {
   static const operationTypeSignIn = 'signIn';
 
   @override
-  final FirebaseUserImpl user;
+  final User user;
 
   @override
   final AdditionalUserInfo additionalUserInfo;

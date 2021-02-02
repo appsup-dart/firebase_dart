@@ -4,7 +4,7 @@ import 'package:meta/meta.dart';
 /// Interface that represents the credentials returned by an auth provider.
 /// Implementations specify the details about each auth provider's credential
 /// requirements.
-abstract class AuthCredential {
+class AuthCredential {
   /// The authentication provider ID for the credential. For example,
   /// 'facebook.com', or 'google.com'.
   final String providerId;
