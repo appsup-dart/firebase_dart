@@ -197,8 +197,8 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   final BehaviorSubject<User> _subject = BehaviorSubject();
 
   IsolateFirebaseAuth(IsolateFirebaseApp app) : super(app, 'auth') {
-    _subject.addStream(createStream('idTokenChanges', [], broadcast: true)
-        .map((v) => IsolateUser.fromJson(v)));
+    _subject.addStream(createStream('authChanges', [], broadcast: true)
+        .map((v) => v == null ? null : IsolateUser.fromJson(v)));
   }
 
   @override
@@ -416,8 +416,9 @@ class AuthPluginService extends PluginService {
         return auth.verifyPasswordResetCode(arguments[0]);
       case 'verifyPhoneNumber':
         throw UnimplementedError(); // TODO
-      case 'idTokenChanges':
-        return auth.idTokenChanges().map((v) => v.toJson());
+      case 'authChanges':
+        return auth.authStateChanges().map((v) => v
+            ?.toJson()); // TODO: handle id token changes and other user changes
     }
     throw ArgumentError.value(method, 'method');
   }
