@@ -391,7 +391,7 @@ class AuthPluginService extends PluginService {
         return auth.signInAnonymously().then((v) => v.toJson());
       case 'signInWithCredential':
         return auth
-            .signInWithCredential(arguments.first)
+            .signInWithCredential(AuthCredentialX.fromJson(arguments.first))
             .then((v) => v.toJson());
       case 'signInWithCustomToken':
         return auth
@@ -421,5 +421,31 @@ class AuthPluginService extends PluginService {
             ?.toJson()); // TODO: handle id token changes and other user changes
     }
     throw ArgumentError.value(method, 'method');
+  }
+}
+
+extension AuthCredentialX on AuthCredential {
+  static AuthCredential fromJson(Map<String, dynamic> json) {
+    switch (json['providerId']) {
+      case 'password':
+        return EmailAuthCredential.fromJson(json);
+      case 'google.com':
+      case 'facebook.com':
+      case 'github.com':
+      case 'twitter.com':
+        return OAuthCredential(
+            providerId: json['providerId'],
+            signInMethod: json['signInMethod'],
+            accessToken: json['accessToken'],
+            idToken: json['idToken'],
+            secret: json['secret'],
+            rawNonce: json['rawNonce']);
+      case 'phone':
+        return PhoneAuthCredential(
+            phoneNumber: json['phoneNumber'],
+            verificationId: json['verificationId'],
+            smsCode: json['smsCode']);
+    }
+    throw UnsupportedError('provider `${json['providerId']} not supported');
   }
 }

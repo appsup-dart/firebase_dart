@@ -192,8 +192,9 @@ class IsolateQuery extends Query {
 
   @override
   Stream<Event> on(String eventType) {
-    return database.createStream('on', [path, filter.toJson(), eventType]).map(
-        (v) => EventX.fromJson(v));
+    return database
+        .createStream('on', [path, filter.toJson(), eventType], broadcast: true)
+        .map((v) => EventX.fromJson(v));
   }
 
   Query _withFilter(QueryFilter filter) {
