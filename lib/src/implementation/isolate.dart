@@ -24,7 +24,8 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
   Future<FirebaseApp> createApp(String name, FirebaseOptions options) async {
     var app = IsolateFirebaseApp(name, options);
     var isolate = await Isolate.spawn(Plugin.create,
-        {'sendPort': app._receivePort.sendPort, 'storagePath': storagePath});
+        {'sendPort': app._receivePort.sendPort, 'storagePath': storagePath},
+        errorsAreFatal: false);
     if (onError != null) {
       var errorReceivePort = ReceivePort();
       errorReceivePort.forEach((l) {

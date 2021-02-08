@@ -22,7 +22,7 @@ class PhoneAuthProvider extends AuthProvider {
       {@required String verificationId, @required String smsCode}) {
     assert(verificationId != null);
     assert(smsCode != null);
-    return PhoneAuthCredential._(
+    return PhoneAuthCredential(
         verificationId: verificationId, smsCode: smsCode);
   }
 
@@ -34,7 +34,7 @@ class PhoneAuthProvider extends AuthProvider {
   }) {
     assert(temporaryProof != null);
     assert(phoneNumber != null);
-    return PhoneAuthCredential._(
+    return PhoneAuthCredential(
         temporaryProof: temporaryProof, phoneNumber: phoneNumber);
   }
 }
@@ -52,7 +52,7 @@ class PhoneAuthCredential extends AuthCredential {
 
   final String phoneNumber;
 
-  PhoneAuthCredential._(
+  PhoneAuthCredential(
       {this.verificationId,
       this.smsCode,
       this.temporaryProof,
