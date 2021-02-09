@@ -79,7 +79,6 @@ class UserManager {
 
   Future<void> close() async {
     await onReady;
-    await (await storage).close();
     await _subscription.cancel();
     await _controller.close();
   }

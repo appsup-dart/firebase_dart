@@ -124,11 +124,17 @@ void main() {
       'mfaPendingCredential': 'PENDING_CREDENTIAL'
     };
 
+    WebPlatform platform;
+
+    initPlatform(platform = Platform.web(
+        currentUrl: 'http://localhost', isMobile: false, isOnline: true));
     setUp(() {
       rpcHandler
         ..tenantId = null
         ..updateCustomLocaleHeader(null);
-      platform = Platform(currentUrl: 'http://localhost');
+
+      initPlatform(platform = Platform.web(
+          currentUrl: 'http://localhost', isMobile: false, isOnline: true));
     });
 
     group('identitytoolkit', () {
@@ -466,8 +472,11 @@ void main() {
         });
         test('fetchSignInMethodsForIdentifier: non http or https', () async {
           // Simulate non http or https current URL.
-          platform =
-              Platform(currentUrl: 'chrome-extension://234567890/index.html');
+          platform = Platform.web(
+              currentUrl: 'chrome-extension://234567890/index.html',
+              isMobile: true,
+              isOnline: true);
+          initPlatform(platform);
           await tester.shouldSucceed(
             expectedBody: {
               'identifier': identifier,
@@ -537,8 +546,10 @@ void main() {
 
         test('fetchProvidersForIdentifier: non http or https', () async {
           // Simulate non http or https current URL.
-          platform =
-              Platform(currentUrl: 'chrome-extension://234567890/index.html');
+          platform = Platform.web(
+              currentUrl: 'chrome-extension://234567890/index.html',
+              isMobile: true);
+          initPlatform(platform);
           await tester.shouldSucceed(
             expectedBody: {
               'identifier': identifier,
@@ -3296,8 +3307,10 @@ void main() {
 
         group('Send Firebase backend request: offline', () {
           setUp(() {
-            platform =
-                Platform(currentUrl: 'http://localhost', isOnline: false);
+            initPlatform(platform = Platform.web(
+                currentUrl: 'http://localhost',
+                isOnline: false,
+                isMobile: true));
           });
           test('Send Firebase backend request: offline false alert', () async {
             fakeAsync((fake) {

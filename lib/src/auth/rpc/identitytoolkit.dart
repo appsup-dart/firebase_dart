@@ -270,7 +270,7 @@ class _MyApiRequester extends commons.ApiRequester {
     // the user would wait 5 seconds to detect that. If there is a connection
     // (false alert case), the user still has the ability to try to send the
     // request. If it fails (timeout too short), they can still retry.
-    if (!platform.isOnline) {
+    if (!Platform.current.isOnline) {
       // Pick the shorter timeout.
       return _offlineTimeout < _shortTimeout ? _offlineTimeout : _shortTimeout;
     }
@@ -278,7 +278,7 @@ class _MyApiRequester extends commons.ApiRequester {
     // return the short delay.
     // This could be improved in the future to dynamically change based on other
     // variables instead of just reading the current environment.
-    return platform.isMobile ? _longTimeout : _shortTimeout;
+    return Platform.current.isMobile ? _longTimeout : _shortTimeout;
   }
 
   @override
