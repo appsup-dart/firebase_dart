@@ -322,7 +322,12 @@ class RpcHandler {
     // createAuthUri returns an error if continue URI is not http or https.
     // For environments like Cordova, Chrome extensions, native frameworks, file
     // systems, etc, use http://localhost as continue URL.
-    var continueUri = isHttpOrHttps() ? getCurrentUrl() : 'http://localhost';
+    var continueUri = Platform.current is WebPlatform
+        ? (Platform.current as WebPlatform).currentUrl
+        : 'http://localhost';
+    if (!['http', 'https'].contains(Uri.parse(continueUri).scheme)) {
+      continueUri = 'http://localhost';
+    }
     var response = await identitytoolkitApi.relyingparty
         .createAuthUri(IdentitytoolkitRelyingpartyCreateAuthUriRequest()
           ..identifier = identifier

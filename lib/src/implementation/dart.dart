@@ -13,10 +13,15 @@ import '../implementation.dart';
 class PureDartFirebaseImplementation extends FirebaseImplementation {
   final http.Client _httpClient;
 
-  PureDartFirebaseImplementation.withHttpClient(this._httpClient);
+  final Function(Uri url) launchUrl;
 
-  PureDartFirebaseImplementation() : _httpClient = null;
+  PureDartFirebaseImplementation.withHttpClient(this._httpClient,
+      {this.launchUrl});
 
+  PureDartFirebaseImplementation({this.launchUrl}) : _httpClient = null;
+
+  static PureDartFirebaseImplementation get installation =>
+      FirebaseImplementation.installation;
   @override
   FirebaseDatabase createDatabase(FirebaseApp app, {String databaseURL}) {
     return FirebaseService.findService<FirebaseDatabaseImpl>(

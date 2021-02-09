@@ -4,6 +4,7 @@ import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart' as auth;
 import 'package:firebase_dart/src/auth/backend/memory_backend.dart' as auth;
+import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/dart.dart';
@@ -108,6 +109,8 @@ class FirebaseTesting {
       }),
     });
 
+    initPlatform(Platform.web(
+        currentUrl: 'http://localhost', isMobile: true, isOnline: true));
     FirebaseImplementation.install(
         PureDartFirebaseImplementation.withHttpClient(httpClient));
   }

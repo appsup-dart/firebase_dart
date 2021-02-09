@@ -9,6 +9,7 @@ import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/storage.dart';
+import 'package:meta/meta.dart';
 
 import 'isolate/auth.dart';
 import 'isolate/database.dart';
@@ -16,15 +17,23 @@ import 'isolate/storage.dart';
 
 class IsolateFirebaseImplementation extends FirebaseImplementation {
   final String storagePath;
+  final Platform platform;
   final void Function(String errorMessage, StackTrace stackTrace) onError;
 
-  IsolateFirebaseImplementation(this.storagePath, {this.onError});
+  IsolateFirebaseImplementation(this.storagePath,
+      {this.onError, @required this.platform})
+      : assert(platform != null);
 
   @override
   Future<FirebaseApp> createApp(String name, FirebaseOptions options) async {
     var app = IsolateFirebaseApp(name, options);
-    var isolate = await Isolate.spawn(Plugin.create,
-        {'sendPort': app._receivePort.sendPort, 'storagePath': storagePath},
+    var isolate = await Isolate.spawn(
+        Plugin.create,
+        {
+          'sendPort': app._receivePort.sendPort,
+          'storagePath': storagePath,
+          'platform': platform.toJson()
+        },
         errorsAreFatal: false);
     if (onError != null) {
       var errorReceivePort = ReceivePort();
@@ -200,7 +209,8 @@ class Plugin {
   static void create(Map<String, dynamic> options) {
     var sendPort = options['sendPort'];
     var storagePath = options['storagePath'];
-    PureDartFirebase.setup(storagePath: storagePath);
+    var platform = Platform.fromJson(options['platform']);
+    PureDartFirebase.setup(storagePath: storagePath, platform: platform);
     Plugin(sendPort)..start();
   }
 
