@@ -7,6 +7,7 @@ import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:firebase_dart/src/storage/service.dart';
 import 'package:http/http.dart' as http;
+import 'package:meta/meta.dart';
 
 import '../implementation.dart';
 
@@ -18,7 +19,8 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
   PureDartFirebaseImplementation.withHttpClient(this._httpClient,
       {this.launchUrl});
 
-  PureDartFirebaseImplementation({this.launchUrl}) : _httpClient = null;
+  PureDartFirebaseImplementation({@required this.launchUrl})
+      : _httpClient = null;
 
   static PureDartFirebaseImplementation get installation =>
       FirebaseImplementation.installation;

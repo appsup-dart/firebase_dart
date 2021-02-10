@@ -1,18 +1,23 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
+import 'package:firebase_dart/src/implementation/dart.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:uuid/uuid.dart';
 
 import '../auth.dart';
 import '../rpc/rpc_handler.dart';
 import '../usermanager.dart';
+import '../utils.dart';
 import 'user.dart';
 
 /// The entry point of the Firebase Authentication SDK.
@@ -358,6 +363,63 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   @override
   Future<void> signInWithRedirect(AuthProvider provider) {
+    if (provider is OAuthProvider) {
+      var eventId = Uuid().v4();
+
+      String _randomString([int length = 32]) {
+        assert(length > 0);
+        var charset =
+            '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+
+        var random = Random.secure();
+        return Iterable.generate(
+            length, (_) => charset[random.nextInt(charset.length)]).join();
+      }
+
+      var sessionId = _randomString();
+      var platform = Platform.current;
+
+      var url = Uri(
+          scheme: 'https',
+          host: app.options.authDomain,
+          path: '__/auth/handler',
+          queryParameters: {
+            // TODO: version 'v': 'X$clientVersion',
+            'authType': 'signInWithRedirect',
+            'apiKey': app.options.apiKey,
+            'providerId': provider.providerId,
+            if (provider.scopes != null && provider.scopes.isNotEmpty)
+              'scopes': provider.scopes.join(','),
+            if (provider.parameters != null)
+              'customParameters': json.encode(provider.parameters),
+            // TODO: if (tenantId != null) 'tid': tenantId
+
+            if (eventId != null) 'eventId': eventId,
+
+            if (platform is AndroidPlatform) ...{
+              'eid': 'p',
+              'sessionId': sessionId,
+              'apn': platform.packageId,
+              'sha1Cert': platform.sha1Cert,
+              'publicKey':
+                  '...', // seems encryption is not used, but public key needs to be present to assemble the correct redirect url
+            },
+            if (platform is IOsPlatform) ...{
+              'sessionId': sessionId,
+              'ibi': platform.bundleId,
+              if (platform.clientId != null)
+                'clientId': platform.clientId
+              else
+                'appId': platform.appId,
+            },
+            if (platform is WebPlatform) ...{
+              'redirectUrl': platform.currentUrl,
+              'appName': app.name,
+            }
+          });
+
+      PureDartFirebaseImplementation.installation.launchUrl(url);
+    }
     // TODO: implement signInWithRedirect
     throw UnimplementedError();
   }
