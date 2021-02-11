@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_custom_tabs/flutter_custom_tabs.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
@@ -40,6 +43,34 @@ class FirebaseDartFlutter {
           }
 
           throw UnimplementedError();
+        },
+        oauthSignIn: (provider) async {
+          switch (provider.providerId) {
+            case 'facebook.com':
+              var facebookLogin = FacebookAuth.instance;
+              var accessToken = await facebookLogin.login();
+
+              return FacebookAuthProvider.credential(accessToken.token);
+            case 'google.com':
+              var account = await GoogleSignIn().signIn();
+              var auth = await account.authentication;
+              return GoogleAuthProvider.credential(
+                  idToken: auth.idToken, accessToken: auth.accessToken);
+          }
+
+          return null;
+        },
+        oauthSignOut: (providerId) async {
+          switch (providerId) {
+            case 'facebook.com':
+              var facebookLogin = FacebookAuth.instance;
+              await facebookLogin.logOut();
+              return;
+            case 'google.com':
+              await GoogleSignIn().signOut();
+              return;
+          }
+          return null;
         },
         onError: onError,
         platform: await _getPlatform());

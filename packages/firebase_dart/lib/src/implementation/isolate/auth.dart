@@ -350,6 +350,12 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     // TODO: implement verifyPhoneNumber
     throw UnimplementedError();
   }
+
+  @override
+  Future<UserCredential> signInWithOAuthProvider(String providerId) async {
+    return UserCredentialX.fromJson(
+        await invoke('signInWithOAuthProvider', [providerId]));
+  }
 }
 
 class AuthPluginService extends PluginService {

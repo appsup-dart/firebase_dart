@@ -284,6 +284,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     if (currentUser == null) {
       return;
     }
+    await PureDartFirebaseImplementation.installation
+        .oauthSignOut(currentUser.providerId);
     // Detach all event listeners.
     currentUser.destroy();
     // Set current user to null.
@@ -323,6 +325,21 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   Future<ActionCodeInfo> checkActionCode(String code) {
     // TODO: implement checkActionCode
     throw UnimplementedError();
+  }
+
+  @override
+  Future<UserCredential> signInWithOAuthProvider(String providerId) async {
+    var provider = OAuthProvider(providerId);
+
+    var credential =
+        await PureDartFirebaseImplementation.installation.oauthSignIn(provider);
+
+    if (credential != null) {
+      return signInWithCredential(credential);
+    }
+
+    await signInWithRedirect(provider);
+    return getRedirectResult();
   }
 
   @override
