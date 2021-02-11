@@ -22,5 +22,5 @@ doc/api/
 *.ipr
 *.iws
 
-.flutter-plugins
-.flutter-plugins-dependencies
+.vscode/
+*.code-workspace
