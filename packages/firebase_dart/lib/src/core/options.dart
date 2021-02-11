@@ -102,7 +102,7 @@ class FirebaseOptions {
     @required this.appId,
     this.messagingSenderId,
     @required this.projectId,
-    this.authDomain,
+    @required this.authDomain,
     this.databaseURL,
     this.storageBucket,
     this.measurementId,

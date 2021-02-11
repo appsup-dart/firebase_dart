@@ -326,9 +326,23 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  Future<UserCredential> getRedirectResult() {
-    // TODO: implement getRedirectResult
-    throw UnimplementedError();
+  Future<UserCredential> getRedirectResult() async {
+    var r = await PureDartFirebaseImplementation.installation.getAuthResult();
+
+    if (r.containsKey('firebaseError')) {
+      var e = json.decode(r['firebaseError']);
+      throw FirebaseAuthException(e['code'], e['message']);
+    }
+    var box = await _userStorageManager.storage;
+    var sessionId = box.get('redirect_session_id');
+
+    var openidCredential = await rpcHandler.verifyAssertion(
+        sessionId: sessionId, requestUri: r['link']);
+
+    return _signInWithIdTokenProvider(
+      openidCredential: openidCredential,
+      isNewUser: false,
+    );
   }
 
   @override
@@ -362,7 +376,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  Future<void> signInWithRedirect(AuthProvider provider) {
+  Future<void> signInWithRedirect(AuthProvider provider) async {
     if (provider is OAuthProvider) {
       var eventId = Uuid().v4();
 
@@ -377,6 +391,10 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       }
 
       var sessionId = _randomString();
+
+      var box = await _userStorageManager.storage;
+      await box.put('redirect_session_id', sessionId);
+
       var platform = Platform.current;
 
       var url = Uri(
@@ -400,7 +418,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
               'eid': 'p',
               'sessionId': sessionId,
               'apn': platform.packageId,
-              'sha1Cert': platform.sha1Cert,
+              'sha1Cert': platform.sha1Cert.replaceAll(':', '').toLowerCase(),
               'publicKey':
                   '...', // seems encryption is not used, but public key needs to be present to assemble the correct redirect url
             },
@@ -417,8 +435,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
               'appName': app.name,
             }
           });
-
-      PureDartFirebaseImplementation.installation.launchUrl(url);
+      await PureDartFirebaseImplementation.installation.launchUrl(url);
+      return;
     }
     // TODO: implement signInWithRedirect
     throw UnimplementedError();

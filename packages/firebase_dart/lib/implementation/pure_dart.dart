@@ -13,15 +13,17 @@ class PureDartFirebase {
       @required Platform platform,
       bool isolated = false,
       void Function(String errorMessage, StackTrace stackTrace) onError,
-      Function(Uri url) launchUrl}) {
+      Function(Uri url) launchUrl,
+      Future<Map<String, dynamic>> Function() getAuthResult}) {
+    print(platform.toJson());
     if (isolated) {
       FirebaseImplementation.install(IsolateFirebaseImplementation(storagePath,
           onError: onError, platform: platform));
     } else {
       if (storagePath != null) Hive.init(storagePath);
       initPlatform(platform);
-      FirebaseImplementation.install(
-          PureDartFirebaseImplementation(launchUrl: launchUrl));
+      FirebaseImplementation.install(PureDartFirebaseImplementation(
+          launchUrl: launchUrl, getAuthResult: getAuthResult));
     }
   }
 }
