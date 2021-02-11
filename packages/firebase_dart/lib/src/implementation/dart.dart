@@ -16,10 +16,13 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
 
   final Function(Uri url) launchUrl;
 
-  PureDartFirebaseImplementation.withHttpClient(this._httpClient,
-      {this.launchUrl});
+  final Future<Map<String, dynamic>> Function() getAuthResult;
 
-  PureDartFirebaseImplementation({@required this.launchUrl})
+  PureDartFirebaseImplementation.withHttpClient(this._httpClient,
+      {this.launchUrl, this.getAuthResult});
+
+  PureDartFirebaseImplementation(
+      {@required this.launchUrl, @required this.getAuthResult})
       : _httpClient = null;
 
   static PureDartFirebaseImplementation get installation =>

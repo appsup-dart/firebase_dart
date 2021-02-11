@@ -22,3 +22,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: be.appsup.firebase_dart_flutter
+        pluginClass: FirebaseDartFlutterPlugin
