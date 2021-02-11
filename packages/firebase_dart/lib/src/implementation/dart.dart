@@ -18,11 +18,21 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
 
   final Future<Map<String, dynamic>> Function() getAuthResult;
 
+  final Future<OAuthCredential> Function(OAuthProvider provider) oauthSignIn;
+
+  final Future<void> Function(String providerId) oauthSignOut;
+
   PureDartFirebaseImplementation.withHttpClient(this._httpClient,
-      {this.launchUrl, this.getAuthResult});
+      {this.launchUrl,
+      this.getAuthResult,
+      this.oauthSignIn,
+      this.oauthSignOut});
 
   PureDartFirebaseImplementation(
-      {@required this.launchUrl, @required this.getAuthResult})
+      {@required this.launchUrl,
+      @required this.getAuthResult,
+      this.oauthSignIn,
+      this.oauthSignOut})
       : _httpClient = null;
 
   static PureDartFirebaseImplementation get installation =>

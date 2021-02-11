@@ -1,3 +1,4 @@
+import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/dart.dart';
@@ -14,8 +15,9 @@ class PureDartFirebase {
       bool isolated = false,
       void Function(String errorMessage, StackTrace stackTrace) onError,
       Function(Uri url) launchUrl,
-      Future<Map<String, dynamic>> Function() getAuthResult}) {
-    print(platform.toJson());
+      Future<Map<String, dynamic>> Function() getAuthResult,
+      Future<OAuthCredential> Function(OAuthProvider provider) oauthSignIn,
+      Future<void> Function(String providerId) oauthSignOut}) {
     if (isolated) {
       FirebaseImplementation.install(IsolateFirebaseImplementation(storagePath,
           onError: onError, platform: platform));
@@ -23,7 +25,10 @@ class PureDartFirebase {
       if (storagePath != null) Hive.init(storagePath);
       initPlatform(platform);
       FirebaseImplementation.install(PureDartFirebaseImplementation(
-          launchUrl: launchUrl, getAuthResult: getAuthResult));
+          launchUrl: launchUrl,
+          getAuthResult: getAuthResult,
+          oauthSignIn: oauthSignIn,
+          oauthSignOut: oauthSignOut));
     }
   }
 }
