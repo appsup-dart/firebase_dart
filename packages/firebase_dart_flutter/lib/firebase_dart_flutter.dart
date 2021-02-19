@@ -4,7 +4,6 @@ import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_custom_tabs/flutter_custom_tabs.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
@@ -12,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
 import 'package:package_info/package_info.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class FirebaseDartFlutter {
   static const _channel = const MethodChannel('firebase_dart_flutter');
@@ -36,7 +36,7 @@ class FirebaseDartFlutter {
         storagePath: path,
         isolated: isolated,
         launchUrl: (url) async {
-          await launch(url.toString(), option: CustomTabsOption());
+          await launch(url.toString());
         },
         getAuthResult: () async {
           if (!kIsWeb && platform_info.Platform.instance.isAndroid) {
@@ -58,6 +58,9 @@ class FirebaseDartFlutter {
               return GoogleAuthProvider.credential(
                   idToken: auth.idToken, accessToken: auth.accessToken);
             case 'apple.com':
+              if (!platform_info.Platform.instance.isIOS) {
+                return null;
+              }
               final credential = await SignInWithApple.getAppleIDCredential(
                 scopes: [
                   AppleIDAuthorizationScopes.email,

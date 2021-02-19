@@ -14,11 +14,10 @@ dependencies:
   firebase_dart:
     path: ../firebase_dart
   platform_info: ^2.2.0
-  flutter_custom_tabs: ^0.6.0
   path_provider: ^1.6.27
   hive: ^1.4.4+1
   package_info: ^0.4.3+4
-  google_sign_in: ^4.0.16
+  google_sign_in: ^4.5.9
   google_sign_in_dartio: ^0.0.8
   flutter_facebook_auth: ^2.0.1
   sign_in_with_apple: ^2.5.4
