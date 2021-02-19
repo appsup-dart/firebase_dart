@@ -40,12 +40,22 @@ abstract class Platform {
     switch (json['type']) {
       case 'web':
         return Platform.web(
-            currentUrl: json['currentUrl'], isMobile: json['isMobile']);
+          currentUrl: json['currentUrl'],
+          isMobile: json['isMobile'],
+          isOnline: json['isOnline'],
+        );
       case 'android':
         return Platform.android(
-            packageId: json['packageId'], sha1Cert: json['sha1Cert']);
+          packageId: json['packageId'],
+          sha1Cert: json['sha1Cert'],
+          isOnline: json['isOnline'],
+        );
       case 'ios':
-        return Platform.ios(appId: json['appId'], clientId: json['clientId']);
+        return Platform.ios(
+          appId: json['appId'],
+          clientId: json['clientId'],
+          isOnline: json['isOnline'],
+        );
     }
     throw ArgumentError('Unknown platform ${json['type']}');
   }
@@ -72,6 +82,7 @@ class WebPlatform extends Platform {
         'type': 'web',
         'currentUrl': currentUrl,
         'isMobile': isMobile,
+        'isOnline': isOnline,
       };
 }
 
@@ -96,6 +107,7 @@ class AndroidPlatform extends Platform {
         'type': 'android',
         'packageId': packageId,
         'sha1Cert': sha1Cert,
+        'isOnline': isOnline,
       };
 }
 
@@ -113,5 +125,6 @@ class IOsPlatform extends Platform {
         'type': 'ios',
         'clientId': clientId,
         'appId': appId,
+        'isOnline': isOnline,
       };
 }
