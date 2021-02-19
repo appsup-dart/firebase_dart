@@ -441,11 +441,11 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
             },
             if (platform is IOsPlatform) ...{
               'sessionId': sessionId,
-              'ibi': platform.bundleId,
-              if (platform.clientId != null)
-                'clientId': platform.clientId
+              'ibi': platform.appId,
+              if (app.options.iosClientId != null)
+                'clientId': app.options.iosClientId
               else
-                'appId': platform.appId,
+                'appId': app.options.appId,
             },
             if (platform is WebPlatform) ...{
               'redirectUrl': platform.currentUrl,
