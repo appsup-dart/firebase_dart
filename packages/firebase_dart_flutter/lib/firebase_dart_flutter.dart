@@ -17,11 +17,9 @@ class FirebaseDartFlutter {
   static const _channel = const MethodChannel('firebase_dart_flutter');
 
   static Future<void> setup({
-    void Function(String errorMessage, StackTrace stackTrace) onError,
+    bool isolated = !kIsWeb,
   }) async {
-    var isolated =
-        String.fromEnvironment('FIREBASE_IN_ISOLATE').isNotEmpty && !kIsWeb;
-
+    isolated = isolated && !kIsWeb;
     WidgetsFlutterBinding.ensureInitialized();
 
     var path;
@@ -86,7 +84,8 @@ class FirebaseDartFlutter {
           }
           return null;
         },
-        onError: onError,
+        onError: (error, stackTrace) =>
+            Zone.current.handleUncaughtError(error, stackTrace),
         platform: await _getPlatform());
   }
 
