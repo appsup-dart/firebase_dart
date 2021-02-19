@@ -21,6 +21,7 @@ dependencies:
   google_sign_in: ^4.0.16
   google_sign_in_dartio: ^0.0.8
   flutter_facebook_auth: ^2.0.1
+  sign_in_with_apple: ^2.5.4
 
 dev_dependencies:
   flutter_test:

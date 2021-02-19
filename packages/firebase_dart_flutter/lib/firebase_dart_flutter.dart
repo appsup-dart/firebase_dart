@@ -11,6 +11,7 @@ import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
 import 'package:package_info/package_info.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class FirebaseDartFlutter {
   static const _channel = const MethodChannel('firebase_dart_flutter');
@@ -56,6 +57,16 @@ class FirebaseDartFlutter {
               var auth = await account.authentication;
               return GoogleAuthProvider.credential(
                   idToken: auth.idToken, accessToken: auth.accessToken);
+            case 'apple.com':
+              final credential = await SignInWithApple.getAppleIDCredential(
+                scopes: [
+                  AppleIDAuthorizationScopes.email,
+                  AppleIDAuthorizationScopes.fullName,
+                ],
+              );
+              return provider.credential(
+                  idToken: credential.identityToken,
+                  accessToken: credential.authorizationCode);
           }
 
           return null;

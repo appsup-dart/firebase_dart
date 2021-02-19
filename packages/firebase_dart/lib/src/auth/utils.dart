@@ -32,8 +32,7 @@ abstract class Platform {
       @required bool isOnline}) = AndroidPlatform;
 
   factory Platform.ios(
-      {@required String bundleId,
-      @required String appId,
+      {@required String appId,
       String clientId,
       @required bool isOnline}) = IOsPlatform;
 
@@ -46,10 +45,7 @@ abstract class Platform {
         return Platform.android(
             packageId: json['packageId'], sha1Cert: json['sha1Cert']);
       case 'ios':
-        return Platform.ios(
-            bundleId: json['bundleId'],
-            appId: json['appId'],
-            clientId: json['clientId']);
+        return Platform.ios(appId: json['appId'], clientId: json['clientId']);
     }
     throw ArgumentError('Unknown platform ${json['type']}');
   }
@@ -104,25 +100,17 @@ class AndroidPlatform extends Platform {
 }
 
 class IOsPlatform extends Platform {
-  final String bundleId;
-
   final String appId;
 
   final String clientId;
 
-  IOsPlatform(
-      {@required this.bundleId,
-      @required this.appId,
-      this.clientId,
-      @required bool isOnline})
-      : assert(bundleId != null),
-        assert(appId != null),
+  IOsPlatform({@required this.appId, this.clientId, @required bool isOnline})
+      : assert(appId != null),
         super(isMobile: true, isOnline: isOnline);
 
   @override
   Map<String, dynamic> toJson() => {
         'type': 'ios',
-        'bundleId': bundleId,
         'clientId': clientId,
         'appId': appId,
       };
