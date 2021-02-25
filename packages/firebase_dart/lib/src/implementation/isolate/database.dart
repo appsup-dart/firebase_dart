@@ -1,6 +1,7 @@
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../../../database.dart';
 import '../isolate.dart';
@@ -192,9 +193,12 @@ class IsolateQuery extends Query {
 
   @override
   Stream<Event> on(String eventType) {
-    return database
-        .createStream('on', [path, filter.toJson(), eventType], broadcast: true)
-        .map((v) => EventX.fromJson(v));
+    return DeferStream(() {
+      return database
+          .createStream('on', [path, filter.toJson(), eventType],
+              broadcast: true)
+          .map((v) => EventX.fromJson(v));
+    }, reusable: true);
   }
 
   Query _withFilter(QueryFilter filter) {
