@@ -399,6 +399,10 @@ class AuthPluginService extends PluginService {
         return auth
             .signInWithCredential(AuthCredentialX.fromJson(arguments.first))
             .then((v) => v.toJson());
+      case 'signInWithOAuthProvider':
+        return auth
+            .signInWithOAuthProvider(arguments.first)
+            .then((v) => v.toJson());
       case 'signInWithCustomToken':
         return auth
             .signInWithCustomToken(arguments.first)

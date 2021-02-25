@@ -20,7 +20,12 @@ class PureDartFirebase {
       Future<void> Function(String providerId) oauthSignOut}) {
     if (isolated) {
       FirebaseImplementation.install(IsolateFirebaseImplementation(storagePath,
-          onError: onError, platform: platform));
+          onError: onError,
+          platform: platform,
+          launchUrl: launchUrl,
+          getAuthResult: getAuthResult,
+          oauthSignIn: oauthSignIn,
+          oauthSignOut: oauthSignOut));
     } else {
       if (storagePath != null) Hive.init(storagePath);
       initPlatform(platform);

@@ -14,25 +14,46 @@ import 'package:meta/meta.dart';
 import 'isolate/auth.dart';
 import 'isolate/database.dart';
 import 'isolate/storage.dart';
+import 'isolate/util.dart';
 
 class IsolateFirebaseImplementation extends FirebaseImplementation {
   final String storagePath;
   final Platform platform;
   final void Function(String errorMessage, StackTrace stackTrace) onError;
 
+  final Function(Uri url) launchUrl;
+
+  final Future<Map<String, dynamic>> Function() getAuthResult;
+
+  final Future<OAuthCredential> Function(OAuthProvider provider) oauthSignIn;
+
+  final Future<void> Function(String providerId) oauthSignOut;
+
   IsolateFirebaseImplementation(this.storagePath,
-      {this.onError, @required this.platform})
+      {this.onError,
+      @required this.platform,
+      this.launchUrl,
+      this.getAuthResult,
+      this.oauthSignIn,
+      this.oauthSignOut})
       : assert(platform != null);
 
   @override
   Future<FirebaseApp> createApp(String name, FirebaseOptions options) async {
     var app = IsolateFirebaseApp(name, options);
+
+    var worker = IsolateWorker()
+      ..registerFunction(#oauthSignOut, oauthSignOut)
+      ..registerFunction(#oauthSignIn, oauthSignIn)
+      ..registerFunction(#launchUrl, launchUrl)
+      ..registerFunction(#getAuthResult, getAuthResult);
     var isolate = await Isolate.spawn(
         Plugin.create,
         {
           'sendPort': app._receivePort.sendPort,
           'storagePath': storagePath,
-          'platform': platform.toJson()
+          'platform': platform.toJson(),
+          'commander': worker.commander
         },
         errorsAreFatal: false);
     if (onError != null) {
@@ -210,7 +231,23 @@ class Plugin {
     var sendPort = options['sendPort'];
     var storagePath = options['storagePath'];
     var platform = Platform.fromJson(options['platform']);
-    PureDartFirebase.setup(storagePath: storagePath, platform: platform);
+    var commander = options['commander'] as IsolateCommander;
+
+    PureDartFirebase.setup(
+        storagePath: storagePath,
+        platform: platform,
+        oauthSignOut: (providerId) {
+          return commander.execute(IsolateTask(#oauthSignOut, [providerId]));
+        },
+        oauthSignIn: (providerId) {
+          return commander.execute(IsolateTask(#oauthSignIn, [providerId]));
+        },
+        launchUrl: (url) {
+          return commander.execute(IsolateTask(#launchUrl, [url]));
+        },
+        getAuthResult: () {
+          return commander.execute(IsolateTask(#getAuthResult));
+        });
     Plugin(sendPort)..start();
   }
 
