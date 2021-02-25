@@ -6,9 +6,10 @@ import 'package:rxdart/subjects.dart';
 import '../isolate.dart';
 
 extension UserCredentialX on UserCredential {
-  static UserCredential fromJson(Map<String, dynamic> json) {
+  static UserCredential fromJson(
+      IsolateFirebaseAuth auth, Map<String, dynamic> json) {
     return UserCredentialImpl(
-      user: IsolateUser.fromJson(json['user']),
+      user: IsolateUser.fromJson(auth, json['user']),
       additionalUserInfo: GenericAdditionalUserInfo(
           providerId: json['additionalUserInfo']['providerId'],
           isNewUser: json['additionalUserInfo']['isNewUser'],
@@ -57,7 +58,9 @@ class IsolateUser extends UserInfo implements User {
   @override
   final String tenantId;
 
-  IsolateUser.fromJson(Map<String, dynamic> json)
+  final IsolateFirebaseAuth _auth;
+
+  IsolateUser.fromJson(this._auth, Map<String, dynamic> json)
       : emailVerified = json['emailVerified'],
         isAnonymous = json['isAnonymous'],
         metadata = UserMetadata(
@@ -79,9 +82,8 @@ class IsolateUser extends UserInfo implements User {
   }
 
   @override
-  Future<String> getIdToken([bool forceRefresh = false]) {
-    // TODO: implement getIdToken
-    throw UnimplementedError();
+  Future<String> getIdToken([bool forceRefresh = false]) async {
+    return await _auth.invoke('User.getIdToken', [forceRefresh]);
   }
 
   @override
@@ -198,7 +200,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   IsolateFirebaseAuth(IsolateFirebaseApp app) : super(app, 'auth') {
     _subject.addStream(createStream('authChanges', [], broadcast: true)
-        .map((v) => v == null ? null : IsolateUser.fromJson(v)));
+        .map((v) => v == null ? null : IsolateUser.fromJson(this, v)));
   }
 
   @override
@@ -224,7 +226,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   @override
   Future<UserCredential> createUserWithEmailAndPassword(
       {String email, String password}) async {
-    return UserCredentialX.fromJson(
+    return UserCredentialX.fromJson(this,
         await invoke('createUserWithEmailAndPassword', [email, password]));
   }
 
@@ -238,7 +240,8 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<UserCredential> getRedirectResult() async {
-    return UserCredentialX.fromJson(await invoke('getRedirectResult', []));
+    return UserCredentialX.fromJson(
+        this, await invoke('getRedirectResult', []));
   }
 
   @override
@@ -281,39 +284,40 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<UserCredential> signInAnonymously() async {
-    return UserCredentialX.fromJson(await invoke('signInAnonymously', []));
+    return UserCredentialX.fromJson(
+        this, await invoke('signInAnonymously', []));
   }
 
   @override
   Future<UserCredential> signInWithCredential(AuthCredential credential) async {
     return UserCredentialX.fromJson(
-        await invoke('signInWithCredential', [credential.toJson()]));
+        this, await invoke('signInWithCredential', [credential.toJson()]));
   }
 
   @override
   Future<UserCredential> signInWithCustomToken(String token) async {
     return UserCredentialX.fromJson(
-        await invoke('signInWithCustomToken', [token]));
+        this, await invoke('signInWithCustomToken', [token]));
   }
 
   @override
   Future<UserCredential> signInWithEmailAndPassword(
       {String email, String password}) async {
     return UserCredentialX.fromJson(
-        await invoke('signInWithEmailAndPassword', [email, password]));
+        this, await invoke('signInWithEmailAndPassword', [email, password]));
   }
 
   @override
   Future<UserCredential> signInWithEmailLink(
       {String email, String emailLink}) async {
     return UserCredentialX.fromJson(
-        await invoke('signInWithEmailLink', [email, emailLink]));
+        this, await invoke('signInWithEmailLink', [email, emailLink]));
   }
 
   @override
   Future<UserCredential> signInWithPopup(AuthProvider provider) async {
     return UserCredentialX.fromJson(
-        await invoke('signInWithPopup', [provider]));
+        this, await invoke('signInWithPopup', [provider]));
   }
 
   @override
@@ -354,7 +358,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   @override
   Future<UserCredential> signInWithOAuthProvider(String providerId) async {
     return UserCredentialX.fromJson(
-        await invoke('signInWithOAuthProvider', [providerId]));
+        this, await invoke('signInWithOAuthProvider', [providerId]));
   }
 }
 
@@ -429,6 +433,9 @@ class AuthPluginService extends PluginService {
       case 'authChanges':
         return auth.authStateChanges().map((v) => v
             ?.toJson()); // TODO: handle id token changes and other user changes
+      case 'User.getIdToken':
+        return auth.currentUser
+            .getIdToken(arguments[0]); // TODO: what if not currentUser
     }
     throw ArgumentError.value(method, 'method');
   }
