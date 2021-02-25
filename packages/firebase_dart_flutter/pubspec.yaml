@@ -1,8 +1,7 @@
 name: firebase_dart_flutter
-description: A new flutter plugin project.
-version: 0.0.1
-author:
-homepage:
+description: A port of the Firebase database, auth and storage client to pure Dart code for use on flutter
+version: 1.0.0-dev.1
+homepage: https://github.com/appsup-dart/firebase_dart
 
 environment:
   sdk: ">=2.7.0 <3.0.0"
@@ -11,8 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  firebase_dart:
-    path: ../firebase_dart
+  firebase_dart: ^1.0.0-dev.19
   platform_info: ^2.2.0
   path_provider: ^1.6.27
   hive: ^1.4.4+1
@@ -21,6 +19,7 @@ dependencies:
   google_sign_in_dartio: ^0.0.8
   flutter_facebook_auth: ^2.0.1
   sign_in_with_apple: ^2.5.4
+  url_launcher: ^5.7.10
 
 dev_dependencies:
   flutter_test:

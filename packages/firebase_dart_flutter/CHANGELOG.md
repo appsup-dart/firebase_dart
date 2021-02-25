@@ -1,3 +1,4 @@
-## 0.0.1
+## 1.0.0-dev.1
 
-* TODO: Describe initial release.
+* Sign in with apple, facebook and google
+
