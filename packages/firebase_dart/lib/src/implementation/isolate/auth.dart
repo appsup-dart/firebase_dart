@@ -180,15 +180,40 @@ class IsolateUser extends UserInfo implements User {
   }
 }
 
+class EncodeCall<T> extends BaseFunctionCall<Future> {
+  EncodeCall(FunctionCall<FutureOr<T>> baseCall) : super([baseCall], {});
+
+  @override
+  Function get function {
+    return (FunctionCall<FutureOr<T>> baseCall) async {
+      var v = await baseCall.run();
+      return encode(v);
+    };
+  }
+
+  dynamic encode(T value) {
+    if (value is UserCredential) return value.toJson();
+    return value;
+  }
+
+  T decode(dynamic value, FirebaseAuth auth) {
+    if (T == UserCredential) {
+      return UserCredentialX.fromJson(auth, value) as T;
+    }
+    return value;
+  }
+}
+
 class IsolateFirebaseAuth extends IsolateFirebaseService
     implements FirebaseAuth {
   final BehaviorSubject<User> _subject = BehaviorSubject();
 
   Future<T> invoke<T>(Symbol method,
       [List<dynamic> positionalArguments,
-      Map<Symbol, dynamic> namedArguments]) {
-    return app.commander.execute(FirebaseAuthFunctionCall<FutureOr<T>>(
+      Map<Symbol, dynamic> namedArguments]) async {
+    var call = EncodeCall(FirebaseAuthFunctionCall<FutureOr<T>>(
         method, app.name, positionalArguments, namedArguments));
+    return call.decode(await app.commander.execute(call), this);
   }
 
   IsolateFirebaseAuth(IsolateFirebaseApp app) : super(app) {
@@ -197,7 +222,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
           #authChanges,
           app.name,
         ))
-        .map((v) => IsolateUser.fromJson(this, v)));
+        .map((v) => v == null ? null : IsolateUser.fromJson(this, v)));
   }
 
   @override
@@ -236,8 +261,8 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  Future<UserCredential> getRedirectResult() async {
-    return UserCredentialX.fromJson(this, await invoke(#getRedirectResult, []));
+  Future<UserCredential> getRedirectResult() {
+    return invoke(#getRedirectResult, []);
   }
 
   @override
@@ -280,44 +305,36 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  Future<UserCredential> signInAnonymously() async {
-    return UserCredentialX.fromJson(this, await invoke(#signInAnonymously, []));
+  Future<UserCredential> signInAnonymously() {
+    return invoke(#signInAnonymously, []);
   }
 
   @override
-  Future<UserCredential> signInWithCredential(AuthCredential credential) async {
-    return UserCredentialX.fromJson(
-        this, await invoke(#signInWithCredential, [credential.toJson()]));
+  Future<UserCredential> signInWithCredential(AuthCredential credential) {
+    return invoke(#signInWithCredential, [credential.toJson()]);
   }
 
   @override
-  Future<UserCredential> signInWithCustomToken(String token) async {
-    return UserCredentialX.fromJson(
-        this, await invoke(#signInWithCustomToken, [token]));
+  Future<UserCredential> signInWithCustomToken(String token) {
+    return invoke(#signInWithCustomToken, [token]);
   }
 
   @override
   Future<UserCredential> signInWithEmailAndPassword(
-      {String email, String password}) async {
-    return UserCredentialX.fromJson(
-        this,
-        await invoke(#signInWithEmailAndPassword, [],
-            {#email: email, #password: password}));
+      {String email, String password}) {
+    return invoke(
+        #signInWithEmailAndPassword, [], {#email: email, #password: password});
   }
 
   @override
-  Future<UserCredential> signInWithEmailLink(
-      {String email, String emailLink}) async {
-    return UserCredentialX.fromJson(
-        this,
-        await invoke(
-            #signInWithEmailLink, [], {#email: email, #emailLink: emailLink}));
+  Future<UserCredential> signInWithEmailLink({String email, String emailLink}) {
+    return invoke(
+        #signInWithEmailLink, [], {#email: email, #emailLink: emailLink});
   }
 
   @override
-  Future<UserCredential> signInWithPopup(AuthProvider provider) async {
-    return UserCredentialX.fromJson(
-        this, await invoke(#signInWithPopup, [provider]));
+  Future<UserCredential> signInWithPopup(AuthProvider provider) {
+    return invoke(#signInWithPopup, [provider]);
   }
 
   @override
@@ -356,9 +373,8 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  Future<UserCredential> signInWithOAuthProvider(String providerId) async {
-    return UserCredentialX.fromJson(
-        this, await invoke(#signInWithOAuthProvider, [providerId]));
+  Future<UserCredential> signInWithOAuthProvider(String providerId) {
+    return invoke(#signInWithOAuthProvider, [providerId]);
   }
 }
 
