@@ -192,10 +192,12 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   IsolateFirebaseAuth(IsolateFirebaseApp app) : super(app) {
-    _subject.addStream(app.commander.subscribe(FirebaseAuthFunctionCall(
-      #authChanges,
-      app.name,
-    )));
+    _subject.addStream(app.commander
+        .subscribe<Map<String, dynamic>>(FirebaseAuthFunctionCall(
+          #authChanges,
+          app.name,
+        ))
+        .map((v) => IsolateUser.fromJson(this, v)));
   }
 
   @override
@@ -439,7 +441,7 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
       case #authChanges:
         return () => auth
             .authStateChanges()
-            .map<User>((v) => IsolateUser.fromJson(null, v.toJson()));
+            .map<Map<String, dynamic>>((v) => v?.toJson());
     }
     throw UnsupportedError(
         'FirebaseAuthFunctionCall with reference $functionName not supported');
