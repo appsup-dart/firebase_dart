@@ -1,3 +1,8 @@
+import 'dart:async';
+import 'dart:isolate';
+
+import 'package:async/async.dart';
+import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
@@ -5,6 +10,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../../database.dart';
 import '../isolate.dart';
+import 'util.dart';
 
 class IsolateFirebaseDatabase extends IsolateFirebaseService
     implements FirebaseDatabase {
@@ -14,23 +20,30 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
   final String databaseURL;
 
   IsolateFirebaseDatabase({IsolateFirebaseApp app, this.databaseURL})
-      : super(app, 'database:$databaseURL');
+      : super(app);
+
+  Future<T> invoke<T>(Symbol method,
+      [List<dynamic> positionalArguments,
+      Map<Symbol, dynamic> namedArguments]) {
+    return app.commander.execute(DatabaseFunctionCall<FutureOr<T>>(
+        method, app.name, databaseURL, positionalArguments, namedArguments));
+  }
 
   DateTime get serverTime => throw UnimplementedError();
 
   @override
   Future<void> goOffline() async {
-    await invoke('goOffline', []);
+    await invoke(#goOffline, []);
   }
 
   @override
   Future<void> goOnline() async {
-    await invoke('goOnline', []);
+    await invoke(#goOnline, []);
   }
 
   @override
   Future<void> purgeOutstandingWrites() async {
-    await invoke('purgeOutstandingWrites', []);
+    await invoke(#purgeOutstandingWrites, []);
   }
 
   @override
@@ -40,121 +53,127 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
 
   @override
   void setPersistenceCacheSizeBytes(int cacheSizeInBytes) async {
-    await invoke('setPersistenceCacheSizeBytes', [cacheSizeInBytes]);
+    await invoke(#setPersistenceCacheSizeBytes, [cacheSizeInBytes]);
   }
 
   @override
   Future<bool> setPersistenceEnabled(bool enabled) async {
-    return await invoke('setPersistenceEnabled', [enabled]);
+    return await invoke(#setPersistenceEnabled, [enabled]);
   }
 }
 
-class DatabasePluginService extends PluginService {
-  final FirebaseDatabase database;
+class DatabaseFunctionCall<T> extends BaseFunctionCall<T> {
+  final String appName;
+  final String databaseURL;
+  final Symbol functionName;
 
-  DatabasePluginService(this.database);
+  DatabaseFunctionCall(this.functionName, this.appName, this.databaseURL,
+      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      : super(positionalArguments, namedArguments);
+
+  FirebaseDatabase get database =>
+      FirebaseDatabase(app: Firebase.app(appName), databaseURL: databaseURL);
 
   @override
-  dynamic invoke(String method, List<dynamic> arguments) {
-    DatabaseReference getRef() {
-      return database.reference().child(arguments[0]);
+  Function get function {
+    switch (functionName) {
+      case #goOffline:
+        return database.goOffline;
+      case #goOnline:
+        return database.goOnline;
+      case #purgeOutstandingWrites:
+        return database.purgeOutstandingWrites;
+      case #setPersistenceCacheSizeBytes:
+        return database.setPersistenceCacheSizeBytes;
+      case #setPersistenceEnabled:
+        return database.setPersistenceEnabled;
     }
-
-    Query getQuery() {
-      Query query = getRef();
-      var filter = QueryFilterCodec.fromJson(arguments[1]);
-      switch (filter.orderBy) {
-        case '.key':
-          query = query.orderByKey();
-          break;
-        case '.priority':
-          query = query.orderByPriority();
-          break;
-        case '.value':
-          query = query.orderByValue();
-          break;
-        default:
-          query = query.orderByChild(filter.orderBy);
-          break;
-      }
-      if (filter.startKey != null || filter.startValue != null) {
-        if (filter.orderBy == '.key') {
-          query = query.startAt(filter.startKey.asString());
-        } else {
-          query = query.startAt(
-              filter.startValue.toJson(), filter.startKey.asString());
-        }
-      }
-      if (filter.endKey != null || filter.endValue != null) {
-        if (filter.orderBy == '.key') {
-          query = query.endAt(filter.endKey.asString());
-        } else {
-          query =
-              query.endAt(filter.endValue.toJson(), filter.endKey.asString());
-        }
-      }
-      if (filter.limit != null) {
-        if (filter.reversed) {
-          query = query.limitToLast(filter.limit);
-        } else {
-          query = query.limitToFirst(filter.limit);
-        }
-      }
-      return query;
-    }
-
-    switch (method) {
-      case 'goOffline':
-        return database.goOffline();
-      case 'goOnline':
-        return database.goOnline();
-      case 'purgeOutstandingWrites':
-        return database.purgeOutstandingWrites();
-      case 'setPersistenceCacheSizeBytes':
-        return database.setPersistenceCacheSizeBytes(arguments.first);
-      case 'setPersistenceEnabled':
-        return database.setPersistenceEnabled(arguments.first);
-      case 'keepSynced':
-        return getQuery().keepSynced(arguments[2]);
-      case 'disconnectCancel':
-        return getRef().onDisconnect.cancel();
-      case 'disconnectSetWithPriority':
-        return getRef()
-            .onDisconnect
-            .setWithPriority(arguments[2], arguments[3]);
-      case 'disconnectUpdate':
-        return getRef().onDisconnect.update(arguments[2]);
-      case 'set':
-        return getRef().set(arguments[2], priority: arguments[3]);
-      case 'setPriority':
-        return getRef().setPriority(arguments[2]);
-      case 'update':
-        return getRef().update(arguments[2]);
-      case 'on':
-        return getQuery().on(arguments[2]).map((v) => v.toJson());
-    }
+    return null;
   }
 }
 
-class _DataSnapshot extends DataSnapshot {
+class QueryFunctionCall<T> extends BaseFunctionCall<T> {
+  final String appName;
+  final String databaseURL;
+  final String path;
+  final QueryFilter filter;
+  final Symbol functionName;
+
+  QueryFunctionCall(
+      this.functionName, this.appName, this.databaseURL, this.path, this.filter,
+      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      : super(positionalArguments, namedArguments);
+
+  FirebaseDatabase get database =>
+      FirebaseDatabase(app: Firebase.app(appName), databaseURL: databaseURL);
+
+  DatabaseReference getRef() {
+    return database.reference().child(path);
+  }
+
+  Query getQuery() {
+    Query query = getRef();
+    switch (filter.orderBy) {
+      case '.key':
+        query = query.orderByKey();
+        break;
+      case '.priority':
+        query = query.orderByPriority();
+        break;
+      case '.value':
+        query = query.orderByValue();
+        break;
+      default:
+        query = query.orderByChild(filter.orderBy);
+        break;
+    }
+    if (filter.startKey != null || filter.startValue != null) {
+      if (filter.orderBy == '.key') {
+        query = query.startAt(filter.startKey.asString());
+      } else {
+        query = query.startAt(
+            filter.startValue.toJson(), filter.startKey.asString());
+      }
+    }
+    if (filter.endKey != null || filter.endValue != null) {
+      if (filter.orderBy == '.key') {
+        query = query.endAt(filter.endKey.asString());
+      } else {
+        query = query.endAt(filter.endValue.toJson(), filter.endKey.asString());
+      }
+    }
+    if (filter.limit != null) {
+      if (filter.reversed) {
+        query = query.limitToLast(filter.limit);
+      } else {
+        query = query.limitToFirst(filter.limit);
+      }
+    }
+    return query;
+  }
+
   @override
-  final String key;
-  @override
-  final value;
-
-  _DataSnapshot(this.key, this.value);
-  _DataSnapshot.fromJson(Map<String, dynamic> json)
-      : this(json['key'], json['value']);
-}
-
-extension EventX on Event {
-  static Event fromJson(Map<String, dynamic> json) =>
-      Event(_DataSnapshot.fromJson(json['snapshot']), json['prevChild']);
-
-  Map<String, dynamic> toJson() => {
-        'snapshot': {'key': snapshot.key, 'value': snapshot.value},
-        'prevChild': prevChild
-      };
+  Function get function {
+    switch (functionName) {
+      case #keepSynced:
+        return getQuery().keepSynced;
+      case #set:
+        return getRef().set;
+      case #setPriority:
+        return getRef().setPriority;
+      case #update:
+        return getRef().update;
+      case #disconnectCancel:
+        return getRef().onDisconnect.cancel;
+      case #disconnectSetWithPriority:
+        return getRef().onDisconnect.setWithPriority;
+      case #disconnectUpdate:
+        return getRef().onDisconnect.update;
+      case #on:
+        return getQuery().on;
+    }
+    return null;
+  }
 }
 
 class IsolateQuery extends Query {
@@ -166,6 +185,19 @@ class IsolateQuery extends Query {
   IsolateQuery(this.database, this.pathSegments, this.filter)
       : path = pathSegments.map(Uri.encodeComponent).join('/');
 
+  Future<T> invoke<T>(Symbol method,
+      [List<dynamic> positionalArguments,
+      Map<Symbol, dynamic> namedArguments]) {
+    return database.app.commander.execute(QueryFunctionCall<FutureOr<T>>(
+        method,
+        database.app.name,
+        database.databaseURL,
+        path,
+        filter,
+        positionalArguments,
+        namedArguments));
+  }
+
   @override
   Query equalTo(dynamic value, [String key = '[ANY_NAME]']) {
     if (filter.orderBy == '.key' || key == '[ANY_NAME]') {
@@ -174,13 +206,9 @@ class IsolateQuery extends Query {
     return endAt(value, key).startAt(value, key);
   }
 
-  Future invoke(String method, List<dynamic> arguments) {
-    return database.invoke(method, [path, filter.toJson(), ...arguments]);
-  }
-
   @override
   Future<void> keepSynced(bool value) async {
-    await invoke('keepSynced', [value]);
+    await invoke(#keepSynced, [value]);
   }
 
   @override
@@ -194,10 +222,14 @@ class IsolateQuery extends Query {
   @override
   Stream<Event> on(String eventType) {
     return DeferStream(() {
-      return database
-          .createStream('on', [path, filter.toJson(), eventType],
-              broadcast: true)
-          .map((v) => EventX.fromJson(v));
+      return database.app.commander.subscribe(QueryFunctionCall(
+        #on,
+        database.app.name,
+        database.databaseURL,
+        path,
+        filter,
+        [eventType],
+      ));
     }, reusable: true);
   }
 
@@ -281,17 +313,17 @@ class IsolateDisconnect extends Disconnect {
 
   @override
   Future cancel() {
-    return reference.invoke('disconnectCancel', []);
+    return reference.invoke(#disconnectCancel, []);
   }
 
   @override
   Future setWithPriority(value, priority) {
-    return reference.invoke('disconnectSetWithPriority', [value, priority]);
+    return reference.invoke(#disconnectSetWithPriority, [value, priority]);
   }
 
   @override
   Future update(Map<String, dynamic> value) {
-    return reference.invoke('disconnectUpdate', [value]);
+    return reference.invoke(#disconnectUpdate, [value]);
   }
 }
 
@@ -336,16 +368,16 @@ class IsolateDatabaseReference extends IsolateQuery with DatabaseReference {
 
   @override
   Future<void> set(value, {priority}) async {
-    await invoke('set', [value, priority]);
+    await invoke(#set, [value], {#priority: priority});
   }
 
   @override
   Future<void> setPriority(priority) async {
-    await invoke('setPriority', [priority]);
+    await invoke(#setPriority, [priority]);
   }
 
   @override
   Future<void> update(Map<String, dynamic> value) async {
-    await invoke('update', [value]);
+    await invoke(#update, [value]);
   }
 }

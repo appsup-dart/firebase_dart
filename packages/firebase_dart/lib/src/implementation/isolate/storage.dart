@@ -1,11 +1,80 @@
+import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/storage/impl/location.dart';
-import 'package:firebase_dart/src/storage/metadata.dart';
-import 'package:firebase_dart/src/storage/reference.dart';
 import 'package:firebase_dart/storage.dart';
 
 import '../isolate.dart';
+import 'util.dart';
+
+class StorageFunctionCall<T> extends BaseFunctionCall<T> {
+  final String appName;
+  final String bucket;
+  final Symbol functionName;
+
+  StorageFunctionCall(this.functionName, this.appName, this.bucket,
+      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      : super(positionalArguments, namedArguments);
+
+  FirebaseStorage get storage =>
+      FirebaseStorage.instanceFor(app: Firebase.app(appName), bucket: bucket);
+
+  @override
+  Function get function {
+    switch (functionName) {
+      case #getMaxDownloadRetryTimeMillis:
+        return storage.getMaxDownloadRetryTimeMillis;
+      case #getMaxOperationRetryTimeMillis:
+        return storage.getMaxOperationRetryTimeMillis;
+      case #getMaxUploadRetryTimeMillis:
+        return storage.getMaxUploadRetryTimeMillis;
+      case #setMaxDownloadRetryTimeMillis:
+        return storage.setMaxDownloadRetryTimeMillis;
+      case #setMaxOperationRetryTimeMillis:
+        return storage.setMaxOperationRetryTimeMillis;
+      case #setMaxUploadRetryTimeMillis:
+        return storage.setMaxUploadRetryTimeMillis;
+    }
+    return null;
+  }
+}
+
+class StorageReferenceFunctionCall<T> extends BaseFunctionCall<T> {
+  final String appName;
+  final String bucket;
+  final String path;
+  final Symbol functionName;
+
+  StorageReferenceFunctionCall(
+      this.functionName, this.appName, this.bucket, this.path,
+      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      : super(positionalArguments, namedArguments);
+
+  FirebaseStorage get storage =>
+      FirebaseStorage.instanceFor(app: Firebase.app(appName), bucket: bucket);
+
+  StorageReference getRef() => storage.ref().child(path);
+
+  @override
+  Function get function {
+    switch (functionName) {
+      case #delete:
+        return getRef().delete;
+      case #getData:
+        return getRef().getData;
+      case #getDownloadURL:
+        return getRef().getDownloadURL;
+      case #getMetadata:
+        return getRef().getMetadata;
+      case #putData:
+        throw UnimplementedError();
+      case #updateMetadata:
+        return getRef().updateMetadata;
+    }
+    return null;
+  }
+}
 
 class IsolateFirebaseStorage extends IsolateFirebaseService
     implements FirebaseStorage {
@@ -14,21 +83,28 @@ class IsolateFirebaseStorage extends IsolateFirebaseService
   IsolateFirebaseStorage({IsolateFirebaseApp app, String storageBucket})
       : _bucket =
             Location.fromBucketSpec(storageBucket ?? app.options.storageBucket),
-        super(app, 'storage:$storageBucket');
+        super(app);
+
+  Future<T> invoke<T>(Symbol method,
+      [List<dynamic> positionalArguments,
+      Map<Symbol, dynamic> namedArguments]) {
+    return app.commander.execute(StorageFunctionCall<FutureOr<T>>(
+        method, app.name, storageBucket, positionalArguments, namedArguments));
+  }
 
   @override
   Future<int> getMaxDownloadRetryTimeMillis() async {
-    return await invoke('getMaxDownloadRetryTimeMillis', []);
+    return await invoke(#getMaxDownloadRetryTimeMillis, []);
   }
 
   @override
   Future<int> getMaxOperationRetryTimeMillis() async {
-    return await invoke('getMaxOperationRetryTimeMillis', []);
+    return await invoke(#getMaxOperationRetryTimeMillis, []);
   }
 
   @override
   Future<int> getMaxUploadRetryTimeMillis() async {
-    return await invoke('getMaxUploadRetryTimeMillis', []);
+    return await invoke(#getMaxUploadRetryTimeMillis, []);
   }
 
   @override
@@ -53,17 +129,17 @@ class IsolateFirebaseStorage extends IsolateFirebaseService
 
   @override
   Future<void> setMaxDownloadRetryTimeMillis(int time) async {
-    await invoke('setMaxDownloadRetryTimeMillis', [time]);
+    await invoke(#setMaxDownloadRetryTimeMillis, [time]);
   }
 
   @override
   Future<void> setMaxOperationRetryTimeMillis(int time) async {
-    await invoke('setMaxOperationRetryTimeMillis', [time]);
+    await invoke(#setMaxOperationRetryTimeMillis, [time]);
   }
 
   @override
   Future<void> setMaxUploadRetryTimeMillis(int time) async {
-    await invoke('setMaxUploadRetryTimeMillis', [time]);
+    await invoke(#setMaxUploadRetryTimeMillis, [time]);
   }
 
   @override
@@ -77,17 +153,26 @@ class IsolateStorageReference extends StorageReference {
 
   IsolateStorageReference(this.storage, this.location);
 
+  Future<T> invoke<T>(Symbol method,
+      [List<dynamic> positionalArguments,
+      Map<Symbol, dynamic> namedArguments]) {
+    return storage.app.commander.execute(
+        StorageReferenceFunctionCall<FutureOr<T>>(
+            method,
+            storage.app.name,
+            storage.storageBucket,
+            location.path,
+            positionalArguments,
+            namedArguments));
+  }
+
   @override
   IsolateStorageReference child(String childPath) =>
       IsolateStorageReference(storage, location.child(childPath));
 
-  dynamic invoke(String method, List<dynamic> arguments) {
-    return storage.invoke(method, [location.uri.toString(), ...arguments]);
-  }
-
   @override
   Future<void> delete() async {
-    await invoke('delete', []);
+    await invoke(#delete, []);
   }
 
   @override
@@ -95,17 +180,17 @@ class IsolateStorageReference extends StorageReference {
 
   @override
   Future<Uint8List> getData(int maxSize) async {
-    return await invoke('getData', [maxSize]);
+    return await invoke(#getData, [maxSize]);
   }
 
   @override
   Future<Uri> getDownloadURL() async {
-    return await invoke('getDownloadURL', []);
+    return await invoke(#getDownloadURL, []);
   }
 
   @override
   Future<StorageMetadata> getMetadata() async {
-    return StorageMetadataX.fromJson(await invoke('getMetadata', []));
+    return await invoke(#getMetadata, []);
   }
 
   @override
@@ -137,60 +222,9 @@ class IsolateStorageReference extends StorageReference {
 
   @override
   Future<StorageMetadata> updateMetadata(StorageMetadata metadata) async {
-    return StorageMetadataX.fromJson(
-        await invoke('updateMetadata', [metadata.toJson()]));
+    return await invoke(#updateMetadata, [metadata]);
   }
 
   @override
   String get path => location.path;
-}
-
-extension StorageMetadataX on StorageMetadata {
-  static StorageMetadata fromJson(Map<String, dynamic> json) =>
-      StorageMetadataImpl.fromJson(json);
-
-  Map<String, dynamic> toJson() => (this as StorageMetadataImpl).toJson();
-}
-
-class StoragePluginService extends PluginService {
-  final FirebaseStorage storage;
-
-  StoragePluginService(this.storage);
-
-  @override
-  dynamic invoke(String method, List<dynamic> arguments) {
-    StorageReference getRef() {
-      var location = Location.fromUrl(arguments.first);
-      return StorageReferenceImpl(storage, location);
-    }
-
-    switch (method) {
-      case 'getMaxDownloadRetryTimeMillis':
-        return storage.getMaxDownloadRetryTimeMillis();
-      case 'getMaxOperationRetryTimeMillis':
-        return storage.getMaxOperationRetryTimeMillis();
-      case 'getMaxUploadRetryTimeMillis':
-        return storage.getMaxUploadRetryTimeMillis();
-      case 'setMaxDownloadRetryTimeMillis':
-        return storage.setMaxDownloadRetryTimeMillis(arguments.first);
-      case 'setMaxOperationRetryTimeMillis':
-        return storage.setMaxOperationRetryTimeMillis(arguments.first);
-      case 'setMaxUploadRetryTimeMillis':
-        return storage.setMaxUploadRetryTimeMillis(arguments.first);
-      case 'delete':
-        return getRef().delete();
-      case 'getData':
-        return getRef().getData(arguments[1]);
-      case 'getDownloadURL':
-        return getRef().getDownloadURL();
-      case 'getMetadata':
-        return getRef().getMetadata().then((v) => v.toJson());
-      case 'putData':
-        throw UnimplementedError();
-      case 'updateMetadata':
-        return getRef()
-            .updateMetadata(StorageMetadataX.fromJson(arguments[1]))
-            .then((v) => v.toJson());
-    }
-  }
 }

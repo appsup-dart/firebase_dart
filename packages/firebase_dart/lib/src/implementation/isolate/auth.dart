@@ -1,9 +1,15 @@
+import 'dart:async';
+import 'dart:isolate';
+
+import 'package:async/async.dart';
 import 'package:firebase_dart/auth.dart';
+import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:rxdart/subjects.dart';
 
 import '../isolate.dart';
+import 'util.dart';
 
 extension UserCredentialX on UserCredential {
   static UserCredential fromJson(
@@ -75,6 +81,13 @@ class IsolateUser extends UserInfo implements User {
         tenantId = json['tenantId'],
         super.fromJson(json);
 
+  Future<T> invoke<T>(Symbol method,
+      [List<dynamic> positionalArguments,
+      Map<Symbol, dynamic> namedArguments]) {
+    return _auth.app.commander.execute(CurrentUserFunctionCall<FutureOr<T>>(
+        method, _auth.app.name, positionalArguments, namedArguments));
+  }
+
   @override
   Future<void> delete() {
     // TODO: implement delete
@@ -83,7 +96,7 @@ class IsolateUser extends UserInfo implements User {
 
   @override
   Future<String> getIdToken([bool forceRefresh = false]) async {
-    return await _auth.invoke('User.getIdToken', [forceRefresh]);
+    return await invoke(#getIdToken, [forceRefresh]);
   }
 
   @override
@@ -167,45 +180,27 @@ class IsolateUser extends UserInfo implements User {
   }
 }
 
-extension ActionCodeInfoX on ActionCodeInfo {
-  Map<String, dynamic> toJson() => {'data': data, 'operation': operation};
-}
-
-extension ActionCodeSettingsX on ActionCodeSettings {
-  static ActionCodeSettings fromJson(Map<String, dynamic> json) =>
-      ActionCodeSettings(
-        androidPackageName: json['androidPackageName'],
-        androidMinimumVersion: json['androidMinimumVersion'],
-        androidInstallApp: json['androidInstallApp'],
-        dynamicLinkDomain: json['dynamicLinkDomain'],
-        handleCodeInApp: json['handleCodeInApp'],
-        iOSBundleId: json['iOSBundleId'],
-        url: json['url'],
-      );
-
-  Map<String, dynamic> toJson() => {
-        'androidPackageName': androidPackageName,
-        'androidMinimumVersion': androidMinimumVersion,
-        'androidInstallApp': androidInstallApp,
-        'dynamicLinkDomain': dynamicLinkDomain,
-        'handleCodeInApp': handleCodeInApp,
-        'iOSBundleId': iOSBundleId,
-        'url': url,
-      };
-}
-
 class IsolateFirebaseAuth extends IsolateFirebaseService
     implements FirebaseAuth {
   final BehaviorSubject<User> _subject = BehaviorSubject();
 
-  IsolateFirebaseAuth(IsolateFirebaseApp app) : super(app, 'auth') {
-    _subject.addStream(createStream('authChanges', [], broadcast: true)
-        .map((v) => v == null ? null : IsolateUser.fromJson(this, v)));
+  Future<T> invoke<T>(Symbol method,
+      [List<dynamic> positionalArguments,
+      Map<Symbol, dynamic> namedArguments]) {
+    return app.commander.execute(FirebaseAuthFunctionCall<FutureOr<T>>(
+        method, app.name, positionalArguments, namedArguments));
+  }
+
+  IsolateFirebaseAuth(IsolateFirebaseApp app) : super(app) {
+    _subject.addStream(app.commander.subscribe(FirebaseAuthFunctionCall(
+      #authChanges,
+      app.name,
+    )));
   }
 
   @override
   Future<void> applyActionCode(String code) async {
-    await invoke('applyActionCode', [code]);
+    await invoke(#applyActionCode, [code]);
   }
 
   @override
@@ -220,14 +215,14 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<void> confirmPasswordReset(String oobCode, String newPassword) async {
-    await invoke('confirmPasswordReset', [oobCode, newPassword]);
+    await invoke(#confirmPasswordReset, [oobCode, newPassword]);
   }
 
   @override
   Future<UserCredential> createUserWithEmailAndPassword(
       {String email, String password}) async {
-    return UserCredentialX.fromJson(this,
-        await invoke('createUserWithEmailAndPassword', [email, password]));
+    return await invoke(#createUserWithEmailAndPassword, [],
+        {#email: email, #password: password});
   }
 
   @override
@@ -235,13 +230,12 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String email) async {
-    return await invoke('fetchSignInMethodsForEmail', [email]);
+    return await invoke(#fetchSignInMethodsForEmail, [email]);
   }
 
   @override
   Future<UserCredential> getRedirectResult() async {
-    return UserCredentialX.fromJson(
-        this, await invoke('getRedirectResult', []));
+    return UserCredentialX.fromJson(this, await invoke(#getRedirectResult, []));
   }
 
   @override
@@ -261,73 +255,77 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   @override
   Future<void> sendPasswordResetEmail(
       {String email, ActionCodeSettings actionCodeSettings}) async {
-    await invoke(
-        'sendPasswordResetEmail', [email, actionCodeSettings.toJson()]);
+    await invoke(#sendPasswordResetEmail, [],
+        {#email: email, #actionCodeSettings: actionCodeSettings});
   }
 
   @override
   Future<void> sendSignInLinkToEmail(
       {String email, ActionCodeSettings actionCodeSettings}) async {
-    await invoke('sendSignInLinkToEmail', [email, actionCodeSettings.toJson()]);
+    await invoke(#sendSignInLinkToEmail, [],
+        {#email: email, #actionCodeSettings: actionCodeSettings});
   }
 
   @override
   Future<void> setLanguageCode(String language) async {
-    await invoke('setLanguageCode', [language]);
+    await invoke(#setLanguageCode, [language]);
     _languageCode = language;
   }
 
   @override
   Future<void> setPersistence(Persistence persistence) async {
-    await invoke('setPersistence', [persistence]);
+    await invoke(#setPersistence, [persistence]);
   }
 
   @override
   Future<UserCredential> signInAnonymously() async {
-    return UserCredentialX.fromJson(
-        this, await invoke('signInAnonymously', []));
+    return UserCredentialX.fromJson(this, await invoke(#signInAnonymously, []));
   }
 
   @override
   Future<UserCredential> signInWithCredential(AuthCredential credential) async {
     return UserCredentialX.fromJson(
-        this, await invoke('signInWithCredential', [credential.toJson()]));
+        this, await invoke(#signInWithCredential, [credential.toJson()]));
   }
 
   @override
   Future<UserCredential> signInWithCustomToken(String token) async {
     return UserCredentialX.fromJson(
-        this, await invoke('signInWithCustomToken', [token]));
+        this, await invoke(#signInWithCustomToken, [token]));
   }
 
   @override
   Future<UserCredential> signInWithEmailAndPassword(
       {String email, String password}) async {
     return UserCredentialX.fromJson(
-        this, await invoke('signInWithEmailAndPassword', [email, password]));
+        this,
+        await invoke(#signInWithEmailAndPassword, [],
+            {#email: email, #password: password}));
   }
 
   @override
   Future<UserCredential> signInWithEmailLink(
       {String email, String emailLink}) async {
     return UserCredentialX.fromJson(
-        this, await invoke('signInWithEmailLink', [email, emailLink]));
+        this,
+        await invoke(
+            #signInWithEmailLink, [], {#email: email, #emailLink: emailLink}));
   }
 
   @override
   Future<UserCredential> signInWithPopup(AuthProvider provider) async {
     return UserCredentialX.fromJson(
-        this, await invoke('signInWithPopup', [provider]));
+        this, await invoke(#signInWithPopup, [provider]));
   }
 
   @override
   Future<void> signInWithRedirect(AuthProvider provider) async {
-    await invoke('signInWithRedirect', [provider]);
+    await invoke(#signInWithRedirect, [provider]);
   }
 
   @override
   Future<void> signOut() async {
-    await invoke('signOut', []);
+    await invoke(#signOut, []);
   }
 
   @override
@@ -338,7 +336,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<String> verifyPasswordResetCode(String code) async {
-    return await invoke('verifyPasswordResetCode', [code]);
+    return await invoke(#verifyPasswordResetCode, [code]);
   }
 
   @override
@@ -358,111 +356,92 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   @override
   Future<UserCredential> signInWithOAuthProvider(String providerId) async {
     return UserCredentialX.fromJson(
-        this, await invoke('signInWithOAuthProvider', [providerId]));
+        this, await invoke(#signInWithOAuthProvider, [providerId]));
   }
 }
 
-class AuthPluginService extends PluginService {
-  final FirebaseAuth auth;
+class CurrentUserFunctionCall<T> extends BaseFunctionCall<T> {
+  final String appName;
 
-  AuthPluginService(this.auth);
+  final Symbol functionName;
+
+  CurrentUserFunctionCall(this.functionName, this.appName,
+      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      : super(positionalArguments, namedArguments);
+
+  User get user =>
+      FirebaseAuth.instanceFor(app: Firebase.app(appName)).currentUser;
+  @override
+  Function get function {
+    switch (functionName) {
+      case #getIdToken:
+        return user.getIdToken;
+    }
+    return null;
+  }
+}
+
+class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
+  final String appName;
+  final Symbol functionName;
+
+  FirebaseAuthFunctionCall(this.functionName, this.appName,
+      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      : super(positionalArguments, namedArguments);
+
+  FirebaseAuth get auth => FirebaseAuth.instanceFor(app: Firebase.app(appName));
 
   @override
-  dynamic invoke(String method, List<dynamic> arguments) {
-    switch (method) {
-      case 'applyActionCode':
-        return auth.applyActionCode(arguments.first);
-      case 'checkActionCode':
-        return auth.checkActionCode(arguments.first).then((v) => v.toJson());
-      case 'confirmPasswordReset':
-        return auth.confirmPasswordReset(arguments[0], arguments[1]);
-      case 'createUserWithEmailAndPassword':
-        return auth
-            .createUserWithEmailAndPassword(
-                email: arguments[0], password: arguments[1])
-            .then((v) => v.toJson());
-      case 'fetchSignInMethodsForEmail':
-        return auth.fetchSignInMethodsForEmail(arguments.first);
-      case 'getRedirectResult':
-        return auth.getRedirectResult().then((v) => v.toJson());
-      case 'sendPasswordResetEmail':
-        return auth.sendPasswordResetEmail(
-            email: arguments[0],
-            actionCodeSettings: ActionCodeSettingsX.fromJson(arguments[1]));
-      case 'sendSignInLinkToEmail':
-        return auth.sendSignInLinkToEmail(
-            email: arguments[0],
-            actionCodeSettings: ActionCodeSettingsX.fromJson(arguments[1]));
-      case 'setLanguageCode':
-        return auth.setLanguageCode(arguments.first);
-      case 'setPersistence':
-        return auth.setPersistence(arguments.first);
-      case 'signInAnonymously':
-        return auth.signInAnonymously().then((v) => v.toJson());
-      case 'signInWithCredential':
-        return auth
-            .signInWithCredential(AuthCredentialX.fromJson(arguments.first))
-            .then((v) => v.toJson());
-      case 'signInWithOAuthProvider':
-        return auth
-            .signInWithOAuthProvider(arguments.first)
-            .then((v) => v.toJson());
-      case 'signInWithCustomToken':
-        return auth
-            .signInWithCustomToken(arguments.first)
-            .then((v) => v.toJson());
-      case 'signInWithEmailAndPassword':
-        return auth
-            .signInWithEmailAndPassword(
-                email: arguments[0], password: arguments[1])
-            .then((v) => v.toJson());
-      case 'signInWithEmailLink':
-        return auth
-            .signInWithEmailLink(email: arguments[0], emailLink: arguments[1])
-            .then((v) => v.toJson());
-      case 'signInWithPopup':
-        return auth.signInWithPopup(arguments[0]).then((v) => v.toJson());
-      case 'signInWithRedirect':
-        return auth.signInWithRedirect(arguments[0]);
-      case 'signOut':
-        return auth.signOut();
-      case 'verifyPasswordResetCode':
-        return auth.verifyPasswordResetCode(arguments[0]);
-      case 'verifyPhoneNumber':
-        throw UnimplementedError(); // TODO
-      case 'authChanges':
-        return auth.authStateChanges().map((v) => v
-            ?.toJson()); // TODO: handle id token changes and other user changes
-      case 'User.getIdToken':
-        return auth.currentUser
-            .getIdToken(arguments[0]); // TODO: what if not currentUser
+  Function get function {
+    switch (functionName) {
+      case #applyActionCode:
+        return auth.applyActionCode;
+      case #checkActionCode:
+        return auth.checkActionCode;
+      case #confirmPasswordReset:
+        return auth.confirmPasswordReset;
+      case #createUserWithEmailAndPassword:
+        return auth.createUserWithEmailAndPassword;
+      case #fetchSignInMethodsForEmail:
+        return auth.fetchSignInMethodsForEmail;
+      case #getRedirectResult:
+        return auth.getRedirectResult;
+      case #sendPasswordResetEmail:
+        return auth.sendPasswordResetEmail;
+      case #sendSignInLinkToEmail:
+        return auth.sendSignInLinkToEmail;
+      case #setLanguageCode:
+        return auth.setLanguageCode;
+      case #setPersistence:
+        return auth.setPersistence;
+      case #signInAnonymously:
+        return auth.signInAnonymously;
+      case #signInWithCredential:
+        return auth.signInWithCredential;
+      case #signInWithOAuthProvider:
+        return auth.signInWithOAuthProvider;
+      case #signInWithCustomToken:
+        return auth.signInWithCustomToken;
+      case #signInWithEmailAndPassword:
+        return auth.signInWithEmailAndPassword;
+      case #signInWithEmailLink:
+        return auth.signInWithEmailLink;
+      case #signInWithPopup:
+        return auth.signInWithPopup;
+      case #signInWithRedirect:
+        return auth.signInWithRedirect;
+      case #signOut:
+        return auth.signOut;
+      case #verifyPasswordResetCode:
+        return auth.verifyPasswordResetCode;
+      case #verifyPhoneNumber:
+        return auth.verifyPhoneNumber;
+      case #authChanges:
+        return () => auth
+            .authStateChanges()
+            .map<User>((v) => IsolateUser.fromJson(null, v.toJson()));
     }
-    throw ArgumentError.value(method, 'method');
-  }
-}
-
-extension AuthCredentialX on AuthCredential {
-  static AuthCredential fromJson(Map<String, dynamic> json) {
-    switch (json['providerId']) {
-      case 'password':
-        return EmailAuthCredential.fromJson(json);
-      case 'google.com':
-      case 'facebook.com':
-      case 'github.com':
-      case 'twitter.com':
-        return OAuthCredential(
-            providerId: json['providerId'],
-            signInMethod: json['signInMethod'],
-            accessToken: json['accessToken'],
-            idToken: json['idToken'],
-            secret: json['secret'],
-            rawNonce: json['rawNonce']);
-      case 'phone':
-        return PhoneAuthCredential(
-            phoneNumber: json['phoneNumber'],
-            verificationId: json['verificationId'],
-            smsCode: json['smsCode']);
-    }
-    throw UnsupportedError('provider `${json['providerId']} not supported');
+    throw UnsupportedError(
+        'FirebaseAuthFunctionCall with reference $functionName not supported');
   }
 }
