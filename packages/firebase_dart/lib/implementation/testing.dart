@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'dart:convert';
 
@@ -62,7 +62,7 @@ class FirebaseTesting {
         switch (body['grant_type']) {
           case 'refresh_token':
             var uid =
-                await authBackend.verifyRefreshToken(body['refresh_token']);
+                await authBackend.verifyRefreshToken(body['refresh_token']!);
 
             var accessToken = await authBackend.generateRefreshToken(uid);
             return http.Response(
@@ -127,18 +127,18 @@ class Backend {
 
   static final Map<String, String> _apiKeys = {};
 
-  static final Map<String, auth.MemoryBackend> _authBackends = {};
+  static final Map<String?, auth.MemoryBackend> _authBackends = {};
 
-  static final Map<String, storage.MemoryBackend> _storageBackends = {};
+  static final Map<String?, storage.MemoryBackend> _storageBackends = {};
 
-  static auth.MemoryBackend getAuthBackend(String projectId) =>
+  static auth.MemoryBackend getAuthBackend(String? projectId) =>
       _authBackends.putIfAbsent(
           projectId,
           () => auth.MemoryBackend(
               tokenSigningKey: FirebaseTesting._tokenSigningKey,
               projectId: projectId));
 
-  static storage.MemoryBackend getStorageBackend(String bucket) =>
+  static storage.MemoryBackend getStorageBackend(String? bucket) =>
       _storageBackends.putIfAbsent(bucket, () => storage.MemoryBackend());
 
   auth.MemoryBackend get authBackend => getAuthBackend(options.projectId);

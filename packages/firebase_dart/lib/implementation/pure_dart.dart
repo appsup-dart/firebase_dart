@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
@@ -41,14 +41,14 @@ class FirebaseDart {
   /// can be usefull for testing purposes, but is generally unnecessary.
   ///
   static void setup(
-      {String storagePath,
-      Platform platform,
+      {String? storagePath,
+      Platform? platform,
       bool isolated = false,
-      Function(Uri url) launchUrl,
-      Future<Map<String, dynamic>> Function() getAuthResult,
-      Future<OAuthCredential> Function(OAuthProvider provider) oauthSignIn,
-      Future<void> Function(String providerId) oauthSignOut,
-      http.Client httpClient}) {
+      Function(Uri url)? launchUrl,
+      Future<Map<String, dynamic>> Function()? getAuthResult,
+      Future<OAuthCredential> Function(OAuthProvider provider)? oauthSignIn,
+      Future<void> Function(String providerId)? oauthSignOut,
+      http.Client? httpClient}) {
     platform ??= _kIsWeb
         ? Platform.web(
             currentUrl: Uri.base.toString(),
