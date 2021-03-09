@@ -290,6 +290,7 @@ class _MyApiRequester extends commons.ApiRequester {
       commons.UploadOptions uploadOptions,
       commons.DownloadOptions downloadOptions =
           client_requests.DownloadOptions.metadata}) async {
+    queryParams ??= {};
     try {
       var fields = queryParams.remove('fields') ?? [];
 
@@ -311,14 +312,17 @@ class _MyApiRequester extends commons.ApiRequester {
     } on it.DetailedApiRequestError catch (e) {
       var errorCode = e.message;
       var errorMessage;
-      // Get detailed message if available.
-      var match = RegExp(r'^([^\s]+)\s*:\s*(.*)$').firstMatch(errorCode);
-      if (match != null) {
-        errorCode = match.group(1);
-        errorMessage = match.group(2);
-      }
+      FirebaseAuthException error;
+      if (errorCode != null) {
+        // Get detailed message if available.
+        var match = RegExp(r'^([^\s]+)\s*:\s*(.*)$').firstMatch(errorCode);
+        if (match != null) {
+          errorCode = match.group(1);
+          errorMessage = match.group(2);
+        }
 
-      var error = authErrorFromServerErrorCode(errorCode);
+        error = authErrorFromServerErrorCode(errorCode);
+      }
       if (error == null) {
         error = FirebaseAuthException.internalError();
         errorMessage ??= json.encode(e.jsonResponse);
@@ -428,7 +432,7 @@ class RelyingpartyResource extends it.RelyingpartyResource {
   }
 
   Future<dynamic> _do(String url, dynamic request, {String $fields}) {
-    var body = request == null ? null : json.encode(request);
+    var body = json.encode(request);
 
     return _requester.request(url, 'POST',
         body: body,
