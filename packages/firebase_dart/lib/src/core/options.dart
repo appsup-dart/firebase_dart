@@ -13,6 +13,7 @@ part of firebase_dart.core;
 ///   )
 /// );
 /// ```
+@immutable
 class FirebaseOptions {
   /// An API key used for authenticating requests from your app, for example
   /// "AIzaSyDdVgKwhZl0sTTTLZ7iTmt1r3N2cJLnaDk", used to identify your app to
@@ -100,13 +101,12 @@ class FirebaseOptions {
   const FirebaseOptions({
     @required this.apiKey,
     @required this.appId,
-    this.messagingSenderId,
+    @required this.messagingSenderId,
     @required this.projectId,
-    @required this.authDomain,
+    this.authDomain,
     this.databaseURL,
     this.storageBucket,
     this.measurementId,
-    // ios specific
     this.trackingId,
     this.deepLinkURLScheme,
     this.androidClientId,
@@ -122,28 +122,23 @@ class FirebaseOptions {
   /// This constructor is used when platforms cannot directly return a
   /// [FirebaseOptions] instance, for example when data is sent back from a
   /// [MethodChannel].
-  FirebaseOptions.fromMap(Map<dynamic, dynamic> map)
-      : assert(map['apiKey'] != null, "'apiKey' cannot be null."),
-        assert(map['appId'] != null || map['googleAppID'],
-            "'appId' and 'googleAppID' cannot be null."),
-        assert(map['messagingSenderId'] != null || map['gcmSenderID'],
-            "'messagingSenderId' and 'gcmSenderID' cannot be null."),
-        assert(map['projectId'] != null || map['projectID'],
-            "'projectId' and 'projectID' cannot be null."),
-        apiKey = map['apiKey'],
-        appId = map['appId'] ?? map['googleAppID'],
-        messagingSenderId = map['messagingSenderId'] ?? map['gcmSenderID'],
-        projectId = map['projectId'] ?? map['projectID'],
-        authDomain = map['authDomain'],
-        databaseURL = map['databaseURL'],
-        storageBucket = map['storageBucket'],
-        measurementId = map['measurementId'],
-        trackingId = map['trackingId'],
-        deepLinkURLScheme = map['deepLinkURLScheme'],
-        androidClientId = map['androidClientId'],
-        iosClientId = map['iosClientId'],
-        iosBundleId = map['iosBundleId'],
-        appGroupId = map['appGroupId'];
+  FirebaseOptions.fromMap(Map map)
+      : this(
+          apiKey: map['apiKey'],
+          appId: map['appId'] ?? map['googleAppID'],
+          messagingSenderId: map['messagingSenderId'] ?? map['gcmSenderID'],
+          projectId: map['projectId'] ?? map['projectID'],
+          authDomain: map['authDomain'],
+          databaseURL: map['databaseURL'],
+          storageBucket: map['storageBucket'],
+          measurementId: map['measurementId'],
+          trackingId: map['trackingId'],
+          deepLinkURLScheme: map['deepLinkURLScheme'],
+          androidClientId: map['androidClientId'],
+          iosClientId: map['iosClientId'],
+          iosBundleId: map['iosBundleId'],
+          appGroupId: map['appGroupId'],
+        );
 
   /// The current instance as a [Map].
   Map<String, String> get asMap {
@@ -165,7 +160,6 @@ class FirebaseOptions {
     };
   }
 
-  // Required from `fromMap` comparison
   @override
   bool operator ==(dynamic other) {
     if (identical(this, other)) return true;

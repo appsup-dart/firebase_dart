@@ -3,7 +3,8 @@ part of firebase_dart;
 class FirebaseDatabaseException extends FirebaseException {
   final String details;
 
-  FirebaseDatabaseException({String code, String message, this.details})
+  FirebaseDatabaseException(
+      {@required String code, String message, this.details})
       : super(plugin: 'database', code: code, message: message);
 
   /// Thrown when the transaction needs to be run again with current data

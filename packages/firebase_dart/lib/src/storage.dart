@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/implementation.dart';
+import 'package:meta/meta.dart';
 
 import 'core.dart';
 
@@ -234,7 +235,7 @@ abstract class StorageTaskSnapshot {
 
 class StorageException extends FirebaseException {
   StorageException._({
-    String code,
+    @required String code,
     String message,
   }) : super(plugin: 'storage', code: code, message: message);
 

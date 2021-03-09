@@ -350,7 +350,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
     if (r.containsKey('firebaseError')) {
       var e = json.decode(r['firebaseError']);
-      throw FirebaseAuthException(e['code'], e['message']);
+      throw FirebaseAuthException(e['code'] ?? 'unknown', e['message']);
     }
     var box = await _userStorageManager.storage;
     var sessionId = box.get('redirect_session_id');

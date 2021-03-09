@@ -12,7 +12,7 @@ import 'treestructureddata.dart';
 
 @alwaysThrows
 void throwServerError(String status, String details) {
-  throw FirebaseDatabaseException(code: status, details: details);
+  throw FirebaseDatabaseException(code: status ?? 'unknown', details: details);
 }
 
 enum OperationEventType { overwrite, merge, listenRevoked }

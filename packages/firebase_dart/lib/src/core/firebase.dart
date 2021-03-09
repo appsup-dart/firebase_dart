@@ -30,10 +30,11 @@ class Firebase {
   /// If no name is provided, the default app instance is returned.
   /// Throws if the app does not exist.
   static FirebaseApp app([String name = defaultFirebaseAppName]) {
-    if (_apps[name] == null) {
+    var app = _apps[name];
+    if (app == null) {
       throw FirebaseCoreException.noAppExists(name);
     }
-    return _apps[name];
+    return app;
   }
 
   static Future<void> _delete(String name) async {
