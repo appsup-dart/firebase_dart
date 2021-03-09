@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'package:firebase_dart/src/auth/auth.dart';
 
@@ -7,32 +7,32 @@ abstract class User {
   User();
 
   /// The user's unique ID.
-  String /*!*/ get uid;
+  String get uid;
 
   /// The users display name.
   ///
   /// Will be `null` if signing in anonymously or via password authentication.
-  String /*?*/ get displayName;
+  String? get displayName;
 
   /// Returns a photo URL for the user.
   ///
   /// This property will be populated if the user has signed in or been linked
   /// with a 3rd party OAuth provider (such as Google).
-  String /*?*/ get photoURL;
+  String? get photoURL;
 
   /// The users email address.
   ///
   /// Will be `null` if signing in anonymously.
-  String /*?*/ get email;
+  String? get email;
 
   /// Returns the users phone number.
   ///
   /// This property will be `null` if the user has not signed in or been has
   /// their phone number linked.
-  String /*?*/ get phoneNumber;
+  String? get phoneNumber;
 
   /// Returns whether the user is a anonymous.
-  bool /*!*/ get isAnonymous;
+  bool get isAnonymous;
 
   /// Returns whether the users email address has been verified.
   ///
@@ -40,26 +40,26 @@ abstract class User {
   ///
   /// Once verified, call [reload] to ensure the latest user information is
   /// retrieved from Firebase.
-  bool /*!*/ get emailVerified;
+  bool get emailVerified;
 
   /// Returns additional metadata about the user, such as their creation time.
-  UserMetadata /*!*/ get metadata;
+  UserMetadata get metadata;
 
   /// Returns a list of user information for each linked provider.
-  List<UserInfo /*!*/ > /*!*/ get providerData;
+  List<UserInfo > get providerData;
 
   /// Returns a JWT refresh token for the user.
   ///
   /// This property maybe `null` or empty if the underlying platform does not
   /// support providing refresh tokens.
-  String /*?*/ get refreshToken;
+  String? get refreshToken;
 
   /// The current user's tenant ID.
   ///
   /// This is a read-only property, which indicates the tenant ID used to sign
   /// in the current user. This is `null` if the user is signed in from the
   /// parent project.
-  String /*?*/ get tenantId;
+  String? get tenantId;
 
   /// Returns a JSON Web Token (JWT) used to identify the user to a Firebase
   /// service.
@@ -69,14 +69,14 @@ abstract class User {
   ///
   /// If [forceRefresh] is `true`, the token returned will be refresh regardless
   /// of token expiration.
-  Future<String /*!*/ > /*!*/ getIdToken([bool forceRefresh = false]);
+  Future<String > getIdToken([bool forceRefresh = false]);
 
   /// Returns a [IdTokenResult] containing the users JSON Web Token (JWT) and
   /// other metadata.
   ///
   /// If [forceRefresh] is `true`, the token returned will be refresh regardless
   /// of token expiration.
-  Future<IdTokenResult /*!*/ > /*!*/ getIdTokenResult(
+  Future<IdTokenResult > getIdTokenResult(
       [bool forceRefresh = false]);
 
   /// Links the user account with the given credentials.
@@ -132,7 +132,7 @@ abstract class User {
   /// Sends a verification email to a user.
   ///
   /// The verification process is completed by calling [applyActionCode].
-  Future<void> sendEmailVerification([ActionCodeSettings actionCodeSettings]);
+  Future<void> sendEmailVerification([ActionCodeSettings? actionCodeSettings]);
 
   /// Refreshes the current user, if signed in.
   Future<void> reload();
@@ -198,7 +198,7 @@ abstract class User {
   Future<void> updatePassword(String newPassword);
 
   /// Updates a user's profile data.
-  Future<void> updateProfile({String displayName, String photoURL});
+  Future<void> updateProfile({String? displayName, String? photoURL});
 
   /// Sends a verification email to a new email address. The user's email will
   /// be updated to the new one after being verified.
@@ -206,7 +206,7 @@ abstract class User {
   /// If you have a custom email action handler, you can complete the
   /// verification process by calling [applyActionCode].
   Future<void> verifyBeforeUpdateEmail(String newEmail,
-      [ActionCodeSettings actionCodeSettings]);
+      [ActionCodeSettings? actionCodeSettings]);
 
   /// Re-authenticates a user using a fresh credential.
   ///
@@ -259,36 +259,36 @@ abstract class User {
 /// Represents user data returned from an identity provider.
 class UserInfo {
   /// The federated provider ID.
-  final String/*!*/ providerId;
+  final String providerId;
 
   /// The user's unique ID.
-  final String/*!*/ uid;
+  final String uid;
 
   /// The users display name.
   ///
   /// Will be `null` if signing in anonymously or via password authentication.
-  final String/*?*/ displayName;
+  final String? displayName;
 
   /// Returns a photo URL for the user.
   ///
   /// This property will be populated if the user has signed in or been linked
   /// with a 3rd party OAuth provider (such as Google).
-  final String/*?*/ photoURL;
+  final String? photoURL;
 
   /// The users email address.
   ///
   /// Will be `null` if signing in anonymously.
-  final String/*?*/ email;
+  final String? email;
 
   /// Returns the users phone number.
   ///
   /// This property will be `null` if the user has not signed in or been has
   /// their phone number linked.
-  final String/*?*/ phoneNumber;
+  final String? phoneNumber;
 
   UserInfo(
-      {this.providerId,
-      this.uid,
+      {required this.providerId,
+      required this.uid,
       this.displayName,
       this.photoURL,
       this.email,
@@ -321,13 +321,13 @@ class UserInfo {
 /// Interface representing a user's metadata.
 class UserMetadata {
   /// When this account was created as dictated by the server clock.
-  final DateTime/*?*/ creationTime;
+  final DateTime? creationTime;
 
   /// When the user last signed in as dictated by the server clock.
   ///
   /// This is only accurate up to a granularity of 2 minutes for consecutive
   /// sign-in attempts.
-  final DateTime/*?*/ lastSignInTime;
+  final DateTime? lastSignInTime;
 
   UserMetadata({this.creationTime, this.lastSignInTime});
 
@@ -347,26 +347,26 @@ class UserMetadata {
 /// claims.
 abstract class IdTokenResult {
   /// The Firebase Auth ID token JWT string.
-  String/*?*/ get token;
+  String? get token;
 
   /// The time when the ID token expires.
-  DateTime/*?*/ get expirationTime;
+  DateTime? get expirationTime;
 
   /// The time the user authenticated (signed in).
   ///
   /// Note that this is not the time the token was refreshed.
-  DateTime/*?*/ get authTime;
+  DateTime? get authTime;
 
   /// The time when ID token was issued.
-  DateTime/*?*/ get issuedAtTime;
+  DateTime? get issuedAtTime;
 
   /// The sign-in provider through which the ID token was obtained (anonymous,
   /// custom, phone, password, etc). Note, this does not map to provider IDs.
-  String/*?*/ get signInProvider;
+  String? get signInProvider;
 
   /// The entire payload claims of the ID token including the standard reserved
   /// claims as well as the custom claims.
-  Map<String, dynamic>/*?*/ get claims;
+  Map<String, dynamic>? get claims;
 
   @override
   String toString() {
@@ -378,17 +378,17 @@ abstract class IdTokenResult {
 /// provider.
 abstract class AdditionalUserInfo {
   /// Whether the user account has been recently created.
-  bool/*!*/ get isNewUser;
+  bool get isNewUser;
 
   /// The username given from the federated identity provider.
-  String/*?*/ get username;
+  String? get username;
 
   /// The  federated identity provider ID.
-  String/*?*/ get providerId;
+  String? get providerId;
 
   /// A [Map] containing additional profile information from the identity
   /// provider.
-  Map<String, dynamic>/*?*/ get profile;
+  Map<String, dynamic>? get profile;
 
   @override
   String toString() {

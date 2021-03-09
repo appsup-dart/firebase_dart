@@ -1,5 +1,3 @@
-// @dart=2.9
-
 library firebase_auth;
 
 import 'package:firebase_dart/core.dart';
@@ -21,8 +19,7 @@ export 'action_code.dart';
 /// The entry point of the Firebase Authentication SDK.
 abstract class FirebaseAuth {
   /// Returns an instance using a specified [FirebaseApp].
-  factory FirebaseAuth.instanceFor({@required FirebaseApp app}) {
-    assert(app != null);
+  factory FirebaseAuth.instanceFor({required FirebaseApp app}) {
     return FirebaseImplementation.installation.createAuth(app);
   }
 
@@ -35,11 +32,11 @@ abstract class FirebaseAuth {
 
   /// Notifies about changes to the user's sign-in state (such as sign-in or
   /// sign-out).
-  Stream<User /*?*/ > authStateChanges();
+  Stream<User?> authStateChanges();
 
   /// Notifies about changes to the user's sign-in state (such as sign-in or
   /// sign-out) and also token refresh events.
-  Stream<User /*?*/ > idTokenChanges();
+  Stream<User?> idTokenChanges();
 
   /// Notifies about changes to any user updates.
   ///
@@ -49,7 +46,7 @@ abstract class FirebaseAuth {
   /// this Stream is to for listening to realtime updates to the user without
   /// manually having to call [reload] and then rehydrating changes to your
   /// application.
-  Stream<User /*?*/ > userChanges();
+  Stream<User?> userChanges();
 
   /// Applies a verification code sent to the user by email or other out-of-band
   /// mechanism.
@@ -118,8 +115,8 @@ abstract class FirebaseAuth {
   /// - **weak-password**:
   ///  - Thrown if the password is not strong enough.
   Future<UserCredential> createUserWithEmailAndPassword({
-    @required String email,
-    @required String password,
+    required String email,
+    required String password,
   });
 
   /// Returns a list of sign-in methods that can be used to sign in a given
@@ -148,8 +145,8 @@ abstract class FirebaseAuth {
   /// email to the given email address, which must correspond to an existing
   /// user of your app.
   Future<void> sendPasswordResetEmail({
-    @required String email,
-    ActionCodeSettings actionCodeSettings,
+    required String email,
+    ActionCodeSettings? actionCodeSettings,
   });
 
   /// Sends a sign in with email link to provided email address.
@@ -167,8 +164,8 @@ abstract class FirebaseAuth {
   /// - **user-not-found**:
   ///  - Thrown if there is no user corresponding to the email address.
   Future<void> sendSignInLinkToEmail({
-    @required String email,
-    @required ActionCodeSettings actionCodeSettings,
+    required String email,
+    required ActionCodeSettings actionCodeSettings,
   });
 
   /// Checks if an incoming link is a sign-in with email link.
@@ -194,8 +191,8 @@ abstract class FirebaseAuth {
   ///  - Thrown if the password is invalid for the given email, or the account
   ///    corresponding to the email does not have a password set.
   Future<UserCredential> signInWithEmailAndPassword({
-    @required String email,
-    @required String password,
+    required String email,
+    required String password,
   });
 
   /// Signs in using an email address and email sign-in link.
@@ -214,7 +211,7 @@ abstract class FirebaseAuth {
   /// - **user-disabled**:
   ///  - Thrown if the user corresponding to the given email has been disabled.
   Future<UserCredential> signInWithEmailLink(
-      {@required String email, @required String emailLink});
+      {required String email, required String emailLink});
 
   /// Asynchronously signs in to Firebase with the given 3rd-party credentials
   /// (e.g. a Facebook login Access Token, a Google ID Token/Access Token pair,
@@ -369,14 +366,14 @@ abstract class FirebaseAuth {
   /// [codeAutoRetrievalTimeout] Triggered when SMS auto-retrieval times out and
   ///   provide a [verificationId].
   Future<void> verifyPhoneNumber({
-    @required String phoneNumber,
-    @required PhoneVerificationCompleted verificationCompleted,
-    @required PhoneVerificationFailed verificationFailed,
-    @required PhoneCodeSent codeSent,
-    @required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
-    @visibleForTesting String autoRetrievedSmsCodeForTesting,
+    required String phoneNumber,
+    required PhoneVerificationCompleted verificationCompleted,
+    required PhoneVerificationFailed verificationFailed,
+    required PhoneCodeSent codeSent,
+    required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
+    @visibleForTesting String? autoRetrievedSmsCodeForTesting,
     Duration timeout = const Duration(seconds: 30),
-    int forceResendingToken,
+    int? forceResendingToken,
   });
 
   /// Returns the current [User] if they are currently signed-in, or `null` if
@@ -385,12 +382,12 @@ abstract class FirebaseAuth {
   /// You should not use this getter to determine the users current state,
   /// instead use [authStateChanges], [idTokenChanges] or [userChanges] to
   /// subscribe to updates.
-  User get currentUser;
+  User? get currentUser;
 
   /// The current Auth instance's language code.
   ///
   /// See [setLanguageCode] to update the language code.
-  String get languageCode;
+  String? get languageCode;
 
   /// When set to null, the default Firebase Console language setting is
   /// applied.
@@ -445,14 +442,14 @@ abstract class FirebaseAuth {
 abstract class UserCredential {
   /// Returns a [User] containing additional information and user specific
   /// methods.
-  User /*?*/ get user;
+  User? get user;
 
   /// Returns additional information about the user, such as whether they are a
   /// newly created one.
-  AdditionalUserInfo /*?*/ get additionalUserInfo;
+  AdditionalUserInfo? get additionalUserInfo;
 
   /// The users [AuthCredential].
-  AuthCredential /*?*/ get credential;
+  AuthCredential? get credential;
 
   @override
   String toString() {
@@ -461,13 +458,12 @@ abstract class UserCredential {
 }
 
 /// Typedef for handling automatic phone number timeout resolution.
-typedef PhoneCodeAutoRetrievalTimeout = void Function(
-    String /*!*/ verificationId);
+typedef PhoneCodeAutoRetrievalTimeout = void Function(String verificationId);
 
 /// Typedef for handling when Firebase sends a SMS code to the provided phone
 /// number.
 typedef PhoneCodeSent = void Function(
-    String /*!*/ verificationId, int /*?*/ forceResendingToken);
+    String verificationId, int? forceResendingToken);
 
 /// Typedef for a automatic phone number resolution.
 ///
