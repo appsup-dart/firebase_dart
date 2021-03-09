@@ -1,3 +1,5 @@
+// @dart=2.9
+
 part of firebase_dart;
 
 /// The entry point for accessing a Firebase Database.

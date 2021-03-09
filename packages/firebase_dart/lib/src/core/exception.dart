@@ -1,3 +1,5 @@
+// @dart=2.9
+
 part of firebase_dart.core;
 
 /// A generic class which provides exceptions in a Firebase-friendly format

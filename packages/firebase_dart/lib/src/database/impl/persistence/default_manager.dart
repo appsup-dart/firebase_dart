@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:logging/logging.dart';

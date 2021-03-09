@@ -1,3 +1,5 @@
+// @dart=2.9
+
 export 'providers/email.dart';
 export 'providers/facebook.dart';
 export 'providers/github.dart';

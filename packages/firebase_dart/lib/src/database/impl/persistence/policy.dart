@@ -1,3 +1,5 @@
+// @dart=2.9
+
 abstract class CachePolicy {
   bool shouldPrune(int currentSizeBytes, int countOfPrunableQueries);
 

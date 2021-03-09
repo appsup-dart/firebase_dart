@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';

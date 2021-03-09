@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/storage.dart';

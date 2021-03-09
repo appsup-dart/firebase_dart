@@ -1,3 +1,5 @@
+// @dart=2.9
+
 library firebase.connection;
 
 import 'dart:async';

@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';

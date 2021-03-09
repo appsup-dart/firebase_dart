@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';

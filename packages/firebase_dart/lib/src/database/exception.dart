@@ -1,3 +1,5 @@
+// @dart=2.9
+
 part of firebase_dart;
 
 class FirebaseDatabaseException extends FirebaseException {

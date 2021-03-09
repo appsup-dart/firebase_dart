@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/core.dart';

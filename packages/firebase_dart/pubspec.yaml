@@ -4,7 +4,7 @@ version: 1.0.0-dev.24
 homepage: https://github.com/appsup-dart/firebase_dart
 
 environment:
-  sdk: '>=2.7.0 <3.0.0'
+  sdk: '>=2.12.0 <3.0.0'
 
 dependencies:
   quiver: ^3.0.0

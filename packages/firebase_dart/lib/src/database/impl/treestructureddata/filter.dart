@@ -1,3 +1,5 @@
+// @dart=2.9
+
 part of firebase.treestructureddata;
 
 abstract class TreeStructuredDataOrdering extends Ordering {

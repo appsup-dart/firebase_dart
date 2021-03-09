@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import '../auth_provider.dart';
 import 'oauth.dart';
 

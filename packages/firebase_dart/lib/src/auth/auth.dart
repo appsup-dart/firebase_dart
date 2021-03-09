@@ -1,3 +1,5 @@
+// @dart=2.9
+
 library firebase_auth;
 
 import 'package:firebase_dart/core.dart';

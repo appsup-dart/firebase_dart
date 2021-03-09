@@ -1,3 +1,5 @@
+// @dart=2.9
+
 part of firebase.protocol;
 
 /// Transforms a channel with frames of limited length to full strings

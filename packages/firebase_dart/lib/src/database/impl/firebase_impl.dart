@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:async';
 
 import 'package:firebase_dart/core.dart';

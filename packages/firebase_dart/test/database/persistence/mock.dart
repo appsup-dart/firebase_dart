@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
 
 class TestCachePolicy implements CachePolicy {

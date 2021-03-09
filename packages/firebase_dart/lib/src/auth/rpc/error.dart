@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:convert';
 
 import 'package:firebase_dart/src/auth/error.dart';

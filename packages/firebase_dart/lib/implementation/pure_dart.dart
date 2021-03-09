@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';

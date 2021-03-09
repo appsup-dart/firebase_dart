@@ -1,3 +1,5 @@
+// @dart=2.9
+
 part of firebase.protocol;
 
 /// Handles a non persistent connection to the server

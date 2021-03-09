@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 
 import 'auth.dart';
