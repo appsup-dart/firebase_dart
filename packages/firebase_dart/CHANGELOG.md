@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0-dev.23
+## 1.0.0-dev.24
 
 - Added support for firebase auth service
 - Added support for firebase storage service
