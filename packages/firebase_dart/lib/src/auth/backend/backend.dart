@@ -66,7 +66,11 @@ class BackendConnection {
 
   Future<CreateAuthUriResponse> createAuthUri(
       IdentitytoolkitRelyingpartyCreateAuthUriRequest request) async {
-    var user = await backend.getUserByEmail(request.identifier);
+    var email = request.identifier;
+    if (email == null) {
+      throw ArgumentError('Invalid request: missing identifier');
+    }
+    var user = await backend.getUserByEmail(email);
 
     return CreateAuthUriResponse()
       ..kind = 'identitytoolkit#CreateAuthUriResponse'
@@ -96,17 +100,28 @@ class BackendConnection {
       ..kind = 'identitytoolkit#DeleteAccountResponse';
   }
 
-  Future<BackendUser> _userFromIdToken(String idToken) {
+  Future<BackendUser> _userFromIdToken(String idToken) async {
     var jwt = JsonWebToken.unverified(idToken); // TODO verify
     var uid = jwt.claims['uid'] ?? jwt.claims.subject;
-    return backend.getUserById(uid);
+    if (uid == null) {
+      throw ArgumentError('Invalid id token (${jwt.claims}): no subject');
+    }
+    var user = await backend.getUserById(uid);
+    if (user == null) {
+      throw FirebaseAuthException.userDeleted();
+    }
+    return user;
   }
 
   Future<GetOobConfirmationCodeResponse> getOobConfirmationCode(
       Relyingparty request) async {
-    var user = (request.idToken != null)
-        ? await _userFromIdToken(request.idToken)
-        : await backend.getUserByEmail(request.email);
+    var idToken = request.idToken;
+    var email = request.email;
+    var user = idToken != null
+        ? await _userFromIdToken(idToken)
+        : email != null
+            ? await backend.getUserByEmail(email)
+            : throw ArgumentError('Invalid request: missing idToken or email');
     if (user == null) {
       throw FirebaseAuthException.userDeleted();
     }
@@ -193,8 +208,15 @@ class BackendConnection {
   Future<IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse>
       verifyPhoneNumber(
           IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest request) async {
-    var user =
-        await backend.verifyPhoneNumber(request.sessionInfo, request.code);
+    var sessionInfo = request.sessionInfo;
+    if (sessionInfo == null) {
+      throw ArgumentError('Invalid request: missing sessionInfo');
+    }
+    var code = request.code;
+    if (code == null) {
+      throw ArgumentError('Invalid request: missing code');
+    }
+    var user = await backend.verifyPhoneNumber(sessionInfo, code);
 
     return IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse()
       ..localId = user.localId
@@ -310,12 +332,11 @@ abstract class BaseBackend extends Backend {
       {@required String email, @required String password}) async {
     var uid = _generateRandomString(24);
     var now = (clock.now().millisecondsSinceEpoch ~/ 1000).toString();
-    return storeUser(BackendUser()
+    return storeUser(BackendUser(uid)
       ..createdAt = now
       ..lastLoginAt = now
       ..email = email
       ..rawPassword = password
-      ..localId = uid
       ..providerUserInfo = [
         if (password != null)
           UserInfoProviderUserInfo()
@@ -351,7 +372,7 @@ abstract class BaseBackend extends Backend {
     var store = JsonWebKeyStore()..addKey(tokenSigningKey);
     var jws = JsonWebSignature.fromCompactSerialization(token);
     var payload = await jws.getPayload(store);
-    return payload.jsonContent;
+    return payload.jsonContent /*!*/;
   }
 
   static final _random = Random(DateTime.now().millisecondsSinceEpoch);
@@ -380,4 +401,11 @@ abstract class BaseBackend extends Backend {
   }
 }
 
-class BackendUser extends UserInfo {}
+class BackendUser extends UserInfo {
+  BackendUser(String localId) {
+    this.localId = localId;
+  }
+
+  @override
+  String get localId => super.localId /*!*/;
+}

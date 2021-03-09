@@ -365,8 +365,7 @@ class Tester {
 
     var backend = FirebaseTesting.getBackend(app.options);
 
-    await backend.authBackend.storeUser(BackendUser()
-      ..localId = 'user1'
+    await backend.authBackend.storeUser(BackendUser('user1')
       ..createdAt = clock.now().millisecondsSinceEpoch.toString()
       ..lastLoginAt = clock.now().millisecondsSinceEpoch.toString()
       ..email = 'user@example.com'

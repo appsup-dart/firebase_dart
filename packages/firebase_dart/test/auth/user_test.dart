@@ -134,7 +134,7 @@ void main() async {
       var password = 'password';
 
       setUp(() {
-        tester.backend.storeUser(BackendUser()
+        tester.backend.storeUser(BackendUser('user2')
           ..email = email
           ..rawPassword = password
           ..phoneNumber = '+16505550101'
