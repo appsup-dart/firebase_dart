@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'package:meta/meta.dart';
 
@@ -25,7 +25,7 @@ class FirebaseException implements Exception {
   /// }
   /// ```
   FirebaseException(
-      {@required this.plugin,
+      {required this.plugin,
       this.message,
       this.code = 'unknown',
       this.stackTrace});
@@ -37,7 +37,7 @@ class FirebaseException implements Exception {
   final String plugin;
 
   /// The long form message of the exception.
-  final String message;
+  final String? message;
 
   /// The optional code to accommodate the message.
   ///
@@ -48,7 +48,7 @@ class FirebaseException implements Exception {
 
   /// The stack trace which provides information to the user about the call
   /// sequence that triggered an exception
-  final StackTrace stackTrace;
+  final StackTrace? stackTrace;
 
   @override
   bool operator ==(dynamic other) {
