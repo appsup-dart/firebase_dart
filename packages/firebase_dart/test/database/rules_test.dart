@@ -1,6 +1,5 @@
 import 'package:firebase_dart/src/database/impl/backend_connection/rules.dart';
 import 'package:firebase_dart/src/database/impl/memory_backend.dart';
-import 'package:openid_client/openid_client.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -15,7 +14,7 @@ void main() {
           'persons': {'.read': 'false'}
         });
 
-        await testRead(tree: tree, root: root, auth: null, paths: {
+        testRead(tree: tree, root: root, auth: null, paths: {
           '/': true,
           '/persons': true,
           '/persons/jane-doe': true,
@@ -26,7 +25,7 @@ void main() {
           'persons': {'.read': 'true'}
         });
 
-        await testRead(tree: tree, root: root, auth: null, paths: {
+        testRead(tree: tree, root: root, auth: null, paths: {
           '/': false,
           '/persons': true,
           '/persons/jane-doe': true,
@@ -45,7 +44,7 @@ void main() {
           }
         });
 
-        await testRead(tree: tree, root: root, auth: null, paths: {
+        testRead(tree: tree, root: root, auth: null, paths: {
           '/': false,
           '/persons': false,
           '/persons/jane-doe': false,
@@ -58,7 +57,7 @@ void main() {
           '.read': 'auth!=null',
         });
 
-        await testRead(
+        testRead(
             tree: tree,
             root: root,
             auth: Auth(provider: 'password', uid: 'me', token: {}),
@@ -68,7 +67,7 @@ void main() {
               '/persons/jane-doe': true,
             });
 
-        await testRead(tree: tree, root: root, auth: null, paths: {
+        testRead(tree: tree, root: root, auth: null, paths: {
           '/': false,
           '/persons': false,
           '/persons/jane-doe': false,

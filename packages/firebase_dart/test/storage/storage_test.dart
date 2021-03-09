@@ -174,7 +174,8 @@ FirebaseOptions getOptions(
       apiKey: apiKey,
       projectId: projectId,
       messagingSenderId: 'ignore',
-      storageBucket: storageBucket);
+      storageBucket: storageBucket,
+      authDomain: '$projectId.firebaseapp.com');
 }
 
 class Tester {

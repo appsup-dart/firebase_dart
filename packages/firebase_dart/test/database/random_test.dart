@@ -13,7 +13,7 @@ void main() async {
 
   hierarchicalLoggingEnabled = true;
   RandomSyncTreeTester.logger
-//    ..level = Level.ALL
+    ..level = Level.INFO
     ..onRecord.listen(print);
 
   group('Random synctree test', () {

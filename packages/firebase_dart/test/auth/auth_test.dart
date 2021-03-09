@@ -14,7 +14,6 @@ import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:firebase_dart/src/database/impl/memory_backend.dart'
     as database;
-import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 import 'jwt_util.dart';
@@ -316,7 +315,7 @@ void main() async {
         var app =
             await Firebase.initializeApp(options: getOptions(), name: 'app1');
         var auth = FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
-        await auth.currentUser;
+        auth.currentUser;
 
         await app.delete();
         app = await Firebase.initializeApp(options: getOptions(), name: 'app1');

@@ -16,7 +16,7 @@ class ResourceClient {
   ResourceClient(this.location, this.httpClient);
 
   Uri _makeUrl(String urlPart) {
-    return Uri.parse('https://${defaultHost}/v0${urlPart}');
+    return Uri.parse('https://$defaultHost/v0$urlPart');
   }
 
   Uri get url => _makeUrl(location.fullServerUrl());

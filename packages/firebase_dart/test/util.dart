@@ -8,5 +8,6 @@ FirebaseOptions getOptions(
       appId: appId,
       apiKey: apiKey,
       projectId: projectId,
-      messagingSenderId: 'ignore');
+      messagingSenderId: 'ignore',
+      authDomain: '$projectId.firebaseapp.com');
 }

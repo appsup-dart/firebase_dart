@@ -1,9 +1,6 @@
 import 'dart:async';
-import 'dart:isolate';
 
-import 'package:async/async.dart';
 import 'package:firebase_dart/core.dart';
-import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:rxdart/rxdart.dart';

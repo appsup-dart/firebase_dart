@@ -139,7 +139,7 @@ class Repo {
   Future<void> close() async {
     await _authStateChangesSubscription.cancel();
     await _connection.close();
-    await _syncTree.destroy();
+    _syncTree.destroy();
     _unlistenTimers.forEach((v) => v.cancel());
     _repos.removeWhere((key, value) => value == this);
   }
@@ -452,15 +452,15 @@ class PushIdGenerator {
   static const String pushChars =
       '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
   int lastPushTime = 0;
-  final List lastRandChars = List(64);
-  final Random random = Random();
+  final lastRandChars = List.filled(64, 0);
+  final random = Random();
 
   String next(DateTime timestamp) {
     var now = timestamp.millisecondsSinceEpoch;
 
     var duplicateTime = now == lastPushTime;
     lastPushTime = now;
-    var timeStampChars = List(8);
+    var timeStampChars = List.filled(8, '');
     for (var i = 7; i >= 0; i--) {
       timeStampChars[i] = pushChars[now % 64];
       now = now ~/ 64;

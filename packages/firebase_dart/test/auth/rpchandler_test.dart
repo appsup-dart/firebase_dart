@@ -92,7 +92,7 @@ class Tester {
       var e = await (action ?? this.action)()
           .then<dynamic>((v) => v)
           .catchError((e) => e);
-      await expect(e, expectedError);
+      expect(e, expectedError);
     }
   }
 
@@ -548,6 +548,7 @@ void main() {
           // Simulate non http or https current URL.
           platform = Platform.web(
               currentUrl: 'chrome-extension://234567890/index.html',
+              isOnline: true,
               isMobile: true);
           initPlatform(platform);
           await tester.shouldSucceed(
@@ -2061,15 +2062,6 @@ void main() {
 
       group('sendSignInLinkToEmail', () {
         var userEmail = 'user@example.com';
-        var additionalRequestData = {
-          'continueUrl': 'https://www.example.com/?state=abc',
-          'iOSBundleId': 'com.example.ios',
-          'androidPackageName': 'com.example.android',
-          'androidInstallApp': true,
-          'androidMinimumVersion': '12',
-          'canHandleCodeInApp': true,
-          'dynamicLinkDomain': 'example.page.link'
-        };
         var tester = Tester(
           path: 'getOobConfirmationCode',
           expectedBody: {
@@ -2405,7 +2397,6 @@ void main() {
           );
         });
         test('checkActionCode: caught server error', () async {
-          var code = 'REVOKE_EMAIL_OOB_CODE';
           await tester.shouldFailWithServerErrors(
             errorMap: {
               'EXPIRED_OOB_CODE': FirebaseAuthException.expiredOobCode(),

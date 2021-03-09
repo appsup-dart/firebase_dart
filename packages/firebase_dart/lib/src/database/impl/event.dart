@@ -3,7 +3,6 @@
 
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
 
-import 'events/child.dart';
 import 'operations/tree.dart';
 
 abstract class Event {

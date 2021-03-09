@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:clock/clock.dart';
-import 'package:collection/collection.dart';
 import 'package:firebase_dart/src/database/impl/persistence/engine.dart';
 import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
 import 'package:firebase_dart/src/database/impl/persistence/prune_forest.dart';

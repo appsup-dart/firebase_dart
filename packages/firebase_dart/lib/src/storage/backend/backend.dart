@@ -26,6 +26,9 @@ class BackendConnection {
           return http.Response('Not found', 404);
         }
         return http.Response(json.encode(metadata), 200);
+      default:
+        throw UnimplementedError(
+            '${request.method} requests to ${request.url}');
     }
   }
 }

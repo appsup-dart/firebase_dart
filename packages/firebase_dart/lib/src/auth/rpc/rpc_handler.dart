@@ -924,13 +924,7 @@ class RpcHandler {
       }
     }
 
-    // Note this is not actually returned by the backend. It is introduced in
-    // rpcHandler.
-    var rawNonce = response && response['nonce'];
-    // Google Id Token returned when no additional scopes provided.
-    var idToken = response && response['oauthIdToken'];
-    // Pending token for SAML and OAuth/OIDC providers.
-    var pendingToken = response && response['pendingToken'];
+    throw UnsupportedError('Cannot handle response $response');
   }
 
   /// Returns the developer facing error corresponding to the server code provided

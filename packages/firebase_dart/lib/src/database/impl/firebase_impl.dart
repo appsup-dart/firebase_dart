@@ -28,19 +28,19 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
   @override
   Future<void> goOnline() async {
     var repo = Repo(this);
-    await repo.resume();
+    repo.resume();
   }
 
   @override
   Future<void> goOffline() async {
     var repo = Repo(this);
-    await repo.interrupt();
+    repo.interrupt();
   }
 
   @override
   Future<void> purgeOutstandingWrites() async {
     var repo = Repo(this);
-    await repo.purgeOutstandingWrites();
+    repo.purgeOutstandingWrites();
   }
 
   PersistenceManager _persistenceManager;

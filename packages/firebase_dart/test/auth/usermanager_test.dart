@@ -96,7 +96,7 @@ void main() async {
     test('add/remove current user change listener', () async {
       var userManager = UserManager(auth, storage);
 
-      var key1 = 'firebase:FirebaseUser:${appId}';
+      var key1 = 'firebase:FirebaseUser:$appId';
       var key2 = 'firebase:FirebaseUser:other_app_id';
 
       // Save existing Auth users for appId1 and appId2.

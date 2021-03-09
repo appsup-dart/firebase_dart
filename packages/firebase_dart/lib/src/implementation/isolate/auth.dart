@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:isolate';
 
-import 'package:async/async.dart';
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';

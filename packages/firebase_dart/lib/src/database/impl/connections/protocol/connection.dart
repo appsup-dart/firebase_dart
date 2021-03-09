@@ -40,7 +40,7 @@ class Connection {
     });
 
     _outputSink.stream.asyncMap((v) => v).listen((v) {
-      transport.channel.sink..add(v);
+      transport.channel.sink.add(v);
     }, onDone: () {
       transport.close();
     });

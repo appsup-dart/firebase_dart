@@ -9,7 +9,7 @@ class FirebaseCoreException extends FirebaseException {
       : this(
             code: 'no-app',
             message:
-                "No Firebase App '${appName}' has been created - call Firebase.initializeApp()");
+                "No Firebase App '$appName' has been created - call Firebase.initializeApp()");
 
   /// Thrown when an app is being created which already exists.
   FirebaseCoreException.duplicateApp(String appName)

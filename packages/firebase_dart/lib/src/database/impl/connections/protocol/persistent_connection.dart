@@ -238,7 +238,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Future<Null> close() async {
-    await interrupt('close');
+    interrupt('close');
     await _onDataOperation.close();
     await _onAuth.close();
     await _onConnect.close();
@@ -459,7 +459,7 @@ class PersistentConnectionImpl extends PersistentConnection
     if (_transportIsReady) {
       _connection.sendRequest(request);
     }
-    return (await request).response.then<MessageBody>((r) {
+    return request.response.then<MessageBody>((r) {
       _outstandingRequests.remove(request);
       if (r.message.body.status == MessageBody.statusOk) {
         return r.message.body;
@@ -553,6 +553,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   void _setAuthData(Map<String, dynamic> data) {
     _authData = data;
+    if (_onAuth.isClosed) return;
     _onAuth.add(_authData);
   }
 
@@ -605,6 +606,6 @@ class QueryDef {
   int get hashCode => quiver.hash2(path, query);
 
   @override
-  operator ==(other) =>
+  bool operator ==(other) =>
       other is QueryDef && other.path == path && other.query == query;
 }

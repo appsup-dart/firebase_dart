@@ -8,7 +8,8 @@ import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/storage.dart';
 
 void main() async {
-  PureDartFirebase.setup();
+  PureDartFirebase.setup(
+      platform: Platform.linux(isOnline: true), storagePath: '');
 
   var app = await Firebase.initializeApp(
       options: FirebaseOptions.fromMap(json

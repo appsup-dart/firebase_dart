@@ -5,7 +5,6 @@ import 'package:firebase_dart/src/database/impl/events/cancel.dart';
 import 'package:firebase_dart/src/database/impl/events/value.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
-import 'package:jose/jose.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 

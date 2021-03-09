@@ -13,7 +13,6 @@ import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/database/impl/memory_backend.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
-import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 import '../secrets.dart'
@@ -1433,7 +1432,8 @@ void testsWith(Map<String, dynamic> secrets) {
                 appId: 'appid',
                 messagingSenderId: 'messagingSenderId',
                 projectId: 'projectId',
-                databaseURL: null));
+                databaseURL: null,
+                authDomain: 'projectId.firebaseapp.com'));
       });
 
       tearDown(() async {
