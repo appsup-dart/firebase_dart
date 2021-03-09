@@ -59,8 +59,8 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
     return FirebaseService.findService<FirebaseStorageImpl>(
             app,
             (s) =>
-                s.storageBucket == storageBucket ??
-                app.options.storageBucket) ??
+                s.storageBucket ==
+                (storageBucket ?? app.options.storageBucket)) ??
         FirebaseStorageImpl(app, storageBucket, httpClient: _httpClient);
   }
 }
