@@ -30,7 +30,7 @@ class FirebaseDartFlutter {
       Hive.init(path);
     }
 
-    PureDartFirebase.setup(
+    FirebaseDart.setup(
         storagePath: path,
         isolated: isolated,
         launchUrl: (url) async {
@@ -84,8 +84,6 @@ class FirebaseDartFlutter {
           }
           return null;
         },
-        onError: (error, stackTrace) =>
-            Zone.current.handleUncaughtError(error, stackTrace),
         platform: await _getPlatform());
   }
 
