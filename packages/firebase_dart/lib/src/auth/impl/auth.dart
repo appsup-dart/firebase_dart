@@ -284,8 +284,10 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     if (currentUser == null) {
       return;
     }
-    await PureDartFirebaseImplementation.installation
-        .oauthSignOut(currentUser.providerId);
+    if (PureDartFirebaseImplementation.installation.oauthSignOut != null) {
+      await PureDartFirebaseImplementation.installation
+          .oauthSignOut(currentUser.providerId);
+    }
     // Detach all event listeners.
     currentUser.destroy();
     // Set current user to null.
@@ -440,6 +442,14 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
                   '...', // seems encryption is not used, but public key needs to be present to assemble the correct redirect url
             },
             if (platform is IOsPlatform) ...{
+              'sessionId': sessionId,
+              'ibi': platform.appId,
+              if (app.options.iosClientId != null)
+                'clientId': app.options.iosClientId
+              else
+                'appId': app.options.appId,
+            },
+            if (platform is MacOsPlatform) ...{
               'sessionId': sessionId,
               'ibi': platform.appId,
               if (app.options.iosClientId != null)

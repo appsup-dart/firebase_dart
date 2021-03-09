@@ -253,7 +253,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  User get currentUser => _subject.value;
+  User get currentUser => _subject.valueWrapper.value;
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String email) async {

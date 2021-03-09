@@ -83,11 +83,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   UnmodifiableFilteredMap<Name, TreeStructuredData> get children =>
       super.children;
 
-  TreeStructuredData view(
-          {Pair<Comparable, Comparable> start,
-          Pair<Comparable, Comparable> end,
-          int limit,
-          bool reversed}) =>
+  TreeStructuredData view({Pair start, Pair end, int limit, bool reversed}) =>
       TreeStructuredData._(
           value,
           children.filteredMapView(
@@ -211,39 +207,30 @@ class UnmodifiableFilteredMap<K extends Comparable, V>
 
   @override
   FilteredMap<K, V> filteredMap(
-      {Pair<K, Comparable> start,
-      Pair<K, Comparable> end,
-      int limit,
-      bool reversed = false}) {
+      {Pair start, Pair end, int limit, bool reversed = false}) {
     return _map.filteredMap(
         start: start, end: end, limit: limit, reversed: reversed);
   }
 
   @override
   FilteredMapView<K, V> filteredMapView(
-      {Pair<Comparable, Comparable> start,
-      Pair<Comparable, Comparable> end,
-      int limit,
-      bool reversed = false}) {
+      {Pair start, Pair end, int limit, bool reversed = false}) {
     return _map.filteredMapView(
         start: start, end: end, limit: limit, reversed: reversed);
   }
 
   @override
-  K firstKeyAfter(K key) => _map.firstKeyAfter(key);
+  K firstKeyAfter(K key, {K Function() orElse}) => _map.firstKeyAfter(key);
 
   @override
-  K lastKeyBefore(K key) => _map.lastKeyBefore(key);
+  K lastKeyBefore(K key, {K Function() orElse}) => _map.lastKeyBefore(key);
 
   @override
   Ordering get ordering => _map.ordering;
 
   @override
   Iterable<K> subkeys(
-      {Pair<Comparable, Comparable> start,
-      Pair<Comparable, Comparable> end,
-      int limit,
-      bool reversed = false}) {
+      {Pair start, Pair end, int limit, bool reversed = false}) {
     return _map.subkeys(
         start: start, end: end, limit: limit, reversed: reversed);
   }

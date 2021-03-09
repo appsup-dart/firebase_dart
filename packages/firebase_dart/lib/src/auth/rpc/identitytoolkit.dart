@@ -252,9 +252,8 @@ class IdentitytoolkitRelyingpartyVerifyCustomTokenRequest
 }
 
 class _MyApiRequester extends commons.ApiRequester {
-  _MyApiRequester(
-      http.Client httpClient, String rootUrl, String basePath, String userAgent)
-      : super(httpClient, rootUrl, basePath, userAgent);
+  _MyApiRequester(http.Client httpClient, String rootUrl, String basePath)
+      : super(httpClient, rootUrl, basePath, {});
 
   final Duration _shortTimeout = Duration(seconds: 30);
   final Duration _longTimeout = Duration(seconds: 60);
@@ -288,7 +287,7 @@ class _MyApiRequester extends commons.ApiRequester {
       commons.Media uploadMedia,
       commons.UploadOptions uploadOptions,
       commons.DownloadOptions downloadOptions =
-          client_requests.DownloadOptions.Metadata}) async {
+          client_requests.DownloadOptions.metadata}) async {
     try {
       var fields = queryParams.remove('fields') ?? [];
 
@@ -341,7 +340,7 @@ class _Client extends http.BaseClient {
   }
 }
 
-class IdentitytoolkitApi implements it.IdentitytoolkitApi {
+class IdentitytoolkitApi implements it.IdentityToolkitApi {
   final commons.ApiRequester _requester;
   final _Client _client;
 
@@ -351,14 +350,12 @@ class IdentitytoolkitApi implements it.IdentitytoolkitApi {
   }
 
   @override
-  RelyingpartyResourceApi get relyingparty =>
-      RelyingpartyResourceApi(_requester);
+  RelyingpartyResource get relyingparty => RelyingpartyResource(_requester);
 
   IdentitytoolkitApi._(this._client,
       {String rootUrl = 'https://www.googleapis.com/',
       String servicePath = 'identitytoolkit/v3/relyingparty/'})
-      : _requester =
-            _MyApiRequester(_client, rootUrl, servicePath, it.USER_AGENT);
+      : _requester = _MyApiRequester(_client, rootUrl, servicePath);
 
   IdentitytoolkitApi(http.Client client,
       {String rootUrl = 'https://www.googleapis.com/',
@@ -366,10 +363,10 @@ class IdentitytoolkitApi implements it.IdentitytoolkitApi {
       : this._(_Client(client), rootUrl: rootUrl, servicePath: servicePath);
 }
 
-class RelyingpartyResourceApi extends it.RelyingpartyResourceApi {
+class RelyingpartyResource extends it.RelyingpartyResource {
   final commons.ApiRequester _requester;
 
-  RelyingpartyResourceApi(this._requester) : super(_requester);
+  RelyingpartyResource(this._requester) : super(_requester);
 
   @override
   Future<VerifyPasswordResponse> verifyPassword(
@@ -436,6 +433,6 @@ class RelyingpartyResourceApi extends it.RelyingpartyResourceApi {
         queryParams: {
           if ($fields != null) 'fields': [$fields]
         },
-        downloadOptions: commons.DownloadOptions.Metadata);
+        downloadOptions: commons.DownloadOptions.metadata);
   }
 }

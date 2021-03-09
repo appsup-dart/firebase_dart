@@ -1256,6 +1256,7 @@ void testsWith(Map<String, dynamic> secrets) {
       await wait(400);
 
       await iref.set('hello world');
+      await wait(400);
 
       expect(await ref.get(), 'hello world');
 
@@ -1405,12 +1406,12 @@ void testsWith(Map<String, dynamic> secrets) {
       ref.onChildRemoved
           .map((e) => 'remove ${e.snapshot.value}')
           .listen(events.add);
+      await ref.get();
       await Future.wait([
         ref.push().set('test-value-1'),
         ref.push().set('test-value-2'),
         ref.push().set('test-value-3'),
         ref.push().set('test-value-4'),
-        wait(100),
       ]);
 
       expect(events, [

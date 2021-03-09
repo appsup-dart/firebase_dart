@@ -21,7 +21,7 @@ void main() async {
         return Response('I am the server response!!!!', 234,
             headers: {'ResponseHeader1': 'ResponseValue1'});
       };
-      var response = await httpClient.get('http://my-url.com/',
+      var response = await httpClient.get(Uri.parse('http://my-url.com/'),
           headers: {'RequestHeader1': 'RequestValue1'});
 
       expect(response.statusCode, 234);
@@ -36,7 +36,7 @@ void main() async {
         return Response('I am the server response!!!!', 234,
             headers: {'ResponseHeader1': 'ResponseValue1'});
       };
-      var response = await httpClient.get('http://my-url.com/',
+      var response = await httpClient.get(Uri.parse('http://my-url.com/'),
           headers: {'RequestHeader1': 'RequestValue1'});
 
       expect(response.statusCode, 234);

@@ -22,7 +22,7 @@ class RpcHandler {
   /// The tenant ID.
   String tenantId;
 
-  RelyingpartyResourceApi get relyingparty => identitytoolkitApi.relyingparty;
+  RelyingpartyResource get relyingparty => identitytoolkitApi.relyingparty;
 
   RpcHandler(this.apiKey, {http.Client httpClient})
       : httpClient = ProxyClient({

@@ -153,15 +153,15 @@ extension QueryFilterCodec on QueryFilter {
     var limit = json[limitTo];
     var isViewFromRight = json[viewFrom] == viewFromRight;
 
-    var start = Pair<Name, TreeStructuredData>.min();
+    var start = Pair.min();
     if (json.containsKey(indexStartValue) || json.containsKey(indexStartName)) {
       if (ordering is KeyOrdering) {
-        start = Pair<Name, TreeStructuredData>.min(
+        start = Pair.min(
           Name(json[indexStartValue]),
           TreeStructuredData.fromJson(null),
         );
       } else {
-        start = Pair<Name, TreeStructuredData>.min(
+        start = Pair.min(
             json.containsKey(indexStartName)
                 ? Name(json[indexStartName])
                 : json.containsKey(indexStartValue)
@@ -173,15 +173,15 @@ extension QueryFilterCodec on QueryFilter {
       }
     }
 
-    var end = Pair<Name, TreeStructuredData>.max();
+    var end = Pair.max();
     if (json.containsKey(indexEndValue) || json.containsKey(indexEndName)) {
       if (ordering is KeyOrdering) {
-        end = Pair<Name, TreeStructuredData>.max(
+        end = Pair.max(
           Name(json[indexEndValue]),
           TreeStructuredData.fromJson(null),
         );
       } else {
-        end = Pair<Name, TreeStructuredData>.max(
+        end = Pair.max(
             json.containsKey(indexEndName)
                 ? Name(json[indexEndName])
                 : json.containsKey(indexEndValue)

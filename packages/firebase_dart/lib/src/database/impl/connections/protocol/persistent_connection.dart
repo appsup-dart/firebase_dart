@@ -20,8 +20,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   final List<Request> _listens = [];
 
-  final quiver.BiMap<int, Pair<String, QueryFilter>> _tagToQuery =
-      quiver.BiMap();
+  final quiver.BiMap<int, QueryDef> _tagToQuery = quiver.BiMap();
 
   final List<Request> _outstandingRequests = [];
 
@@ -89,7 +88,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   void onDataMessage(DataMessage message) {
-    var query = message.body.query ?? _tagToQuery[message.body.tag]?.value;
+    var query = message.body.query ?? _tagToQuery[message.body.tag]?.query;
     if (query == null && message.body.tag != null) {
       // not listening any more.
       return;
@@ -166,7 +165,7 @@ class PersistentConnectionImpl extends PersistentConnection
   @override
   Future<Iterable<String>> listen(String path,
       {QueryFilter query, String hash}) async {
-    var def = Pair(path, query);
+    var def = QueryDef(path, query);
     var tag = _nextTag++;
     _tagToQuery[tag] = def;
 
@@ -180,8 +179,8 @@ class PersistentConnectionImpl extends PersistentConnection
       _tagToQuery.remove(tag);
       _removeListen(path, query);
 
-      var event = OperationEvent(OperationEventType.listenRevoked,
-          Name.parsePath(path), null, query);
+      var event = OperationEvent(
+          OperationEventType.listenRevoked, Name.parsePath(path), null, query);
       if (!_onDataOperation.isClosed) _onDataOperation.add(event);
 
       return [e.code];
@@ -190,7 +189,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Future<Null> unlisten(String path, {QueryFilter query}) async {
-    var def = Pair(path, query);
+    var def = QueryDef(path, query);
     var tag = _tagToQuery.inverse.remove(def);
     var r = Request.unlisten(path, query: query, tag: tag);
     _removeListen(path, query);
@@ -594,4 +593,18 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Map<String, dynamic> get authData => _authData;
+}
+
+class QueryDef {
+  final QueryFilter query;
+  final String path;
+
+  QueryDef(this.path, this.query);
+
+  @override
+  int get hashCode => quiver.hash2(path, query);
+
+  @override
+  operator ==(other) =>
+      other is QueryDef && other.path == path && other.query == query;
 }
