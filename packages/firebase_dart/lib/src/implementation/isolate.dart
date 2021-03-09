@@ -18,7 +18,6 @@ import 'isolate/util.dart';
 class IsolateFirebaseImplementation extends FirebaseImplementation {
   final String storagePath;
   final Platform platform;
-  final void Function(String errorMessage, StackTrace stackTrace) onError;
 
   final Function(Uri url) launchUrl;
 
@@ -33,8 +32,7 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
   Future<IsolateCommander> get commander => _commander ??= _setup();
 
   IsolateFirebaseImplementation(this.storagePath,
-      {this.onError,
-      @required this.platform,
+      {@required this.platform,
       this.launchUrl,
       this.getAuthResult,
       this.oauthSignIn,

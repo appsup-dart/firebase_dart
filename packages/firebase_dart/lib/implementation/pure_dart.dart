@@ -13,14 +13,12 @@ class PureDartFirebase {
       {@required String storagePath,
       @required Platform platform,
       bool isolated = false,
-      void Function(String errorMessage, StackTrace stackTrace) onError,
       Function(Uri url) launchUrl,
       Future<Map<String, dynamic>> Function() getAuthResult,
       Future<OAuthCredential> Function(OAuthProvider provider) oauthSignIn,
       Future<void> Function(String providerId) oauthSignOut}) {
     if (isolated) {
       FirebaseImplementation.install(IsolateFirebaseImplementation(storagePath,
-          onError: onError,
           platform: platform,
           launchUrl: launchUrl,
           getAuthResult: getAuthResult,
