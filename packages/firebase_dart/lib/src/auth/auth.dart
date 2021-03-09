@@ -35,11 +35,11 @@ abstract class FirebaseAuth {
 
   /// Notifies about changes to the user's sign-in state (such as sign-in or
   /// sign-out).
-  Stream<User> authStateChanges();
+  Stream<User /*?*/ > authStateChanges();
 
   /// Notifies about changes to the user's sign-in state (such as sign-in or
   /// sign-out) and also token refresh events.
-  Stream<User> idTokenChanges();
+  Stream<User /*?*/ > idTokenChanges();
 
   /// Notifies about changes to any user updates.
   ///
@@ -49,7 +49,7 @@ abstract class FirebaseAuth {
   /// this Stream is to for listening to realtime updates to the user without
   /// manually having to call [reload] and then rehydrating changes to your
   /// application.
-  Stream<User> userChanges();
+  Stream<User /*?*/ > userChanges();
 
   /// Applies a verification code sent to the user by email or other out-of-band
   /// mechanism.
@@ -445,14 +445,14 @@ abstract class FirebaseAuth {
 abstract class UserCredential {
   /// Returns a [User] containing additional information and user specific
   /// methods.
-  User get user;
+  User /*?*/ get user;
 
   /// Returns additional information about the user, such as whether they are a
   /// newly created one.
-  AdditionalUserInfo get additionalUserInfo;
+  AdditionalUserInfo /*?*/ get additionalUserInfo;
 
   /// The users [AuthCredential].
-  AuthCredential get credential;
+  AuthCredential /*?*/ get credential;
 
   @override
   String toString() {
@@ -461,12 +461,13 @@ abstract class UserCredential {
 }
 
 /// Typedef for handling automatic phone number timeout resolution.
-typedef PhoneCodeAutoRetrievalTimeout = void Function(String verificationId);
+typedef PhoneCodeAutoRetrievalTimeout = void Function(
+    String /*!*/ verificationId);
 
 /// Typedef for handling when Firebase sends a SMS code to the provided phone
 /// number.
 typedef PhoneCodeSent = void Function(
-    String verificationId, int forceResendingToken);
+    String /*!*/ verificationId, int /*?*/ forceResendingToken);
 
 /// Typedef for a automatic phone number resolution.
 ///
