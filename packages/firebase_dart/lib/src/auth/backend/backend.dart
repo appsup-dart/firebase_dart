@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:convert';
 import 'dart:math';
 
@@ -9,7 +7,6 @@ import 'package:firebase_dart/src/auth/rpc/error.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
-import 'package:meta/meta.dart';
 
 class BackendConnection {
   final Backend backend;
@@ -18,7 +15,7 @@ class BackendConnection {
 
   Future<GetAccountInfoResponse> getAccountInfo(
       IdentitytoolkitRelyingpartyGetAccountInfoRequest request) async {
-    var user = await _userFromIdToken(request.idToken);
+    var user = await _userFromIdToken(request.idToken!);
     return GetAccountInfoResponse()
       ..kind = 'identitytoolkit#GetAccountInfoResponse'
       ..users = [user];
@@ -46,7 +43,11 @@ class BackendConnection {
 
   Future<VerifyPasswordResponse> verifyPassword(
       IdentitytoolkitRelyingpartyVerifyPasswordRequest request) async {
-    var user = await backend.getUserByEmail(request.email);
+    var email = request.email;
+    if (email == null) {
+      throw ArgumentError('Invalid request: missing email');
+    }
+    var user = await backend.getUserByEmail(email);
 
     if (user.rawPassword == request.password) {
       var refreshToken = await backend.generateRefreshToken(user.localId);
@@ -74,13 +75,13 @@ class BackendConnection {
 
     return CreateAuthUriResponse()
       ..kind = 'identitytoolkit#CreateAuthUriResponse'
-      ..allProviders = [for (var p in user.providerUserInfo) p.providerId]
-      ..signinMethods = [for (var p in user.providerUserInfo) p.providerId];
+      ..allProviders = [for (var p in user.providerUserInfo!) p.providerId!]
+      ..signinMethods = [for (var p in user.providerUserInfo!) p.providerId!];
   }
 
   Future<VerifyCustomTokenResponse> verifyCustomToken(
       IdentitytoolkitRelyingpartyVerifyCustomTokenRequest request) async {
-    var user = await _userFromIdToken(request.token);
+    var user = await _userFromIdToken(request.token!);
 
     var refreshToken = await backend.generateRefreshToken(user.localId);
     return VerifyCustomTokenResponse()
@@ -94,7 +95,7 @@ class BackendConnection {
 
   Future<DeleteAccountResponse> deleteAccount(
       IdentitytoolkitRelyingpartyDeleteAccountRequest request) async {
-    var user = await _userFromIdToken(request.idToken);
+    var user = await _userFromIdToken(request.idToken!);
     await backend.deleteUser(user.localId);
     return DeleteAccountResponse()
       ..kind = 'identitytoolkit#DeleteAccountResponse';
@@ -107,9 +108,7 @@ class BackendConnection {
       throw ArgumentError('Invalid id token (${jwt.claims}): no subject');
     }
     var user = await backend.getUserById(uid);
-    if (user == null) {
-      throw FirebaseAuthException.userDeleted();
-    }
+
     return user;
   }
 
@@ -122,9 +121,6 @@ class BackendConnection {
         : email != null
             ? await backend.getUserByEmail(email)
             : throw ArgumentError('Invalid request: missing idToken or email');
-    if (user == null) {
-      throw FirebaseAuthException.userDeleted();
-    }
     return GetOobConfirmationCodeResponse()
       ..kind = 'identitytoolkit#GetOobConfirmationCodeResponse'
       ..email = user.email;
@@ -134,7 +130,7 @@ class BackendConnection {
       IdentitytoolkitRelyingpartyResetPasswordRequest request) async {
     BackendUser user;
     try {
-      user = await _userFromIdToken(request.oobCode);
+      user = await _userFromIdToken(request.oobCode!);
     } on ArgumentError {
       throw FirebaseAuthException.invalidOobCode();
     }
@@ -146,11 +142,11 @@ class BackendConnection {
 
   Future<SetAccountInfoResponse> setAccountInfo(
       IdentitytoolkitRelyingpartySetAccountInfoRequest request) async {
-    var user = await _userFromIdToken(request.idToken);
+    var user = await _userFromIdToken(request.idToken!);
     if (request.deleteProvider != null) {
-      user.providerUserInfo.removeWhere(
-          (element) => request.deleteProvider.contains(element.providerId));
-      if (request.deleteProvider.contains('phone')) {
+      user.providerUserInfo!.removeWhere(
+          (element) => request.deleteProvider!.contains(element.providerId));
+      if (request.deleteProvider!.contains('phone')) {
         user.phoneNumber = null;
       }
     }
@@ -161,7 +157,7 @@ class BackendConnection {
       user.photoUrl = request.photoUrl;
     }
     if (request.deleteAttribute != null) {
-      for (var a in request.deleteAttribute) {
+      for (var a in request.deleteAttribute!) {
         switch (a) {
           case 'displayName':
             user.displayName = null;
@@ -188,7 +184,7 @@ class BackendConnection {
               uid: user.localId, providerId: 'password')
           : null
       ..providerUserInfo = [
-        for (var u in user.providerUserInfo)
+        for (var u in user.providerUserInfo!)
           SetAccountInfoResponseProviderUserInfo()
             ..providerId = u.providerId
             ..photoUrl = u.photoUrl
@@ -200,7 +196,11 @@ class BackendConnection {
       sendVerificationCode(
           IdentitytoolkitRelyingpartySendVerificationCodeRequest
               request) async {
-    var token = await backend.sendVerificationCode(request.phoneNumber);
+    var phoneNumber = request.phoneNumber;
+    if (phoneNumber == null) {
+      throw ArgumentError('Invalid request: missing phoneNumber');
+    }
+    var token = await backend.sendVerificationCode(phoneNumber);
     return IdentitytoolkitRelyingpartySendVerificationCodeResponse()
       ..sessionInfo = token;
   }
@@ -300,14 +300,14 @@ abstract class Backend {
   Future<BackendUser> getUserByPhoneNumber(String phoneNumber);
 
   Future<BackendUser> createUser(
-      {@required String email, @required String password});
+      {required String? email, required String? password});
 
   Future<BackendUser> updateUser(BackendUser user);
 
   Future<void> deleteUser(String uid);
 
   Future<String> generateIdToken(
-      {@required String uid, @required String providerId});
+      {required String uid, required String providerId});
 
   Future<String> generateRefreshToken(String uid);
 
@@ -321,15 +321,15 @@ abstract class Backend {
 abstract class BaseBackend extends Backend {
   final JsonWebKey tokenSigningKey;
 
-  final String projectId;
+  final String? projectId;
 
-  BaseBackend({@required this.tokenSigningKey, @required this.projectId});
+  BaseBackend({required this.tokenSigningKey, required this.projectId});
 
   Future<BackendUser> storeUser(BackendUser user);
 
   @override
   Future<BackendUser> createUser(
-      {@required String email, @required String password}) async {
+      {required String? email, required String? password}) async {
     var uid = _generateRandomString(24);
     var now = (clock.now().millisecondsSinceEpoch ~/ 1000).toString();
     return storeUser(BackendUser(uid)
@@ -352,7 +352,7 @@ abstract class BaseBackend extends Backend {
 
   @override
   Future<String> generateIdToken(
-      {@required String uid, @required String providerId}) async {
+      {required String uid, required String providerId}) async {
     var builder = JsonWebSignatureBuilder()
       ..jsonContent = _jwtPayloadFor(uid, providerId)
       ..addRecipient(tokenSigningKey);
@@ -372,7 +372,7 @@ abstract class BaseBackend extends Backend {
     var store = JsonWebKeyStore()..addKey(tokenSigningKey);
     var jws = JsonWebSignature.fromCompactSerialization(token);
     var payload = await jws.getPayload(store);
-    return payload.jsonContent /*!*/;
+    return payload.jsonContent!;
   }
 
   static final _random = Random(DateTime.now().millisecondsSinceEpoch);
@@ -389,7 +389,7 @@ abstract class BaseBackend extends Backend {
     var now = clock.now().millisecondsSinceEpoch ~/ 1000;
     return {
       'iss': 'https://securetoken.google.com/$projectId',
-      if (providerId != null) 'provider_id': providerId,
+      'provider_id': providerId,
       'aud': '$projectId',
       'auth_time': now,
       'sub': uid,
@@ -407,5 +407,5 @@ class BackendUser extends UserInfo {
   }
 
   @override
-  String get localId => super.localId /*!*/;
+  String get localId => super.localId!;
 }

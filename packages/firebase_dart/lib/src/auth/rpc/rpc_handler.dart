@@ -1,17 +1,17 @@
-
-
 import 'dart:convert';
 
-import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/auth/providers/saml.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/util/proxy.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
-import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 
+import '../action_code.dart';
+import '../auth_credential.dart';
+import '../auth_provider.dart';
+import '../error.dart';
 import 'error.dart';
 import 'identitytoolkit.dart';
 
@@ -137,9 +137,6 @@ class RpcHandler {
   ///
   /// Returns a future that resolves with the ID token.
   Future<openid.Credential> verifyCustomToken(String token) async {
-    if (token == null) {
-      throw FirebaseAuthException.invalidCustomToken();
-    }
     var response = await relyingparty
         .verifyCustomToken(IdentitytoolkitRelyingpartyVerifyCustomTokenRequest()
           ..token = token
@@ -155,7 +152,7 @@ class RpcHandler {
   Future<openid.Credential> emailLinkSignIn(
       String email, String oobCode) async {
     _validateEmail(email);
-    if (oobCode == null || oobCode.isEmpty) {
+    if (oobCode.isEmpty) {
       throw FirebaseAuthException.internalError();
     }
     var response = await relyingparty
@@ -189,7 +186,8 @@ class RpcHandler {
   /// Creates an email/password account.
   ///
   /// Returns a future that resolves with the ID token.
-  Future<openid.Credential> createAccount(String email, String? password) async {
+  Future<openid.Credential> createAccount(
+      String email, String? password) async {
     _validateEmail(email);
     _validateStrongPassword(password);
     var response = await relyingparty
@@ -238,7 +236,9 @@ class RpcHandler {
   }
 
   Future<openid.Credential> _credentialFromIdToken(
-      {required String idToken, String? refreshToken, String? expiresIn}) async {
+      {required String idToken,
+      String? refreshToken,
+      String? expiresIn}) async {
     var client =
         await openid.Client.forIdToken(idToken, httpClient: httpClient);
     return client.createCredential(
@@ -535,9 +535,6 @@ class RpcHandler {
   /// Requests setAccountInfo endpoint for updateEmail operation.
   Future<SetAccountInfoResponse> updateEmail(
       String idToken, String newEmail) async {
-    if (idToken == null) {
-      throw FirebaseAuthException.internalError();
-    }
     _validateEmail(newEmail);
     var response = await relyingparty
         .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
@@ -550,9 +547,6 @@ class RpcHandler {
   /// Requests setAccountInfo endpoint for updatePassword operation.
   Future<SetAccountInfoResponse> updatePassword(
       String idToken, String newPassword) async {
-    if (idToken == null) {
-      throw FirebaseAuthException.internalError();
-    }
     _validateStrongPassword(newPassword);
     var response = await relyingparty
         .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
@@ -567,9 +561,6 @@ class RpcHandler {
   /// used to link an existing account to a email and password account.
   Future<SetAccountInfoResponse> updateEmailAndPassword(
       String idToken, String newEmail, String newPassword) async {
-    if (idToken == null) {
-      throw FirebaseAuthException.internalError();
-    }
     _validateEmail(newEmail);
     _validateStrongPassword(newPassword);
     var response = await relyingparty
@@ -586,10 +577,7 @@ class RpcHandler {
   /// with the ID token.
   Future<EmailLinkSigninResponse> emailLinkSignInForLinking(
       String idToken, String email, String oobCode) async {
-    if (idToken == null ||
-        idToken.isEmpty ||
-        oobCode == null ||
-        oobCode.isEmpty) {
+    if (idToken.isEmpty || oobCode.isEmpty) {
       throw FirebaseAuthException.internalError();
     }
     _validateEmail(email);
@@ -1005,7 +993,7 @@ class RpcHandler {
 
   /// Validates an action code.
   void _validateApplyActionCode(String oobCode) {
-    if (oobCode == null || oobCode.isEmpty) {
+    if (oobCode.isEmpty) {
       throw FirebaseAuthException.invalidOobCode();
     }
   }

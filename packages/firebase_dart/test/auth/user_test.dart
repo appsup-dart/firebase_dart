@@ -87,7 +87,8 @@ void main() async {
 
         expect(user.isDestroyed, isTrue);
 
-        expect(await tester.backend.getUserByEmail(email), isNull);
+        await expectLater(() => tester.backend.getUserByEmail(email),
+            throwsA(FirebaseAuthException.userDeleted()));
       });
     });
 
