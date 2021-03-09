@@ -7,8 +7,6 @@ import 'package:firebase_dart/src/implementation/isolate.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 
-export 'package:firebase_dart/src/auth/utils.dart' show Platform;
-
 import 'dart:io' as io;
 
 const bool _kIsWeb = identical(0, 0.0);

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/database.dart';
 import 'package:firebase_dart/src/core.dart';
