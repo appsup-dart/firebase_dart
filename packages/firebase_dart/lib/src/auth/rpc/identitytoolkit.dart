@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:convert';
 
 import 'package:_discoveryapis_commons/_discoveryapis_commons.dart' as commons;
@@ -19,7 +17,7 @@ mixin _JsonSerializable {
 }
 mixin _ReturnSecureTokenProperty on _JsonSerializable {
   /// Whether return sts id token and refresh token instead of gitkit token.
-  bool returnSecureToken;
+  bool? returnSecureToken;
 
   @override
   Map<String, dynamic> _write(Map<String, dynamic> _json) {
@@ -40,11 +38,11 @@ mixin _ReturnSecureTokenProperty on _JsonSerializable {
 }
 
 mixin IdTokenResponse on _JsonSerializable {
-  String get idToken;
+  String? get idToken;
 
-  String get refreshToken;
+  String? get refreshToken;
 
-  String get expiresIn;
+  String? get expiresIn;
 
   dynamic get mfaPendingCredential => _mfaPendingCredential;
 
@@ -72,7 +70,7 @@ mixin _TenantIdProperty on _JsonSerializable {
   /// For multi-tenant use cases, in order to construct sign-in URL with the
   /// correct IDP parameters, Firebear needs to know which Tenant to retrieve
   /// IDP configs from.
-  String tenantId;
+  String? tenantId;
 
   @override
   Map<String, dynamic> _write(Map<String, dynamic> _json) {
@@ -92,11 +90,11 @@ class SetAccountInfoResponse extends it.SetAccountInfoResponse
   SetAccountInfoResponse();
 
   SetAccountInfoResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json);
+    _read(_json as Map<String, dynamic>);
   }
 
   @override
-  Map<String, Object> toJson() => _write(super.toJson());
+  Map<String, Object?> toJson() => _write(super.toJson());
 }
 
 class VerifyPasswordResponse extends it.VerifyPasswordResponse
@@ -104,11 +102,11 @@ class VerifyPasswordResponse extends it.VerifyPasswordResponse
   VerifyPasswordResponse();
 
   VerifyPasswordResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json);
+    _read(_json as Map<String, dynamic>);
   }
 
   @override
-  Map<String, Object> toJson() => _write(super.toJson());
+  Map<String, Object?> toJson() => _write(super.toJson());
 }
 
 class IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse
@@ -118,11 +116,11 @@ class IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse
 
   IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse.fromJson(Map _json)
       : super.fromJson(_json) {
-    _read(_json);
+    _read(_json as Map<String, dynamic>);
   }
 
   @override
-  Map<String, Object> toJson() => _write(super.toJson());
+  Map<String, Object?> toJson() => _write(super.toJson());
 }
 
 class VerifyCustomTokenResponse extends it.VerifyCustomTokenResponse
@@ -130,11 +128,11 @@ class VerifyCustomTokenResponse extends it.VerifyCustomTokenResponse
   VerifyCustomTokenResponse();
 
   VerifyCustomTokenResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json);
+    _read(_json as Map<String, dynamic>);
   }
 
   @override
-  Map<String, Object> toJson() => _write(super.toJson());
+  Map<String, Object?> toJson() => _write(super.toJson());
 }
 
 class EmailLinkSigninResponse extends it.EmailLinkSigninResponse
@@ -142,11 +140,11 @@ class EmailLinkSigninResponse extends it.EmailLinkSigninResponse
   EmailLinkSigninResponse();
 
   EmailLinkSigninResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json);
+    _read(_json as Map<String, dynamic>);
   }
 
   @override
-  Map<String, Object> toJson() => _write(super.toJson());
+  Map<String, Object?> toJson() => _write(super.toJson());
 }
 
 class SignupNewUserResponse extends it.SignupNewUserResponse
@@ -154,25 +152,25 @@ class SignupNewUserResponse extends it.SignupNewUserResponse
   SignupNewUserResponse();
 
   SignupNewUserResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json);
+    _read(_json as Map<String, dynamic>);
   }
 
   @override
-  Map<String, Object> toJson() => _write(super.toJson());
+  Map<String, Object?> toJson() => _write(super.toJson());
 }
 
 class VerifyAssertionResponse extends it.VerifyAssertionResponse
     with _JsonSerializable, IdTokenResponse {
-  String _pendingToken;
+  String? _pendingToken;
 
-  String nonce;
+  String? nonce;
 
-  String get pendingToken => _pendingToken;
+  String? get pendingToken => _pendingToken;
 
   VerifyAssertionResponse();
 
   VerifyAssertionResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json);
+    _read(_json as Map<String, dynamic>);
   }
 
   @override
@@ -192,11 +190,11 @@ class VerifyAssertionResponse extends it.VerifyAssertionResponse
   }
 
   @override
-  Map<String, Object> toJson() => _write(super.toJson());
+  Map<String, Object?> toJson() => _write(super.toJson());
 }
 
 class Relyingparty extends it.Relyingparty {
-  String dynamicLinkDomain;
+  String? dynamicLinkDomain;
 
   Relyingparty();
 
@@ -205,7 +203,7 @@ class Relyingparty extends it.Relyingparty {
   }
 
   @override
-  Map<String, Object> toJson() => {
+  Map<String, Object?> toJson() => {
         ...super.toJson(),
         if (dynamicLinkDomain != null) 'dynamicLinkDomain': dynamicLinkDomain
       };
@@ -218,11 +216,11 @@ class IdentitytoolkitRelyingpartyEmailLinkSigninRequest
 
   IdentitytoolkitRelyingpartyEmailLinkSigninRequest.fromJson(Map _json)
       : super.fromJson(_json) {
-    _read(_json);
+    _read(_json as Map<String, dynamic>);
   }
 
   @override
-  Map<String, Object> toJson() => _write(super.toJson());
+  Map<String, Object?> toJson() => _write(super.toJson());
 }
 
 class IdentitytoolkitRelyingpartySignupNewUserRequest
@@ -232,11 +230,11 @@ class IdentitytoolkitRelyingpartySignupNewUserRequest
 
   IdentitytoolkitRelyingpartySignupNewUserRequest.fromJson(Map _json)
       : super.fromJson(_json) {
-    _read(_json);
+    _read(_json as Map<String, dynamic>);
   }
 
   @override
-  Map<String, Object> toJson() => _write(super.toJson());
+  Map<String, Object?> toJson() => _write(super.toJson());
 }
 
 class IdentitytoolkitRelyingpartyVerifyCustomTokenRequest
@@ -246,11 +244,11 @@ class IdentitytoolkitRelyingpartyVerifyCustomTokenRequest
 
   IdentitytoolkitRelyingpartyVerifyCustomTokenRequest.fromJson(Map _json)
       : super.fromJson(_json) {
-    _read(_json);
+    _read(_json as Map<String, dynamic>);
   }
 
   @override
-  Map<String, Object> toJson() => _write(super.toJson());
+  Map<String, Object?> toJson() => _write(super.toJson());
 }
 
 class _MyApiRequester extends commons.ApiRequester {
@@ -284,11 +282,11 @@ class _MyApiRequester extends commons.ApiRequester {
 
   @override
   Future request(String requestUrl, String method,
-      {String body,
-      Map<String, List<String>> queryParams,
-      commons.Media uploadMedia,
-      commons.UploadOptions uploadOptions,
-      commons.DownloadOptions downloadOptions =
+      {String? body,
+      Map<String, List<String>>? queryParams,
+      commons.Media? uploadMedia,
+      commons.UploadOptions? uploadOptions,
+      commons.DownloadOptions? downloadOptions =
           client_requests.DownloadOptions.metadata}) async {
     queryParams ??= {};
     try {
@@ -312,7 +310,7 @@ class _MyApiRequester extends commons.ApiRequester {
     } on it.DetailedApiRequestError catch (e) {
       var errorCode = e.message;
       var errorMessage;
-      FirebaseAuthException error;
+      FirebaseAuthException? error;
       if (errorCode != null) {
         // Get detailed message if available.
         var match = RegExp(r'^([^\s]+)\s*:\s*(.*)$').firstMatch(errorCode);
@@ -321,7 +319,7 @@ class _MyApiRequester extends commons.ApiRequester {
           errorMessage = match.group(2);
         }
 
-        error = authErrorFromServerErrorCode(errorCode);
+        error = authErrorFromServerErrorCode(errorCode!);
       }
       if (error == null) {
         error = FirebaseAuthException.internalError();
@@ -337,11 +335,11 @@ class _Client extends http.BaseClient {
 
   _Client(this.baseClient);
 
-  String locale;
+  String? locale;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
-    if (locale != null) request.headers['X-Firebase-Locale'] = locale;
+    if (locale != null) request.headers['X-Firebase-Locale'] = locale!;
     return baseClient.send(request);
   }
 }
@@ -351,7 +349,7 @@ class IdentitytoolkitApi implements it.IdentityToolkitApi {
   final _Client _client;
 
   /// Updates the custom locale header.
-  void updateCustomLocaleHeader(String languageCode) {
+  void updateCustomLocaleHeader(String? languageCode) {
     _client.locale = languageCode;
   }
 
@@ -377,7 +375,7 @@ class RelyingpartyResource extends it.RelyingpartyResource {
   @override
   Future<VerifyPasswordResponse> verifyPassword(
       it.IdentitytoolkitRelyingpartyVerifyPasswordRequest request,
-      {String $fields}) async {
+      {String? $fields}) async {
     return VerifyPasswordResponse.fromJson(
         await _do('verifyPassword', request, $fields: $fields));
   }
@@ -386,7 +384,7 @@ class RelyingpartyResource extends it.RelyingpartyResource {
   Future<IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse>
       verifyPhoneNumber(
           it.IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest request,
-          {String $fields}) async {
+          {String? $fields}) async {
     return IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse.fromJson(
         await _do('verifyPhoneNumber', request, $fields: $fields));
   }
@@ -394,7 +392,7 @@ class RelyingpartyResource extends it.RelyingpartyResource {
   @override
   Future<SetAccountInfoResponse> setAccountInfo(
       it.IdentitytoolkitRelyingpartySetAccountInfoRequest request,
-      {String $fields}) async {
+      {String? $fields}) async {
     return SetAccountInfoResponse.fromJson(
         await _do('setAccountInfo', request, $fields: $fields));
   }
@@ -402,7 +400,7 @@ class RelyingpartyResource extends it.RelyingpartyResource {
   @override
   Future<VerifyCustomTokenResponse> verifyCustomToken(
       it.IdentitytoolkitRelyingpartyVerifyCustomTokenRequest request,
-      {String $fields}) async {
+      {String? $fields}) async {
     return VerifyCustomTokenResponse.fromJson(
         await _do('verifyCustomToken', request, $fields: $fields));
   }
@@ -410,7 +408,7 @@ class RelyingpartyResource extends it.RelyingpartyResource {
   @override
   Future<EmailLinkSigninResponse> emailLinkSignin(
       it.IdentitytoolkitRelyingpartyEmailLinkSigninRequest request,
-      {String $fields}) async {
+      {String? $fields}) async {
     return EmailLinkSigninResponse.fromJson(
         await _do('emailLinkSignin', request, $fields: $fields));
   }
@@ -418,7 +416,7 @@ class RelyingpartyResource extends it.RelyingpartyResource {
   @override
   Future<SignupNewUserResponse> signupNewUser(
       it.IdentitytoolkitRelyingpartySignupNewUserRequest request,
-      {String $fields}) async {
+      {String? $fields}) async {
     return SignupNewUserResponse.fromJson(
         await _do('signupNewUser', request, $fields: $fields));
   }
@@ -426,12 +424,12 @@ class RelyingpartyResource extends it.RelyingpartyResource {
   @override
   Future<VerifyAssertionResponse> verifyAssertion(
       it.IdentitytoolkitRelyingpartyVerifyAssertionRequest request,
-      {String $fields}) async {
+      {String? $fields}) async {
     return VerifyAssertionResponse.fromJson(
         await _do('verifyAssertion', request, $fields: $fields));
   }
 
-  Future<dynamic> _do(String url, dynamic request, {String $fields}) {
+  Future<dynamic> _do(String url, dynamic request, {String? $fields}) {
     var body = json.encode(request);
 
     return _requester.request(url, 'POST',
