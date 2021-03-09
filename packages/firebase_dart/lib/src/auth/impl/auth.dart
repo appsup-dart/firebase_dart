@@ -516,5 +516,5 @@ class UserCredentialImpl extends UserCredential {
       {@required this.user,
       @required this.additionalUserInfo,
       @required this.credential,
-      this.operationType});
+      @required this.operationType});
 }
