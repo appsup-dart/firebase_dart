@@ -1,5 +1,6 @@
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
+import 'package:meta/meta.dart';
 
 /// Generic exception related to Firebase Authentication.
 ///
@@ -12,8 +13,8 @@ class FirebaseAuthException extends FirebaseException {
   final AuthCredential credential;
 
   FirebaseAuthException._(
-      {String code,
-      String message,
+      {@required String code,
+      @required String message,
       this.email,
       this.phoneNumber,
       this.credential})

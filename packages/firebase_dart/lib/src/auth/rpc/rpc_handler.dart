@@ -7,6 +7,7 @@ import 'package:firebase_dart/src/util/proxy.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
+import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 
 import 'error.dart';
@@ -24,7 +25,7 @@ class RpcHandler {
 
   RelyingpartyResource get relyingparty => identitytoolkitApi.relyingparty;
 
-  RpcHandler(this.apiKey, {http.Client httpClient})
+  RpcHandler(this.apiKey, {@required http.Client httpClient})
       : httpClient = ProxyClient({
           RegExp('https://securetoken.google.com/.*/.well-known/openid-configuration'):
               http.MockClient((request) async {
@@ -371,7 +372,7 @@ class RpcHandler {
   ///
   /// Returns future that resolves with user's email.
   Future<String> sendSignInLinkToEmail(
-      {String email, ActionCodeSettings actionCodeSettings}) async {
+      {@required String email, ActionCodeSettings actionCodeSettings}) async {
     _validateEmail(email);
     var response = await relyingparty
         .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
@@ -400,7 +401,7 @@ class RpcHandler {
   ///
   /// Returns future that resolves with user's email.
   Future<String> sendPasswordResetEmail(
-      {String email, ActionCodeSettings actionCodeSettings}) async {
+      {@required String email, ActionCodeSettings actionCodeSettings}) async {
     _validateEmail(email);
     var response = await relyingparty
         .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
@@ -417,7 +418,7 @@ class RpcHandler {
   ///
   /// Returns future that resolves with user's email.
   Future<String> sendEmailVerification(
-      {String idToken, ActionCodeSettings actionCodeSettings}) async {
+      {@required String idToken, ActionCodeSettings actionCodeSettings}) async {
     var response = await relyingparty
         .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
           ..requestType = 'VERIFY_EMAIL'
@@ -432,7 +433,7 @@ class RpcHandler {
   /// Requests resetPassword endpoint for password reset.
   ///
   /// Returns future that resolves with user's email.
-  Future<String> confirmPasswordReset(String code, newPassword) async {
+  Future<String> confirmPasswordReset(String code, String newPassword) async {
     _validateApplyActionCode(code);
     var response = await relyingparty
         .resetPassword(IdentitytoolkitRelyingpartyResetPasswordRequest()

@@ -446,15 +446,15 @@ class AccountInfo {
   final DateTime lastLoginAt;
 
   AccountInfo(
-      {this.uid,
-      this.displayName,
-      this.photoUrl,
-      this.email,
-      this.emailVerified,
-      this.phoneNumber,
-      this.isAnonymous,
-      this.createdAt,
-      this.lastLoginAt});
+      {@required this.uid,
+      @required this.displayName,
+      @required this.photoUrl,
+      @required this.email,
+      @required this.emailVerified,
+      @required this.phoneNumber,
+      @required this.isAnonymous,
+      @required this.createdAt,
+      @required this.lastLoginAt});
 
   AccountInfo.fromJson(Map<String, dynamic> json)
       : this(
@@ -513,7 +513,7 @@ class IdTokenResultImpl extends IdTokenResult {
 AdditionalUserInfo createAdditionalUserInfo(
     {openid.Credential credential,
     String providerId,
-    bool isNewUser,
+    @required bool isNewUser,
     String kind}) {
   // Provider ID already present.
   if (providerId != null) {
@@ -545,7 +545,10 @@ class GenericAdditionalUserInfo implements AdditionalUserInfo {
   final String username;
 
   GenericAdditionalUserInfo(
-      {this.providerId, this.isNewUser, this.profile, this.username});
+      {@required this.providerId,
+      @required this.isNewUser,
+      this.profile,
+      this.username});
 
   @override
   int get hashCode => hash2(providerId, isNewUser);
@@ -556,7 +559,8 @@ class GenericAdditionalUserInfo implements AdditionalUserInfo {
       other.providerId == providerId &&
       other.isNewUser == isNewUser;
 
-  static String _providerIdFromInfo({String providerId, String idToken}) {
+  static String _providerIdFromInfo(
+      {String providerId, @required String idToken}) {
     // Try to get providerId from the ID token if available.
     if (providerId == null && idToken != null) {
       // verifyPassword/setAccountInfo and verifyPhoneNumber return an ID token
@@ -578,7 +582,8 @@ class GenericAdditionalUserInfo implements AdditionalUserInfo {
     return providerId;
   }
 
-  static bool _isNewUserFromInfo({String kind, bool isNewUser}) {
+  static bool _isNewUserFromInfo(
+      {@required String kind, @required bool isNewUser}) {
     // Check whether user is new. Temporary Solution since backend does not return
     // isNewUser field for SignupNewUserResponse.
     if (isNewUser != null) return isNewUser;

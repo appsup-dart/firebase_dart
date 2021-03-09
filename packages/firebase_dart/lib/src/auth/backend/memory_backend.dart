@@ -2,11 +2,13 @@ import 'dart:math';
 
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:jose/jose.dart';
+import 'package:meta/meta.dart';
 
 import 'backend.dart';
 
 class MemoryBackend extends BaseBackend {
-  MemoryBackend({JsonWebKey tokenSigningKey, String projectId})
+  MemoryBackend(
+      {@required JsonWebKey tokenSigningKey, @required String projectId})
       : super(tokenSigningKey: tokenSigningKey, projectId: projectId);
 
   final Map<String, BackendUser> _users = {};

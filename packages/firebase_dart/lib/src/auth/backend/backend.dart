@@ -7,6 +7,7 @@ import 'package:firebase_dart/src/auth/rpc/error.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
+import 'package:meta/meta.dart';
 
 class BackendConnection {
   final Backend backend;
@@ -274,13 +275,15 @@ abstract class Backend {
 
   Future<BackendUser> getUserByPhoneNumber(String phoneNumber);
 
-  Future<BackendUser> createUser({String email, String password});
+  Future<BackendUser> createUser(
+      {@required String email, @required String password});
 
   Future<BackendUser> updateUser(BackendUser user);
 
   Future<void> deleteUser(String uid);
 
-  Future<String> generateIdToken({String uid, String providerId});
+  Future<String> generateIdToken(
+      {@required String uid, @required String providerId});
 
   Future<String> generateRefreshToken(String uid);
 
@@ -296,12 +299,13 @@ abstract class BaseBackend extends Backend {
 
   final String projectId;
 
-  BaseBackend({this.tokenSigningKey, this.projectId});
+  BaseBackend({@required this.tokenSigningKey, @required this.projectId});
 
   Future<BackendUser> storeUser(BackendUser user);
 
   @override
-  Future<BackendUser> createUser({String email, String password}) async {
+  Future<BackendUser> createUser(
+      {@required String email, @required String password}) async {
     var uid = _generateRandomString(24);
     var now = (clock.now().millisecondsSinceEpoch ~/ 1000).toString();
     return storeUser(BackendUser()
@@ -324,7 +328,8 @@ abstract class BaseBackend extends Backend {
   }
 
   @override
-  Future<String> generateIdToken({String uid, String providerId}) async {
+  Future<String> generateIdToken(
+      {@required String uid, @required String providerId}) async {
     var builder = JsonWebSignatureBuilder()
       ..jsonContent = _jwtPayloadFor(uid, providerId)
       ..addRecipient(tokenSigningKey);

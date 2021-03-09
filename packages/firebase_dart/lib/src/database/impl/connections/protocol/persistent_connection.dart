@@ -164,7 +164,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Future<Iterable<String>> listen(String path,
-      {QueryFilter query, String hash}) async {
+      {@required QueryFilter query, @required String hash}) async {
     var def = QueryDef(path, query);
     var tag = _nextTag++;
     _tagToQuery[tag] = def;
@@ -188,7 +188,7 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<Null> unlisten(String path, {QueryFilter query}) async {
+  Future<Null> unlisten(String path, {@required QueryFilter query}) async {
     var def = QueryDef(path, query);
     var tag = _tagToQuery.inverse.remove(def);
     var r = Request.unlisten(path, query: query, tag: tag);
@@ -198,13 +198,13 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<Null> put(String path, dynamic value, {String hash}) async {
+  Future<Null> put(String path, dynamic value, {@required String hash}) async {
     await _putInternal(Request.put(path, value, hash));
   }
 
   @override
   Future<Null> merge(String path, Map<String, dynamic> value,
-      {String hash}) async {
+      {@required String hash}) async {
     await _putInternal(Request.merge(path, value, hash));
   }
 

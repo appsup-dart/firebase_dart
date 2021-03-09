@@ -513,8 +513,8 @@ class UserCredentialImpl extends UserCredential {
   final String operationType;
 
   UserCredentialImpl(
-      {this.user,
-      this.additionalUserInfo,
-      this.credential,
+      {@required this.user,
+      @required this.additionalUserInfo,
+      @required this.credential,
       this.operationType});
 }

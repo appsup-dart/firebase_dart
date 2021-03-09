@@ -24,6 +24,7 @@ extension UserCredentialX on UserCredential {
               providerId: json['credential']['providerId'],
               signInMethod: json['credential']['signInMethod'])
           : null,
+      operationType: json['operationType'],
     );
   }
 
@@ -36,10 +37,11 @@ extension UserCredentialX on UserCredential {
           'username': additionalUserInfo.username,
         },
         if (credential != null)
-          'credentail': {
+          'credential': {
             'providerId': credential.providerId,
             'signInMethod': credential.signInMethod,
           },
+        'operationType': (this as UserCredentialImpl).operationType
       };
 }
 

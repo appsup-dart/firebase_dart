@@ -6,6 +6,7 @@ import 'package:firebase_dart/src/database/impl/persistence/prune_forest.dart';
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 
 import '../data_observer.dart';
 import '../tree.dart';
@@ -195,13 +196,15 @@ class KeyValueDatabase {
 
   bool get isInsideTransaction => _transaction != null;
 
-  Iterable<dynamic> valuesBetween({String startKey, String endKey}) {
+  Iterable<dynamic> valuesBetween(
+      {@required String startKey, @required String endKey}) {
     // TODO merge transaction data
     return keysBetween(startKey: startKey, endKey: endKey)
         .map((k) => box.get(k));
   }
 
-  Iterable<String> keysBetween({String startKey, String endKey}) sync* {
+  Iterable<String> keysBetween(
+      {@required String startKey, @required String endKey}) sync* {
     // TODO merge transaction data
     for (var k in box.keys) {
       if (Comparable.compare(k, startKey) < 0) continue;

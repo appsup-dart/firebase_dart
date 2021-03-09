@@ -15,7 +15,8 @@ class Connection {
   /// The underlying transport channel to send and receive messages
   final Transport transport;
 
-  Connection({this.delegate, Uri url}) : transport = Transport(url);
+  Connection({@required this.delegate, @required Uri url})
+      : transport = Transport(url);
 
   final Map<int, Request> _pendingRequests = {};
 
