@@ -33,8 +33,8 @@ class SAMLAuthCredential extends AuthCredential {
   }
 
   @override
-  Map<String, dynamic> toJson() =>
-      {...super.toJson(), 'pendingToken': pendingToken};
+  Map<String, dynamic> asMap() =>
+      {...super.asMap(), 'pendingToken': pendingToken};
 }
 
 const String samlPrefix = 'saml.';

@@ -46,7 +46,7 @@ abstract class EmailAuthProvider extends AuthProvider {
 /// [EmailAuthProvider.credential].
 class EmailAuthCredential extends AuthCredential {
   /// The user's email address.
-  final String email;
+  final String /*!*/ email;
 
   /// The user account password.
   final String password;
@@ -64,22 +64,16 @@ class EmailAuthCredential extends AuthCredential {
 
   EmailAuthCredential._({@required this.email, this.password, this.emailLink});
 
-  factory EmailAuthCredential.fromJson(Map<String, dynamic> json) {
-    if (json != null &&
-        json['email'] != null &&
-        (json['secret'] != null || json['emailLink'] != null)) {
-      return EmailAuthCredential._(
-          email: json['email'],
-          password: json['secret'],
-          emailLink: json['emailLink']);
-    }
-    return null;
-  }
+  EmailAuthCredential.fromJson(Map<String, dynamic> json)
+      : this._(
+            email: json['email'],
+            password: json['secret'],
+            emailLink: json['emailLink']);
 
   @override
-  Map<String, dynamic> toJson() {
+  Map<String, String> asMap() {
     return {
-      ...super.toJson(),
+      ...super.asMap(),
       'email': email,
       'secret': password,
       'emailLink': emailLink,

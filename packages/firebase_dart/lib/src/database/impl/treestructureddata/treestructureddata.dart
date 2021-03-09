@@ -44,7 +44,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
         json is! String &&
         json is! List) {
       try {
-        json = json.toJson();
+        json = json.asMap();
       } on NoSuchMethodError {
         // ignore
       }

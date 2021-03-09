@@ -100,9 +100,9 @@ class OAuthCredential extends AuthCredential {
         super(providerId: providerId, signInMethod: signInMethod);
 
   @override
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      ...super.toJson(),
+  Map<String, String> asMap() {
+    return {
+      ...super.asMap(),
       'idToken': idToken,
       'accessToken': accessToken,
       'secret': secret,
@@ -111,10 +111,10 @@ class OAuthCredential extends AuthCredential {
   }
 
   @override
-  int get hashCode => const DeepCollectionEquality().hash(toJson());
+  int get hashCode => const DeepCollectionEquality().hash(asMap());
 
   @override
   bool operator ==(other) =>
       other is OAuthCredential &&
-      const DeepCollectionEquality().equals(toJson(), other.toJson());
+      const DeepCollectionEquality().equals(asMap(), other.asMap());
 }

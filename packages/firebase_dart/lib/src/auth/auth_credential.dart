@@ -20,18 +20,19 @@ class AuthCredential {
       : assert(providerId != null),
         assert(signInMethod != null);
 
-  Map<String, dynamic> toJson() => {
+  /// Returns the current instance as a serialized [Map].
+  Map<String, dynamic> asMap() => {
         'providerId': providerId,
         'signInMethod': signInMethod,
       };
 
   @override
-  int get hashCode => MapEquality().hash(toJson());
+  int get hashCode => MapEquality().hash(asMap());
 
   @override
   bool operator ==(other) =>
-      other is AuthCredential && MapEquality().equals(toJson(), other.toJson());
+      other is AuthCredential && MapEquality().equals(asMap(), other.asMap());
 
   @override
-  String toString() => '$runtimeType${toJson()}';
+  String toString() => '$runtimeType${asMap()}';
 }

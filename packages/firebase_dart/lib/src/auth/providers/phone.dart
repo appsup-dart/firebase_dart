@@ -28,8 +28,6 @@ class PhoneAuthProvider extends AuthProvider {
         verificationId: verificationId, smsCode: smsCode);
   }
 
-  /// Create a [PhoneAuthCredential] from an internal token, where the ID
-  /// relates to a natively stored credential.
   static AuthCredential credentialFromTemporaryProof({
     @required String temporaryProof,
     @required String phoneNumber,
@@ -65,9 +63,9 @@ class PhoneAuthCredential extends AuthCredential {
         );
 
   @override
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> asMap() {
     return {
-      ...super.toJson(),
+      ...super.asMap(),
       'verificationId': verificationId,
       'smsCode': smsCode
     };

@@ -313,7 +313,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<UserCredential> signInWithCredential(AuthCredential credential) {
-    return invoke(#signInWithCredential, [credential.toJson()]);
+    return invoke(#signInWithCredential, [credential.asMap()]);
   }
 
   @override
