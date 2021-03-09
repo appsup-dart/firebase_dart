@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:convert';
 
 import 'package:firebase_dart/src/auth/error.dart';
@@ -138,7 +136,7 @@ final _serverErrors = {
   'UNVERIFIED_EMAIL': FirebaseAuthException.unverifiedEmail(),
 };
 
-FirebaseAuthException authErrorFromServerErrorCode(String errorCode) {
+FirebaseAuthException? authErrorFromServerErrorCode(String errorCode) {
   return _serverErrors[errorCode];
 }
 
@@ -152,8 +150,7 @@ Map<String, dynamic> errorToServerResponse(FirebaseAuthException error) {
   };
 }
 
-FirebaseAuthException authErrorFromResponse(Map<String, dynamic> data,
-    [FirebaseAuthException Function(String) errorMapper]) {
+FirebaseAuthException authErrorFromResponse(Map<String, dynamic> data) {
   var error = data['error'] is Map && data['error']['errors'] is List
       ? data['error']['errors'][0]
       : {};
@@ -167,7 +164,9 @@ FirebaseAuthException authErrorFromResponse(Map<String, dynamic> data,
   }
   var errorCode = data['error'] is Map
       ? data['error']['message']
-      : data['error'] is String ? data['error'] : null;
+      : data['error'] is String
+          ? data['error']
+          : null;
 
   if (errorCode == null) {
     throw FirebaseAuthException.internalError().replace(
@@ -185,20 +184,13 @@ FirebaseAuthException authErrorFromResponse(Map<String, dynamic> data,
     errorMessage = match.group(2);
   }
 
-  if (errorMapper != null) {
-    var e = errorMapper(errorCode);
-    if (e != null) throw e;
-  }
-
   var e = authErrorFromServerErrorCode(errorCode);
   if (e != null) throw e.replace(message: errorMessage);
 
 // No error message found, return the serialized response as the message.
 // This is likely to be an Apiary error for unexpected cases like keyExpired,
 // etc.
-  if (errorMessage == null && data != null) {
-    errorMessage = json.encode(data);
-  }
+  errorMessage ??= json.encode(data);
 // The backend returned some error we don't recognize; this is an error on
 // our side.
   return FirebaseAuthException.internalError().replace(message: errorMessage);
