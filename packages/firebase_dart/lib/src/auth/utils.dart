@@ -31,10 +31,15 @@ abstract class Platform {
       @required String sha1Cert,
       @required bool isOnline}) = AndroidPlatform;
 
-  factory Platform.ios(
-      {@required String appId,
-      String clientId,
-      @required bool isOnline}) = IOsPlatform;
+  factory Platform.ios({@required String appId, @required bool isOnline}) =
+      IOsPlatform;
+
+  factory Platform.macos({@required String appId, @required bool isOnline}) =
+      MacOsPlatform;
+
+  factory Platform.linux({@required bool isOnline}) = LinuxPlatform;
+
+  factory Platform.windows({@required bool isOnline}) = WindowsPlatform;
 
   factory Platform.fromJson(Map<String, dynamic> json) {
     switch (json['type']) {
@@ -53,7 +58,19 @@ abstract class Platform {
       case 'ios':
         return Platform.ios(
           appId: json['appId'],
-          clientId: json['clientId'],
+          isOnline: json['isOnline'],
+        );
+      case 'macos':
+        return Platform.macos(
+          appId: json['appId'],
+          isOnline: json['isOnline'],
+        );
+      case 'linux':
+        return Platform.linux(
+          isOnline: json['isOnline'],
+        );
+      case 'windows':
+        return Platform.windows(
           isOnline: json['isOnline'],
         );
     }
@@ -114,17 +131,51 @@ class AndroidPlatform extends Platform {
 class IOsPlatform extends Platform {
   final String appId;
 
-  final String clientId;
-
-  IOsPlatform({@required this.appId, this.clientId, @required bool isOnline})
+  IOsPlatform({@required this.appId, @required bool isOnline})
       : assert(appId != null),
         super(isMobile: true, isOnline: isOnline);
 
   @override
   Map<String, dynamic> toJson() => {
         'type': 'ios',
-        'clientId': clientId,
         'appId': appId,
+        'isOnline': isOnline,
+      };
+}
+
+class MacOsPlatform extends Platform {
+  final String appId;
+
+  MacOsPlatform({@required this.appId, @required bool isOnline})
+      : assert(appId != null),
+        super(isMobile: false, isOnline: isOnline);
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'type': 'macos',
+        'appId': appId,
+        'isOnline': isOnline,
+      };
+}
+
+class LinuxPlatform extends Platform {
+  LinuxPlatform({@required bool isOnline})
+      : super(isMobile: false, isOnline: isOnline);
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'type': 'linux',
+        'isOnline': isOnline,
+      };
+}
+
+class WindowsPlatform extends Platform {
+  WindowsPlatform({@required bool isOnline})
+      : super(isMobile: false, isOnline: isOnline);
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'type': 'windows',
         'isOnline': isOnline,
       };
 }

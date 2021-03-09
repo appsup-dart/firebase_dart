@@ -114,6 +114,19 @@ class FirebaseDartFlutter {
           isOnline: true,
           appId: i.packageName,
         );
+      case platform_info.OperatingSystem.macOS:
+        return Platform.macos(
+          isOnline: true,
+          appId: i.packageName,
+        );
+      case platform_info.OperatingSystem.linux:
+        return Platform.linux(
+          isOnline: true,
+        );
+      case platform_info.OperatingSystem.windows:
+        return Platform.windows(
+          isOnline: true,
+        );
       default:
         throw UnsupportedError('Unsupported platform ${p.operatingSystem}');
     }
