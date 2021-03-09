@@ -19,7 +19,7 @@ abstract class FirebaseDatabase {
   /// If app is specified, its options should include a `databaseURL`.
   factory FirebaseDatabase({FirebaseApp app, String databaseURL}) {
     return FirebaseImplementation.installation
-        .createDatabase(app, databaseURL: databaseURL);
+        .createDatabase(app ?? Firebase.app(), databaseURL: databaseURL);
   }
 
   /// Gets a DatabaseReference for the root of your Firebase Database.

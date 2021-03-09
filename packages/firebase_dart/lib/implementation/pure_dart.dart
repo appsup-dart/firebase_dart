@@ -57,19 +57,10 @@ class FirebaseDart {
           )
         : Platform.linux(isOnline: true);
 
-    launchUrl ??= _kIsWeb
-        ? (url) => throw UnimplementedError()
-        : (url) => throw UnsupportedError(
-            'Social sign in not supported on this platform.');
-    getAuthResult ??= _kIsWeb
-        ? () => throw UnimplementedError()
-        : () => throw UnsupportedError(
-            'Social sign in not supported on this platform.');
-    oauthSignIn ??= _kIsWeb
-        ? (proivider) => throw UnimplementedError()
-        : (proivider) => throw UnsupportedError(
-            'Social sign in not supported on this platform.');
-    oauthSignOut ??= (proivider) => null;
+    launchUrl ??= _defaultLaunchUrl;
+    getAuthResult ??= _defaultGetAuthResult;
+    oauthSignIn ??= _defaultOauthSignIn;
+    oauthSignOut ??= _defaultOauthSignOut;
 
     if (isolated && !_kIsWeb) {
       FirebaseImplementation.install(IsolateFirebaseImplementation(
@@ -94,4 +85,22 @@ class FirebaseDart {
           httpClient: httpClient));
     }
   }
+
+  static void _defaultLaunchUrl(Uri uri) {
+    if (_kIsWeb) throw UnimplementedError();
+    throw UnsupportedError('Social sign in not supported on this platform.');
+  }
+
+  static Future<Map<String, dynamic>> _defaultGetAuthResult() async {
+    if (_kIsWeb) throw UnimplementedError();
+    throw UnsupportedError('Social sign in not supported on this platform.');
+  }
+
+  static Future<OAuthCredential> _defaultOauthSignIn(
+      OAuthProvider provider) async {
+    if (_kIsWeb) throw UnimplementedError();
+    throw UnsupportedError('Social sign in not supported on this platform.');
+  }
+
+  static Future<void> _defaultOauthSignOut(String providerId) async {}
 }

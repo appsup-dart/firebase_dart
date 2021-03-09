@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
+import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../database.dart';
@@ -16,7 +17,7 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
   @override
   final String databaseURL;
 
-  IsolateFirebaseDatabase({IsolateFirebaseApp app, this.databaseURL})
+  IsolateFirebaseDatabase({@required IsolateFirebaseApp app, this.databaseURL})
       : super(app);
 
   Future<T> invoke<T>(Symbol method,

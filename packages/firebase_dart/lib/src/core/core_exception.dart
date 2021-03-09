@@ -16,4 +16,10 @@ class FirebaseCoreException extends FirebaseException {
       : this(
             code: 'duplicate-app',
             message: 'A Firebase App named "$appName" already exists');
+
+  /// Thrown when no firebase implementation has been setup.
+  FirebaseCoreException.noSetup()
+      : this(
+            code: 'no-setup',
+            message: 'No firebase implementation has been setup.');
 }

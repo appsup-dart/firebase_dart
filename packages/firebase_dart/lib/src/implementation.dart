@@ -8,8 +8,11 @@ abstract class FirebaseImplementation {
   static FirebaseImplementation _installation;
 
   static FirebaseImplementation get installation {
-    assert(_installation != null, 'No firebase implementation has been setup.');
-    return _installation;
+    var i = _installation;
+    if (i == null) {
+      throw FirebaseCoreException.noSetup();
+    }
+    return i;
   }
 
   static void install(FirebaseImplementation value) {
@@ -20,9 +23,11 @@ abstract class FirebaseImplementation {
 
   Future<FirebaseApp> createApp(String name, FirebaseOptions options);
 
-  FirebaseDatabase createDatabase(FirebaseApp app, {String databaseURL});
+  FirebaseDatabase createDatabase(covariant FirebaseApp app,
+      {String databaseURL});
 
-  FirebaseAuth createAuth(FirebaseApp app);
+  FirebaseAuth createAuth(covariant FirebaseApp app);
 
-  FirebaseStorage createStorage(FirebaseApp app, {String storageBucket});
+  FirebaseStorage createStorage(covariant FirebaseApp app,
+      {String storageBucket});
 }

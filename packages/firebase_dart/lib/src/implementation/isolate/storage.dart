@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/storage/impl/location.dart';
 import 'package:firebase_dart/storage.dart';
+import 'package:meta/meta.dart';
 
 import '../isolate.dart';
 import 'util.dart';
@@ -80,7 +81,8 @@ class IsolateFirebaseStorage extends IsolateFirebaseService
     implements FirebaseStorage {
   final Location _bucket;
 
-  IsolateFirebaseStorage({IsolateFirebaseApp app, String storageBucket})
+  IsolateFirebaseStorage(
+      {@required IsolateFirebaseApp app, String storageBucket})
       : _bucket =
             Location.fromBucketSpec(storageBucket ?? app.options.storageBucket),
         super(app);

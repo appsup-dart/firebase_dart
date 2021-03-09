@@ -8,6 +8,7 @@ import 'package:firebase_dart/src/database/impl/persistence/hive_engine.dart';
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
 import 'package:hive/hive.dart';
+import 'package:meta/meta.dart';
 import 'package:quiver/core.dart' as quiver;
 
 import '../../database.dart';
@@ -18,7 +19,7 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
   @override
   final String databaseURL;
 
-  FirebaseDatabaseImpl({FirebaseApp app, String databaseURL})
+  FirebaseDatabaseImpl({@required FirebaseApp app, String databaseURL})
       : databaseURL = normalizeUrl(databaseURL ?? app.options.databaseURL),
         super(app);
 

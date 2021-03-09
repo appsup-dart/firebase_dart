@@ -23,7 +23,7 @@ abstract class FirebaseStorage {
   /// The [app] argument is the custom [FirebaseApp].
   factory FirebaseStorage.instanceFor({FirebaseApp app, String bucket}) =>
       FirebaseImplementation.installation
-          .createStorage(app, storageBucket: bucket);
+          .createStorage(app ?? Firebase.app(), storageBucket: bucket);
 
   /// The [FirebaseApp] instance to which this [FirebaseStorage] belongs.
   ///
