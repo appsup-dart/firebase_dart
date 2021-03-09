@@ -1,6 +1,6 @@
 // @dart=2.9
 
-part of firebase_dart.core;
+import 'package:meta/meta.dart';
 
 /// A generic class which provides exceptions in a Firebase-friendly format
 /// to users.

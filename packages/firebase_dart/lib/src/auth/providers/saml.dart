@@ -1,6 +1,6 @@
-import 'package:firebase_dart/auth.dart';
-
+import '../auth_credential.dart';
 import '../auth_provider.dart';
+import '../error.dart';
 
 /// Security Assertion Markup Language based provider.
 class SAMLAuthProvider extends AuthProvider {
