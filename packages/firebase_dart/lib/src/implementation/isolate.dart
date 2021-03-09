@@ -9,6 +9,7 @@ import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:meta/meta.dart';
+import 'package:http/http.dart' as http;
 
 import 'isolate/auth.dart';
 import 'isolate/database.dart';
@@ -27,16 +28,20 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
 
   final Future<void> Function(String providerId) oauthSignOut;
 
+  final http.Client httpClient;
+
   Future<IsolateCommander> _commander;
 
   Future<IsolateCommander> get commander => _commander ??= _setup();
 
-  IsolateFirebaseImplementation(this.storagePath,
-      {@required this.platform,
-      this.launchUrl,
-      this.getAuthResult,
-      this.oauthSignIn,
-      this.oauthSignOut})
+  IsolateFirebaseImplementation(
+      {@required this.storagePath,
+      @required this.platform,
+      @required this.launchUrl,
+      @required this.getAuthResult,
+      @required this.oauthSignIn,
+      @required this.oauthSignOut,
+      this.httpClient})
       : assert(platform != null);
 
   Future<IsolateCommander> _setup() async {
@@ -48,8 +53,8 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
 
     var commander = await IsolateWorker.startWorkerInIsolate();
 
-    await commander.execute(StaticFunctionCall(
-        _setupInIsolate, [storagePath, platform, worker.commander]));
+    await commander.execute(StaticFunctionCall(_setupInIsolate,
+        [storagePath, platform, worker.commander, httpClient]));
 
     return commander;
   }
@@ -69,9 +74,10 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
     String storagePath,
     Platform platform,
     IsolateCommander commander,
+    http.Client httpClient,
   ) async {
     _registerFunctions();
-    PureDartFirebase.setup(
+    FirebaseDart.setup(
         storagePath: storagePath,
         platform: platform,
         oauthSignOut: (providerId) {
@@ -87,7 +93,8 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
         },
         getAuthResult: () {
           return commander.execute(RegisteredFunctionCall(#getAuthResult));
-        });
+        },
+        httpClient: httpClient);
   }
 
   @override
