@@ -78,7 +78,11 @@ abstract class Platform {
   }
 
   static Platform _current;
-  static Platform get current => _current;
+  static Platform get current {
+    var c = _current;
+    if (c == null) throw StateError('No platform initialized.');
+    return c;
+  }
 
   Map<String, dynamic> toJson();
 }
