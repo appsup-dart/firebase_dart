@@ -8,9 +8,9 @@ import 'dart:collection';
 import 'dart:convert' show Converter, Codec;
 import 'dart:convert';
 
-import 'package:crypto/crypto.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/implementation.dart';
+import 'package:jose/jose.dart';
 
 part 'database/database.dart';
 part 'database/datasnapshot.dart';

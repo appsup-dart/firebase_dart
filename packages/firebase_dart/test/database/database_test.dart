@@ -279,6 +279,7 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('auth/unauth', () async {
+      await ref.child('test').get();
       var fromStream = ref.onAuth.first;
       await ref.authWithCustomToken(token);
 

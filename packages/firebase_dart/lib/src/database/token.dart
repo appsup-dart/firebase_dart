@@ -3,39 +3,21 @@
 
 part of firebase_dart;
 
-String _signMessage(String msg, String secret) {
-  final hmac = Hmac(sha256, secret.codeUnits);
-  final signature = hmac.convert(msg.codeUnits);
-  return base64Url.encode(signature.bytes).replaceAll('=', '');
-}
-
-class InvalidTokenException implements Exception {
-  final String token;
-
-  InvalidTokenException(this.token);
-
-  FirebaseToken get payload => const _Decoder(null).convert(token);
-}
-
 class _Encoder extends Converter<FirebaseToken, String> {
-  static const Map<String, String> _defaultHeader = {
-    'typ': 'JWT',
-    'alg': 'HS256'
-  };
-
   final String secret;
 
   const _Encoder(this.secret);
 
   @override
   String convert(FirebaseToken data) {
-    var encodedHeader = base64Url
-        .encode(json.encode(_defaultHeader).codeUnits)
-        .replaceAll('=', '');
-    var encodedPayload =
-        base64Url.encode(json.encode(data).codeUnits).replaceAll('=', '');
-    var msg = '$encodedHeader.$encodedPayload';
-    return '$msg.${_signMessage(msg, secret)}';
+    var key = JsonWebKey.symmetric(
+        key: secret.codeUnits.fold(
+            BigInt.from(0), (a, b) => a * BigInt.from(256) + BigInt.from(b)));
+    var builder = JsonWebSignatureBuilder()
+      ..jsonContent = data.toJson()
+      ..addRecipient(key, algorithm: 'HS256');
+
+    return builder.build().toCompactSerialization();
   }
 }
 
@@ -46,18 +28,8 @@ class _Decoder extends Converter<String, FirebaseToken> {
 
   @override
   FirebaseToken convert(String input) {
-    var parts = input.split('.');
-    var padded = parts[1] +
-        Iterable.generate((4 - parts[1].length % 4) % 4, (i) => '=').join();
-    var payload = json.decode(utf8.decode(base64Url.decode(padded)));
-
-    if (secret != null) {
-      var signature = _signMessage('${parts[0]}.${parts[1]}', secret);
-      if (signature != parts[2]) {
-        throw InvalidTokenException(input);
-      }
-    }
-    return FirebaseToken.fromJson(payload as Map<String, dynamic>);
+    return FirebaseToken.fromJson(
+        JsonWebToken.unverified(input).claims.toJson());
   }
 }
 
