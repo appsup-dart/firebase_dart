@@ -1,5 +1,6 @@
-// @dart=2.9
 
+
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:firebase_dart/core.dart';
 import 'package:meta/meta.dart';
 
@@ -40,10 +41,9 @@ class FirebaseService {
     _isDeleted = true;
   }
 
-  static T findService<T extends FirebaseService>(FirebaseApp app,
-          [bool Function(T service) predicate]) =>
-      _services[app]?.firstWhere(
+  static T? findService<T extends FirebaseService?>(FirebaseApp app,
+          [bool Function(T service)? predicate]) =>
+      _services[app]?.firstWhereOrNull(
           (element) =>
-              element is T && (predicate == null || predicate(element)),
-          orElse: () => null);
+              element is T && (predicate == null || predicate(element as T))) as T?;
 }
