@@ -100,21 +100,22 @@ class FirebaseDartFlutter {
       );
     }
 
-    var i = await PackageInfo.fromPlatform();
-
     switch (p.operatingSystem) {
       case platform_info.OperatingSystem.android:
+        var i = await PackageInfo.fromPlatform();
         return Platform.android(
           isOnline: true,
           packageId: i.packageName,
           sha1Cert: await _channel.invokeMethod('getSha1Cert'),
         );
       case platform_info.OperatingSystem.iOS:
+        var i = await PackageInfo.fromPlatform();
         return Platform.ios(
           isOnline: true,
           appId: i.packageName,
         );
       case platform_info.OperatingSystem.macOS:
+        var i = await PackageInfo.fromPlatform();
         return Platform.macos(
           isOnline: true,
           appId: i.packageName,
