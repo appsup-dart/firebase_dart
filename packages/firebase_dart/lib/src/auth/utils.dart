@@ -1,5 +1,3 @@
-import 'package:meta/meta.dart';
-
 /// RegExp to detect if the email address given is valid
 final emailAddressRegExp = RegExp(r'^[^@]+@[^@]+$');
 
@@ -9,7 +7,6 @@ bool isValidEmailAddress(String email) {
 }
 
 void initPlatform(Platform platform) {
-  assert(platform != null);
   Platform._current = platform;
 }
 
@@ -17,9 +14,7 @@ abstract class Platform {
   final bool isOnline;
   final bool isMobile;
 
-  Platform({required this.isMobile, this.isOnline = true})
-      : assert(isMobile != null),
-        assert(isOnline != null);
+  Platform({required this.isMobile, this.isOnline = true});
 
   factory Platform.web(
       {required String currentUrl,
@@ -91,12 +86,8 @@ class WebPlatform extends Platform {
   final String currentUrl;
 
   WebPlatform(
-      {required this.currentUrl,
-      required bool isMobile,
-      bool isOnline = true})
-      : assert(currentUrl != null),
-        assert(isMobile != null),
-        super(isMobile: isMobile, isOnline: isOnline);
+      {required this.currentUrl, required bool isMobile, bool isOnline = true})
+      : super(isMobile: isMobile, isOnline: isOnline);
 
   @override
   Map<String, dynamic> toJson() => {
@@ -113,12 +104,8 @@ class AndroidPlatform extends Platform {
   final String sha1Cert;
 
   AndroidPlatform(
-      {required this.packageId,
-      required this.sha1Cert,
-      required bool isOnline})
-      : assert(packageId != null),
-        assert(sha1Cert != null),
-        super(isMobile: true, isOnline: isOnline);
+      {required this.packageId, required this.sha1Cert, required bool isOnline})
+      : super(isMobile: true, isOnline: isOnline);
 
   @override
   bool get isMobile => true;
@@ -136,8 +123,7 @@ class IOsPlatform extends Platform {
   final String appId;
 
   IOsPlatform({required this.appId, required bool isOnline})
-      : assert(appId != null),
-        super(isMobile: true, isOnline: isOnline);
+      : super(isMobile: true, isOnline: isOnline);
 
   @override
   Map<String, dynamic> toJson() => {
@@ -151,8 +137,7 @@ class MacOsPlatform extends Platform {
   final String appId;
 
   MacOsPlatform({required this.appId, required bool isOnline})
-      : assert(appId != null),
-        super(isMobile: false, isOnline: isOnline);
+      : super(isMobile: false, isOnline: isOnline);
 
   @override
   Map<String, dynamic> toJson() => {
