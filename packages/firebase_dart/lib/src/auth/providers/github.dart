@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import '../auth_provider.dart';
 import 'oauth.dart';
 
@@ -55,7 +53,6 @@ class GithubAuthProvider extends AuthProvider {
 
   /// Adds GitHub OAuth scope.
   GithubAuthProvider addScope(String scope) {
-    assert(scope != null);
     _scopes.add(scope);
     return this;
   }
@@ -64,14 +61,12 @@ class GithubAuthProvider extends AuthProvider {
   /// request for popup and redirect sign-in operations.
   GithubAuthProvider setCustomParameters(
       Map<dynamic, dynamic> customOAuthParameters) {
-    assert(customOAuthParameters != null);
     _parameters = customOAuthParameters;
     return this;
   }
 
   /// Create a new [GithubAuthCredential] from a provided [accessToken];
   static OAuthCredential credential(String accessToken) {
-    assert(accessToken != null);
     return GithubAuthCredential._(
       accessToken,
     );

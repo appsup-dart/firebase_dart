@@ -1,7 +1,4 @@
-// @dart=2.9
-
 import 'package:collection/collection.dart';
-import 'package:meta/meta.dart';
 
 /// Interface that represents the credentials returned by an auth provider.
 /// Implementations specify the details about each auth provider's credential
@@ -16,9 +13,7 @@ class AuthCredential {
   /// identifier returned in [fetchSignInMethodsForEmail].
   final String signInMethod;
 
-  const AuthCredential({@required this.providerId, @required this.signInMethod})
-      : assert(providerId != null),
-        assert(signInMethod != null);
+  const AuthCredential({required this.providerId, required this.signInMethod});
 
   /// Returns the current instance as a serialized [Map].
   Map<String, dynamic> asMap() => {

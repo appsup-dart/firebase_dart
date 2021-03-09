@@ -1,8 +1,3 @@
-// @dart=2.9
-
-
-import 'package:meta/meta.dart';
-
 import '../auth_credential.dart';
 import '../auth_provider.dart';
 import 'oauth.dart';
@@ -44,7 +39,6 @@ class TwitterAuthProvider extends AuthProvider {
   /// This corresponds to the sign-in method identifier.
   static String get TWITTER_SIGN_IN_METHOD => PROVIDER_ID;
 
-
   Map<dynamic, dynamic> _parameters = {};
 
   /// Returns the parameters for this provider instance.
@@ -56,18 +50,14 @@ class TwitterAuthProvider extends AuthProvider {
   /// popup and redirect sign-in operations.
   TwitterAuthProvider setCustomParameters(
       Map<dynamic, dynamic> customOAuthParameters) {
-    assert(customOAuthParameters != null);
     _parameters = customOAuthParameters;
     return this;
   }
 
-
   /// Create a new [TwitterAuthCredential] from a provided [accessToken] and
   /// [secret];
   static OAuthCredential credential(
-      {@required String accessToken, @required String secret}) {
-    assert(accessToken != null);
-    assert(secret != null);
+      {required String accessToken, required String secret}) {
     return TwitterAuthCredential._credential(
       accessToken: accessToken,
       secret: secret,
@@ -78,11 +68,11 @@ class TwitterAuthProvider extends AuthProvider {
 /// An [AuthCredential] for authenticating via twitter.com
 class TwitterAuthCredential extends OAuthCredential {
   TwitterAuthCredential._credential({
-    String accessToken,
-    String secret,
+    String? accessToken,
+    String? secret,
   }) : super(
-      providerId: TwitterAuthProvider.PROVIDER_ID,
-      signInMethod: TwitterAuthProvider.TWITTER_SIGN_IN_METHOD,
-      accessToken: accessToken,
-      secret: secret);
+            providerId: TwitterAuthProvider.PROVIDER_ID,
+            signInMethod: TwitterAuthProvider.TWITTER_SIGN_IN_METHOD,
+            accessToken: accessToken,
+            secret: secret);
 }

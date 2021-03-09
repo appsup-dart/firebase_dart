@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
@@ -15,12 +13,10 @@ class OAuthProvider extends AuthProvider {
   @override
   final String providerId;
 
-  OAuthProvider(this.providerId)
-      : assert(providerId != null),
-        super(providerId);
+  OAuthProvider(this.providerId) : super(providerId);
 
   final List<String> _scopes = [];
-  Map<dynamic, dynamic> _parameters;
+  Map<dynamic, dynamic>? _parameters;
 
   /// Returns the currently assigned scopes to this provider instance.
   /// This is a Web only API.
@@ -30,14 +26,13 @@ class OAuthProvider extends AuthProvider {
 
   /// Returns the parameters for this provider instance.
   /// This is a Web only API.
-  Map<dynamic, dynamic> get parameters {
+  Map<dynamic, dynamic>? get parameters {
     return _parameters;
   }
 
   /// Adds OAuth scope.
   /// This is a Web only API.
   OAuthProvider addScope(String scope) {
-    assert(scope != null);
     _scopes.add(scope);
     return this;
   }
@@ -47,14 +42,13 @@ class OAuthProvider extends AuthProvider {
   /// This is a Web only API.
   OAuthProvider setCustomParameters(
       Map<dynamic, dynamic> customOAuthParameters) {
-    assert(customOAuthParameters != null);
     _parameters = customOAuthParameters;
     return this;
   }
 
   /// Create a new [OAuthCredential] from a provided [accessToken];
   OAuthCredential credential(
-      {String accessToken, String idToken, String rawNonce}) {
+      {String? accessToken, String? idToken, String? rawNonce}) {
     return OAuthCredential(
       providerId: providerId,
       signInMethod: 'oauth',
@@ -72,35 +66,33 @@ class OAuthProvider extends AuthProvider {
 class OAuthCredential extends AuthCredential {
   /// The OAuth access token associated with the credential if it belongs to an
   /// OAuth provider, such as `facebook.com`, `twitter.com`, etc.
-  final String accessToken;
+  final String? accessToken;
 
   /// The OAuth ID token associated with the credential if it belongs to an
   /// OIDC provider, such as `google.com`.
-  final String idToken;
+  final String? idToken;
 
   /// The OAuth access token secret associated with the credential if it belongs
   /// to an OAuth 1.0 provider, such as `twitter.com`.
-  final String secret;
+  final String? secret;
 
   /// The raw nonce associated with the ID token. It is required when an ID
   /// token with a nonce field is provided. The SHA-256 hash of the raw nonce
   /// must match the nonce field in the ID token.
-  final String rawNonce;
+  final String? rawNonce;
 
   @protected
   const OAuthCredential({
-    @required String providerId,
-    @required String signInMethod,
+    required String providerId,
+    required String signInMethod,
     this.accessToken,
     this.idToken,
     this.secret,
     this.rawNonce,
-  })  : assert(providerId != null),
-        assert(signInMethod != null),
-        super(providerId: providerId, signInMethod: signInMethod);
+  }) : super(providerId: providerId, signInMethod: signInMethod);
 
   @override
-  Map<String, String> asMap() {
+  Map<String, String?> asMap() {
     return {
       ...super.asMap(),
       'idToken': idToken,

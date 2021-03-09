@@ -1,7 +1,3 @@
-// @dart=2.9
-
-import 'package:meta/meta.dart';
-
 import '../auth_credential.dart';
 import '../auth_provider.dart';
 
@@ -24,20 +20,16 @@ abstract class EmailAuthProvider extends AuthProvider {
   EmailAuthProvider() : super(PROVIDER_ID);
 
   static AuthCredential credential({
-    @required String email,
-    @required String password,
+    required String email,
+    required String password,
   }) {
-    assert(email != null);
-    assert(password != null);
     return EmailAuthCredential._(email: email, password: password);
   }
 
   static AuthCredential credentialWithLink({
-    @required String email,
-    @required String emailLink,
+    required String email,
+    required String emailLink,
   }) {
-    assert(email != null);
-    assert(emailLink != null);
     return EmailAuthCredential._(email: email, emailLink: emailLink);
   }
 }
@@ -46,23 +38,20 @@ abstract class EmailAuthProvider extends AuthProvider {
 /// [EmailAuthProvider.credential].
 class EmailAuthCredential extends AuthCredential {
   /// The user's email address.
-  final String /*!*/ email;
+  final String email;
 
   /// The user account password.
-  final String password;
+  final String? password;
 
   /// The sign-in email link.
-  final String emailLink;
+  final String? emailLink;
 
-  @override
-  String get providerId => 'password';
-
-  @override
-  String get signInMethod => password == null
-      ? EmailAuthProvider.EMAIL_LINK_SIGN_IN_METHOD
-      : EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD;
-
-  EmailAuthCredential._({@required this.email, this.password, this.emailLink});
+  EmailAuthCredential._({required this.email, this.password, this.emailLink})
+      : super(
+            providerId: EmailAuthProvider.PROVIDER_ID,
+            signInMethod: password == null
+                ? EmailAuthProvider.EMAIL_LINK_SIGN_IN_METHOD
+                : EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD);
 
   EmailAuthCredential.fromJson(Map<String, dynamic> json)
       : this._(
@@ -71,9 +60,9 @@ class EmailAuthCredential extends AuthCredential {
             emailLink: json['emailLink']);
 
   @override
-  Map<String, String> asMap() {
+  Map<String, String?> asMap() {
     return {
-      ...super.asMap(),
+      ...super.asMap() as Map<String, String?>,
       'email': email,
       'secret': password,
       'emailLink': emailLink,
