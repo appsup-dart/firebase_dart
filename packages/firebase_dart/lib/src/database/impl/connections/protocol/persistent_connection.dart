@@ -453,6 +453,10 @@ class PersistentConnectionImpl extends PersistentConnection
       switch (message.action) {
         case DataMessage.actionListen:
         case DataMessage.actionUnlisten:
+        case DataMessage.actionUnauth:
+        case DataMessage.actionAuth:
+        case DataMessage.actionGauth:
+        case DataMessage.actionStats:
           break;
         default:
           _outstandingRequests.add(request);
