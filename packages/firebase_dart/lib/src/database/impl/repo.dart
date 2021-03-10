@@ -190,7 +190,7 @@ class Repo {
     var newValue = TreeStructuredData.fromJson(value, priority);
     var writeId = _nextWriteId++;
     _syncTree.applyUserOverwrite(Name.parsePath(path),
-        ServerValue.resolve(newValue, _connection.serverValues), writeId);
+        ServerValueX.resolve(newValue, _connection.serverValues), writeId);
     _transactions.abort(
         Name.parsePath(path), FirebaseDatabaseException.overriddenBySet());
     try {
@@ -218,7 +218,7 @@ class Repo {
       var serverValues = _connection.serverValues;
       var changedChildren = Map<Path<Name>, TreeStructuredData>.fromIterables(
           value.keys.map<Path<Name>>((c) => Name.parsePath(c)),
-          value.values.map<TreeStructuredData>((v) => ServerValue.resolve(
+          value.values.map<TreeStructuredData>((v) => ServerValueX.resolve(
               TreeStructuredData.fromJson(v, null), serverValues)));
       var writeId = _nextWriteId++;
       _syncTree.applyUserMerge(Name.parsePath(path), changedChildren, writeId);
@@ -355,7 +355,7 @@ class Repo {
     _onDisconnect.forEachNode((path, snap) {
       if (snap == null) return;
       _syncTree.applyServerOperation(
-          TreeOperation.overwrite(path, ServerValue.resolve(snap, sv)), null);
+          TreeOperation.overwrite(path, ServerValueX.resolve(snap, sv)), null);
       _transactions.abort(path, FirebaseDatabaseException.overriddenBySet());
     });
     _onDisconnect.children.clear();
@@ -560,7 +560,7 @@ class Transaction implements Comparable<Transaction> {
         TreeStructuredData.fromJson(data.value, currentState.priority);
     currentOutputSnapshotRaw = newNode;
     currentOutputSnapshotResolved =
-        ServerValue.resolve(newNode, repo._connection.serverValues);
+        ServerValueX.resolve(newNode, repo._connection.serverValues);
     currentWriteId = repo._nextWriteId++;
 
     if (applyLocally) {

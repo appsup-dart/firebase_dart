@@ -4,7 +4,8 @@ library firebase_dart.database.backend_connection;
 
 import 'dart:async';
 
-import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
+import 'package:firebase_dart/database.dart'
+    show FirebaseDatabaseException, ServerValue;
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';

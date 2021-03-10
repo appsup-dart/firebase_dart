@@ -5,16 +5,10 @@
 
 part of firebase.treestructureddata;
 
-class ServerValue {
-  final String type;
-
-  const ServerValue._(this.type);
-
-  static const ServerValue timestamp = ServerValue._('timestamp');
-
-  static const Map<String, ServerValue> values = {'timestamp': timestamp};
-
-  Map<String, String> toJson() => {'.sv': type};
+extension ServerValueX on ServerValue {
+  static const Map<String, ServerValue> values = {
+    'timestamp': ServerValue.timestamp
+  };
 
   static TreeStructuredData resolve(
       TreeStructuredData value, Map<ServerValue, Value> serverValues) {
@@ -45,6 +39,7 @@ class Value implements Comparable<Value> {
     if (value is Map && value.containsKey('.sv')) {
       return Value.server(value['.sv']);
     }
+    ServerValue;
     throw ArgumentError('Unsupported value type ${value.runtimeType}');
   }
 
@@ -56,7 +51,7 @@ class Value implements Comparable<Value> {
 
   const Value.string(String value) : this._(value);
 
-  Value.server(String type) : this._(ServerValue.values[type]);
+  Value.server(String type) : this._(ServerValueX.values[type]);
 
   bool get isBool => value is bool;
 

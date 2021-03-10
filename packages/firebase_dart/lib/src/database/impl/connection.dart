@@ -4,7 +4,8 @@ library firebase.connection;
 
 import 'dart:async';
 
-import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
+import 'package:firebase_dart/database.dart'
+    show FirebaseDatabaseException, ServerValue;
 import 'package:meta/meta.dart';
 
 import 'connections/protocol.dart';

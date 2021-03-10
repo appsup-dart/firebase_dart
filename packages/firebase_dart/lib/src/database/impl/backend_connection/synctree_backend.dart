@@ -36,7 +36,7 @@ class SyncTreeBackend extends Backend {
     syncTree.applyServerOperation(
         TreeOperation.overwrite(
             p,
-            ServerValue.resolve(
+            ServerValueX.resolve(
                 TreeStructuredData.fromJson(value), serverValues)),
         null);
   }
@@ -51,7 +51,7 @@ class SyncTreeBackend extends Backend {
             Name.parsePath(path),
             children.map((k, v) => MapEntry(
                 Name.parsePath(k),
-                ServerValue.resolve(
+                ServerValueX.resolve(
                     TreeStructuredData.fromJson(v), serverValues)))),
         null);
   }
