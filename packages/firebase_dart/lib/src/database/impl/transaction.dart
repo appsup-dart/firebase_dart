@@ -2,7 +2,14 @@
 
 part of 'repo.dart';
 
-enum TransactionStatus { run, sent, completed, sentNeedsAbort }
+enum TransactionStatus {
+  readyToRun,
+  running,
+  run,
+  sent,
+  completed,
+  sentNeedsAbort
+}
 
 class Transaction implements Comparable<Transaction> {
   final Path<Name> path;
@@ -23,7 +30,7 @@ class Transaction implements Comparable<Transaction> {
   TreeStructuredData currentOutputSnapshotRaw;
   TreeStructuredData currentOutputSnapshotResolved;
 
-  TransactionStatus status;
+  TransactionStatus status = TransactionStatus.readyToRun;
 
   Transaction(this.repo, this.path, this.update, this.applyLocally)
       : order = _order++ {
@@ -49,7 +56,8 @@ class Transaction implements Comparable<Transaction> {
   }
 
   void run(TreeStructuredData currentState) {
-    assert(status == null);
+    assert(status == TransactionStatus.readyToRun);
+    status = TransactionStatus.running;
     if (retryCount >= maxRetries) {
       fail(FirebaseDatabaseException.maxRetries());
       return;
@@ -102,7 +110,7 @@ class Transaction implements Comparable<Transaction> {
 
   void stale() {
     assert(status != TransactionStatus.completed);
-    status = null;
+    status = TransactionStatus.readyToRun;
     if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, false);
   }
 
@@ -120,6 +128,8 @@ class Transaction implements Comparable<Transaction> {
         status = TransactionStatus.sentNeedsAbort;
         abortReason = reason;
         break;
+      case TransactionStatus.readyToRun:
+      case TransactionStatus.running:
       case TransactionStatus.run:
         fail(reason);
         break;
@@ -214,7 +224,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
       children.values.every((n) => n.isReadyToSend);
 
   bool get needsRerun =>
-      value.any((t) => t.status == null) ||
+      value.any((t) => t.status == TransactionStatus.readyToRun) ||
       children.values.any((n) => n.needsRerun);
 
   @override
@@ -229,7 +239,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     // remove the transactions that are now complete
     value = value.where((t) => !t.isComplete).toList();
     // reset the status of all other transactions
-    value.forEach((m) => m.status = null);
+    value.forEach((m) => m.status = TransactionStatus.readyToRun);
 
     // repeat for all children
     children.values.forEach((n) => n.complete());
