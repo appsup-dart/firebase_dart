@@ -115,9 +115,11 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
       other.databaseURL == databaseURL;
 
   @override
-  void setPersistenceCacheSizeBytes(int cacheSizeInBytes) {
+  Future<bool> setPersistenceCacheSizeBytes(int cacheSizeInBytes) async {
     assert(cacheSizeInBytes != null);
+    if (_persistenceManager != null) return false;
     _persistenceCacheSize = cacheSizeInBytes;
+    return true;
   }
 }
 
@@ -191,15 +193,15 @@ class QueryImpl extends Query {
   }
 
   @override
-  Query equalTo(dynamic value, [String key = '[ANY_NAME]']) {
+  Query equalTo(dynamic value, {String key = '[ANY_NAME]'}) {
     if (filter.orderBy == '.key' || key == '[ANY_NAME]') {
       return endAt(value).startAt(value);
     }
-    return endAt(value, key).startAt(value, key);
+    return endAt(value, key: key).startAt(value, key: key);
   }
 
   @override
-  Query startAt(dynamic value, [String key = '[MIN_NAME]']) {
+  Query startAt(dynamic value, {String key = '[MIN_NAME]'}) {
     if (filter.orderBy == '.key') {
       if (key != '[MIN_NAME]') {
         throw ArgumentError(
@@ -214,7 +216,7 @@ class QueryImpl extends Query {
   }
 
   @override
-  Query endAt(dynamic value, [String key = '[MAX_NAME]']) {
+  Query endAt(dynamic value, {String key = '[MAX_NAME]'}) {
     if (filter.orderBy == '.key') {
       if (key != '[MAX_NAME]') {
         throw ArgumentError(
@@ -246,7 +248,7 @@ class QueryImpl extends Query {
 }
 
 class ReferenceImpl extends QueryImpl with DatabaseReference {
-  Disconnect _onDisconnect;
+  OnDisconnect _onDisconnect;
 
   ReferenceImpl(FirebaseDatabase db, List<String> path)
       : super._(db, path, const QueryFilter()) {
@@ -254,7 +256,7 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
   }
 
   @override
-  Disconnect get onDisconnect => _onDisconnect;
+  OnDisconnect onDisconnect() => _onDisconnect;
 
   @override
   Uri get url => _repo.url.replace(path: _path);
@@ -319,13 +321,13 @@ extension LegacyAuthExtension on DatabaseReference {
   Future<void> authenticate(String token) => repo.auth(token);
 }
 
-class DisconnectImpl extends Disconnect {
+class DisconnectImpl extends OnDisconnect {
   final ReferenceImpl _ref;
 
   DisconnectImpl(this._ref);
 
   @override
-  Future setWithPriority(dynamic value, dynamic priority) =>
+  Future set(dynamic value, {dynamic priority}) =>
       _ref._repo.onDisconnectSetWithPriority(_ref._path, value, priority);
 
   @override

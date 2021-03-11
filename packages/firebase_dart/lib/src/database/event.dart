@@ -12,8 +12,8 @@ class Event {
   final DataSnapshot snapshot;
 
   /// The key of the previous child.
-  final String prevChild;
+  final String /*!*/ previousSiblingKey;
 
   /// Creates a new event
-  Event(this.snapshot, this.prevChild);
+  Event(this.snapshot, this.previousSiblingKey);
 }

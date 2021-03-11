@@ -52,8 +52,8 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
   }
 
   @override
-  void setPersistenceCacheSizeBytes(int cacheSizeInBytes) async {
-    await invoke(#setPersistenceCacheSizeBytes, [cacheSizeInBytes]);
+  Future<bool> setPersistenceCacheSizeBytes(int cacheSizeInBytes) {
+    return invoke(#setPersistenceCacheSizeBytes, [cacheSizeInBytes]);
   }
 
   @override
@@ -131,15 +131,16 @@ class QueryFunctionCall<T> extends BaseFunctionCall<T> {
       if (filter.orderBy == '.key') {
         query = query.startAt(filter.startKey.asString());
       } else {
-        query = query.startAt(
-            filter.startValue.toJson(), filter.startKey.asString());
+        query = query.startAt(filter.startValue.toJson(),
+            key: filter.startKey.asString());
       }
     }
     if (filter.endKey != null || filter.endValue != null) {
       if (filter.orderBy == '.key') {
         query = query.endAt(filter.endKey.asString());
       } else {
-        query = query.endAt(filter.endValue.toJson(), filter.endKey.asString());
+        query = query.endAt(filter.endValue.toJson(),
+            key: filter.endKey.asString());
       }
     }
     if (filter.limit != null) {
@@ -164,11 +165,11 @@ class QueryFunctionCall<T> extends BaseFunctionCall<T> {
       case #update:
         return getRef().update;
       case #disconnectCancel:
-        return getRef().onDisconnect.cancel;
-      case #disconnectSetWithPriority:
-        return getRef().onDisconnect.setWithPriority;
+        return getRef().onDisconnect().cancel;
+      case #disconnectSet:
+        return getRef().onDisconnect().set;
       case #disconnectUpdate:
-        return getRef().onDisconnect.update;
+        return getRef().onDisconnect().update;
       case #on:
         return getQuery().on;
     }
@@ -199,11 +200,11 @@ class IsolateQuery extends Query {
   }
 
   @override
-  Query equalTo(dynamic value, [String key = '[ANY_NAME]']) {
+  Query equalTo(dynamic value, {String key = '[ANY_NAME]'}) {
     if (filter.orderBy == '.key' || key == '[ANY_NAME]') {
       return endAt(value).startAt(value);
     }
-    return endAt(value, key).startAt(value, key);
+    return endAt(value, key: key).startAt(value, key: key);
   }
 
   @override
@@ -262,7 +263,7 @@ class IsolateQuery extends Query {
   }
 
   @override
-  Query startAt(dynamic value, [String key = '[MIN_NAME]']) {
+  Query startAt(dynamic value, {String key = '[MIN_NAME]'}) {
     if (filter.orderBy == '.key') {
       if (key != '[MIN_NAME]') {
         throw ArgumentError(
@@ -277,7 +278,7 @@ class IsolateQuery extends Query {
   }
 
   @override
-  Query endAt(dynamic value, [String key = '[MAX_NAME]']) {
+  Query endAt(dynamic value, {String key = '[MAX_NAME]'}) {
     if (filter.orderBy == '.key') {
       if (key != '[MAX_NAME]') {
         throw ArgumentError(
@@ -306,7 +307,7 @@ class IsolateQuery extends Query {
   }
 }
 
-class IsolateDisconnect extends Disconnect {
+class IsolateDisconnect extends OnDisconnect {
   final IsolateDatabaseReference reference;
 
   IsolateDisconnect(this.reference);
@@ -317,8 +318,8 @@ class IsolateDisconnect extends Disconnect {
   }
 
   @override
-  Future setWithPriority(value, priority) {
-    return reference.invoke(#disconnectSetWithPriority, [value, priority]);
+  Future set(value, {priority}) {
+    return reference.invoke(#disconnectSet, [value, priority]);
   }
 
   @override
@@ -328,7 +329,7 @@ class IsolateDisconnect extends Disconnect {
 }
 
 class IsolateDatabaseReference extends IsolateQuery with DatabaseReference {
-  Disconnect _onDisconnect;
+  OnDisconnect _onDisconnect;
 
   IsolateDatabaseReference(
       IsolateFirebaseDatabase database, List<String> pathSegments)
@@ -341,7 +342,7 @@ class IsolateDatabaseReference extends IsolateQuery with DatabaseReference {
       database, [...pathSegments, ...c.split('/').map(Uri.decodeComponent)]);
 
   @override
-  Disconnect get onDisconnect => _onDisconnect;
+  OnDisconnect onDisconnect() => _onDisconnect;
 
   @override
   DatabaseReference parent() => pathSegments.isEmpty

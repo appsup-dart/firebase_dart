@@ -3,7 +3,9 @@
 
 // @dart=2.9
 
-part of firebase_dart;
+import 'dart:convert';
+
+import 'package:jose/jose.dart';
 
 class _Encoder extends Converter<FirebaseToken, String> {
   final String secret;
