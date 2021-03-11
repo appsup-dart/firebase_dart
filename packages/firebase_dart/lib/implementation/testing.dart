@@ -53,7 +53,6 @@ class FirebaseTesting {
 
         var projectId = Backend._apiKeys[apiKey];
         var authBackend = Backend.getAuthBackend(projectId);
-        assert(authBackend != null);
 
         var body = request.bodyFields;
 
@@ -89,7 +88,6 @@ class FirebaseTesting {
 
         var projectId = Backend._apiKeys[apiKey];
         var authBackend = Backend.getAuthBackend(projectId);
-        assert(authBackend != null);
 
         var connection = auth.BackendConnection(authBackend);
         return connection.handleRequest(r);
@@ -98,7 +96,6 @@ class FirebaseTesting {
           http.MockClient((r) async {
         var bucket = r.url.pathSegments[2];
         var storageBackend = Backend.getStorageBackend(bucket);
-        assert(storageBackend != null);
 
         var connection = storage.BackendConnection(storageBackend);
         return connection.handleRequest(r);

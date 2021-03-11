@@ -1,5 +1,3 @@
-
-
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/database.dart';
@@ -9,7 +7,6 @@ import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:firebase_dart/src/storage/service.dart';
 import 'package:http/http.dart' as http;
-import 'package:meta/meta.dart';
 
 import '../implementation.dart';
 

@@ -8,7 +8,6 @@ import 'dart:collection';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/implementation.dart';
-import 'package:meta/meta.dart';
 
 part 'database/database.dart';
 part 'database/datasnapshot.dart';
