@@ -1,7 +1,7 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.9
+
 
 part of firebase_dart;
 
@@ -65,7 +65,7 @@ abstract class Query {
   ///
   /// startAt() can be combined with endAt() or limitToFirst() or limitToLast()
   /// to create further restrictive queries.
-  Query startAt(dynamic value, {String key});
+  Query startAt(dynamic value, {String? key});
 
   /// Creates a [Query] with the specified ending point. The generated Query
   /// includes children which match the specified ending point. If no arguments
@@ -78,18 +78,18 @@ abstract class Query {
   ///
   /// endAt() can be combined with startAt() or limitToFirst() or limitToLast()
   /// to create further restrictive queries.
-  Query endAt(dynamic value, {String key});
+  Query endAt(dynamic value, {String? key});
 
   /// Creates a [Query] which includes children which match the specified value.
-  Query equalTo(dynamic value, {String key});
+  Query equalTo(dynamic value, {String? key});
 
   /// Generates a new [Query] object limited to the first certain number of
   /// children.
-  Query limitToFirst(int /*!*/ limit);
+  Query limitToFirst(int limit);
 
   /// Generates a new [Query] object limited to the last certain number of
   /// children.
-  Query limitToLast(int /*!*/ limit);
+  Query limitToLast(int limit);
 
   /// Queries are attached to a location in your Firebase. This method will
   /// return a Firebase reference to that location.

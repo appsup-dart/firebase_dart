@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 part of firebase_dart;
 
@@ -14,12 +14,12 @@ abstract class FirebaseDatabase {
   /// The URL to which this [FirebaseDatabase] belongs
   ///
   /// If null, the URL of the specified [FirebaseApp] is used
-  String /*!*/ get databaseURL;
+  String get databaseURL;
 
   /// Gets an instance of [FirebaseDatabase].
   ///
   /// If app is specified, its options should include a `databaseURL`.
-  factory FirebaseDatabase({FirebaseApp app, String databaseURL}) {
+  factory FirebaseDatabase({FirebaseApp? app, String? databaseURL}) {
     return FirebaseImplementation.installation
         .createDatabase(app ?? Firebase.app(), databaseURL: databaseURL);
   }

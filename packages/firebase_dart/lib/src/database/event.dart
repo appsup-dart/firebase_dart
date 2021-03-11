@@ -1,7 +1,7 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.9
+
 
 part of firebase_dart;
 
@@ -12,7 +12,7 @@ class Event {
   final DataSnapshot snapshot;
 
   /// The key of the previous child.
-  final String /*!*/ previousSiblingKey;
+  final String previousSiblingKey;
 
   /// Creates a new event
   Event(this.snapshot, this.previousSiblingKey);

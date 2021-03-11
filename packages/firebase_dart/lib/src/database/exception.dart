@@ -1,12 +1,12 @@
-// @dart=2.9
+
 
 part of firebase_dart;
 
 class FirebaseDatabaseException extends FirebaseException {
-  final String details;
+  final String? details;
 
   FirebaseDatabaseException(
-      {@required String code, String message, this.details})
+      {required String code, String? message, this.details})
       : super(plugin: 'database', code: code, message: message);
 
   /// Thrown when the transaction needs to be run again with current data
@@ -93,6 +93,6 @@ class FirebaseDatabaseException extends FirebaseException {
   FirebaseDatabaseException.unknownError()
       : this(code: 'unknown_error', message: 'An unknown error occurred');
 
-  FirebaseDatabaseException replace({String message}) =>
+  FirebaseDatabaseException replace({String? message}) =>
       FirebaseDatabaseException(code: code, message: message ?? this.message);
 }
