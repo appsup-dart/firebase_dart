@@ -133,7 +133,8 @@ abstract class DatabaseReference implements Query {
       bool fireLocalEvents = true});
 }
 
-typedef TransactionHandler = MutableData Function(MutableData mutableData);
+typedef TransactionHandler = FutureOr<MutableData> Function(
+    MutableData mutableData);
 
 /// The results of the transaction.
 abstract class TransactionResult {

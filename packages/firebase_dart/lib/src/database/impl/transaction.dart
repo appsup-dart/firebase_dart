@@ -74,7 +74,7 @@ class Transaction implements Comparable<Transaction> {
 
   /// Run the transaction and apply the result to the sync tree if
   /// [applyLocally] is true.
-  void run(TreeStructuredData currentState) {
+  Future<void> run(TreeStructuredData currentState) async {
     assert(status == TransactionStatus.readyToRun);
     status = TransactionStatus.running;
     if (retryCount >= maxRetries) {
@@ -87,7 +87,7 @@ class Transaction implements Comparable<Transaction> {
         path.isEmpty ? null : path.last.toString(), currentState.toJson());
 
     try {
-      data = update(data);
+      data = await update(data);
     } catch (e) {
       fail(FirebaseDatabaseException.userCodeException());
       return;
@@ -208,11 +208,10 @@ class TransactionsTree {
     var transaction = Transaction(repo, path, transactionUpdate, applyLocally);
     var node = root.subtree(path, (a, b) => TransactionsNode());
 
-    var current = getLatestValue(repo._syncTree, path);
     if (node.value.isEmpty) {
+      var current = getLatestValue(repo._syncTree, path);
       node.input = current;
     }
-    transaction.run(current);
     node.addTransaction(transaction);
     execute();
 
@@ -332,7 +331,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
       var repo = value.first.repo;
       var path = value.first.path;
       if (needsRerun) {
-        return !rerun(path);
+        return !(await rerun(path));
       }
       if (isReadyToSend) {
         var latestHash = input.hash;
@@ -385,6 +384,10 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     yield* children.values.expand((n) => n.childrenDeep);
   }
 
+  bool _isRunning = false;
+
+  bool get isRunning => _isRunning || children.values.any((v) => v.isRunning);
+
   /// Runs the transactions that have not yet run. Transaction that have already
   /// run are skipped if the input did not change. If the input did change and
   /// the result was not yet sent to the server, the transaction is reset and
@@ -392,34 +395,40 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
   ///
   /// Returns true if all transactions have run, false if the process was
   /// aborted prematurely.
-  bool rerun(Path<Name> path) {
+  Future<bool> rerun(Path<Name> path) async {
+    if (isRunning) return false;
+    _isRunning = true;
     var v = input;
     for (var t in transactionsInOrder) {
       var p = t.path.skip(path.length);
       switch (t.status) {
         case TransactionStatus.readyToRun:
-          t.run(v.getChild(p));
+          await t.run(v.getChild(p));
           break;
         case TransactionStatus.runComplete:
           if (v.getChild(p) != t.currentInputSnapshot) {
             t.reset();
-            t.run(v.getChild(p));
+            await t.run(v.getChild(p));
           }
           break;
         case TransactionStatus.sent:
         case TransactionStatus.sentNeedsAbort:
           if (v.getChild(p) != t.currentInputSnapshot) {
             // we cannot continue running and need to wait for the server response
+            _isRunning = false;
             return false;
           }
           break;
         case TransactionStatus.running:
-        case TransactionStatus.completed:
           throw StateError(
               'Should not call rerun when transactions are running');
+        case TransactionStatus.completed:
+          // transaction might be aborted while running
+          continue;
       }
       v = v.updateChild(p, t.currentOutputSnapshotResolved);
     }
+    _isRunning = false;
     return true;
   }
 
@@ -447,7 +456,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
   }
 
   void addTransaction(Transaction transaction) {
-    if (transaction.status == TransactionStatus.runComplete) {
+    if (transaction.status == TransactionStatus.readyToRun) {
       value.add(transaction);
     }
   }

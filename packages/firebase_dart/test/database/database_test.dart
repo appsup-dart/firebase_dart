@@ -688,7 +688,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
       var futures = <Future>[];
       for (var i = 0; i < 10; i++) {
-        futures.add(ref.child('object/count').runTransaction((v) {
+        futures.add(ref.child('object/count').runTransaction((v) async {
           print('run $i ${v.value}');
           return v..value = (v.value ?? 0) + 1;
         }).then((v) {
@@ -697,7 +697,7 @@ void testsWith(Map<String, dynamic> secrets) {
         }));
       }
       for (var i = 0; i < 10; i++) {
-        futures.add(ref.child('object').runTransaction((v) {
+        futures.add(ref.child('object').runTransaction((v) async {
           v.value ??= {};
           v.value.putIfAbsent('count', () => 0);
           v.value['count']++;
@@ -1537,7 +1537,7 @@ void testsWith(Map<String, dynamic> secrets) {
           return data..value = 2;
         });
 
-        await Future.microtask(() => null);
+        await wait(400);
 
         expect(events, [
           'value-null',
