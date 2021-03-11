@@ -1,10 +1,7 @@
-// @dart=2.9
-
 import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/implementation.dart';
-import 'package:meta/meta.dart';
 
 import 'core.dart';
 
@@ -23,7 +20,7 @@ abstract class FirebaseStorage {
   /// Storage Bucket.
   ///
   /// The [app] argument is the custom [FirebaseApp].
-  static FirebaseStorage instanceFor({FirebaseApp app, String bucket}) =>
+  static FirebaseStorage instanceFor({FirebaseApp? app, String? bucket}) =>
       FirebaseImplementation.installation
           .createStorage(app ?? Firebase.app(), storageBucket: bucket);
 
@@ -44,7 +41,7 @@ abstract class FirebaseStorage {
 
   /// Creates a new [Reference] initialized at the root
   /// Firebase Storage location.
-  Reference ref([String path]);
+  Reference ref([String? path]);
 
   /// The maximum time to retry downloads.
   Duration get maxDownloadRetryTime;
@@ -141,7 +138,7 @@ class TaskSnapshot {
   /// The [FullMetadata] associated with this task.
   ///
   /// May be null if no metadata exists.
-  final FullMetadata metadata;
+  final FullMetadata? metadata;
 
   /// The [Reference] for this snapshot.
   final Reference ref;
@@ -162,10 +159,10 @@ class TaskSnapshot {
   final int totalBytes;
 
   TaskSnapshot(
-      {@required this.ref,
-      @required this.state,
-      @required this.totalBytes,
-      @required this.bytesTransferred,
+      {required this.ref,
+      required this.state,
+      required this.totalBytes,
+      required this.bytesTransferred,
       this.metadata});
 }
 
@@ -184,7 +181,7 @@ abstract class Reference {
 
   /// A reference pointing to the parent location of this reference, or `null`
   /// if this reference is the root.
-  Reference get parent;
+  Reference? get parent;
 
   /// A reference to the root of this reference's bucket.
   Reference get root;
@@ -208,7 +205,7 @@ abstract class Reference {
   ///
   /// If the maxSize (in bytes) is exceeded, the operation will be canceled. By
   /// default the maxSize is 10mb (10485760 bytes).
-  Future<Uint8List> getData([int maxSize = 10485760]);
+  Future<Uint8List?> getData([int? maxSize = 10485760]);
 
   /// Fetches a long lived download URL for this object.
   Future<String> getDownloadURL();
@@ -228,7 +225,7 @@ abstract class Reference {
   /// objects whose paths end with "/" or contain two consecutive "/"s. Firebase
   /// Storage List API will filter these unsupported objects. list may fail if
   /// there are too many unsupported objects in the bucket.
-  Future<ListResult> list([ListOptions options]);
+  Future<ListResult> list([ListOptions? options]);
 
   /// List all items (files) and prefixes (folders) under this storage
   /// reference.
@@ -248,7 +245,7 @@ abstract class Reference {
   /// Use this method to upload fixed sized data as a [Uint8List].
   ///
   /// Optionally, you can also set metadata onto the uploaded object.
-  UploadTask putData(Uint8List data, [SettableMetadata metadata]);
+  UploadTask putData(Uint8List data, [SettableMetadata? metadata]);
 
   /// Upload a [String] value as a storage object.
   ///
@@ -263,7 +260,7 @@ abstract class Reference {
   /// * [PutStringFormat.base64Url] will be encoded as a Base64 string safe URL.
   UploadTask putString(String data,
       {PutStringFormat format = PutStringFormat.raw,
-      SettableMetadata metadata});
+      SettableMetadata? metadata});
 
   /// Updates the metadata on a storage object.
   Future<FullMetadata> updateMetadata(SettableMetadata metadata);
@@ -273,40 +270,40 @@ abstract class Reference {
 /// size and content type.
 class FullMetadata {
   /// The bucket this object is contained in.
-  final String bucket;
+  final String? bucket;
 
   /// Served as the 'Cache-Control' header on object download.
-  final String cacheControl;
+  final String? cacheControl;
 
   /// Served as the 'Content-Disposition' HTTP header on object download.
-  final String contentDisposition;
+  final String? contentDisposition;
 
   /// Served as the 'Content-Encoding' header on object download.
-  final String contentEncoding;
+  final String? contentEncoding;
 
   /// Served as the 'Content-Language' header on object download.
-  final String contentLanguage;
+  final String? contentLanguage;
 
   /// Served as the 'Content-Type' header on object download.
-  final String contentType;
+  final String? contentType;
 
   /// Custom metadata set on this storage object.
-  final Map<String, String> customMetadata;
+  final Map<String, String>? customMetadata;
 
   /// The full path of this object.
   final String fullPath;
 
   /// The object's generation.
-  final String generation;
+  final String? generation;
 
   /// A Base64-encoded MD5 hash of the object being uploaded.
-  final String md5Hash;
+  final String? md5Hash;
 
   /// The object's metadata generation.
-  final String metadataGeneration;
+  final String? metadataGeneration;
 
   /// The object's metageneration.
-  final String metageneration;
+  final String? metageneration;
 
   /// The short name of this object, which is the last component of the full
   /// path.
@@ -315,22 +312,22 @@ class FullMetadata {
   final String name;
 
   /// The size of this object, in bytes.
-  final int size;
+  final int? size;
 
   /// A DateTime representing when this object was created.
-  final DateTime timeCreated;
+  final DateTime? timeCreated;
 
   /// A DateTime representing when this object was updated.
-  final DateTime updated;
+  final DateTime? updated;
 
   FullMetadata({
     this.bucket,
-    @required this.fullPath,
+    required this.fullPath,
     this.generation,
     this.md5Hash,
     this.metadataGeneration,
     this.metageneration,
-    @required this.name,
+    required this.name,
     this.size,
     this.timeCreated,
     this.updated,
@@ -339,7 +336,7 @@ class FullMetadata {
     this.contentEncoding,
     this.contentLanguage,
     this.contentType,
-    Map<String, String> customMetadata,
+    Map<String, String>? customMetadata,
   }) : customMetadata = customMetadata == null
             ? null
             : Map<String, String>.unmodifiable(customMetadata);
@@ -347,22 +344,22 @@ class FullMetadata {
 
 class SettableMetadata {
   /// Served as the 'Cache-Control' header on object download.
-  final String cacheControl;
+  final String? cacheControl;
 
   /// Served as the 'Content-Disposition' HTTP header on object download.
-  final String contentDisposition;
+  final String? contentDisposition;
 
   /// Served as the 'Content-Encoding' header on object download.
-  final String contentEncoding;
+  final String? contentEncoding;
 
   /// Served as the 'Content-Language' header on object download.
-  final String contentLanguage;
+  final String? contentLanguage;
 
   /// Served as the 'Content-Type' header on object download.
-  final String contentType;
+  final String? contentType;
 
   /// Custom metadata set on this storage object.
-  final Map<String, String> customMetadata;
+  final Map<String, String>? customMetadata;
 
   SettableMetadata(
       {this.cacheControl,
@@ -403,12 +400,12 @@ class ListOptions {
   /// If set, limits the total number of `prefixes` and `items` to return.
   ///
   /// The default and maximum maxResults is 1000.
-  final int maxResults;
+  final int? maxResults;
 
   /// The nextPageToken from a previous call to list().
   ///
   /// If provided, listing is resumed from the previous position.
-  final String pageToken;
+  final String? pageToken;
 
   ListOptions({this.maxResults, this.pageToken});
 }
@@ -424,7 +421,7 @@ abstract class ListResult {
   /// If set, there might be more results for this list.
   ///
   /// Use this token to resume the list with [ListOptions].
-  String get nextPageToken;
+  String? get nextPageToken;
 
   /// References to prefixes (sub-folders). You can call list() on them to get
   /// its contents.
@@ -440,11 +437,11 @@ abstract class ListResult {
 
 class StorageException extends FirebaseException {
   StorageException._({
-    @required String code,
-    String message,
+    required String code,
+    String? message,
   }) : super(plugin: 'storage', code: code, message: message);
 
-  StorageException(String code, [String message])
+  StorageException(String code, [String? message])
       : this._(code: code, message: message);
 
   StorageException.unknown()
