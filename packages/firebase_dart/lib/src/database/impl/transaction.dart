@@ -332,21 +332,29 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
       var repo = value.first.repo;
       var path = value.first.path;
       if (needsRerun) {
-        stale();
-        rerun(path, getLatestValue(repo._syncTree, path));
-        return false;
+        return !rerun(path);
       }
       if (isReadyToSend) {
         var latestHash = input.hash;
         try {
           markAllTransactionsSent();
+          var out = output;
           await repo._connection
               .put(path.join('/'), output.toJson(true), hash: latestHash);
           complete();
+
+          if (out == ServerValueX.resolve(out, repo._connection.serverValues)) {
+            // the confirmed value did not contain any server values, so we can reset the input to the confirmed value
+            input = out;
+          } else {
+            // the transactions that ran after the sent, were not based on the correct input data, so we will reset them
+            stale();
+          }
           return false;
         } on firebase.FirebaseDatabaseException catch (e) {
           if (e.code == 'datastale') {
             stale();
+            input = getLatestValue(repo._syncTree, path);
           } else {
             fail(e);
           }
@@ -377,17 +385,42 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     yield* children.values.expand((n) => n.childrenDeep);
   }
 
-  void rerun(Path<Name> path, TreeStructuredData input) {
-    this.input = input;
-
+  /// Runs the transactions that have not yet run. Transaction that have already
+  /// run are skipped if the input did not change. If the input did change and
+  /// the result was not yet sent to the server, the transaction is reset and
+  /// rerun. Otherwise, this rerun is aborted.
+  ///
+  /// Returns true if all transactions have run, false if the process was
+  /// aborted prematurely.
+  bool rerun(Path<Name> path) {
     var v = input;
     for (var t in transactionsInOrder) {
       var p = t.path.skip(path.length);
-      t.run(v.getChild(p));
-      if (!t.isComplete) {
-        v = v.updateChild(p, t.currentOutputSnapshotResolved);
+      switch (t.status) {
+        case TransactionStatus.readyToRun:
+          t.run(v.getChild(p));
+          break;
+        case TransactionStatus.runComplete:
+          if (v.getChild(p) != t.currentInputSnapshot) {
+            t.reset();
+            t.run(v.getChild(p));
+          }
+          break;
+        case TransactionStatus.sent:
+        case TransactionStatus.sentNeedsAbort:
+          if (v.getChild(p) != t.currentInputSnapshot) {
+            // we cannot continue running and need to wait for the server response
+            return false;
+          }
+          break;
+        case TransactionStatus.running:
+        case TransactionStatus.completed:
+          throw StateError(
+              'Should not call rerun when transactions are running');
       }
+      v = v.updateChild(p, t.currentOutputSnapshotResolved);
     }
+    return true;
   }
 
   TreeStructuredData input;
