@@ -3,11 +3,28 @@
 part of 'repo.dart';
 
 enum TransactionStatus {
+  /// The transaction is ready to be run. It has not applied any local writes.
   readyToRun,
+
+  /// The transaction is running and waiting for the user code to finish.
   running,
-  run,
+
+  /// The transaction ran and applied the result locally.
+  runComplete,
+
+  /// The result of the transaction has been sent to the server, now waiting for
+  /// confirmation of the server.
   sent,
+
+  /// The transaction has completed, either successfully or it failed. All
+  /// writes have been acknowledged, so the transaction can be removed safely
+  /// from the tree.
   completed,
+
+  /// The transaction result was sent to the server, but the write was
+  /// subsequently cancelled or overriden by the user. The transaction should
+  /// complete successfully when the server confirms the sent data and be
+  /// canceled otherwise.
   sentNeedsAbort
 }
 
@@ -55,6 +72,8 @@ class Transaction implements Comparable<Transaction> {
     repo.unlisten(path.join('/'), null, 'value', _onValue);
   }
 
+  /// Run the transaction and apply the result to the sync tree if
+  /// [applyLocally] is true.
   void run(TreeStructuredData currentState) {
     assert(status == TransactionStatus.readyToRun);
     status = TransactionStatus.running;
@@ -78,7 +97,7 @@ class Transaction implements Comparable<Transaction> {
       fail(null);
       return;
     }
-    status = TransactionStatus.run;
+    status = TransactionStatus.runComplete;
 
     var newNode =
         TreeStructuredData.fromJson(data.value, currentState.priority);
@@ -93,6 +112,10 @@ class Transaction implements Comparable<Transaction> {
     }
   }
 
+  /// Completes this transaction as failed.
+  ///
+  /// When the result of the transaction was applied locally, the local write
+  /// is canceled.
   void fail(FirebaseDatabaseException e) {
     _unwatch();
     currentOutputSnapshotRaw = null;
@@ -108,18 +131,38 @@ class Transaction implements Comparable<Transaction> {
     }
   }
 
-  void stale() {
-    assert(status != TransactionStatus.completed);
-    status = TransactionStatus.readyToRun;
-    if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, false);
+  /// Resets this transaction to the [TransactionStatus.readyToRun] state.
+  ///
+  /// If the transaction has run before and therefore changes were applied
+  /// locally (if [applyLocally] is true), these changes are canceled.
+  void reset() {
+    switch (status) {
+      case TransactionStatus.readyToRun:
+        return;
+      case TransactionStatus.runComplete:
+      case TransactionStatus.sent:
+      case TransactionStatus.sentNeedsAbort:
+        status = TransactionStatus.readyToRun;
+        if (applyLocally) repo._syncTree.applyAck(path, currentWriteId, false);
+        return;
+      case TransactionStatus.running:
+        throw StateError('Cannot reset transaction while running');
+      case TransactionStatus.completed:
+        throw StateError('Connot reset transaction when completed');
+    }
   }
 
-  void send() {
-    assert(status == TransactionStatus.run);
+  /// Mark this transaction as sent.
+  void markSent() {
+    assert(status == TransactionStatus.runComplete);
     status = TransactionStatus.sent;
     retryCount++;
   }
 
+  /// Cancels and fails the transaction when it was not yet sent to the server
+  /// or marks the transaction for abort later when response received from
+  /// server. In the latter case, the transaction will fail when the server
+  /// responds with a failure or succeed when the server responds with a success.
   void abort(FirebaseDatabaseException reason) {
     switch (status) {
       case TransactionStatus.sentNeedsAbort:
@@ -130,14 +173,15 @@ class Transaction implements Comparable<Transaction> {
         break;
       case TransactionStatus.readyToRun:
       case TransactionStatus.running:
-      case TransactionStatus.run:
+      case TransactionStatus.runComplete:
         fail(reason);
         break;
-      default:
-        throw StateError('Unable to abort transaction in state $status');
+      case TransactionStatus.completed:
+        throw StateError('Cannot abort transaction when completed');
     }
   }
 
+  /// Completes the transaction successfully.
   void complete() {
     assert(isSent);
     status = TransactionStatus.completed;
@@ -170,17 +214,19 @@ class TransactionsTree {
     }
     transaction.run(current);
     node.addTransaction(transaction);
-    send();
+    execute();
 
     return transaction.completer.future;
   }
 
-  void send() {
-    root.send(repo, Path()).then((finished) {
-      if (!finished) send();
+  /// Executes all transactions
+  void execute() {
+    root.execute().then((finished) {
+      if (!finished) execute();
     });
   }
 
+  /// Aborts all transactions at [path] with reason [exception]
   void abort(Path<Name> path, FirebaseDatabaseException exception) {
     for (var n in root.nodesOnPath(path)) {
       n.abort(exception);
@@ -192,18 +238,6 @@ class TransactionsTree {
       n.abort(exception);
     }
   }
-}
-
-TreeStructuredData getLatestValue(SyncTree syncTree, Path<Name> path) {
-  var nodes = syncTree.root.nodesOnPath(path);
-  var subpath = path.skip(nodes.length - 1);
-  var node = nodes.last;
-
-  var point = node.value;
-  for (var n in subpath) {
-    point = point.child(n);
-  }
-  return point.valueForFilter(QueryFilter());
 }
 
 class TransactionsNode extends TreeNode<Name, List<Transaction>> {
@@ -219,10 +253,13 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
               newInstance]) =>
       super.subtree(path, newInstance);
 
+  /// All transactions in this node and child nodes are ready to be sent, in
+  /// other words, they have run.
   bool get isReadyToSend =>
-      value.every((t) => t.status == TransactionStatus.run) &&
+      value.every((t) => t.status == TransactionStatus.runComplete) &&
       children.values.every((n) => n.isReadyToSend);
 
+  /// Some transactions of this node or child nodes have not run yet.
   bool get needsRerun =>
       value.any((t) => t.status == TransactionStatus.readyToRun) ||
       children.values.any((n) => n.needsRerun);
@@ -239,7 +276,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     // remove the transactions that are now complete
     value = value.where((t) => !t.isComplete).toList();
     // reset the status of all other transactions
-    value.forEach((m) => m.status = TransactionStatus.readyToRun);
+    value.forEach((m) => m.reset());
 
     // repeat for all children
     children.values.forEach((n) => n.complete());
@@ -256,7 +293,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     value = value.where((t) => !t.isComplete).toList();
 
     // all non aborted transactions should execute again
-    value.where((t) => !t.isAborted).forEach((m) => m.stale());
+    value.where((t) => !t.isAborted).forEach((m) => m.reset());
 
     // repeat for all children
     children.values.forEach((n) => n.stale());
@@ -276,21 +313,33 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     children.values.forEach((n) => n.fail(e));
   }
 
-  void _send() {
-    value.forEach((m) => m.send());
-    children.values.forEach((n) => n._send());
+  void markAllTransactionsSent() {
+    value.forEach((m) => m.markSent());
+    children.values.forEach((n) => n.markAllTransactionsSent());
   }
 
-  Future<bool> send(Repo repo, Path<Name> path) async {
+  /// Executes the transactions in this node and child nodes and sends the
+  /// results to the server.
+  ///
+  /// When this node does not contain own transactions, the children will be
+  /// executed in parallel.
+  ///
+  /// Returns true when there is no additional work to be done for the moment,
+  /// either because there are no more transactions or because we are waiting
+  /// for user code to finish or for a response of the server.
+  Future<bool> execute() async {
     if (value.isNotEmpty) {
+      var repo = value.first.repo;
+      var path = value.first.path;
       if (needsRerun) {
         stale();
         rerun(path, getLatestValue(repo._syncTree, path));
+        return false;
       }
       if (isReadyToSend) {
         var latestHash = input.hash;
         try {
-          _send();
+          markAllTransactionsSent();
           await repo._connection
               .put(path.join('/'), output.toJson(true), hash: latestHash);
           complete();
@@ -308,13 +357,13 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     } else {
       var allFinished = true;
       for (var k in children.keys.toList()) {
-        allFinished =
-            allFinished && await children[k].send(repo, path.child(k));
+        allFinished = allFinished && await children[k].execute();
       }
       return allFinished;
     }
   }
 
+  /// All transactions of this node and child nodes in chronological order
   Iterable<Transaction> get transactionsInOrder =>
       List.from(_transactions)..sort();
 
@@ -365,7 +414,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
   }
 
   void addTransaction(Transaction transaction) {
-    if (transaction.status == TransactionStatus.run) {
+    if (transaction.status == TransactionStatus.runComplete) {
       value.add(transaction);
     }
   }

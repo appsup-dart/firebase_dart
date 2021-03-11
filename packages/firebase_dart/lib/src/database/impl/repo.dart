@@ -487,3 +487,15 @@ class PushIdGenerator {
     return id;
   }
 }
+
+TreeStructuredData getLatestValue(SyncTree syncTree, Path<Name> path) {
+  var nodes = syncTree.root.nodesOnPath(path);
+  var subpath = path.skip(nodes.length - 1);
+  var node = nodes.last;
+
+  var point = node.value;
+  for (var n in subpath) {
+    point = point.child(n);
+  }
+  return point.valueForFilter(QueryFilter());
+}
