@@ -4,7 +4,7 @@ import 'package:firebase_dart/src/storage.dart';
 
 import 'impl/location.dart';
 
-class StorageMetadataImpl implements StorageMetadata {
+class FullMetadataImpl implements FullMetadata {
   @override
   final String bucket;
 
@@ -15,18 +15,18 @@ class StorageMetadataImpl implements StorageMetadata {
   final String metadataGeneration;
 
   @override
-  final String path;
+  final String fullPath;
 
   @override
-  final int sizeBytes;
+  final int size;
 
   final String type;
 
   @override
-  final DateTime creationTime;
+  final DateTime timeCreated;
 
   @override
-  final DateTime updatedTime;
+  final DateTime updated;
 
   @override
   final String md5Hash;
@@ -51,15 +51,19 @@ class StorageMetadataImpl implements StorageMetadata {
   @override
   final Map<String, String> customMetadata;
 
-  StorageMetadataImpl({
+  @override
+  final String metageneration;
+
+  FullMetadataImpl({
     this.bucket,
     this.generation,
     this.metadataGeneration,
-    this.path,
-    this.sizeBytes,
+    this.metageneration,
+    this.fullPath,
+    this.size,
     this.type,
-    this.creationTime,
-    this.updatedTime,
+    this.timeCreated,
+    this.updated,
     this.md5Hash,
     this.cacheControl,
     this.contentDisposition,
@@ -71,20 +75,21 @@ class StorageMetadataImpl implements StorageMetadata {
   });
 
   @override
-  String get name => Location(bucket, path.split('/')).name;
+  String get name => Location(bucket, fullPath.split('/')).name;
 
-  factory StorageMetadataImpl.fromJson(Map<String, dynamic> json) =>
-      StorageMetadataImpl(
+  factory FullMetadataImpl.fromJson(Map<String, dynamic> json) =>
+      FullMetadataImpl(
           bucket: json['bucket'],
           generation: json['generation'],
-          metadataGeneration: json['metageneration'],
-          path: json['name'],
+          metageneration: json['metageneration'],
+          metadataGeneration: json['metadataGeneration'],
+          fullPath: json['name'],
           type: 'file',
-          sizeBytes: json['size'] == null ? null : int.parse(json['size']),
-          creationTime: json['timeCreated'] == null
+          size: json['size'] == null ? null : int.parse(json['size']),
+          timeCreated: json['timeCreated'] == null
               ? null
               : DateTime.parse(json['timeCreated']),
-          updatedTime:
+          updated:
               json['updated'] == null ? null : DateTime.parse(json['updated']),
           md5Hash: json['md5Hash'],
           cacheControl: json['cacheControl'],
@@ -101,12 +106,13 @@ class StorageMetadataImpl implements StorageMetadata {
   Map<String, dynamic> toJson() => {
         'bucket': bucket,
         'generation': generation,
-        'metageneration': metadataGeneration,
-        'name': path,
+        'metadataGeneration': metadataGeneration,
+        'metageneration': metageneration,
+        'name': fullPath,
         'file': type,
-        'size': sizeBytes?.toString(),
-        'timeCreated': creationTime?.toIso8601String(),
-        'updated': updatedTime?.toIso8601String(),
+        'size': size?.toString(),
+        'timeCreated': timeCreated?.toIso8601String(),
+        'updated': updated?.toIso8601String(),
         'md5Hash': md5Hash,
         'cacheControl': cacheControl,
         'contentDisposition': contentDisposition,

@@ -66,11 +66,11 @@ void main() async {
 
           expect(response.bucket, normalBucket);
           expect(response.generation, '1');
-          expect(response.metadataGeneration, '2');
-          expect(response.path, 'foo/bar/baz.png');
+          expect(response.metageneration, '2');
+          expect(response.fullPath, 'foo/bar/baz.png');
           expect(response.name, 'baz.png');
-          expect(response.sizeBytes, 10);
-          expect(response.creationTime, now);
+          expect(response.size, 10);
+          expect(response.timeCreated, now);
           expect(response.md5Hash, 'deadbeef');
           expect(response.cacheControl, 'max-age=604800');
           expect(response.contentDisposition, 'Attachment; filename=baz.png');
@@ -110,10 +110,14 @@ void main() async {
         var response = await client.getList(
             delimiter: '/', pageToken: 'page_token', maxResults: 4);
 
-        expect(response.prefixes[0], 'a/f/');
-        expect(response.items[0].path, 'a/a');
-        expect(response.items[1].path, 'a/b');
-        expect(response.nextPageToken, 'YS9mLw==');
+        expect(response, {
+          'prefixes': ['a/f/'],
+          'items': [
+            {'name': 'a/a', 'bucket': 'fredzqm-staging'},
+            {'name': 'a/b', 'bucket': 'fredzqm-staging'}
+          ],
+          'nextPageToken': 'YS9mLw=='
+        });
       });
     });
 
@@ -201,16 +205,16 @@ void main() async {
                 }),
                 200);
           };
-          var response = await client.updateMetadata(StorageMetadata(
+          var response = await client.updateMetadata(SettableMetadata(
               contentType: 'application/json', customMetadata: {'foo': 'bar'}));
 
           expect(response.bucket, normalBucket);
           expect(response.generation, '1');
-          expect(response.metadataGeneration, '2');
-          expect(response.path, 'foo/bar/baz.png');
+          expect(response.metageneration, '2');
+          expect(response.fullPath, 'foo/bar/baz.png');
           expect(response.name, 'baz.png');
-          expect(response.sizeBytes, 10);
-          expect(response.creationTime, now);
+          expect(response.size, 10);
+          expect(response.timeCreated, now);
           expect(response.md5Hash, 'deadbeef');
           expect(response.cacheControl, 'max-age=604800');
           expect(response.contentDisposition, 'Attachment; filename=baz.png');

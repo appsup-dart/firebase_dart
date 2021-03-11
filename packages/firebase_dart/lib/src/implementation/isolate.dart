@@ -131,7 +131,7 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
   FirebaseStorage createStorage(IsolateFirebaseApp app,
       {String storageBucket}) {
     return FirebaseService.findService<IsolateFirebaseStorage>(
-            app, (s) => s.storageBucket == storageBucket) ??
+            app, (s) => s.bucket == storageBucket) ??
         IsolateFirebaseStorage(app: app, storageBucket: storageBucket);
   }
 }

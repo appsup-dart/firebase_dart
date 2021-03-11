@@ -13,17 +13,17 @@ import 'core.dart';
 abstract class FirebaseStorage {
   /// Returns the [FirebaseStorage] instance, initialized with a custom
   /// [FirebaseApp] if [app] is specified and a custom Google Cloud Storage
-  /// bucket if [storageBucket] is specified. Otherwise the instance will be
+  /// bucket if [bucket] is specified. Otherwise the instance will be
   /// initialized with the default [FirebaseApp].
   ///
   /// The [FirebaseStorage] instance is a singleton for fixed [app] and
-  /// [storageBucket].
+  /// [bucket].
   ///
-  /// The [storageBucket] argument is the gs:// url to the custom Firebase
+  /// The [bucket] argument is the gs:// url to the custom Firebase
   /// Storage Bucket.
   ///
   /// The [app] argument is the custom [FirebaseApp].
-  factory FirebaseStorage.instanceFor({FirebaseApp app, String bucket}) =>
+  static FirebaseStorage instanceFor({FirebaseApp app, String bucket}) =>
       FirebaseImplementation.installation
           .createStorage(app ?? Firebase.app(), storageBucket: bucket);
 
@@ -35,102 +35,305 @@ abstract class FirebaseStorage {
   /// The Google Cloud Storage bucket to which this [FirebaseStorage] belongs.
   ///
   /// If null, the storage bucket of the specified [FirebaseApp] is used.
-  String get storageBucket;
+  String get bucket;
 
   /// Returns the [FirebaseStorage] instance, initialized with the default
   /// [FirebaseApp].
   static final FirebaseStorage instance =
       FirebaseStorage.instanceFor(app: Firebase.app());
 
-  /// Creates a new [StorageReference] initialized at the root
+  /// Creates a new [Reference] initialized at the root
   /// Firebase Storage location.
-  StorageReference ref();
+  Reference ref([String path]);
 
-  Future<int> getMaxDownloadRetryTimeMillis();
+  /// The maximum time to retry downloads.
+  Duration get maxDownloadRetryTime;
 
-  Future<int> getMaxUploadRetryTimeMillis();
+  /// The maximum time to retry uploads.
+  Duration get maxUploadRetryTime;
 
-  Future<int> getMaxOperationRetryTimeMillis();
+  /// The maximum time to retry operations other than uploads or downloads.
+  Duration get maxOperationRetryTime;
 
-  Future<void> setMaxDownloadRetryTimeMillis(int time);
+  /// Sets the new maximum download retry time.
+  void setMaxDownloadRetryTime(Duration time);
 
-  Future<void> setMaxUploadRetryTimeMillis(int time);
+  /// Sets the new maximum upload retry time.
+  void setMaxUploadRetryTime(Duration time);
 
-  Future<void> setMaxOperationRetryTimeMillis(int time);
+  /// Sets the new maximum operation retry time.
+  void setMaxOperationRetryTime(Duration time);
 
-  /// Creates a [StorageReference] given a gs:// or // URL pointing to a Firebase
+  /// Creates a [Reference] given a gs:// or // URL pointing to a Firebase
   /// Storage location.
-  Future<StorageReference> getReferenceFromUrl(String fullUrl);
+  Reference refFromURL(String fullUrl);
 }
 
-abstract class StorageFileDownloadTask {
-  Future<FileDownloadTaskSnapshot> get future;
+/// A class representing an on-going storage task that additionally delegates to
+///  a Future.
+abstract class Task implements Future<TaskSnapshot> {
+  /// The latest [TaskSnapshot] for this task.
+  TaskSnapshot get snapshot;
+
+  /// Returns a [Stream] of [TaskSnapshot] events.
+  ///
+  /// If the task is canceled or fails, the stream will send an error event. See
+  /// [TaskState] for more information of the different event types.
+  ///
+  /// If you do not need to know about on-going stream events, you can instead
+  /// await this [Task] directly.
+  Stream<TaskSnapshot> get snapshotEvents;
+
+  /// The [FirebaseStorage] instance associated with this task.
+  FirebaseStorage get storage;
+
+  /// Cancels the current task.
+  ///
+  /// Calling this method will cause the task to fail. Both the delegating task
+  /// Future and stream ([snapshotEvents]) will trigger an error with a
+  /// [FirebaseException].
+  Future<bool> cancel();
+
+  /// Pauses the current task.
+  ///
+  /// Calling this method will trigger a snapshot event with a
+  /// [TaskState.paused] state.
+  Future<bool> pause();
+
+  /// Resumes the current task.
+  ///
+  /// Calling this method will trigger a snapshot event with a
+  /// [TaskState.running] state.
+  Future<bool> resume();
 }
 
-class FileDownloadTaskSnapshot {
-  FileDownloadTaskSnapshot({this.totalByteCount});
-  final int totalByteCount;
+/// Represents the state of an on-going [Task].
+///
+/// The state can be accessed directly via a [TaskSnapshot].
+enum TaskState {
+  /// Indicates the task has been paused by the user.
+  paused,
+
+  /// Indicates the task is currently in-progress.
+  running,
+
+  /// Indicates the task has successfully completed.
+  success,
+
+  /// Indicates the task was canceled.
+  canceled,
+
+  /// Indicates the task failed with an error.
+  error,
 }
 
-abstract class StorageReference {
-  /// Returns a new instance of [StorageReference] pointing to a child
-  /// location of the current reference.
-  StorageReference child(String path);
+/// A class which indicates an on-going download task.
+abstract class DownloadTask {}
 
-  /// Returns a new instance of [StorageReference] pointing to the parent
-  /// location or null if this instance references the root location.
-  StorageReference getParent();
+/// A class which indicates an on-going upload task.
+abstract class UploadTask {}
 
-  /// Returns a new instance of [StorageReference] pointing to the root location.
-  StorageReference getRoot();
+/// A [TaskSnapshot] is returned as the result or on-going process of a [Task].
+class TaskSnapshot {
+  /// The current transferred bytes of this task.
+  final int bytesTransferred;
 
-  /// Returns the [FirebaseStorage] service which created this reference.
-  FirebaseStorage getStorage();
+  /// The [FullMetadata] associated with this task.
+  ///
+  /// May be null if no metadata exists.
+  final FullMetadata metadata;
 
-  /// Asynchronously uploads byte data to the currently specified
-  /// [StorageReference], with an optional [metadata].
-  StorageUploadTask putData(Uint8List data, [StorageMetadata metadata]);
+  /// The [Reference] for this snapshot.
+  final Reference ref;
 
-  /// Returns the Google Cloud Storage bucket that holds this object.
-  Future<String> getBucket();
+  /// The current task snapshot state.
+  ///
+  /// The state indicates the current progress of the task, such as whether it
+  /// is running, paused or completed.
+  final TaskState state;
 
-  /// Returns the full path to this object, not including the Google Cloud
-  /// Storage bucket.
-  Future<String> getPath();
+  /// The [FirebaseStorage] instance used to create the task.
+  FirebaseStorage get storage => ref.storage;
 
-  /// Returns the short name of this object.
-  Future<String> getName();
+  /// The total bytes of the task.
+  ///
+  /// Note; when performing a download task, the value of -1 will be provided
+  /// whilst the total size of the remote file is being determined.
+  final int totalBytes;
 
-  /// Asynchronously downloads the object at the StorageReference to a list in memory.
-  /// A list of the provided max size will be allocated.
-  Future<Uint8List> getData(int maxSize);
+  TaskSnapshot(
+      {@required this.ref,
+      @required this.state,
+      @required this.totalBytes,
+      @required this.bytesTransferred,
+      this.metadata});
+}
 
-  /// Asynchronously retrieves a long lived download URL with a revokable token.
-  /// This can be used to share the file with others, but can be revoked by a
-  /// developer in the Firebase Console if desired.
-  Future<Uri> getDownloadURL();
+abstract class Reference {
+  /// The name of the bucket containing this reference's object.
+  String get bucket;
 
+  /// The full path of this object.
+  String get fullPath;
+
+  /// The short name of this object, which is the last component of the full
+  /// path.
+  ///
+  /// For example, if fullPath is 'full/path/image.png', name is 'image.png'.
+  String get name;
+
+  /// A reference pointing to the parent location of this reference, or `null`
+  /// if this reference is the root.
+  Reference get parent;
+
+  /// A reference to the root of this reference's bucket.
+  Reference get root;
+
+  /// The storage service associated with this reference.
+  FirebaseStorage get storage;
+
+  /// Returns a reference to a relative path from this reference.
+  ///
+  /// [path] The relative path from this reference. Leading, trailing, and
+  /// consecutive slashes are removed.
+  Reference child(String path);
+
+  /// Deletes the object at this reference's location.
   Future<void> delete();
 
-  /// Retrieves metadata associated with an object at this [StorageReference].
-  Future<StorageMetadata> getMetadata();
-
-  /// Updates the metadata associated with this [StorageReference].
+  /// Asynchronously downloads the object at the StorageReference to a list in
+  /// memory.
   ///
-  /// Returns a [Future] that will complete to the updated [StorageMetadata].
+  /// Returns a Uint8List of the data.
   ///
-  /// This method ignores fields of [metadata] that cannot be set by the public
-  /// [StorageMetadata] constructor. Writable metadata properties can be deleted
-  /// by passing the empty string.
-  Future<StorageMetadata> updateMetadata(StorageMetadata metadata);
+  /// If the maxSize (in bytes) is exceeded, the operation will be canceled. By
+  /// default the maxSize is 10mb (10485760 bytes).
+  Future<Uint8List> getData([int maxSize = 10485760]);
 
-  String get path;
+  /// Fetches a long lived download URL for this object.
+  Future<String> getDownloadURL();
+
+  /// Fetches metadata for the object at this location, if one exists.
+  Future<FullMetadata> getMetadata();
+
+  /// List items (files) and prefixes (folders) under this storage reference.
+  ///
+  /// List API is only available for Firebase Rules Version 2.
+  ///
+  /// GCS is a key-blob store. Firebase Storage imposes the semantic of '/'
+  /// delimited folder structure. Refer to GCS's List API if you want to learn
+  /// more.
+  ///
+  /// To adhere to Firebase Rules's Semantics, Firebase Storage does not support
+  /// objects whose paths end with "/" or contain two consecutive "/"s. Firebase
+  /// Storage List API will filter these unsupported objects. list may fail if
+  /// there are too many unsupported objects in the bucket.
+  Future<ListResult> list([ListOptions options]);
+
+  /// List all items (files) and prefixes (folders) under this storage
+  /// reference.
+  ///
+  /// This is a helper method for calling [list] repeatedly until there are no
+  /// more results. The default pagination size is 1000.
+  ///
+  /// Note: The results may not be consistent if objects are changed while this
+  /// operation is running.
+  ///
+  /// Warning: listAll may potentially consume too many resources if there are
+  /// too many results.
+  Future<ListResult> listAll();
+
+  /// Uploads data to this reference's location.
+  ///
+  /// Use this method to upload fixed sized data as a [Uint8List].
+  ///
+  /// Optionally, you can also set metadata onto the uploaded object.
+  UploadTask putData(Uint8List data, [SettableMetadata metadata]);
+
+  /// Upload a [String] value as a storage object.
+  ///
+  /// Use [PutStringFormat] to correctly encode the string:
+  ///
+  /// * [PutStringFormat.raw] the string will be encoded in a Base64 format.
+  /// * [PutStringFormat.dataUrl] the string must be in a data url format (e.g.
+  /// "data:text/plain;base64,SGVsbG8sIFdvcmxkIQ=="). If no
+  /// [SettableMetadata.mimeType] is provided as part of the [metadata]
+  /// argument, the [mimeType] will be automatically set.
+  /// * [PutStringFormat.base64] will be encoded as a Base64 string.
+  /// * [PutStringFormat.base64Url] will be encoded as a Base64 string safe URL.
+  UploadTask putString(String data,
+      {PutStringFormat format = PutStringFormat.raw,
+      SettableMetadata metadata});
+
+  /// Updates the metadata on a storage object.
+  Future<FullMetadata> updateMetadata(SettableMetadata metadata);
 }
 
-/// Metadata for a [StorageReference]. Metadata stores default attributes such as
+/// Metadata for a [Reference]. Metadata stores default attributes such as
 /// size and content type.
-class StorageMetadata {
-  StorageMetadata({
+class FullMetadata {
+  /// The bucket this object is contained in.
+  final String bucket;
+
+  /// Served as the 'Cache-Control' header on object download.
+  final String cacheControl;
+
+  /// Served as the 'Content-Disposition' HTTP header on object download.
+  final String contentDisposition;
+
+  /// Served as the 'Content-Encoding' header on object download.
+  final String contentEncoding;
+
+  /// Served as the 'Content-Language' header on object download.
+  final String contentLanguage;
+
+  /// Served as the 'Content-Type' header on object download.
+  final String contentType;
+
+  /// Custom metadata set on this storage object.
+  final Map<String, String> customMetadata;
+
+  /// The full path of this object.
+  final String fullPath;
+
+  /// The object's generation.
+  final String generation;
+
+  /// A Base64-encoded MD5 hash of the object being uploaded.
+  final String md5Hash;
+
+  /// The object's metadata generation.
+  final String metadataGeneration;
+
+  /// The object's metageneration.
+  final String metageneration;
+
+  /// The short name of this object, which is the last component of the full
+  /// path.
+  ///
+  /// For example, if fullPath is 'full/path/image.png', name is 'image.png'.
+  final String name;
+
+  /// The size of this object, in bytes.
+  final int size;
+
+  /// A DateTime representing when this object was created.
+  final DateTime timeCreated;
+
+  /// A DateTime representing when this object was updated.
+  final DateTime updated;
+
+  FullMetadata({
+    this.bucket,
+    @required this.fullPath,
+    this.generation,
+    this.md5Hash,
+    this.metadataGeneration,
+    this.metageneration,
+    @required this.name,
+    this.size,
+    this.timeCreated,
+    this.updated,
     this.cacheControl,
     this.contentDisposition,
     this.contentEncoding,
@@ -140,99 +343,99 @@ class StorageMetadata {
   }) : customMetadata = customMetadata == null
             ? null
             : Map<String, String>.unmodifiable(customMetadata);
+}
 
-  /// The owning Google Cloud Storage bucket for the [StorageReference].
-  String get bucket => null;
-
-  /// A version String indicating what version of the [StorageReference].
-  String get generation => null;
-
-  /// A version String indicating the version of this [StorageMetadata].
-  String get metadataGeneration => null;
-
-  /// The path of the [StorageReference] object.
-  String get path => null;
-
-  /// A simple name of the [StorageReference] object.
-  String get name => null;
-
-  /// The stored Size in bytes of the [StorageReference] object.
-  int get sizeBytes => null;
-
-  /// The time the [StorageReference] was created.
-  DateTime get creationTime => null;
-
-  /// The time the [StorageReference] was last updated.
-  DateTime get updatedTime => null;
-
-  /// The MD5Hash of the [StorageReference] object.
-  String get md5Hash => null;
-
-  /// The Cache Control setting of the [StorageReference].
+class SettableMetadata {
+  /// Served as the 'Cache-Control' header on object download.
   final String cacheControl;
 
-  /// The content disposition of the [StorageReference].
+  /// Served as the 'Content-Disposition' HTTP header on object download.
   final String contentDisposition;
 
-  /// The content encoding for the [StorageReference].
+  /// Served as the 'Content-Encoding' header on object download.
   final String contentEncoding;
 
-  /// The content language for the StorageReference, specified as a 2-letter
-  /// lowercase language code defined by ISO 639-1.
+  /// Served as the 'Content-Language' header on object download.
   final String contentLanguage;
 
-  /// The content type (MIME type) of the [StorageReference].
+  /// Served as the 'Content-Type' header on object download.
   final String contentType;
 
-  /// An unmodifiable map with custom metadata for the [StorageReference].
+  /// Custom metadata set on this storage object.
   final Map<String, String> customMetadata;
+
+  SettableMetadata(
+      {this.cacheControl,
+      this.contentDisposition,
+      this.contentEncoding,
+      this.contentLanguage,
+      this.contentType,
+      this.customMetadata});
+
+  Map<String, dynamic> asMap() => {
+        'cacheControl': cacheControl,
+        'contentDisposition': contentDisposition,
+        'contentEncoding': contentEncoding,
+        'contentLanguage': contentLanguage,
+        'contentType': contentType,
+        'customMetadata': customMetadata,
+      };
 }
 
-abstract class StorageUploadTask {
-  bool get isCanceled;
-  bool get isComplete;
-  bool get isInProgress;
-  bool get isPaused;
-  bool get isSuccessful;
+/// The format in which a string can be uploaded to the storage bucket via
+/// [Reference.putString].
+enum PutStringFormat {
+  /// A raw string. It will be uploaded as a Base64 string.
+  raw,
 
-  StorageTaskSnapshot get lastSnapshot;
+  /// A Base64 encoded string.
+  base64,
 
-  /// Returns a last snapshot when completed
-  Future<StorageTaskSnapshot> get onComplete;
+  /// A Base64 URL encoded string.
+  base64Url,
 
-  Stream<StorageTaskEvent> get events;
-
-  /// Pause the upload
-  void pause();
-
-  /// Resume the upload
-  void resume();
-
-  /// Cancel the upload
-  void cancel();
+  /// A data url string.
+  dataUrl,
 }
 
-enum StorageTaskEventType {
-  resume,
-  progress,
-  pause,
-  success,
-  failure,
+/// The options [FirebaseStoragePlatform.list] accepts.
+class ListOptions {
+  /// If set, limits the total number of `prefixes` and `items` to return.
+  ///
+  /// The default and maximum maxResults is 1000.
+  final int maxResults;
+
+  /// The nextPageToken from a previous call to list().
+  ///
+  /// If provided, listing is resumed from the previous position.
+  final String pageToken;
+
+  ListOptions({this.maxResults, this.pageToken});
 }
 
-/// `Event` encapsulates a StorageTaskSnapshot
-abstract class StorageTaskEvent {
-  StorageTaskEventType get type;
-  StorageTaskSnapshot get snapshot;
-}
+/// Class returned as a result of calling a list method (`list` or `listAll`) on
+/// a [Reference].
+abstract class ListResult {
+  /// Objects in this directory.
+  ///
+  /// Returns a [List] of [Reference] instances.
+  List<Reference> get items;
 
-abstract class StorageTaskSnapshot {
-  StorageReference get ref;
-  int get error;
-  int get bytesTransferred;
-  int get totalByteCount;
-  Uri get uploadSessionUri;
-  StorageMetadata get storageMetadata;
+  /// If set, there might be more results for this list.
+  ///
+  /// Use this token to resume the list with [ListOptions].
+  String get nextPageToken;
+
+  /// References to prefixes (sub-folders). You can call list() on them to get
+  /// its contents.
+  ///
+  /// Folders are implicit based on '/' in the object paths. For example, if a
+  /// bucket has two objects '/a/b/1' and '/a/b/2', list('/a') will return
+  /// '/a/b' as a prefix.
+  List<Reference> get prefixes;
+
+  /// The [FirebaseStorage] instance for this result.
+  FirebaseStorage get storage;
 }
 
 class StorageException extends FirebaseException {

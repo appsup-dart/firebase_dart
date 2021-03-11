@@ -7,10 +7,10 @@ import 'package:firebase_dart/src/storage/metadata.dart';
 import 'backend.dart';
 
 class MemoryBackend extends Backend {
-  Map<Location, StorageMetadataImpl> metadata = {};
+  Map<Location, FullMetadataImpl> metadata = {};
 
   @override
-  Future<StorageMetadataImpl> getMetadata(Location location) async {
+  Future<FullMetadataImpl> getMetadata(Location location) async {
     return metadata[location];
   }
 }

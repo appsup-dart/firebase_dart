@@ -36,5 +36,5 @@ class BackendConnection {
 }
 
 abstract class Backend {
-  Future<StorageMetadataImpl> getMetadata(Location location);
+  Future<FullMetadataImpl> getMetadata(Location location);
 }
