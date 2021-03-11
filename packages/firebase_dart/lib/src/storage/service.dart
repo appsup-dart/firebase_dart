@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
@@ -16,8 +14,8 @@ class FirebaseStorageImpl extends FirebaseService implements FirebaseStorage {
 
   final HttpClient httpClient;
 
-  FirebaseStorageImpl(FirebaseApp app, String storageBucket,
-      {http.Client httpClient})
+  FirebaseStorageImpl(FirebaseApp app, String? storageBucket,
+      {http.Client? httpClient})
       : _bucket =
             Location.fromBucketSpec(storageBucket ?? app.options.storageBucket),
         httpClient = HttpClient(httpClient ?? http.Client(), () async {
@@ -32,11 +30,7 @@ class FirebaseStorageImpl extends FirebaseService implements FirebaseStorage {
   /// Returns a firebaseStorage.Reference for the given path in the default
   /// bucket.
   @override
-  Reference ref([String path]) {
-    if (_bucket == null) {
-      throw StorageException.noDefaultBucket();
-    }
-
+  Reference ref([String? path]) {
     var ref = ReferenceImpl(this, _bucket);
     if (path != null) {
       return ref.child(path);

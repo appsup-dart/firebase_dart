@@ -1,65 +1,63 @@
-// @dart=2.9
-
 import 'package:firebase_dart/src/storage.dart';
 
 import 'impl/location.dart';
 
 class FullMetadataImpl implements FullMetadata {
   @override
-  final String bucket;
+  final String? bucket;
 
   @override
-  final String generation;
+  final String? generation;
 
   @override
-  final String metadataGeneration;
+  final String? metadataGeneration;
 
   @override
   final String fullPath;
 
   @override
-  final int size;
+  final int? size;
 
-  final String type;
-
-  @override
-  final DateTime timeCreated;
+  final String? type;
 
   @override
-  final DateTime updated;
+  final DateTime? timeCreated;
 
   @override
-  final String md5Hash;
+  final DateTime? updated;
 
   @override
-  final String cacheControl;
+  final String? md5Hash;
 
   @override
-  final String contentDisposition;
+  final String? cacheControl;
 
   @override
-  final String contentEncoding;
+  final String? contentDisposition;
 
   @override
-  final String contentLanguage;
+  final String? contentEncoding;
 
   @override
-  final String contentType;
-
-  final List<String> downloadTokens;
+  final String? contentLanguage;
 
   @override
-  final Map<String, String> customMetadata;
+  final String? contentType;
+
+  final List<String>? downloadTokens;
 
   @override
-  final String metageneration;
+  final Map<String, String>? customMetadata;
+
+  @override
+  final String? metageneration;
 
   FullMetadataImpl({
     this.bucket,
     this.generation,
     this.metadataGeneration,
     this.metageneration,
-    this.fullPath,
+    required this.fullPath,
     this.size,
     this.type,
     this.timeCreated,
@@ -75,7 +73,7 @@ class FullMetadataImpl implements FullMetadata {
   });
 
   @override
-  String get name => Location(bucket, fullPath.split('/')).name;
+  String get name => Location(bucket!, fullPath.split('/')).name;
 
   factory FullMetadataImpl.fromJson(Map<String, dynamic> json) =>
       FullMetadataImpl(
@@ -97,11 +95,11 @@ class FullMetadataImpl implements FullMetadata {
           contentEncoding: json['contentEncoding'],
           contentLanguage: json['contentLanguage'],
           contentType: json['contentType'],
-          customMetadata: (json['metadata'] as Map)?.cast(),
-          downloadTokens: (json['downloadTokens'] as String)
+          customMetadata: (json['metadata'] as Map?)?.cast(),
+          downloadTokens: (json['downloadTokens'] as String?)
               ?.split(',')
-              ?.where((v) => v.isNotEmpty)
-              ?.toList());
+              .where((v) => v.isNotEmpty)
+              .toList());
 
   Map<String, dynamic> toJson() => {
         'bucket': bucket,

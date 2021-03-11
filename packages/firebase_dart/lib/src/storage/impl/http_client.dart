@@ -1,8 +1,8 @@
-// @dart=2.9
+
 
 import 'package:http/http.dart' as http;
 
-typedef AuthProvider = Future<String> Function();
+typedef AuthProvider = Future<String?> Function();
 
 class HttpClient extends http.BaseClient {
   /// The timeout for all operations except upload.

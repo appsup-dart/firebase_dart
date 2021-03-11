@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'package:firebase_dart/src/storage.dart';
 
@@ -31,8 +31,8 @@ class ResourceClient {
     return FullMetadataImpl.fromJson(obj);
   }
 
-  Future<Map<String, dynamic>> getList(
-      {String delimiter, String pageToken, int maxResults}) async {
+  Future<Map<String, dynamic>?> getList(
+      {String? delimiter, String? pageToken, int? maxResults}) async {
     var uri =
         _makeUrl(location.bucketOnlyServerUrl()).replace(queryParameters: {
       'prefix': location.isRoot ? '' : '${location.path}/',
@@ -45,16 +45,16 @@ class ResourceClient {
     return _handleResponse(response);
   }
 
-  Future<String> getDownloadUrl() async {
+  Future<String?> getDownloadUrl() async {
     var metadata = await getMetadata();
-    if (metadata.downloadTokens == null || metadata.downloadTokens.isEmpty) {
+    if (metadata.downloadTokens == null || metadata.downloadTokens!.isEmpty) {
       // This can happen if objects are uploaded through GCS and retrieved
       // through list, so we don't want to throw an Error.
       return null;
     }
-    var token = metadata.downloadTokens.first;
+    var token = metadata.downloadTokens!.first;
     var urlPart = '/b/' +
-        Uri.encodeComponent(metadata.bucket) +
+        Uri.encodeComponent(metadata.bucket!) +
         '/o/' +
         Uri.encodeComponent(metadata.fullPath);
     var base = _makeUrl(urlPart);
@@ -121,7 +121,7 @@ class ListResultImpl extends ListResult {
   final List<Reference> items;
 
   @override
-  final String nextPageToken;
+  final String? nextPageToken;
 
   @override
   final List<Reference> prefixes;
@@ -129,7 +129,7 @@ class ListResultImpl extends ListResult {
   @override
   final FirebaseStorage storage;
 
-  ListResultImpl(this.storage, {this.items, this.nextPageToken, this.prefixes});
+  ListResultImpl(this.storage, {required this.items, this.nextPageToken, required this.prefixes});
 
   ListResultImpl.fromJson(Reference reference, Map<String, dynamic> json)
       : this(reference.storage,
@@ -138,5 +138,5 @@ class ListResultImpl extends ListResult {
                 .toList(),
             nextPageToken: json['nextPageToken'],
             prefixes:
-                (json['prefixes'] as List).map((v) => reference.child(v)));
+                (json['prefixes'] as List).map((v) => reference.child(v)) as List<Reference>);
 }

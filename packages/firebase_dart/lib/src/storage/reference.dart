@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'dart:typed_data';
 
@@ -34,7 +34,7 @@ class ReferenceImpl implements Reference {
   /// A reference to the parent of the current object, or null if the current
   /// object is the root.
   @override
-  ReferenceImpl get parent {
+  ReferenceImpl? get parent {
     var parentLocation = location.getParent();
     if (parentLocation == null) return null;
     return ReferenceImpl(storage, parentLocation);
@@ -80,7 +80,7 @@ class ReferenceImpl implements Reference {
   String get bucket => location.bucket;
 
   @override
-  Future<Uint8List> getData([int maxSize = 10485760]) async {
+  Future<Uint8List> getData([int? maxSize = 10485760]) async {
     var url = await getDownloadURL();
     var response = await storage.httpClient.get(Uri.parse(url));
     if (response.statusCode == 200) {
@@ -103,7 +103,7 @@ class ReferenceImpl implements Reference {
   String get fullPath => location.path;
 
   @override
-  UploadTask putData(Uint8List data, [SettableMetadata metadata]) {
+  UploadTask putData(Uint8List data, [SettableMetadata? metadata]) {
     // TODO: implement putData
 /*
     args.validate(
@@ -136,7 +136,7 @@ class ReferenceImpl implements Reference {
   int get hashCode => location.hashCode;
 
   @override
-  Future<ListResult> list([ListOptions options]) {
+  Future<ListResult> list([ListOptions? options]) {
     // TODO: implement list
     throw UnimplementedError();
   }
@@ -150,7 +150,7 @@ class ReferenceImpl implements Reference {
   @override
   UploadTask putString(String data,
       {PutStringFormat format = PutStringFormat.raw,
-      SettableMetadata metadata}) {
+      SettableMetadata? metadata}) {
     // TODO: implement putString
     throw UnimplementedError();
   }
