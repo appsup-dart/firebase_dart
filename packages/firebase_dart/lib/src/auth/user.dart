@@ -1,5 +1,3 @@
-
-
 import 'package:firebase_dart/src/auth/auth.dart';
 
 /// A user account.
@@ -46,7 +44,7 @@ abstract class User {
   UserMetadata get metadata;
 
   /// Returns a list of user information for each linked provider.
-  List<UserInfo > get providerData;
+  List<UserInfo> get providerData;
 
   /// Returns a JWT refresh token for the user.
   ///
@@ -69,15 +67,14 @@ abstract class User {
   ///
   /// If [forceRefresh] is `true`, the token returned will be refresh regardless
   /// of token expiration.
-  Future<String > getIdToken([bool forceRefresh = false]);
+  Future<String> getIdToken([bool forceRefresh = false]);
 
   /// Returns a [IdTokenResult] containing the users JSON Web Token (JWT) and
   /// other metadata.
   ///
   /// If [forceRefresh] is `true`, the token returned will be refresh regardless
   /// of token expiration.
-  Future<IdTokenResult > getIdTokenResult(
-      [bool forceRefresh = false]);
+  Future<IdTokenResult> getIdTokenResult([bool forceRefresh = false]);
 
   /// Links the user account with the given credentials.
   ///

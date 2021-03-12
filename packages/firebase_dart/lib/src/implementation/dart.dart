@@ -17,7 +17,7 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
 
   final Future<Map<String, dynamic>> Function() getAuthResult;
 
-  final Future<OAuthCredential> Function(OAuthProvider provider) oauthSignIn;
+  final Future<OAuthCredential?> Function(OAuthProvider provider) oauthSignIn;
 
   final Future<void> Function(String providerId) oauthSignOut;
 

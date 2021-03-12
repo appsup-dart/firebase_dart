@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -24,36 +22,29 @@ import 'user.dart';
 
 /// The entry point of the Firebase Authentication SDK.
 class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
-  final RpcHandler _rpcHandler;
+  final RpcHandler rpcHandler;
 
-  UserManager _userStorageManager;
-
-  UserManager get userStorageManager => _userStorageManager;
-
-  RpcHandler get rpcHandler => _rpcHandler;
+  late final UserManager userStorageManager = UserManager(this);
 
   /// Completes when latest logged in user is loaded from storage
-  Future<void> _onReady;
+  late final Future<void> _onReady = _init();
 
-  StreamSubscription _storageManagerUserChangedSubscription;
+  late StreamSubscription _storageManagerUserChangedSubscription;
 
-  final BehaviorSubject<FirebaseUserImpl> _currentUser = BehaviorSubject();
+  final BehaviorSubject<FirebaseUserImpl?> _currentUser = BehaviorSubject();
 
-  FirebaseAuthImpl(FirebaseApp app, {Client httpClient})
-      : _rpcHandler = RpcHandler(app.options.apiKey, httpClient: httpClient),
-        super(app) {
-    _userStorageManager = UserManager(this);
-    _onReady = _init();
-  }
+  FirebaseAuthImpl(FirebaseApp app, {Client? httpClient})
+      : rpcHandler = RpcHandler(app.options.apiKey, httpClient: httpClient),
+        super(app);
 
   Future<void> _init() async {
-    _currentUser.add(await _userStorageManager.getCurrentUser());
+    _currentUser.add(await userStorageManager.getCurrentUser());
 
     _storageManagerUserChangedSubscription =
-        _userStorageManager.onCurrentUserChanged.listen((user) {
+        userStorageManager.onCurrentUserChanged.listen((user) {
       if (_currentUser.value != user) {
         _currentUser.value?.destroy();
-        (user as FirebaseUserImpl)?.initializeProactiveRefresh();
+        user?.initializeProactiveRefresh();
       }
       _currentUser.add(user);
     });
@@ -79,7 +70,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
           operationType: UserCredentialImpl.operationTypeSignIn);
     } else {
       // No anonymous user currently signed in.
-      var r = await _rpcHandler.signInAnonymously();
+      var r = await rpcHandler.signInAnonymously();
 
       var result = await _signInWithIdTokenProvider(
           openidCredential: r, isNewUser: true);
@@ -91,10 +82,10 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   @override
   Future<UserCredential> signInWithEmailAndPassword({
-    String email,
-    String password,
+    required String email,
+    String? password,
   }) async {
-    var r = await _rpcHandler.verifyPassword(email, password);
+    var r = await rpcHandler.verifyPassword(email, password);
 
     var result =
         await _signInWithIdTokenProvider(openidCredential: r, isNewUser: false);
@@ -103,17 +94,17 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   /// Handles user state changes.
-  Future<void> _handleUserStateChange(User user) async {
-    return _userStorageManager.setCurrentUser(user);
+  Future<void> _handleUserStateChange(User? user) async {
+    return userStorageManager.setCurrentUser(user);
   }
 
   /// Signs in with ID token promise provider.
   Future<UserCredential> _signInWithIdTokenProvider(
-      {@required openid.Credential openidCredential,
-      String provider,
-      AuthCredential credential,
-      bool isNewUser,
-      String kind}) async {
+      {required openid.Credential openidCredential,
+      String? provider,
+      AuthCredential? credential,
+      bool? isNewUser,
+      String? kind}) async {
     // Get additional IdP data if available in the response.
     var additionalUserInfo = createAdditionalUserInfo(
         credential: openidCredential,
@@ -150,10 +141,10 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
         await FirebaseUserImpl.initializeFromOpenidCredential(this, credential);
 
     // Check if the same user is already signed in.
-    if (currentUser != null && user.uid == currentUser.uid) {
+    if (currentUser != null && user.uid == currentUser!.uid) {
       // Same user signed in. Update user data and notify Auth listeners.
       // No need to resubscribe to user events.
-      user = currentUser..copy(user);
+      user = currentUser!..copy(user as FirebaseUserImpl?);
       return _handleUserStateChange(currentUser);
     }
 
@@ -167,10 +158,10 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   @override
   Future<UserCredential> createUserWithEmailAndPassword(
-      {String email, String password}) async {
+      {required String email, String? password}) async {
     await _onReady;
 
-    var r = await _rpcHandler.createAccount(email, password);
+    var r = await rpcHandler.createAccount(email, password);
 
     var result =
         await _signInWithIdTokenProvider(openidCredential: r, isNewUser: true);
@@ -179,11 +170,11 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  FirebaseUserImpl get currentUser => _currentUser.value;
+  FirebaseUserImpl? get currentUser => _currentUser.value;
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String email) {
-    return _rpcHandler.fetchSignInMethodsForIdentifier(email);
+    return rpcHandler.fetchSignInMethodsForIdentifier(email);
   }
 
   @override
@@ -193,21 +184,19 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  Stream<User> authStateChanges() => _currentUser.stream.cast();
+  Stream<User?> authStateChanges() => _currentUser.stream.cast();
 
   @override
   Future<void> sendPasswordResetEmail(
-      {String email, ActionCodeSettings actionCodeSettings}) {
+      {required String email, ActionCodeSettings? actionCodeSettings}) {
     return rpcHandler.sendPasswordResetEmail(
         email: email, actionCodeSettings: actionCodeSettings);
   }
 
   @override
   Future<void> sendSignInLinkToEmail(
-      {String email, ActionCodeSettings actionCodeSettings}) async {
-    if (actionCodeSettings.url == null) {
-      throw FirebaseAuthException.missingContinueUri();
-    }
+      {required String email,
+      required ActionCodeSettings actionCodeSettings}) async {
     if (actionCodeSettings.url.isEmpty) {
       throw FirebaseAuthException.invalidContinueUri();
     }
@@ -250,8 +239,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
               'access_token': credential.accessToken,
             if (credential.secret != null)
               'oauth_token_secret': credential.secret,
-            if (credential.providerId != null)
-              'providerId': credential.providerId,
+            'providerId': credential.providerId,
             if (credential.rawNonce != null) 'nonce': credential.rawNonce
           }).query,
           requestUri: 'http://localhost');
@@ -272,7 +260,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     // errors like web storage unsupported are detected, fail before RPC, instead
     // of after.
     await _onReady;
-    var r = await _rpcHandler.verifyCustomToken(token);
+    var r = await rpcHandler.verifyCustomToken(token);
     var result =
         await _signInWithIdTokenProvider(openidCredential: r, isNewUser: false);
 
@@ -286,37 +274,32 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     if (currentUser == null) {
       return;
     }
-    if (PureDartFirebaseImplementation.installation.oauthSignOut != null) {
-      await PureDartFirebaseImplementation.installation
-          .oauthSignOut(currentUser.providerId);
-    }
+    await PureDartFirebaseImplementation.installation
+        .oauthSignOut(currentUser!.providerId);
     // Detach all event listeners.
-    currentUser.destroy();
+    currentUser!.destroy();
     // Set current user to null.
-    await _userStorageManager.removeCurrentUser();
+    await userStorageManager.removeCurrentUser();
   }
 
   @override
   Future<void> verifyPhoneNumber({
-    @required String phoneNumber,
-    @required PhoneVerificationCompleted verificationCompleted,
-    @required PhoneVerificationFailed verificationFailed,
-    @required PhoneCodeSent codeSent,
-    @required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
-    @visibleForTesting String autoRetrievedSmsCodeForTesting,
+    required String phoneNumber,
+    required PhoneVerificationCompleted verificationCompleted,
+    required PhoneVerificationFailed verificationFailed,
+    required PhoneCodeSent codeSent,
+    required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
+    @visibleForTesting String? autoRetrievedSmsCodeForTesting,
     Duration timeout = const Duration(seconds: 30),
-    int forceResendingToken,
+    int? forceResendingToken,
   }) async {
     var assertion = await ApplicationVerifier.instance.verify(this);
     var v = await rpcHandler.sendVerificationCode(
         phoneNumber: phoneNumber, recaptchaToken: assertion);
 
-    if (codeSent != null) codeSent(v, 0 /*TODO*/);
+    codeSent(v, 0 /*TODO*/);
 
-    if (codeAutoRetrievalTimeout != null) {
-      unawaited(
-          Future.delayed(timeout).then((_) => codeAutoRetrievalTimeout(v)));
-    }
+    unawaited(Future.delayed(timeout).then((_) => codeAutoRetrievalTimeout(v)));
   }
 
   @override
@@ -354,7 +337,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       var e = json.decode(r['firebaseError']);
       throw FirebaseAuthException(e['code'] ?? 'unknown', e['message']);
     }
-    var box = await _userStorageManager.storage;
+    var box = await userStorageManager.storage;
     var sessionId = box.get('redirect_session_id');
 
     var openidCredential = await rpcHandler.verifyAssertion(
@@ -367,7 +350,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  Stream<User> idTokenChanges() {
+  Stream<User?> idTokenChanges() {
     return authStateChanges().switchMap((user) {
       if (user == null) return Stream.value(user);
       return (user as FirebaseUserImpl).accessTokenChanged.map((_) => user);
@@ -385,7 +368,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  Future<UserCredential> signInWithEmailLink({String email, String emailLink}) {
+  Future<UserCredential> signInWithEmailLink(
+      {String? email, String? emailLink}) {
     // TODO: implement signInWithEmailLink
     throw UnimplementedError();
   }
@@ -413,7 +397,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
       var sessionId = _randomString();
 
-      var box = await _userStorageManager.storage;
+      var box = await userStorageManager.storage;
       await box.put('redirect_session_id', sessionId);
 
       var platform = Platform.current;
@@ -427,13 +411,12 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
             'authType': 'signInWithRedirect',
             'apiKey': app.options.apiKey,
             'providerId': provider.providerId,
-            if (provider.scopes != null && provider.scopes.isNotEmpty)
-              'scopes': provider.scopes.join(','),
+            if (provider.scopes.isNotEmpty) 'scopes': provider.scopes.join(','),
             if (provider.parameters != null)
               'customParameters': json.encode(provider.parameters),
             // TODO: if (tenantId != null) 'tid': tenantId
 
-            if (eventId != null) 'eventId': eventId,
+            'eventId': eventId,
 
             if (platform is AndroidPlatform) ...{
               'eid': 'p',
@@ -492,7 +475,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   Future<void> delete() async {
     await _onReady;
     currentUser?.destroy();
-    await _userStorageManager.close();
+    await userStorageManager.close();
     await _storageManagerUserChangedSubscription.cancel();
     await _currentUser.close();
     await super.delete();
@@ -503,20 +486,20 @@ class UserCredentialImpl extends UserCredential {
   static const operationTypeSignIn = 'signIn';
 
   @override
-  final User user;
+  final User? user;
 
   @override
   final AdditionalUserInfo additionalUserInfo;
 
   @override
-  final AuthCredential credential;
+  final AuthCredential? credential;
 
   /// Returns the operation type.
-  final String operationType;
+  final String? operationType;
 
   UserCredentialImpl(
-      {@required this.user,
-      @required this.additionalUserInfo,
-      @required this.credential,
-      @required this.operationType});
+      {required this.user,
+      required this.additionalUserInfo,
+      required this.credential,
+      required this.operationType});
 }

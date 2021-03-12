@@ -637,7 +637,7 @@ class RpcHandler {
 
   /// Requests sendVerificationCode endpoint for verifying the user's ownership of
   /// a phone number. It resolves with a sessionInfo (verificationId).
-  Future<String?> sendVerificationCode(
+  Future<String> sendVerificationCode(
       {String? phoneNumber, String? recaptchaToken}) async {
     // In the future, we could support other types of assertions so for now,
     // we are keeping the request an object.
@@ -652,7 +652,7 @@ class RpcHandler {
     if (response.sessionInfo == null) {
       throw FirebaseAuthException.internalError();
     }
-    return response.sessionInfo;
+    return response.sessionInfo!;
   }
 
   /// Requests verifyPhoneNumber endpoint for sign in/sign up phone number

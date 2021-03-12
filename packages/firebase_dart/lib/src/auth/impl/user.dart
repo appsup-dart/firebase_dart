@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:async';
 
 import 'package:clock/clock.dart';
@@ -7,7 +5,6 @@ import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
     show SetAccountInfoResponse;
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
-import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 import 'package:quiver/core.dart';
 import 'package:rxdart/rxdart.dart';
@@ -21,26 +18,24 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   openid.Credential _credential;
 
-  final String _authDomain;
+  final String? _authDomain;
 
   @override
-  AccountInfo _accountInfo;
+  AccountInfo? _accountInfo;
 
-  String _lastAccessToken;
+  String? _lastAccessToken;
 
   bool _destroyed = false;
 
   bool get isDestroyed => _destroyed;
 
-  final BehaviorSubject<String> _tokenUpdates = BehaviorSubject();
+  final BehaviorSubject<String?> _tokenUpdates = BehaviorSubject();
 
-  FirebaseUserImpl(this._auth, this._credential, [this._authDomain])
-      : assert(_auth != null);
+  FirebaseUserImpl(this._auth, this._credential, [this._authDomain]);
 
   factory FirebaseUserImpl.fromJson(Map<String, dynamic> user,
-      {@required FirebaseAuthImpl auth}) {
-    assert(auth != null);
-    if (user == null || user['apiKey'] == null) {
+      {required FirebaseAuthImpl auth}) {
+    if (user['apiKey'] == null) {
       throw ArgumentError.value(
           user, 'user', 'does not contain an `apiKey` field');
     }
@@ -61,8 +56,8 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         }
       }
     }
-    firebaseUser._lastAccessToken = credential.response['accessToken'];
-    firebaseUser._tokenUpdates.add(credential.response['accessToken']);
+    firebaseUser._lastAccessToken = credential.response!['accessToken'];
+    firebaseUser._tokenUpdates.add(credential.response!['accessToken']);
 
     return firebaseUser;
   }
@@ -70,16 +65,16 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   static Future<User> initializeFromOpenidCredential(
       FirebaseAuth auth, openid.Credential credential) async {
     // Initialize the Firebase Auth user.
-    var user = FirebaseUserImpl(auth, credential);
+    var user = FirebaseUserImpl(auth as FirebaseAuthImpl, credential);
 
     // Updates the user info and data and resolves with a user instance.
     await user.reload();
     return user;
   }
 
-  Stream<String> get accessTokenChanged => _tokenUpdates.stream.distinct();
+  Stream<String?> get accessTokenChanged => _tokenUpdates.stream.distinct();
 
-  String get lastAccessToken => _lastAccessToken;
+  String? get lastAccessToken => _lastAccessToken;
 
   @override
   Future<void> reload() async {
@@ -90,7 +85,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   @override
   Future<String> getIdToken([bool forceRefresh = false]) async =>
-      (await getIdTokenResult(forceRefresh)).token;
+      (await getIdTokenResult(forceRefresh)).token!;
 
   @override
   Future<IdTokenResult> getIdTokenResult([bool refresh = false]) async {
@@ -98,17 +93,13 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
     var response = await _credential.getTokenResponse(refresh);
 
-    if (response == null) {
-      // If the user exists, the token manager should be initialized.
-      throw FirebaseAuthException.internalError();
-    }
     // Only if the access token is refreshed, notify Auth listeners.
     if (response.accessToken != _lastAccessToken) {
       _lastAccessToken = response.accessToken;
       // Auth state change, notify listeners.
       _tokenUpdates.add(response.accessToken);
     }
-    return IdTokenResultImpl(response.accessToken);
+    return IdTokenResultImpl(response.accessToken!);
   }
 
   void destroy() {
@@ -130,12 +121,12 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   /// Queries the backend using the provided ID token for all linked accounts to
   /// build the Firebase user object.
   Future<void> _setUserAccountInfoFromToken(IdTokenResult idToken) async {
-    var resp = await _rpcHandler.getAccountInfoByIdToken(idToken.token);
+    var resp = await _rpcHandler.getAccountInfoByIdToken(idToken.token!);
 
-    if (resp.users.isEmpty) {
+    if (resp.users!.isEmpty) {
       throw FirebaseAuthException.internalError();
     }
-    var user = resp.users.first;
+    var user = resp.users!.first;
     var accountInfo = AccountInfo(
         uid: user.localId,
         displayName: user.displayName,
@@ -146,19 +137,19 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         isAnonymous: _credential.idToken.claims['provider_id'] == 'anonymous',
         lastLoginAt: user.lastLoginAt == null
             ? null
-            : DateTime.fromMillisecondsSinceEpoch(int.parse(user.lastLoginAt)),
+            : DateTime.fromMillisecondsSinceEpoch(int.parse(user.lastLoginAt!)),
         createdAt: user.createdAt == null
             ? null
-            : DateTime.fromMillisecondsSinceEpoch(int.parse(user.createdAt)));
+            : DateTime.fromMillisecondsSinceEpoch(int.parse(user.createdAt!)));
     _setAccountInfo(accountInfo);
 
     _providerData.addAll((user.providerUserInfo ?? []).map((v) => UserInfo(
-        providerId: v.providerId,
+        providerId: v.providerId!,
         displayName: v.displayName,
         photoURL: v.photoUrl,
         phoneNumber: v.phoneNumber,
         email: v.email,
-        uid: v.rawId)));
+        uid: v.rawId ?? '')));
   }
 
   final List<UserInfo> _providerData = [];
@@ -168,11 +159,11 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   @override
   UserMetadata get metadata => UserMetadata(
-      creationTime: _accountInfo.createdAt,
-      lastSignInTime: _accountInfo.lastLoginAt);
+      creationTime: _accountInfo!.createdAt,
+      lastSignInTime: _accountInfo!.lastLoginAt);
 
   /// Sets the user account info.
-  void _setAccountInfo(AccountInfo accountInfo) {
+  void _setAccountInfo(AccountInfo? accountInfo) {
     _accountInfo = accountInfo;
     _providerData.clear();
   }
@@ -182,12 +173,12 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     if (_destroyed) throw FirebaseAuthException.moduleDestroyed();
   }
 
-  void copy(FirebaseUserImpl other) {
+  void copy(FirebaseUserImpl? other) {
     // Copy to self.
     if (this == other) {
       return;
     }
-    _setAccountInfo(other._accountInfo);
+    _setAccountInfo(other!._accountInfo);
 
     for (var userInfo in other.providerData) {
       _providerData.add(userInfo);
@@ -199,7 +190,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   Map<String, dynamic> toJson() => {
         'apiKey': _rpcHandler.apiKey,
         if (_authDomain != null) 'authDomain': _authDomain,
-        ..._accountInfo.toJson(),
+        ..._accountInfo!.toJson(),
         'credential': _credential.toJson(),
         'providerData': [...providerData.map((v) => v.toJson())]
       };
@@ -236,7 +227,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   @override
   Future<void> sendEmailVerification(
-      [ActionCodeSettings actionCodeSettings]) async {
+      [ActionCodeSettings? actionCodeSettings]) async {
     var idToken = await getIdToken();
     var email = await _rpcHandler.sendEmailVerification(idToken: idToken);
     if (email != this.email) {
@@ -272,7 +263,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     // Remove the phone number if the phone provider was unlinked.
     if (!remainingProviderIds.contains(PhoneAuthProvider.PROVIDER_ID)) {
       _accountInfo =
-          AccountInfo.fromJson(_accountInfo.toJson()..remove('phoneNumber'));
+          AccountInfo.fromJson(_accountInfo!.toJson()..remove('phoneNumber'));
     }
 
     return this;
@@ -300,7 +291,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   }
 
   @override
-  Future<void> updateProfile({String displayName, String photoURL}) async {
+  Future<void> updateProfile({String? displayName, String? photoURL}) async {
     if (displayName == null && photoURL == null) {
       // No change, directly return.
       return _checkDestroyed();
@@ -314,7 +305,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
     // Update properties.
     _accountInfo = AccountInfo.fromJson({
-      ..._accountInfo.toJson(),
+      ..._accountInfo!.toJson(),
       'displayName': response.displayName,
       'photoUrl': response.photoUrl
     });
@@ -349,11 +340,11 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   String get providerId => 'firebase';
 
   @override
-  String get refreshToken => _credential.refreshToken;
+  String? get refreshToken => _credential.refreshToken;
 
   @override
   // TODO: implement tenantId
-  String get tenantId => null;
+  String? get tenantId => null;
 
   @override
   Future<void> updatePhoneNumber(PhoneAuthCredential phoneCredential) {
@@ -363,7 +354,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   @override
   Future<void> verifyBeforeUpdateEmail(String newEmail,
-      [ActionCodeSettings actionCodeSettings]) {
+      [ActionCodeSettings? actionCodeSettings]) {
     // TODO: implement verifyBeforeUpdateEmail
     throw UnimplementedError();
   }
@@ -378,7 +369,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         var c = await _credential.getTokenResponse();
         nextMinDuration = Duration();
         var t =
-            c.expiresAt.subtract(Duration(minutes: 5)).difference(clock.now());
+            c.expiresAt!.subtract(Duration(minutes: 5)).difference(clock.now());
         forceRefresh = true;
         if (t.isNegative) t = Duration();
         await _wait(t);
@@ -400,7 +391,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   Future<void> _wait(Duration duration) {
     if (duration == Duration()) return Future.microtask(() => null);
     var completer = Completer<void>();
-    Function() callback;
+    late Function() callback;
     var timer = Timer(duration, () async {
       callback();
     });
@@ -414,49 +405,49 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 }
 
 abstract class DelegatingUserInfo implements UserInfo {
-  AccountInfo get _accountInfo;
+  AccountInfo? get _accountInfo;
 
   @override
-  String get uid => _accountInfo.uid;
+  String get uid => _accountInfo!.uid!;
 
   @override
-  String get displayName => _accountInfo.displayName;
+  String? get displayName => _accountInfo!.displayName;
 
   @override
-  String get photoURL => _accountInfo.photoUrl;
+  String? get photoURL => _accountInfo!.photoUrl;
 
   @override
-  String get email => _accountInfo.email;
+  String? get email => _accountInfo!.email;
 
   @override
-  String get phoneNumber => _accountInfo.phoneNumber;
+  String? get phoneNumber => _accountInfo!.phoneNumber;
 
-  bool get isAnonymous => _accountInfo.isAnonymous;
+  bool get isAnonymous => _accountInfo!.isAnonymous!;
 
-  bool get emailVerified => _accountInfo.emailVerified;
+  bool get emailVerified => _accountInfo!.emailVerified!;
 }
 
 class AccountInfo {
-  final String uid;
-  final String displayName;
-  final String photoUrl;
-  final String email;
-  final bool emailVerified;
-  final String phoneNumber;
-  final bool isAnonymous;
-  final DateTime createdAt;
-  final DateTime lastLoginAt;
+  final String? uid;
+  final String? displayName;
+  final String? photoUrl;
+  final String? email;
+  final bool? emailVerified;
+  final String? phoneNumber;
+  final bool? isAnonymous;
+  final DateTime? createdAt;
+  final DateTime? lastLoginAt;
 
   AccountInfo(
-      {@required this.uid,
-      @required this.displayName,
-      @required this.photoUrl,
-      @required this.email,
-      @required this.emailVerified,
-      @required this.phoneNumber,
-      @required this.isAnonymous,
-      @required this.createdAt,
-      @required this.lastLoginAt});
+      {required this.uid,
+      required this.displayName,
+      required this.photoUrl,
+      required this.email,
+      required this.emailVerified,
+      required this.phoneNumber,
+      required this.isAnonymous,
+      required this.createdAt,
+      required this.lastLoginAt});
 
   AccountInfo.fromJson(Map<String, dynamic> json)
       : this(
@@ -496,10 +487,10 @@ class IdTokenResultImpl extends IdTokenResult {
   IdTokenResultImpl(this.token) : _idToken = openid.IdToken.unverified(token);
 
   @override
-  DateTime get authTime => _idToken.claims.authTime;
+  DateTime? get authTime => _idToken.claims.authTime;
 
   @override
-  Map<String, dynamic> get claims => _idToken.claims.toJson();
+  Map<String, dynamic>? get claims => _idToken.claims.toJson();
 
   @override
   DateTime get expirationTime => _idToken.claims.expiry;
@@ -508,15 +499,15 @@ class IdTokenResultImpl extends IdTokenResult {
   DateTime get issuedAtTime => _idToken.claims.issuedAt;
 
   @override
-  String get signInProvider =>
+  String? get signInProvider =>
       (_idToken.claims['firebase'] ?? {})['sign_in_provider'];
 }
 
 AdditionalUserInfo createAdditionalUserInfo(
-    {openid.Credential credential,
-    String providerId,
-    @required bool isNewUser,
-    String kind}) {
+    {openid.Credential? credential,
+    String? providerId,
+    required bool? isNewUser,
+    String? kind}) {
   // Provider ID already present.
   if (providerId != null) {
     // TODO
@@ -525,30 +516,30 @@ AdditionalUserInfo createAdditionalUserInfo(
     // providerId from the ID token itself.
     return GenericAdditionalUserInfo(
         providerId: GenericAdditionalUserInfo._providerIdFromInfo(
-            idToken: credential.idToken.toCompactSerialization()),
+            idToken: credential!.idToken.toCompactSerialization()),
         isNewUser: GenericAdditionalUserInfo._isNewUserFromInfo(
             isNewUser: isNewUser, kind: kind));
   }
   return GenericAdditionalUserInfo(
-      providerId: providerId, isNewUser: isNewUser);
+      providerId: providerId, isNewUser: isNewUser!);
 }
 
 class GenericAdditionalUserInfo implements AdditionalUserInfo {
   @override
-  final String providerId;
+  final String? providerId;
 
   @override
   final bool isNewUser;
 
   @override
-  final Map<String, dynamic> profile;
+  final Map<String, dynamic>? profile;
 
   @override
-  final String username;
+  final String? username;
 
   GenericAdditionalUserInfo(
-      {@required this.providerId,
-      @required this.isNewUser,
+      {required this.providerId,
+      required this.isNewUser,
       this.profile,
       this.username});
 
@@ -561,10 +552,10 @@ class GenericAdditionalUserInfo implements AdditionalUserInfo {
       other.providerId == providerId &&
       other.isNewUser == isNewUser;
 
-  static String _providerIdFromInfo(
-      {String providerId, @required String idToken}) {
+  static String? _providerIdFromInfo(
+      {String? providerId, required String idToken}) {
     // Try to get providerId from the ID token if available.
-    if (providerId == null && idToken != null) {
+    if (providerId == null) {
       // verifyPassword/setAccountInfo and verifyPhoneNumber return an ID token
       // but no providerId. Get providerId from the token itself.
       // isNewUser will be returned for verifyPhoneNumber.
@@ -585,7 +576,7 @@ class GenericAdditionalUserInfo implements AdditionalUserInfo {
   }
 
   static bool _isNewUserFromInfo(
-      {@required String kind, @required bool isNewUser}) {
+      {required String? kind, required bool? isNewUser}) {
     // Check whether user is new. Temporary Solution since backend does not return
     // isNewUser field for SignupNewUserResponse.
     if (isNewUser != null) return isNewUser;

@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:async';
 
 import 'package:firebase_dart/src/auth/auth.dart';
@@ -24,17 +22,18 @@ class UserManager {
   /// The underlying storage manager.
   final FutureOr<Box> storage;
 
-  final StreamController<User> _controller = StreamController.broadcast();
+  final StreamController<FirebaseUserImpl?> _controller =
+      StreamController.broadcast();
 
-  StreamSubscription _subscription;
+  late StreamSubscription _subscription;
 
-  Future<void> _onReady;
+  Future<void>? _onReady;
 
-  Future<void> get onReady => _onReady;
+  Future<void>? get onReady => _onReady;
 
-  Stream<User> get onCurrentUserChanged => _controller.stream;
+  Stream<FirebaseUserImpl?> get onCurrentUserChanged => _controller.stream;
 
-  UserManager(this.auth, [FutureOr<Box> storage])
+  UserManager(this.auth, [FutureOr<Box>? storage])
       : storage = storage ?? PersistenceStorage.openBox('firebase_auth') {
     _onReady = _init();
   }
@@ -44,9 +43,9 @@ class UserManager {
 
     _subscription = storage
         .watch(key: _key)
-        .map((v) => v?.value)
+        .map((v) => v.value)
         .distinct()
-        .cast<Map>()
+        .cast<Map?>()
         .map((v) =>
             v == null ? null : FirebaseUserImpl.fromJson(v.cast(), auth: auth))
         .listen(_controller.add);
@@ -55,7 +54,7 @@ class UserManager {
   String get _key => 'firebase:FirebaseUser:$appId';
 
   /// Stores the current Auth user for the provided application ID.
-  Future<void> setCurrentUser(User currentUser) async {
+  Future<void> setCurrentUser(User? currentUser) async {
     await onReady;
     // Wait for any pending persistence change to be resolved.
     await (await storage).put(_key, currentUser?.toJson());
@@ -67,7 +66,7 @@ class UserManager {
     await (await storage).delete(_key);
   }
 
-  Future<User> getCurrentUser([String authDomain]) async {
+  Future<FirebaseUserImpl?> getCurrentUser([String? authDomain]) async {
     await onReady;
     var response = await (await storage).get(_key);
 

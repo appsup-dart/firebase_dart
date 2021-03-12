@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 
@@ -18,7 +18,7 @@ abstract class BaseRecaptchaVerifier extends ApplicationVerifier {
   @override
   String get type => 'recaptcha';
 
-  Future<String> getRecaptchaParameters(FirebaseAuthImpl auth) async {
+  Future<String?> getRecaptchaParameters(FirebaseAuthImpl auth) async {
     var rpcHandler = auth.rpcHandler;
     var response = await rpcHandler.relyingparty.getRecaptchaParam();
     return response.recaptchaSiteKey;
