@@ -42,7 +42,7 @@ class Transaction implements Comparable<Transaction> {
 
   int retryCount = 0;
   FirebaseDatabaseException abortReason;
-  int currentWriteId;
+  final int currentWriteId;
   TreeStructuredData currentInputSnapshot;
   TreeStructuredData currentOutputSnapshotRaw;
   TreeStructuredData currentOutputSnapshotResolved;
@@ -50,7 +50,8 @@ class Transaction implements Comparable<Transaction> {
   TransactionStatus status = TransactionStatus.readyToRun;
 
   Transaction(this.repo, this.path, this.update, this.applyLocally)
-      : order = _order++ {
+      : order = _order++,
+        currentWriteId = repo._nextWriteId++ {
     _watch();
   }
 
@@ -104,7 +105,6 @@ class Transaction implements Comparable<Transaction> {
     currentOutputSnapshotRaw = newNode;
     currentOutputSnapshotResolved =
         ServerValueX.resolve(newNode, repo._connection.serverValues);
-    currentWriteId = repo._nextWriteId++;
 
     if (applyLocally) {
       repo._syncTree.applyUserOverwrite(

@@ -1,8 +1,6 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.9
-
 import 'data_observer.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'treestructureddata.dart';
@@ -19,7 +17,7 @@ class ViewCache {
   final SortedMap<int, TreeOperation> pendingOperations;
 
   ViewCache(this._localVersion, this.serverVersion,
-      [SortedMap<int, TreeOperation> pendingOperations])
+      [SortedMap<int, TreeOperation>? pendingOperations])
       : pendingOperations = pendingOperations ?? SortedMap();
 
   /// The local version of the data, i.e. the server version with the pending
@@ -40,7 +38,7 @@ class ViewCache {
   ViewCache child(Name c) {
     var childPendingOperations = SortedMap<int, TreeOperation>();
     for (var k in pendingOperations.keys) {
-      var o = pendingOperations[k].operationForChild(c);
+      var o = pendingOperations[k]!.operationForChild(c);
       if (o != null) {
         childPendingOperations[k] = o;
       }
@@ -77,16 +75,15 @@ class ViewCache {
   ///
   /// The operation will be applied to the local version
   ViewCache addOperation(int writeId, Operation op) {
-    assert(op != null);
-    return ViewCache(
-        localVersion, serverVersion, pendingOperations.clone()..[writeId] = op)
+    return ViewCache(localVersion, serverVersion,
+        pendingOperations.clone()..[writeId] = op as TreeOperation)
       .._applyPendingOperation(op);
   }
 
   /// Remove a user operation
   ///
   /// This will cause the local version to be recalculated
-  ViewCache removeOperation(int/*!*/ writeId) {
+  ViewCache removeOperation(int writeId) {
     var viewCache = ViewCache(localVersion, serverVersion,
         pendingOperations.clone()..remove(writeId));
     viewCache.recalcLocalVersion();
@@ -96,15 +93,15 @@ class ViewCache {
   /// Applies a user or server operation to this view and returns the updated
   /// view
   ViewCache applyOperation(
-      Operation operation, ViewOperationSource source, int writeId) {
+      Operation operation, ViewOperationSource source, int? writeId) {
     switch (source) {
       case ViewOperationSource.user:
-        return addOperation(writeId, operation);
+        return addOperation(writeId!, operation);
       case ViewOperationSource.ack:
-        return removeOperation(writeId);
+        return removeOperation(writeId!);
       case ViewOperationSource.server:
       default:
-        var result = serverVersion.applyOperation(operation);
+        var result = serverVersion.applyOperation(operation as TreeOperation);
         return updateServerVersion(result);
     }
   }
