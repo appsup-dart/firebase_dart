@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 part of firebase.protocol;
 
@@ -17,17 +17,17 @@ class Connection {
   /// The underlying transport channel to send and receive messages
   final Transport transport;
 
-  Connection({@required this.delegate, @required Uri url})
+  Connection({required this.delegate, required Uri url})
       : transport = Transport(url);
 
-  final Map<int, Request> _pendingRequests = {};
+  final Map<int?, Request> _pendingRequests = {};
 
   final StreamController<FutureOr<Message>> _outputSink = StreamController();
 
-  StreamSubscription _keepAlivePeriodicStreamSubscription;
+  late StreamSubscription _keepAlivePeriodicStreamSubscription;
 
-  ConnectionState _state;
-  ConnectionState get state => _state;
+  ConnectionState? _state;
+  ConnectionState? get state => _state;
 
   /// Opens the actual connection and starts handling messages
   void open() {
@@ -36,14 +36,14 @@ class Connection {
     _state = ConnectionState.connecting;
 
     transport.open();
-    transport.channel.stream.listen(_onMessage, onDone: () {
+    transport.channel!.stream.listen(_onMessage, onDone: () {
       close();
     }, onError: (e, tr) {
       _logger.fine('Connection error', e, tr);
     });
 
     _outputSink.stream.asyncMap((v) => v).listen((v) {
-      transport.channel.sink.add(v);
+      transport.channel!.sink.add(v);
     }, onDone: () {
       transport.close();
     });
@@ -118,13 +118,13 @@ class Connection {
     }
   }
 
-  void _onConnectionShutdown(String reason) {
+  void _onConnectionShutdown(String? reason) {
     _logger.fine('Connection shutdown command received. Shutting down...');
     delegate.onKill(reason);
     close();
   }
 
-  void _onReset(String host) {
+  void _onReset(String? host) {
     _logger.fine(
         'Got a reset; killing connection to ${transport.url.host}; Updating internalHost to $host');
     delegate.onCacheHost(host);
@@ -142,7 +142,7 @@ class Connection {
     }
   }
 
-  void _onConnectionReady(DateTime timestamp, String sessionId) {
+  void _onConnectionReady(DateTime timestamp, String? sessionId) {
     _logger.fine('realtime connection established');
     _state = ConnectionState.connected;
     delegate.onReady(timestamp, sessionId);
@@ -152,7 +152,7 @@ class Connection {
     if (v is DataMessage) {
       _onDataMessage(v);
     } else {
-      _onControlMessage(v);
+      _onControlMessage(v as ControlMessage);
     }
   }
 }
@@ -160,13 +160,13 @@ class Connection {
 /// Interface for receiving events of a [Connection]
 abstract class ConnectionDelegate {
   /// Indicates subsequent connections should use [host] to connect
-  void onCacheHost(String host);
+  void onCacheHost(String? host);
 
   /// Indicates connection is ready to send requests
   ///
   /// [timestamp] is the current timestamp of the server, [sessionId] is the
   /// session id to be used in subsequent connections
-  void onReady(DateTime timestamp, String sessionId);
+  void onReady(DateTime timestamp, String? sessionId);
 
   /// Called when a new message is received not related to a request
   void onDataMessage(DataMessage message);
@@ -180,7 +180,7 @@ abstract class ConnectionDelegate {
 
   /// Called when the connection was killed, i.e. the server has sent a shutdown
   /// message
-  void onKill(String reason);
+  void onKill(String? reason);
 }
 
 enum DisconnectReason { serverReset, other }

@@ -1,7 +1,7 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.9
+
 
 part of firebase.protocol;
 
@@ -51,11 +51,11 @@ class Request {
 
   Request.unauth() : this(DataMessage.actionUnauth, MessageBody());
 
-  Request.listen(String path, {QueryFilter query, int tag, String hash})
+  Request.listen(String path, {QueryFilter? query, int? tag, String? hash})
       : this(DataMessage.actionListen,
             MessageBody(path: path, query: query, tag: tag, hash: hash));
 
-  Request.unlisten(String path, {QueryFilter query, int tag})
+  Request.unlisten(String path, {QueryFilter? query, int? tag})
       : this(DataMessage.actionUnlisten,
             MessageBody(path: path, query: query, tag: tag));
 
@@ -70,11 +70,11 @@ class Request {
   Request.onDisconnectCancel(String path)
       : this(DataMessage.actionOnDisconnectCancel, MessageBody(path: path));
 
-  Request.put(String path, data, [String hash])
+  Request.put(String path, data, [String? hash])
       : this(DataMessage.actionPut,
             MessageBody(path: path, data: data, hash: hash));
 
-  Request.merge(String path, data, [String hash])
+  Request.merge(String path, data, [String? hash])
       : this(DataMessage.actionMerge,
             MessageBody(path: path, data: data, hash: hash));
 

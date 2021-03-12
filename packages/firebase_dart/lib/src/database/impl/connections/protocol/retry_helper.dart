@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'dart:async';
 import 'dart:math';
@@ -25,7 +25,7 @@ class RetryHelper {
 
   final Random _random = Random();
 
-  Timer _scheduledRetry;
+  Timer? _scheduledRetry;
 
   Duration _currentRetryDelay = Duration();
   bool _lastWasSuccess = true;
@@ -40,7 +40,7 @@ class RetryHelper {
     Duration delay;
     if (_scheduledRetry != null) {
       _logger.fine('Cancelling previous scheduled retry');
-      _scheduledRetry.cancel();
+      _scheduledRetry!.cancel();
       _scheduledRetry = null;
     }
     if (_lastWasSuccess) {
@@ -81,7 +81,7 @@ class RetryHelper {
   void cancel() {
     if (_scheduledRetry != null) {
       _logger.fine('Cancelling existing retry attempt');
-      _scheduledRetry.cancel();
+      _scheduledRetry!.cancel();
       _scheduledRetry = null;
     } else {
       _logger.fine('No existing retry attempt to cancel');

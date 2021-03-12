@@ -1,7 +1,7 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.9
+
 
 part of firebase.protocol;
 
@@ -10,7 +10,7 @@ class Transport {
   /// The url to connect to
   final Uri url;
 
-  StreamChannel<Message> _channel;
+  StreamChannel<Message>? _channel;
 
   Transport(this.url);
 
@@ -22,7 +22,7 @@ class Transport {
   }
 
   /// The channel to send to and receive from
-  StreamChannel<Message> get channel => _channel;
+  StreamChannel<Message>? get channel => _channel;
 
   /// Connects to the [url] and initiates the [channel]
   ///
@@ -33,7 +33,7 @@ class Transport {
       case 'http':
         var connectionUrl = url.replace(
             path: '.ws', scheme: url.scheme == 'https' ? 'wss' : 'ws');
-        var socket = websocket.connect(connectionUrl.toString());
+        var socket = websocket.connect(connectionUrl.toString())!;
         _channel = socket
             .cast<String>()
             .transform<String>(framesChannelTransformer)
@@ -50,7 +50,7 @@ class Transport {
   }
 
   void close() async {
-    await channel.sink.close();
+    await channel!.sink.close();
     _openTransports.remove(this);
   }
 }

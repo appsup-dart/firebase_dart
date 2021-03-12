@@ -1,8 +1,6 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.9
-
 part of firebase.protocol;
 
 class PersistentConnectionImpl extends PersistentConnection
@@ -29,20 +27,20 @@ class PersistentConnectionImpl extends PersistentConnection
   final StreamController<bool> _onConnect = StreamController(sync: true);
   final StreamController<OperationEvent> _onDataOperation =
       StreamController(sync: true);
-  final StreamController<Map<String, dynamic>> _onAuth =
+  final StreamController<Map<String, dynamic>?> _onAuth =
       StreamController.broadcast();
 
-  Connection _connection;
+  Connection? _connection;
 
   Uri _url;
 
   int _nextTag = 0;
 
-  Duration _serverTimeDiff;
+  Duration? _serverTimeDiff;
 
-  Request _authRequest;
+  Request? _authRequest;
 
-  DateTime _lastConnectionEstablishedTime;
+  DateTime? _lastConnectionEstablishedTime;
 
   final Set<String> _interruptReasons = {};
 
@@ -50,17 +48,17 @@ class PersistentConnectionImpl extends PersistentConnection
 
   DateTime _lastWriteTimestamp = DateTime.fromMillisecondsSinceEpoch(0);
 
-  Timer _inactivityTimer;
+  Timer? _inactivityTimer;
 
   bool _hasOnDisconnects = false;
 
-  Map<String, dynamic> _authData;
+  Map<String, dynamic>? _authData;
 
   int _currentGetTokenAttempt = 0;
 
   final AuthTokenProvider _authTokenProvider;
 
-  PersistentConnectionImpl(Uri url, {AuthTokenProvider authTokenProvider})
+  PersistentConnectionImpl(Uri url, {AuthTokenProvider? authTokenProvider})
       : _url = url.replace(queryParameters: {
           'ns': url.host.split('.').first,
           ...url.queryParameters,
@@ -71,7 +69,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   // ConnectionDelegate methods
   @override
-  void onReady(DateTime timestamp, String sessionId) {
+  void onReady(DateTime timestamp, String? sessionId) {
     _logger.fine('onReady');
     _lastConnectionEstablishedTime = DateTime.now();
     _serverTimeDiff = timestamp.difference(DateTime.now());
@@ -84,7 +82,7 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  void onCacheHost(String host) {
+  void onCacheHost(String? host) {
     _url = _url.replace(host: host);
   }
 
@@ -96,7 +94,7 @@ class PersistentConnectionImpl extends PersistentConnection
       return;
     }
     var path =
-        message.body.path == null ? null : Name.parsePath(message.body.path);
+        message.body.path == null ? null : Name.parsePath(message.body.path!);
     switch (message.action) {
       case DataMessage.actionSet:
       case DataMessage.actionMerge:
@@ -106,7 +104,7 @@ class PersistentConnectionImpl extends PersistentConnection
               DataMessage.actionSet: OperationEventType.overwrite,
               DataMessage.actionMerge: OperationEventType.merge,
               DataMessage.actionListenRevoked: OperationEventType.listenRevoked,
-            }[message.action],
+            }[message.action!],
             path,
             message.body.data,
             query);
@@ -136,7 +134,7 @@ class PersistentConnectionImpl extends PersistentConnection
       bool lastConnectionWasSuccessful;
       if (_lastConnectionEstablishedTime != null) {
         var timeSinceLastConnectSucceeded =
-            DateTime.now().difference(_lastConnectionEstablishedTime);
+            DateTime.now().difference(_lastConnectionEstablishedTime!);
         lastConnectionWasSuccessful = timeSinceLastConnectSucceeded >
             _successfulConnectionEstablishedDelay;
       } else {
@@ -154,7 +152,7 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  void onKill(String reason) {
+  void onKill(String? reason) {
     _logger.fine(
         'Firebase Database connection was forcefully killed by the server. Will not attempt reconnect. Reason: $reason');
     interrupt(_serverKillInterruptReason);
@@ -166,7 +164,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Future<Iterable<String>> listen(String path,
-      {@required QueryFilter query, @required String hash}) async {
+      {QueryFilter? query, String? hash}) async {
     var def = QueryDef(path, query);
     var tag = _nextTag++;
     _tagToQuery[tag] = def;
@@ -190,7 +188,7 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<Null> unlisten(String path, {@required QueryFilter query}) async {
+  Future<Null> unlisten(String path, {QueryFilter? query}) async {
     var def = QueryDef(path, query);
     var tag = _tagToQuery.inverse.remove(def);
     var r = Request.unlisten(path, query: query, tag: tag);
@@ -200,13 +198,13 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<Null> put(String path, dynamic value, {@required String hash}) async {
+  Future<Null> put(String path, dynamic value, {String? hash}) async {
     await _putInternal(Request.put(path, value, hash));
   }
 
   @override
   Future<Null> merge(String path, Map<String, dynamic> value,
-      {@required String hash}) async {
+      {String? hash}) async {
     await _putInternal(Request.merge(path, value, hash));
   }
 
@@ -233,10 +231,10 @@ class PersistentConnectionImpl extends PersistentConnection
   Stream<OperationEvent> get onDataOperation => _onDataOperation.stream;
 
   @override
-  Stream<Map<String, dynamic>> get onAuth => _onAuth.stream;
+  Stream<Map<String, dynamic>?> get onAuth => _onAuth.stream;
 
   @override
-  Future<void> disconnect() async => _connection.close();
+  Future<void> disconnect() async => _connection!.close();
 
   @override
   Future<Null> close() async {
@@ -247,7 +245,7 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<void> refreshAuthToken(String token) async {
+  Future<void> refreshAuthToken(String? token) async {
     _logger.fine('Auth token refreshed.');
     _authRequest = token == null ? null : Request.auth(token);
     if (_connected()) {
@@ -265,12 +263,12 @@ class PersistentConnectionImpl extends PersistentConnection
   int _invalidAuthTokenCount = 0;
   bool _forceAuthTokenRefresh = false;
 
-  Future<void> _sendAuthHelper({bool restoreStateAfterComplete}) async {
+  Future<void> _sendAuthHelper({bool? restoreStateAfterComplete}) async {
     assert(_connected(),
         'Must be connected to send auth, but was: $connectionState');
     assert(_authRequest != null, 'Auth token must be set to authenticate!');
 
-    var response = await _request(_authRequest);
+    var response = await _request(_authRequest!);
 
     _connectionState = ConnectionState.connected;
 
@@ -279,7 +277,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
       _setAuthData(response.data['auth']);
 
-      if (restoreStateAfterComplete) {
+      if (restoreStateAfterComplete!) {
         await _restoreState();
       }
     } else {
@@ -290,7 +288,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
       _logger
           .fine('Authentication failed: ${response.status} (${response.data})');
-      _connection.close();
+      _connection!.close();
 
       if (response.status == 'invalid_token') {
         // We'll wait a couple times before logging the warning / increasing the
@@ -362,7 +360,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
     if (_connection != null) {
       // Will call onDisconnect and set the connection state to Disconnected
-      _connection.close();
+      _connection!.close();
       _connection = null;
     } else {
       _retryHelper.cancel();
@@ -396,7 +394,7 @@ class PersistentConnectionImpl extends PersistentConnection
     _listens.add(request);
   }
 
-  void _removeListen(String path, QueryFilter query) {
+  void _removeListen(String path, QueryFilter? query) {
     _listens.removeWhere((element) =>
         element.message.body.path == path &&
         element.message.body.query == query);
@@ -432,20 +430,20 @@ class PersistentConnectionImpl extends PersistentConnection
     // Restore listens
     _logger.fine('Restoring outstanding listens');
     for (var r in _listens) {
-      _connection.sendRequest(r);
+      _connection!.sendRequest(r);
     }
 
     _logger.fine('Restoring writes.');
     // Restore puts
     _outstandingRequests.forEach((r) {
-      _connection.sendRequest(r);
+      _connection!.sendRequest(r);
     });
 
-    if (_connection.state != ConnectionState.connected) return;
+    if (_connection!.state != ConnectionState.connected) return;
   }
 
   bool get _transportIsReady =>
-      _connection != null && _connection.state == ConnectionState.connected;
+      _connection != null && _connection!.state == ConnectionState.connected;
 
   Future<MessageBody> _request(Request request) async {
     var message = request.message;
@@ -463,27 +461,28 @@ class PersistentConnectionImpl extends PersistentConnection
       }
     }
     if (_transportIsReady) {
-      _connection.sendRequest(request);
+      _connection!.sendRequest(request);
     }
     return request.response.then<MessageBody>((r) {
       _outstandingRequests.remove(request);
       if (r.message.body.status == MessageBody.statusOk) {
         return r.message.body;
-      } else {
-        throwServerError(r.message.body.status, r.message.body.data);
       }
+      throw FirebaseDatabaseException(
+          code: r.message.body.status ?? 'unknown',
+          details: r.message.body.data);
     });
   }
 
   // testing methods
   @override
   void mockConnectionLost() {
-    _connection.transport.close();
+    _connection!.transport.close();
   }
 
   @override
   void mockResetMessage() {
-    _connection._onMessage(ResetMessage(_url.host));
+    _connection!._onMessage(ResetMessage(_url.host));
   }
 
   @override
@@ -542,7 +541,7 @@ class PersistentConnectionImpl extends PersistentConnection
     }
   }
 
-  void _openNetworkConnection(String token) {
+  void _openNetworkConnection(String? token) {
     assert(
       connectionState == ConnectionState.gettingToken,
       'Trying to open network connection while in the wrong state: $connectionState',
@@ -557,7 +556,7 @@ class PersistentConnectionImpl extends PersistentConnection
     _connection = Connection(url: _url, delegate: this)..open();
   }
 
-  void _setAuthData(Map<String, dynamic> data) {
+  void _setAuthData(Map<String, dynamic>? data) {
     _authData = data;
     if (_onAuth.isClosed) return;
     _onAuth.add(_authData);
@@ -571,7 +570,7 @@ class PersistentConnectionImpl extends PersistentConnection
   void _doIdleCheck() {
     if (_isIdle()) {
       if (_inactivityTimer != null) {
-        _inactivityTimer.cancel();
+        _inactivityTimer!.cancel();
       }
 
       _inactivityTimer = Timer(_idleTimeout, () {
@@ -599,11 +598,11 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Map<String, dynamic> get authData => _authData;
+  Map<String, dynamic>? get authData => _authData;
 }
 
 class QueryDef {
-  final QueryFilter query;
+  final QueryFilter? query;
   final String path;
 
   QueryDef(this.path, this.query);

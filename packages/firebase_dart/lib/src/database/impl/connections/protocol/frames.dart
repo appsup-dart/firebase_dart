@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 part of firebase.protocol;
 
@@ -20,7 +20,7 @@ class FramesChannelTransformer
       var dataSegs = List.generate(
           (data.length / maxFrameSize).ceil(),
           (i) => data.substring(
-              i * maxFrameSize, min((i + 1) * maxFrameSize, data.length)));
+              i * maxFrameSize as int, min((i + 1) * maxFrameSize as int, data.length)));
 
       if (dataSegs.length > 1) {
         sink.add('${dataSegs.length}');
@@ -49,17 +49,17 @@ class FramesToMessagesTransformer
 class _FramesToMessagesEventSink extends EventSink<String> {
   final EventSink<String> _outputSink;
 
-  int _totalFrames;
-  List<String> _frames;
+  int? _totalFrames;
+  List<String>? _frames;
 
   _FramesToMessagesEventSink(this._outputSink);
 
   @override
   void add(String event) {
     if (_frames != null) {
-      _frames.add(event);
-      if (_frames.length == _totalFrames) {
-        var fullMess = _frames.join('');
+      _frames!.add(event);
+      if (_frames!.length == _totalFrames) {
+        var fullMess = _frames!.join('');
         _frames = null;
         _outputSink.add(fullMess);
       }
@@ -77,7 +77,7 @@ class _FramesToMessagesEventSink extends EventSink<String> {
   }
 
   @override
-  void addError(Object error, [StackTrace stackTrace]) {
+  void addError(Object error, [StackTrace? stackTrace]) {
     _outputSink.addError(error, stackTrace);
   }
 
