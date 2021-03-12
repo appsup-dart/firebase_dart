@@ -110,7 +110,7 @@ extension QueryFilterX on Filter<Name, TreeStructuredData?> {
       validInterval.start.value as TreeStructuredData?;
 }
 
-class QueryFilter extends Filter<Name, TreeStructuredData?> {
+class QueryFilter extends Filter<Name, TreeStructuredData> {
   const QueryFilter(
       {KeyValueInterval validInterval = const KeyValueInterval(),
       int? limit,

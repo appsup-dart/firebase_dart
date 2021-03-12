@@ -525,7 +525,7 @@ class RpcHandler {
     }
 
     if (fieldsToDelete.isNotEmpty) {
-      request.deleteAttribute = fieldsToDelete as List<String>?;
+      request.deleteAttribute = fieldsToDelete.whereType<String>().toList();
     }
     var response = await relyingparty.setAccountInfo(request);
 

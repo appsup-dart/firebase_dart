@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:async';
 
 import 'package:clock/clock.dart';
@@ -33,17 +31,17 @@ void main() async {
       test('FirebaseAuth.signInAnonymously: success', () async {
         var result = await auth.signInAnonymously() as UserCredentialImpl;
 
-        expect(result.user.uid, hasLength(24));
+        expect(result.user!.uid, hasLength(24));
         expect(result.credential, isNull);
         expect(result.additionalUserInfo.providerId, isNull);
         expect(result.additionalUserInfo.isNewUser, isTrue);
         expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
 
-        expect(result.user.isAnonymous, isTrue);
+        expect(result.user!.isAnonymous, isTrue);
 
         // Confirm anonymous state saved.
         var user = await auth.userStorageManager.getCurrentUser();
-        expect(user.toJson(), result.user.toJson());
+        expect(user!.toJson(), result.user!.toJson());
         expect(user.isAnonymous, isTrue);
       });
 
@@ -100,23 +98,23 @@ void main() async {
         var s = auth.authStateChanges().listen((user) {
           stateChanged++;
           expect(stateChanged, 1);
-          expect(user.uid, uid);
+          expect(user!.uid, uid);
         });
         // signInAnonymously should resolve with the already signed in anonymous
         // user without calling RPC handler underneath.
         var result = await auth.signInAnonymously() as UserCredentialImpl;
-        expect(result.user.toJson(), user.toJson());
+        expect(result.user!.toJson(), user.toJson());
         expect(result.additionalUserInfo,
             GenericAdditionalUserInfo(providerId: null, isNewUser: false));
         expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
         expect(auth.currentUser, result.user);
-        expect(result.user.isAnonymous, isTrue);
+        expect(result.user!.isAnonymous, isTrue);
 
         // Save reference to current user.
         var currentUser = auth.currentUser;
 
         // Sign in anonymously again.
-        result = await auth.signInAnonymously();
+        result = await auth.signInAnonymously() as UserCredentialImpl;
 
         // Exact same reference should be returned.
         expect(result.user, same(currentUser));
@@ -134,13 +132,13 @@ void main() async {
         var result = await auth.signInWithEmailAndPassword(
             email: expectedEmail, password: expectedPass) as UserCredentialImpl;
 
-        expect(result.user.uid, 'user1');
+        expect(result.user!.uid, 'user1');
         expect(result.credential, isNull);
         expect(result.additionalUserInfo.providerId, 'password');
         expect(result.additionalUserInfo.isNewUser, isFalse);
         expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
 
-        expect(result.user.isAnonymous, isFalse);
+        expect(result.user!.isAnonymous, isFalse);
       });
 
       test('FirebaseAuth.signInWithEmailAndPassword: wrong password', () async {
@@ -167,13 +165,13 @@ void main() async {
         var result = await auth.signInWithCustomToken(expectedCustomToken);
 
         // Anonymous status should be set to false.
-        expect(result.user.isAnonymous, isFalse);
-        expect(result.additionalUserInfo.providerId, isNull);
-        expect(result.additionalUserInfo.isNewUser, isFalse);
+        expect(result.user!.isAnonymous, isFalse);
+        expect(result.additionalUserInfo!.providerId, isNull);
+        expect(result.additionalUserInfo!.isNewUser, isFalse);
 
         // Confirm anonymous state saved.
         var user = await auth.userStorageManager.getCurrentUser();
-        expect(user.toJson(), result.user.toJson());
+        expect(user!.toJson(), result.user!.toJson());
         expect(user.isAnonymous, isFalse);
       });
     });
@@ -187,10 +185,10 @@ void main() async {
         var result = await auth.createUserWithEmailAndPassword(
             email: email, password: pass);
 
-        expect(result.user.email, email);
-        expect(result.user.isAnonymous, isFalse);
-        expect(result.additionalUserInfo.providerId, 'password');
-        expect(result.additionalUserInfo.isNewUser, isTrue);
+        expect(result.user!.email, email);
+        expect(result.user!.isAnonymous, isFalse);
+        expect(result.additionalUserInfo!.providerId, 'password');
+        expect(result.additionalUserInfo!.isNewUser, isTrue);
       });
     });
 
@@ -245,7 +243,7 @@ void main() async {
         var r = await auth.signInWithEmailAndPassword(
             email: expectedEmail, password: expectedNewPassword);
 
-        expect(r.user.email, expectedEmail);
+        expect(r.user!.email, expectedEmail);
       });
 
       test('FirebaseAuth.confirmPasswordReset: error', () async {
@@ -279,15 +277,15 @@ void main() async {
             },
             codeSent: (a, b) => null,
             codeAutoRetrievalTimeout: (verificationId) async {
-              var code = await tester.backend.receiveSmsCode(phoneNumber);
+              var code = await tester.backend.receiveSmsCode(phoneNumber)!;
               credential.complete(PhoneAuthProvider.credential(
                   verificationId: verificationId, smsCode: code));
             });
 
         var r = await auth.signInWithCredential(await credential.future);
 
-        expect(r.user.uid, 'user1');
-        expect(r.user.phoneNumber, phoneNumber);
+        expect(r.user!.uid, 'user1');
+        expect(r.user!.phoneNumber, phoneNumber);
       });
     });
   });
@@ -331,7 +329,7 @@ void main() async {
 
   group('Pass authentication to other services', () {
     test('Should auth before listen on database', () async {
-      FirebaseDatabase db;
+      late FirebaseDatabase db;
       var backend = database.MemoryBackend.getInstance('test');
       backend.securityRules = {'.read': 'auth!=null'};
       var s = auth.authStateChanges().listen((user) async {
@@ -354,7 +352,8 @@ class Tester {
 
   Tester._(this.app, this.backend);
 
-  FirebaseAuthImpl get auth => FirebaseAuth.instanceFor(app: app);
+  FirebaseAuthImpl get auth =>
+      FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
 
   static Future<Tester> create() async {
     await FirebaseTesting.setup();

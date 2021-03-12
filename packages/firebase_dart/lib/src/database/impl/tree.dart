@@ -30,9 +30,8 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
 
   final Map<K, TreeNode<K, V>> _children;
 
-  TreeNode(this.value, [Map<K, TreeNode<K, V>?>? children])
-      : _children = _cloneMap<K, TreeNode<K, V>?>(children ?? {})
-            as Map<K, TreeNode<K, V>>;
+  TreeNode(this.value, [Map<K, TreeNode<K, V>>? children])
+      : _children = _cloneMap<K, TreeNode<K, V>>(children ?? {});
 
   Map<K, TreeNode<K, V>> get children => _children;
 

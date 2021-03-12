@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'dart:async';
 import 'dart:convert';
@@ -24,7 +24,7 @@ FirebaseOptions getOptions(
 }
 
 class Expectation {
-  dynamic _response;
+  late dynamic _response;
   dynamic _body;
   Map<String, String> _headers = {};
   int httpCode = 200;
@@ -43,7 +43,7 @@ class Expectation {
     _body = body;
   }
 
-  void expectHeaders(Map<String, String> headers) {
+  void expectHeaders(Map<String, String>? headers) {
     _headers = headers ?? {};
   }
 
@@ -127,7 +127,7 @@ class ProxyClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     for (var p in clients.keys) {
       if (p.allMatches(request.url.replace(query: '').toString()).isNotEmpty) {
-        return clients[p].send(request);
+        return clients[p]!.send(request);
       }
     }
     throw ArgumentError('No client defined for url ${request.url}');

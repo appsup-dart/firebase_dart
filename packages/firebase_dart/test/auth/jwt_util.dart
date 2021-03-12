@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'dart:math';
 
@@ -11,21 +11,21 @@ final key = JsonWebKey.fromJson({
       'AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow'
 });
 
-String createMockJwt({String uid, String providerId}) {
+String createMockJwt({String? uid, String? providerId}) {
   var builder = JsonWebSignatureBuilder()
     ..jsonContent = _jwtPayloadFor(uid, providerId)
     ..addRecipient(key);
   return builder.build().toCompactSerialization();
 }
 
-String createMockCustomToken({String uid}) {
+String createMockCustomToken({String? uid}) {
   var builder = JsonWebSignatureBuilder()
     ..jsonContent = {'uid': uid}
     ..addRecipient(key);
   return builder.build().toCompactSerialization();
 }
 
-Map<String, dynamic> _jwtPayloadFor(String uid, String providerId) {
+Map<String, dynamic> _jwtPayloadFor(String? uid, String? providerId) {
   var now = clock.now().millisecondsSinceEpoch ~/ 1000;
   return {
     'iss': 'https://securetoken.google.com/12345678',

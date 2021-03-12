@@ -10,23 +10,23 @@ class TreeStructuredData extends TreeNode<Name, Value?> {
       : this._(value, FilteredMap(filter ?? QueryFilter()), priority);
 
   TreeStructuredData._(Value? value,
-      FilteredMap<Name, TreeStructuredData?>? children, Value? priority)
+      FilteredMap<Name, TreeStructuredData>? children, Value? priority)
       : priority = priority,
         assert(children == null || children is FilteredMap),
         super(
             value,
-            UnmodifiableFilteredMap<Name, TreeStructuredData?>(
+            UnmodifiableFilteredMap<Name, TreeStructuredData>(
                 children ?? FilteredMap(const QueryFilter())));
 
   TreeStructuredData.leaf(Value value, [Value? priority])
       : this._(value, null, priority);
 
-  TreeStructuredData.nonLeaf(Map<Name, TreeStructuredData?> children,
+  TreeStructuredData.nonLeaf(Map<Name, TreeStructuredData> children,
       [Value? priority])
       : this._(
             null,
             children is FilteredMap
-                ? children as FilteredMap<Name, TreeStructuredData?>?
+                ? children as FilteredMap<Name, TreeStructuredData>
                 : (FilteredMap(const QueryFilter())..addAll(children)),
             priority);
 
@@ -93,7 +93,7 @@ class TreeStructuredData extends TreeNode<Name, Value?> {
               start: start, end: end, limit: limit, reversed: reversed),
           priority);
 
-  TreeStructuredData withFilter(Filter<Name, TreeStructuredData?> f) {
+  TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) {
     if (children.filter == f) return this;
     if (f.ordering == children.filter.ordering) {
       return TreeStructuredData._(

@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/auth/impl/user.dart';
@@ -59,11 +57,14 @@ void main() async {
       ]
     };
 
-    Box storage;
+    late Box storage;
 
     setUp(() async {
-      await storage?.close();
       storage = await Hive.openBox('test', bytes: Uint8List(0));
+    });
+
+    tearDown(() async {
+      await storage.close();
     });
 
     var exampleUser = FirebaseUserImpl.fromJson(expectedUser, auth: auth);
@@ -80,12 +81,12 @@ void main() async {
       await userManager.setCurrentUser(exampleUser);
 
       var user = await userManager.getCurrentUser();
-      expect(user.toJson(), expectedUser);
+      expect(user!.toJson(), expectedUser);
       expect(await storage.get('firebase:FirebaseUser:$appId'), expectedUser);
 
       // Get user with authDomain.
       user = await userManager.getCurrentUser('project.firebaseapp.com');
-      expect(user.toJson(), expectedUserWithAuthDomain);
+      expect(user!.toJson(), expectedUserWithAuthDomain);
 
       await userManager.removeCurrentUser();
 
@@ -140,7 +141,7 @@ void main() async {
           () async {
         var userManager = UserManager(auth, storage);
 
-        var values = <String>[];
+        var values = <String?>[];
         userManager.onCurrentUserChanged.listen((v) => values.add(v?.uid));
 
         await userManager.setCurrentUser(exampleUser);
@@ -158,7 +159,7 @@ void main() async {
         var userManager1 = UserManager(auth, storage);
         var userManager2 = UserManager(auth, storage);
 
-        var values = <String>[];
+        var values = <String?>[];
         userManager1.onCurrentUserChanged.listen((v) => values.add(v?.uid));
 
         await userManager2.setCurrentUser(exampleUser);

@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -10,7 +8,6 @@ import 'package:firebase_dart/src/auth/auth_provider.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
-import 'package:meta/meta.dart';
 import 'package:test/test.dart';
 
 import 'jwt_util.dart';
@@ -23,11 +20,11 @@ class Tester {
   final String url;
   final dynamic expectedBody;
   final String method;
-  final Future Function() action;
-  final dynamic Function(Map<String, dynamic>) expectedResult;
+  final Future Function()? action;
+  final dynamic Function(Map<String, dynamic>)? expectedResult;
 
   Tester(
-      {String path,
+      {String? path,
       this.expectedBody,
       this.method = 'POST',
       this.action,
@@ -35,11 +32,11 @@ class Tester {
       : url = '$identityToolkitBaseUrl/$path';
 
   Tester replace(
-          {String path,
+          {String? path,
           dynamic expectedBody,
-          String method,
-          Future Function() action,
-          dynamic Function(Map<String, dynamic>) expectedResult}) =>
+          String? method,
+          Future Function()? action,
+          dynamic Function(Map<String, dynamic>)? expectedResult}) =>
       Tester(
           path: path ?? Uri.parse(url).pathSegments.last,
           expectedBody: expectedBody ?? this.expectedBody,
@@ -48,30 +45,30 @@ class Tester {
           expectedResult: expectedResult ?? this.expectedResult);
 
   Future<void> shouldSucceed(
-      {String url,
+      {String? url,
       dynamic expectedBody,
-      @required FutureOr<Map<String, dynamic>> serverResponse,
-      Map<String, String> expectedHeaders,
-      Future Function() action,
-      dynamic Function(Map<String, dynamic>) expectedResult,
-      String method}) async {
+      required FutureOr<Map<String, dynamic>> serverResponse,
+      Map<String, String>? expectedHeaders,
+      Future Function()? action,
+      dynamic Function(Map<String, dynamic>)? expectedResult,
+      String? method}) async {
     when(method ?? this.method, url ?? this.url)
       ..expectBody(expectedBody ?? this.expectedBody)
       ..expectHeaders(expectedHeaders)
       ..thenReturn(serverResponse);
     var response = await serverResponse;
     expectedResult ??= this.expectedResult ?? (r) async => r;
-    var v = await (action ?? this.action)();
+    var v = await (action ?? this.action)!();
     expect(json.decode(json.encode(v)), await expectedResult(response));
   }
 
   Future<void> shouldFail(
-      {String url,
+      {String? url,
       dynamic expectedBody,
-      @required FutureOr<Map<String, dynamic>> serverResponse,
-      @required FirebaseAuthException expectedError,
-      Future Function() action,
-      String method}) async {
+      required FutureOr<Map<String, dynamic>> serverResponse,
+      required FirebaseAuthException expectedError,
+      Future Function()? action,
+      String? method}) async {
     when(method ?? this.method, url ?? this.url)
       ..expectBody(expectedBody ?? this.expectedBody)
       ..thenReturn(serverResponse);
@@ -79,11 +76,11 @@ class Tester {
   }
 
   Future<void> shouldFailWithServerErrors(
-      {String url,
-      String method,
-      Map<String, dynamic> expectedBody,
-      Future Function() action,
-      @required Map<String, FirebaseAuthException> errorMap}) async {
+      {String? url,
+      String? method,
+      Map<String, dynamic>? expectedBody,
+      Future Function()? action,
+      required Map<String, FirebaseAuthException> errorMap}) async {
     for (var serverErrorCode in errorMap.keys) {
       var expectedError = errorMap[serverErrorCode];
 
@@ -91,7 +88,7 @@ class Tester {
         ..expectBody(expectedBody ?? this.expectedBody)
         ..thenReturn(Tester.errorResponse(serverErrorCode));
 
-      var e = await (action ?? this.action)()
+      var e = await (action ?? this.action)!()
           .then<dynamic>((v) => v)
           .catchError((e) => e);
       expect(e, expectedError);
@@ -99,7 +96,7 @@ class Tester {
   }
 
   static Map<String, dynamic> errorResponse(String message,
-          {Map<String, dynamic> extras}) =>
+          {Map<String, dynamic>? extras}) =>
       {
         'error': {
           'errors': [
@@ -129,14 +126,18 @@ void main() {
     WebPlatform platform;
 
     initPlatform(platform = Platform.web(
-        currentUrl: 'http://localhost', isMobile: false, isOnline: true));
+        currentUrl: 'http://localhost',
+        isMobile: false,
+        isOnline: true) as WebPlatform);
     setUp(() {
       rpcHandler
         ..tenantId = null
         ..updateCustomLocaleHeader(null);
 
       initPlatform(platform = Platform.web(
-          currentUrl: 'http://localhost', isMobile: false, isOnline: true));
+          currentUrl: 'http://localhost',
+          isMobile: false,
+          isOnline: true) as WebPlatform);
     });
 
     group('identitytoolkit', () {
@@ -147,7 +148,7 @@ void main() {
           expectedResult: (response) => {'id_token': response['idToken']},
           action: () => rpcHandler
               .signInAnonymously()
-              .then((v) => {'id_token': v.response['id_token']}),
+              .then((v) => {'id_token': v.response!['id_token']}),
         );
         group('server provided error message', () {
           test('server provided error message: known error code', () async {
@@ -477,7 +478,7 @@ void main() {
           platform = Platform.web(
               currentUrl: 'chrome-extension://234567890/index.html',
               isMobile: true,
-              isOnline: true);
+              isOnline: true) as WebPlatform;
           initPlatform(platform);
           await tester.shouldSucceed(
             expectedBody: {
@@ -551,7 +552,7 @@ void main() {
           platform = Platform.web(
               currentUrl: 'chrome-extension://234567890/index.html',
               isOnline: true,
-              isMobile: true);
+              isMobile: true) as WebPlatform;
           initPlatform(platform);
           await tester.shouldSucceed(
             expectedBody: {
@@ -628,7 +629,7 @@ void main() {
           },
           action: () => rpcHandler
               .verifyCustomToken('CUSTOM_TOKEN')
-              .then((v) => {'id_token': v.response['id_token']}),
+              .then((v) => {'id_token': v.response!['id_token']}),
         );
 
         test('verifyCustomToken: success', () async {
@@ -703,7 +704,7 @@ void main() {
             },
             action: () => rpcHandler
                 .emailLinkSignIn('user@example.com', 'OTP_CODE')
-                .then((v) => {'id_token': v.response['id_token']}));
+                .then((v) => {'id_token': v.response!['id_token']}));
         test('emailLinkSignIn: success', () async {
           await tester.shouldSucceed(
             serverResponse: {'idToken': createMockJwt(uid: 'user1')},
@@ -768,7 +769,7 @@ void main() {
           },
           action: () => rpcHandler
               .createAccount('uid123@fake.com', 'mysupersecretpassword')
-              .then((v) => {'id_token': v.response['id_token']}),
+              .then((v) => {'id_token': v.response!['id_token']}),
         );
         test('createAccount: success', () async {
           await tester.shouldSucceed(
@@ -869,7 +870,7 @@ void main() {
             },
             action: () => rpcHandler
                 .verifyPassword('uid123@fake.com', 'mysupersecretpassword')
-                .then((v) => {'id_token': v.response['id_token']}));
+                .then((v) => {'id_token': v.response!['id_token']}));
         test('verifyPassword: success', () async {
           await tester.shouldSucceed(
             serverResponse: {
@@ -949,7 +950,7 @@ void main() {
           expectedResult: (response) => {'id_token': response['idToken']},
           action: () => rpcHandler
               .signInAnonymously()
-              .then((v) => {'id_token': v.response['id_token']}),
+              .then((v) => {'id_token': v.response!['id_token']}),
         );
         test('signInAnonymously: success', () async {
           await tester.shouldSucceed(
@@ -2976,7 +2977,7 @@ void main() {
           },
           action: () => rpcHandler
               .verifyPhoneNumber(sessionInfo: 'SESSION_INFO', code: '123456')
-              .then((v) => {'id_token': v.response['id_token']}),
+              .then((v) => {'id_token': v.response!['id_token']}),
         );
 
         group('verifyPhoneNumber: using code', () {
@@ -3042,7 +3043,7 @@ void main() {
                 .verifyPhoneNumber(
                     phoneNumber: '16505550101',
                     temporaryProof: 'TEMPORARY_PROOF')
-                .then((v) => {'id_token': v.response['id_token']}),
+                .then((v) => {'id_token': v.response!['id_token']}),
           );
           test('verifyPhoneNumber: success using temporary proof', () async {
             // Tests successful verifyPhoneNumber RPC call using a temporary proof.
@@ -3088,7 +3089,7 @@ void main() {
                   idToken: 'ID_TOKEN',
                   sessionInfo: 'SESSION_INFO',
                   code: '123456')
-              .then((v) => {'id_token': v.response['id_token']}),
+              .then((v) => {'id_token': v.response!['id_token']}),
         );
         test('verifyPhoneNumberForLinking: success using code', () async {
           await tester.shouldSucceed(
@@ -3178,7 +3179,7 @@ void main() {
           action: () => rpcHandler
               .verifyPhoneNumberForExisting(
                   sessionInfo: 'SESSION_INFO', code: '123456')
-              .then((v) => {'id_token': v.response['id_token']}),
+              .then((v) => {'id_token': v.response!['id_token']}),
         );
 
         group('verifyPhoneNumberForExisting: using code', () {
@@ -3243,7 +3244,7 @@ void main() {
                 .verifyPhoneNumberForExisting(
                     temporaryProof: 'TEMPORARY_PROOF',
                     phoneNumber: '16505550101')
-                .then((v) => {'id_token': v.response['id_token']}),
+                .then((v) => {'id_token': v.response!['id_token']}),
           );
           test('verifyPhoneNumberForExisting: success using temporary proof',
               () async {
@@ -3288,7 +3289,7 @@ void main() {
         test('Send Firebase backend request: timeout', () async {
           fakeAsync((fake) {
             tester.shouldFail(
-              serverResponse: Future.delayed(Duration(days: 1)),
+              serverResponse: Future.delayed(Duration(days: 1), () => {}),
               expectedError: FirebaseAuthException.networkRequestFailed(),
             );
 
@@ -3303,7 +3304,7 @@ void main() {
             initPlatform(platform = Platform.web(
                 currentUrl: 'http://localhost',
                 isOnline: false,
-                isMobile: true));
+                isMobile: true) as WebPlatform);
           });
           test('Send Firebase backend request: offline false alert', () async {
             fakeAsync((fake) {
