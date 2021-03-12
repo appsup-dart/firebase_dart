@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
@@ -190,28 +188,28 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 class KeyValueDatabase {
   final Box box;
 
-  DateTime _transactionStart;
+  DateTime? _transactionStart;
 
-  Map<String, dynamic> _transaction;
+  Map<String, dynamic>? _transaction;
 
   KeyValueDatabase(this.box);
 
   bool get isInsideTransaction => _transaction != null;
 
   Iterable<dynamic> valuesBetween(
-      {@required String startKey, @required String endKey}) {
+      {required String startKey, required String endKey}) {
     // TODO merge transaction data
     return keysBetween(startKey: startKey, endKey: endKey)
         .map((k) => box.get(k));
   }
 
   Iterable<String> keysBetween(
-      {@required String startKey, @required String endKey}) sync* {
+      {required String startKey, required String endKey}) sync* {
     // TODO merge transaction data
     for (var k in box.keys) {
       if (Comparable.compare(k, startKey) < 0) continue;
       if (Comparable.compare(k, endKey) > 0) return;
-      yield k;
+      yield k as String;
     }
   }
 
@@ -229,10 +227,10 @@ class KeyValueDatabase {
 
   void endTransaction() {
     assert(isInsideTransaction);
-    box.putAll(_transaction);
-    box.deleteAll(_transaction.keys.where((k) => _transaction[k] == null));
+    box.putAll(_transaction!);
+    box.deleteAll(_transaction!.keys.where((k) => _transaction![k] == null));
     _transaction = null;
-    var elapsed = clock.now().difference(_transactionStart);
+    var elapsed = clock.now().difference(_transactionStart!);
     _logger.fine('Transaction completed. Elapsed: $elapsed');
     _transactionStart = null;
   }
@@ -243,19 +241,19 @@ class KeyValueDatabase {
 
   void delete(String key) {
     _verifyInsideTransaction();
-    _transaction[key] = null;
+    _transaction![key] = null;
   }
 
   void deleteAll(Iterable<String> keys) {
     _verifyInsideTransaction();
     for (var k in keys) {
-      _transaction[k] = null;
+      _transaction![k] = null;
     }
   }
 
   void put(String key, dynamic value) {
     _verifyInsideTransaction();
-    _transaction[key] = value;
+    _transaction![key] = value;
   }
 
   void _verifyInsideTransaction() {

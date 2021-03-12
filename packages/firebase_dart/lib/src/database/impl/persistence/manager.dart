@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
@@ -23,7 +23,7 @@ abstract class PersistenceManager {
   /// Overwrite the server cache with the given node for a given query.
   ///
   /// The query is considered to be complete after saving this node.
-  void updateServerCache(TreeOperation operation, [QueryFilter filter]);
+  void updateServerCache(TreeOperation operation, [QueryFilter? filter]);
 
   void setQueryActive(Path<Name> path, QueryFilter filter);
 
@@ -54,7 +54,7 @@ class NoopPersistenceManager implements PersistenceManager {
   }
 
   @override
-  void updateServerCache(TreeOperation operation, [QueryFilter filter]) {
+  void updateServerCache(TreeOperation operation, [QueryFilter? filter]) {
     _verifyInsideTransaction();
   }
 

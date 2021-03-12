@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'dart:math';
 
@@ -26,11 +26,11 @@ class TrackedQuery {
   final bool active;
 
   TrackedQuery(
-      {@required this.id,
-      @required this.querySpec,
-      @required this.lastUse,
-      @required this.complete,
-      @required this.active})
+      {required this.id,
+      required this.querySpec,
+      required this.lastUse,
+      required this.complete,
+      required this.active})
       : assert(id != null),
         assert(querySpec != null),
         assert(lastUse != null),
@@ -47,7 +47,7 @@ class TrackedQuery {
             complete: json['c'],
             active: json['a']);
 
-  TrackedQuery replace({DateTime lastUse, bool complete, bool active}) =>
+  TrackedQuery replace({DateTime? lastUse, bool? complete, bool? active}) =>
       TrackedQuery(
           id: id,
           querySpec: querySpec,
@@ -110,7 +110,7 @@ class TrackedQueryManager {
   /// In-memory cache of tracked queries.
   ///
   /// Should always be in-sync with the DB.
-  TreeNode<Name, Map<QueryFilter, TrackedQuery>> trackedQueryTree;
+  TreeNode<Name, Map<QueryFilter, TrackedQuery>?> trackedQueryTree;
 
   /// DB, where we permanently store tracked queries.
   final PersistenceStorageEngine storageLayer;
@@ -125,7 +125,7 @@ class TrackedQueryManager {
 
   TrackedQueryManager(this.storageLayer)
       : trackedQueryTree =
-            TreeNode<Name, Map<QueryFilter, TrackedQuery>>(null) {
+            TreeNode<Name, Map<QueryFilter, TrackedQuery>?>(null) {
     resetPreviouslyActiveTrackedQueries();
 
     // Populate our cache from the storage layer.
@@ -148,7 +148,7 @@ class TrackedQueryManager {
     }
   }
 
-  TrackedQuery findTrackedQuery(QuerySpec query) {
+  TrackedQuery? findTrackedQuery(QuerySpec query) {
     var child =
         trackedQueryTree.subtree(query.path, (_, __) => TreeNode(null)).value;
     if (child == null) return null;
@@ -157,14 +157,14 @@ class TrackedQueryManager {
 
   void removeTrackedQuery(QuerySpec query) {
     query = query.normalize();
-    var trackedQuery = findTrackedQuery(query);
+    var trackedQuery = findTrackedQuery(query)!;
     assert(trackedQuery != null, 'Query must exist to be removed.');
 
     storageLayer.deleteTrackedQuery(trackedQuery.id);
-    var trackedQueries = trackedQueryTree.subtreeNullable(query.path).value;
+    var trackedQueries = trackedQueryTree.subtreeNullable(query.path)!.value!;
     trackedQueries.remove(query.params);
     if (trackedQueries.isEmpty &&
-        trackedQueryTree.subtreeNullable(query.path).isEmpty) {
+        trackedQueryTree.subtreeNullable(query.path)!.isEmpty) {
       trackedQueryTree =
           trackedQueryTree.removePath(query.path) ?? TreeNode(null);
     }
@@ -233,7 +233,7 @@ class TrackedQueryManager {
       if (trackedQueries == null) return false;
       return trackedQueries != null &&
           trackedQueries.containsKey(query.params) &&
-          trackedQueries[query.params].complete;
+          trackedQueries[query.params]!.complete;
     }
   }
 
@@ -288,7 +288,7 @@ class TrackedQueryManager {
       // TODO[persistence]: What if it's included in the tracked keys of a query?  Do we still want
       // to add a new tracked query for it?
 
-      var querySpec = QuerySpec(path);
+      var querySpec = QuerySpec(path as Path<Name>);
       var trackedQuery = findTrackedQuery(querySpec);
       if (trackedQuery == null) {
         trackedQuery = TrackedQuery(
@@ -307,7 +307,7 @@ class TrackedQueryManager {
 
   bool hasActiveDefaultQuery(Path path) {
     return trackedQueryTree.rootMostValueMatching(
-            path, _hasActiveDefaultPredicate) !=
+            path as Path<Name>?, _hasActiveDefaultPredicate as bool Function(Map<QueryFilter, TrackedQuery>?)) !=
         null;
   }
 
@@ -320,14 +320,14 @@ class TrackedQueryManager {
   /// Don't call it in production, since it's slow.
   bool includedInDefaultCompleteQuery(Path path) {
     return trackedQueryTree.findRootMostMatchingPath(
-            path, _hasDefaultCompletePredicate) !=
+            path as Path<Name>?, _hasDefaultCompletePredicate as bool Function(Map<QueryFilter, TrackedQuery>?)) !=
         null;
   }
 
   Set<int> filteredQueryIdsAtPath(Path path) {
     final ids = <int>{};
 
-    var queries = trackedQueryTree.subtreeNullable(path)?.value;
+    var queries = trackedQueryTree.subtreeNullable(path as Path<Name>)?.value;
     if (queries != null) {
       for (var query in queries.values) {
         if (query.querySpec.params.limits) {
