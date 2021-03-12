@@ -1,5 +1,3 @@
-// @dart=2.9
-
 part of 'repo.dart';
 
 enum TransactionStatus {
@@ -41,11 +39,11 @@ class Transaction implements Comparable<Transaction> {
   static const int maxRetries = 25;
 
   int retryCount = 0;
-  FirebaseDatabaseException abortReason;
+  FirebaseDatabaseException? abortReason;
   final int currentWriteId;
-  TreeStructuredData currentInputSnapshot;
-  TreeStructuredData currentOutputSnapshotRaw;
-  TreeStructuredData currentOutputSnapshotResolved;
+  TreeStructuredData? currentInputSnapshot;
+  TreeStructuredData? currentOutputSnapshotRaw;
+  TreeStructuredData? currentOutputSnapshotResolved;
 
   TransactionStatus status = TransactionStatus.readyToRun;
 
@@ -84,7 +82,7 @@ class Transaction implements Comparable<Transaction> {
     }
 
     currentInputSnapshot = currentState;
-    var data = MutableData(
+    MutableData? data = MutableData(
         path.isEmpty ? null : path.last.toString(), currentState.toJson());
 
     try {
@@ -108,7 +106,7 @@ class Transaction implements Comparable<Transaction> {
 
     if (applyLocally) {
       repo._syncTree.applyUserOverwrite(
-          path, currentOutputSnapshotResolved, currentWriteId);
+          path, currentOutputSnapshotResolved!, currentWriteId);
     }
   }
 
@@ -116,7 +114,7 @@ class Transaction implements Comparable<Transaction> {
   ///
   /// When the result of the transaction was applied locally, the local write
   /// is canceled.
-  void fail(FirebaseDatabaseException e) {
+  void fail(FirebaseDatabaseException? e) {
     _unwatch();
     currentOutputSnapshotRaw = null;
     currentOutputSnapshotResolved = null;
@@ -243,11 +241,12 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
   TransactionsNode() : super([], SortedMap<Name, TransactionsNode>());
 
   @override
-  Map<Name, TransactionsNode> get children => super.children;
+  Map<Name, TransactionsNode> get children =>
+      super.children as Map<Name, TransactionsNode>;
 
   @override
-  TransactionsNode subtreeNullable(Path<Name> path) =>
-      super.subtreeNullable(path);
+  TransactionsNode? subtreeNullable(Path<Name> path) =>
+      super.subtreeNullable(path) as TransactionsNode?;
 
   @override
   TransactionsNode subtree(
@@ -255,7 +254,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
           TreeNode<Name, List<Transaction>> Function(
                   List<Transaction> parent, Name childName)
               newInstance) =>
-      super.subtree(path, newInstance);
+      super.subtree(path, newInstance) as TransactionsNode;
 
   /// All transactions in this node and child nodes are ready to be sent, in
   /// other words, they have run.
@@ -339,12 +338,12 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
         return !(await rerun(path));
       }
       if (isReadyToSend) {
-        var latestHash = input.hash;
+        var latestHash = input!.hash;
         try {
           markAllTransactionsSent();
-          var out = output;
+          var out = output!;
           await repo._connection
-              .put(path.join('/'), output.toJson(true), hash: latestHash);
+              .put(path.join('/'), output!.toJson(true), hash: latestHash);
           complete();
 
           if (out == ServerValueX.resolve(out, repo._connection.serverValues)) {
@@ -369,7 +368,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     } else {
       var allFinished = true;
       for (var k in children.keys.toList()) {
-        allFinished = allFinished && await children[k].execute();
+        allFinished = allFinished && await children[k]!.execute();
       }
       return allFinished;
     }
@@ -408,17 +407,17 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
       var p = t.path.skip(path.length);
       switch (t.status) {
         case TransactionStatus.readyToRun:
-          await t.run(v.getChild(p));
+          await t.run(v!.getChild(p));
           break;
         case TransactionStatus.runComplete:
-          if (v.getChild(p) != t.currentInputSnapshot) {
+          if (v!.getChild(p) != t.currentInputSnapshot) {
             t.reset();
             await t.run(v.getChild(p));
           }
           break;
         case TransactionStatus.sent:
         case TransactionStatus.sentNeedsAbort:
-          if (v.getChild(p) != t.currentInputSnapshot) {
+          if (v!.getChild(p) != t.currentInputSnapshot) {
             // we cannot continue running and need to wait for the server response
             _isRunning = false;
             return false;
@@ -431,21 +430,20 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
           // transaction might be aborted while running
           continue;
       }
-      v = v.updateChild(p, t.currentOutputSnapshotResolved);
+      v = v.updateChild(
+          p, t.currentOutputSnapshotResolved ?? TreeStructuredData());
     }
     _isRunning = false;
     return true;
   }
 
-  TreeStructuredData input;
+  TreeStructuredData? input;
 
   int get lastId => max(
       value.isEmpty ? -1 : value.map((t) => t.order).reduce(max),
-      children.isEmpty
-          ? -1
-          : children.values.map((n) => n.lastId).reduce(max) ?? -1);
+      children.isEmpty ? -1 : children.values.map((n) => n.lastId).reduce(max));
 
-  TreeStructuredData get output {
+  TreeStructuredData? get output {
     var v = input;
     var lastId = -1;
     if (value.isNotEmpty) {
@@ -454,7 +452,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
     }
     children.forEach((key, node) {
       if (node.lastId > lastId) {
-        v = v.withChild(key, node.output);
+        v = v!.withChild(key, node.output!);
       }
     });
     return v;
@@ -474,11 +472,12 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
   }
 }
 
-class SparseSnapshotTree extends TreeNode<Name, TreeStructuredData> {
+class SparseSnapshotTree extends TreeNode<Name, TreeStructuredData?> {
   SparseSnapshotTree() : super(null, SortedMap<Name, SparseSnapshotTree>());
 
   @override
-  Map<Name, SparseSnapshotTree> get children => super.children;
+  Map<Name, SparseSnapshotTree> get children =>
+      super.children as Map<Name, SparseSnapshotTree>;
 
   void remember(Path<Name> path, TreeStructuredData data) {
     if (path.isEmpty) {
@@ -486,11 +485,11 @@ class SparseSnapshotTree extends TreeNode<Name, TreeStructuredData> {
       children.clear();
     } else {
       if (value != null) {
-        value = value.updateChild(path, data);
+        value = value!.updateChild(path, data);
       } else {
         var childKey = path.first;
         children.putIfAbsent(childKey, () => SparseSnapshotTree());
-        var child = children[childKey];
+        var child = children[childKey]!;
         path = path.skip(1);
         child.remember(path, data);
       }
@@ -504,10 +503,10 @@ class SparseSnapshotTree extends TreeNode<Name, TreeStructuredData> {
       return true;
     } else {
       if (value != null) {
-        if (value.isLeaf) {
+        if (value!.isLeaf) {
           return false;
         } else {
-          var oldValue = value;
+          var oldValue = value!;
           value = null;
           oldValue.children.forEach((key, tree) {
             remember(Path.from([key]), tree);
@@ -518,7 +517,7 @@ class SparseSnapshotTree extends TreeNode<Name, TreeStructuredData> {
         var childKey = path.first;
         path = path.skip(1);
         if (children.containsKey(childKey)) {
-          var safeToRemove = children[childKey].forget(path);
+          var safeToRemove = children[childKey]!.forget(path);
           if (safeToRemove) {
             children.remove(childKey);
           }

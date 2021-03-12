@@ -91,7 +91,7 @@ void main() async {
 
         // Save anonymous user as current in storage.
         await auth.userStorageManager.setCurrentUser(user);
-        var u = await auth.userStorageManager.getCurrentUser();
+        await auth.userStorageManager.getCurrentUser();
 
         await Future.delayed(Duration(milliseconds: 300));
 

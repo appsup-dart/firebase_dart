@@ -1,5 +1,3 @@
-
-
 import 'dart:math';
 
 import 'package:clock/clock.dart';
@@ -31,12 +29,7 @@ class TrackedQuery {
       required this.lastUse,
       required this.complete,
       required this.active})
-      : assert(id != null),
-        assert(querySpec != null),
-        assert(lastUse != null),
-        assert(complete != null),
-        assert(active != null),
-        assert(
+      : assert(
             querySpec.params.limits || querySpec.params == const QueryFilter());
 
   TrackedQuery.fromJson(Map<dynamic, dynamic> json)
@@ -158,7 +151,6 @@ class TrackedQueryManager {
   void removeTrackedQuery(QuerySpec query) {
     query = query.normalize();
     var trackedQuery = findTrackedQuery(query)!;
-    assert(trackedQuery != null, 'Query must exist to be removed.');
 
     storageLayer.deleteTrackedQuery(trackedQuery.id);
     var trackedQueries = trackedQueryTree.subtreeNullable(query.path)!.value!;
@@ -231,8 +223,7 @@ class TrackedQueryManager {
     } else {
       var trackedQueries = trackedQueryTree.subtreeNullable(query.path)?.value;
       if (trackedQueries == null) return false;
-      return trackedQueries != null &&
-          trackedQueries.containsKey(query.params) &&
+      return trackedQueries.containsKey(query.params) &&
           trackedQueries[query.params]!.complete;
     }
   }
@@ -307,7 +298,9 @@ class TrackedQueryManager {
 
   bool hasActiveDefaultQuery(Path path) {
     return trackedQueryTree.rootMostValueMatching(
-            path as Path<Name>?, _hasActiveDefaultPredicate as bool Function(Map<QueryFilter, TrackedQuery>?)) !=
+            path as Path<Name>?,
+            _hasActiveDefaultPredicate as bool Function(
+                Map<QueryFilter, TrackedQuery>?)) !=
         null;
   }
 
@@ -320,7 +313,9 @@ class TrackedQueryManager {
   /// Don't call it in production, since it's slow.
   bool includedInDefaultCompleteQuery(Path path) {
     return trackedQueryTree.findRootMostMatchingPath(
-            path as Path<Name>?, _hasDefaultCompletePredicate as bool Function(Map<QueryFilter, TrackedQuery>?)) !=
+            path as Path<Name>?,
+            _hasDefaultCompletePredicate as bool Function(
+                Map<QueryFilter, TrackedQuery>?)) !=
         null;
   }
 

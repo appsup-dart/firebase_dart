@@ -6,7 +6,6 @@ import 'package:firebase_dart/src/database/impl/persistence/prune_forest.dart';
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
-import 'package:meta/meta.dart';
 
 import '../data_observer.dart';
 import '../tree.dart';

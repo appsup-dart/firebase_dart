@@ -1,8 +1,6 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.9
-
 import 'dart:async';
 import 'dart:math';
 
@@ -55,13 +53,13 @@ class Repo {
   final PushIdGenerator pushIds = PushIdGenerator();
 
   int _nextWriteId = 0;
-  TransactionsTree _transactions;
+  late TransactionsTree _transactions;
   final SparseSnapshotTree _onDisconnect = SparseSnapshotTree();
 
-  StreamSubscription _authStateChangesSubscription;
+  late StreamSubscription _authStateChangesSubscription;
 
   factory Repo(firebase.FirebaseDatabase db) {
-    var url = Uri.parse(db.databaseURL ?? db.app.options.databaseURL);
+    var url = Uri.parse(db.databaseURL);
 
     return _repos.putIfAbsent(db, () {
       var auth = FirebaseAuth.instanceFor(app: db.app);
@@ -80,13 +78,12 @@ class Repo {
     });
   }
 
-  Repo._(this.url, this._connection, Stream<User> authStateChanges,
+  Repo._(this.url, this._connection, Stream<User?> authStateChanges,
       PersistenceManager persistenceManager)
       : _syncTree = SyncTree(url.toString(),
             remoteRegister: (path, filter, hash) async {
           var warnings = await _connection.listen(path.join('/'),
-                  query: filter, hash: hash) ??
-              [];
+              query: filter, hash: hash);
           for (var w in warnings) {
             _logger.warning(w);
           }
@@ -109,7 +106,7 @@ class Repo {
       _updateInfo(dotInfoConnected, v);
       if (v) {
         _updateInfo(dotInfoServerTimeOffset,
-            _connection.serverTime?.difference(DateTime.now())?.inMilliseconds);
+            _connection.serverTime.difference(DateTime.now()).inMilliseconds);
       }
       if (!v) {
         _runOnDisconnectEvents();
@@ -117,9 +114,9 @@ class Repo {
     });
     _connection.onDataOperation.listen((event) {
       if (event.type == OperationEventType.listenRevoked) {
-        _syncTree.applyListenRevoked(event.path, event.query);
+        _syncTree.applyListenRevoked(event.path!, event.query);
       } else {
-        _syncTree.applyServerOperation(event.operation, event.query);
+        _syncTree.applyServerOperation(event.operation!, event.query);
       }
     });
   }
@@ -159,7 +156,7 @@ class Repo {
   ///
   /// When a user is logged in, its auth data is posted. When logged of, `null`
   /// is posted.
-  Stream<Map> get onAuth => _connection.onAuth;
+  Stream<Map?> get onAuth => _connection.onAuth;
 
   /// Tries to authenticate with [token].
   ///
@@ -244,7 +241,7 @@ class Repo {
   /// Returns a future that completes when the listener has been successfully
   /// registered at the server.
   Future<void> listen(
-      String path, QueryFilter filter, String type, EventListener cb) async {
+      String path, QueryFilter? filter, String type, EventListener cb) async {
     // possibly the user started listening in response of an auth event
     // so, wait until all microtasks are processed to make sure that the
     // database also received the auth event
@@ -269,7 +266,7 @@ class Repo {
   /// Returns a future that completes when the listener has been successfully
   /// unregistered at the server.
   void unlisten(
-      String path, QueryFilter filter, String type, EventListener cb) {
+      String path, QueryFilter? filter, String type, EventListener cb) {
     path = _preparePath(path);
 
     var p = Name.parsePath(path);
@@ -289,10 +286,10 @@ class Repo {
   }
 
   /// Gets the current cached value at location [path] with [filter].
-  TreeStructuredData cachedValue(String path, QueryFilter filter) {
+  TreeStructuredData? cachedValue(String path, QueryFilter filter) {
     path = _preparePath(path);
     var tree = _syncTree.root.subtreeNullable(Name.parsePath(path));
-    if (tree = null) return null;
+    if (tree == null) return null;
     return tree.value.valueForFilter(filter);
   }
 
@@ -386,7 +383,7 @@ class StreamFactory {
 
   StreamFactory(this.repo, this.ref, this.filter, this.type);
 
-  StreamController<firebase.Event> controller;
+  late StreamController<firebase.Event> controller;
 
   void addEvent(Event value) {
     var e = _mapEvent(value);
@@ -394,7 +391,7 @@ class StreamFactory {
     Future.microtask(() => controller.add(e));
   }
 
-  firebase.Event _mapEvent(Event value) {
+  firebase.Event? _mapEvent(Event value) {
     if (value is ValueEvent) {
       if (type != 'value') return null;
       return firebase.Event(firebase.DataSnapshotImpl(ref, value.value), null);
@@ -430,7 +427,7 @@ class StreamFactory {
     stopListen();
     var event = error as CancelEvent;
     if (event.error != null) {
-      controller.addError(event.error, event.stackTrace);
+      controller.addError(event.error!, event.stackTrace);
     }
     controller.close();
   }
