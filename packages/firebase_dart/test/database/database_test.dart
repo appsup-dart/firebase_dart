@@ -303,7 +303,7 @@ void testsWith(Map<String, dynamic> secrets) {
         return;
       }
       ref = ref.child('test-protected');
-      ref.onValue.listen((e) => print(e.snapshot.value));
+      ref.onValue.listen((e) => null);
       await ref.authWithCustomToken(token);
       await ref.set('hello world');
       expect(await ref.get(), 'hello world');
@@ -315,7 +315,7 @@ void testsWith(Map<String, dynamic> secrets) {
       var token =
           'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InJpa0BwYXJ0YWdvLmJlIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJpYXQiOjE0NzIxMjIyMzgsInYiOjAsImQiOnsicHJvdmlkZXIiOiJwYXNzd29yZCIsInVpZCI6IjMzZTc1ZjI0LTE5MTAtNGI1Mi1hZDJjLWNmZGQwYWFjNzI4YiJ9fQ.ZO0zH6xgk58SKDqmqi9gWzsvzoSvPx6QCJizR94rzEc';
       var t = (FirebaseTokenCodec(null).decode(token));
-      print(t.toJson());
+      expect(t.data['uid'], '33e75f24-1910-4b52-ad2c-cfdd0aac728b');
     });
   });
 
@@ -347,17 +347,14 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('Initial value', () async {
-      print(await ref.get());
+      await ref.get();
     });
 
     test('Value after set', () async {
       var v = 'Hello world ${Random().nextDouble()}';
       await ref.set(v);
-      print('set to $v');
       expect(await ref.get(), v);
-      print('got value');
       await ref.set('Hello all');
-      print('set to Hello all');
       expect(await ref.get(), 'Hello all');
     });
 
@@ -590,7 +587,6 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await Future.delayed(Duration(seconds: 1));
       var values = events.map((e) => e.snapshot.value).toList();
-      print(values);
       expect(values.length, 3);
       expect(values[0], null);
 
@@ -601,7 +597,6 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await ref.set({'hello': 'world', 'it is now': ServerValue.timestamp});
 
-      print(await ref.child('it is now').get());
       expect(await ref.child('it is now').get() is num, isTrue);
     });
 
@@ -633,7 +628,7 @@ void testsWith(Map<String, dynamic> secrets) {
     test('Counter', () async {
       await ref.set(0);
 
-      ref.onValue.listen((e) => print('onValue ${e.snapshot.value}'));
+      ref.onValue.listen((e) => null);
       await ref.onValue.first;
       var f1 = Stream.periodic(Duration(milliseconds: 10))
           .take(10)
@@ -692,7 +687,6 @@ void testsWith(Map<String, dynamic> secrets) {
       var futures = <Future>[];
       for (var i = 0; i < 10; i++) {
         futures.add(ref.child('object/count').runTransaction((v) async {
-          print('run $i ${v.value}');
           return v..value = (v.value ?? 0) + 1;
         }).then((v) {
           expect(v.committed, isTrue);
@@ -1130,7 +1124,7 @@ void testsWith(Map<String, dynamic> secrets) {
     test('Upgrade subquery to master view', () async {
       await iref.set({'text1': 'b', 'text2': 'c', 'text3': 'a'});
 
-      var s1 = ref.orderByKey().limitToFirst(1).onValue.listen(print);
+      var s1 = ref.orderByKey().limitToFirst(1).onValue.listen((_) => null);
       var l = ref
           .orderByKey()
           .startAt('text2')
@@ -1157,7 +1151,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .limitToFirst(2)
           .onValue
           .map((e) => e.snapshot.value)
-          .listen(print);
+          .listen((_) => null);
 
       await wait(500);
 
@@ -1165,10 +1159,6 @@ void testsWith(Map<String, dynamic> secrets) {
       var l = ref
           .child('text2')
           .onValue
-          .map((v) {
-            print(v.snapshot.value);
-            return v;
-          })
           .map((e) => e.snapshot.value)
           .take(3)
           .toList();
@@ -1199,7 +1189,7 @@ void testsWith(Map<String, dynamic> secrets) {
         'child2': {'a': 1, 'b': 2, 'c': 3}
       });
 
-      var sub = ref.orderByKey().limitToFirst(1).onValue.listen(print);
+      var sub = ref.orderByKey().limitToFirst(1).onValue.listen((_) => null);
 
       await Future.delayed(Duration(milliseconds: 500));
 
@@ -1228,13 +1218,13 @@ void testsWith(Map<String, dynamic> secrets) {
         'child2': {'a': 1, 'b': 2, 'c': 3}
       });
 
-      var sub = ref.orderByKey().onValue.listen(print);
+      var sub = ref.orderByKey().onValue.listen((_) => null);
       var sub2 = ref
           .child('child2')
           .orderByKey()
           .limitToFirst(1)
           .onValue
-          .listen(print);
+          .listen((_) => null);
       await wait(500);
 
       var l = ref
@@ -1258,8 +1248,7 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('with canceled parent', () async {
-      var sub = ref.root().onValue.listen((v) => print(v.snapshot.value),
-          onError: (e) => print('error $e'));
+      var sub = ref.root().onValue.listen((v) => null, onError: (e) => null);
       await wait(400);
 
       await iref.set('hello world');
@@ -1279,10 +1268,7 @@ void testsWith(Map<String, dynamic> secrets) {
       var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
           .reference()
           .child('test');
-      ref
-          .child('cars')
-          .onValue
-          .listen((e) => print('on value ${e.snapshot.value}'));
+      ref.child('cars').onValue.listen((e) => null);
 
       var data = {
         'cars': {
@@ -1301,8 +1287,8 @@ void testsWith(Map<String, dynamic> secrets) {
           .child('test')
           .child('some/path');
 
-      ref.parent().orderByKey().equalTo('path').onValue.listen(print);
-      ref.child('child1').onValue.listen(print);
+      ref.parent().orderByKey().equalTo('path').onValue.listen((_) => null);
+      ref.child('child1').onValue.listen((_) => null);
       await ref.set({'child1': 'v', 'child2': 3});
 
       await ref.update({'hello': 'world'});

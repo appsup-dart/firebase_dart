@@ -135,7 +135,6 @@ void main() async {
     });
     group('StorageReference.getDownloadUrl', () {
       var ref = child.child('world.txt');
-      print(tester.backend);
       tester.backend.metadata[Location.fromUrl(ref.toString())] =
           FullMetadataImpl(
               bucket: ref.storage.bucket,

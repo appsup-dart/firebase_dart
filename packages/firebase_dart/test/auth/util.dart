@@ -82,16 +82,13 @@ final Map<String, Expectation> _expectations = {};
 Expectation when(String method, String url) {
   url = Uri.parse(url).replace(query: '').toString();
 
-  print('$method:::$url');
   return _expectations['$method:::$url'] = Expectation();
 }
 
 var mockHttpClient = http.MockClient((r) async {
-  print('mock ${r.url}');
   var url = r.url.replace(query: '');
   var e = _expectations['${r.method}:::$url'];
   if (e == null) {
-    print('No server response defined for ${r.method} $url');
     throw Exception('No server response defined for ${r.method} $url');
   }
   return await e._do(r);

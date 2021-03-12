@@ -93,7 +93,6 @@ void main() async {
         await auth.userStorageManager.setCurrentUser(user);
         var u = await auth.userStorageManager.getCurrentUser();
 
-        print(u?.uid);
         await Future.delayed(Duration(milliseconds: 300));
 
         // All listeners should be called once with the saved anonymous user.
@@ -135,7 +134,6 @@ void main() async {
         var result = await auth.signInWithEmailAndPassword(
             email: expectedEmail, password: expectedPass) as UserCredentialImpl;
 
-        print(result.user.email);
         expect(result.user.uid, 'user1');
         expect(result.credential, isNull);
         expect(result.additionalUserInfo.providerId, 'password');
