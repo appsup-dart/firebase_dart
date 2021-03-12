@@ -32,7 +32,6 @@ class Value implements Comparable<Value> {
   final dynamic value;
 
   factory Value(dynamic value) {
-    if (value == null) return null;
     if (value is bool) return Value.bool(value);
     if (value is num) return Value.num(value);
     if (value is String) return Value.string(value);

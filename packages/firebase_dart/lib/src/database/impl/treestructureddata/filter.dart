@@ -3,8 +3,7 @@
 part of firebase.treestructureddata;
 
 abstract class TreeStructuredDataOrdering extends Ordering {
-  factory TreeStructuredDataOrdering(String orderBy) {
-    if (orderBy == null) return null;
+  factory TreeStructuredDataOrdering(String /*!*/ orderBy) {
     switch (orderBy) {
       case '.key':
         return const TreeStructuredDataOrdering.byKey();
@@ -32,7 +31,7 @@ abstract class TreeStructuredDataOrdering extends Ordering {
   String get orderBy;
 
   @override
-  TreeStructuredData mapValue(covariant dynamic v);
+  TreeStructuredData mapValue(covariant TreeStructuredData/*!*/ v);
 
   @override
   int get hashCode => orderBy.hashCode;
@@ -134,7 +133,8 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
       TreeStructuredData endAtValue,
       int limit,
       bool reverse}) {
-    var ordering = TreeStructuredDataOrdering(orderBy) ?? this.ordering;
+    var ordering =
+        orderBy == null ? this.ordering : TreeStructuredDataOrdering(orderBy);
     var validInterval = this.validInterval;
     if (startAtKey != null) {
       validInterval = KeyValueInterval.fromPairs(

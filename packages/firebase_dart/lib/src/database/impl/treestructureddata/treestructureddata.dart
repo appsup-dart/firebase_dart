@@ -5,7 +5,7 @@
 
 part of firebase.treestructureddata;
 
-class TreeStructuredData extends TreeNode<Name, Value> {
+class TreeStructuredData extends TreeNode<Name, Value/*?*/> {
   final Value priority;
 
   TreeStructuredData({Value priority, Value value, QueryFilter filter})
@@ -22,7 +22,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     assert(this.children == null || this.children is FilteredMap);
   }
 
-  TreeStructuredData.leaf(Value value, [Value priority])
+  TreeStructuredData.leaf(Value/*!*/ value, [Value priority])
       : this._(value, null, priority);
 
   TreeStructuredData.nonLeaf(Map<Name, TreeStructuredData> children,
@@ -60,7 +60,7 @@ class TreeStructuredData extends TreeNode<Name, Value> {
     }
 
     if (json is List) {
-      json = {...(json as List).asMap()}..removeWhere((k, v) => v == null);
+      json = (json as List).asMap()..removeWhere((k, v) => v == null);
     }
     if (json is! Map || json.containsKey('.sv')) {
       var value = Value(json);
@@ -85,7 +85,8 @@ class TreeStructuredData extends TreeNode<Name, Value> {
   UnmodifiableFilteredMap<Name, TreeStructuredData> get children =>
       super.children;
 
-  TreeStructuredData view({Pair start, Pair end, int limit, bool reversed}) =>
+  TreeStructuredData view(
+          {Pair start, Pair end, int limit, bool reversed = false}) =>
       TreeStructuredData._(
           value,
           children.filteredMapView(

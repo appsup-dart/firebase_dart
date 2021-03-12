@@ -21,14 +21,14 @@ class _SpecialName extends Name {
   int asInt() => null;
 }
 
-abstract class Name implements Pattern, Comparable<Name> {
+abstract class Name implements Pattern, Comparable<Name/*!*/> {
   static const Name min = _SpecialName('[MIN_NAME]');
   static const Name max = _SpecialName('[MAX_NAME]');
   static const Name priorityKey = _SpecialName('.priority');
 
   final String _value;
 
-  factory Name(String value) {
+  factory Name(String/*!*/ value) {
     if (value == '[MIN_NAME]') return min;
     if (value == '[MAX_NAME]') return max;
     if (value == '.priority') return priorityKey;
