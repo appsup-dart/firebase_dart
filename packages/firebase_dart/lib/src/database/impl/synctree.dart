@@ -27,7 +27,7 @@ class MasterView {
 
   ViewCache _data;
 
-  final Map<QueryFilter, EventTarget> observers = {};
+  final Map<QueryFilter /*!*/, EventTarget /*!*/ > observers = {};
 
   MasterView(this.masterFilter)
       : _data = ViewCache(IncompleteData.empty(masterFilter),
@@ -48,7 +48,7 @@ class MasterView {
   ///
   /// When the filter might be contained, but it cannot be determined yet,
   /// because the data in this view is not yet complete, it will return true.
-  bool contains(QueryFilter f) {
+  bool contains(QueryFilter /*!*/ f) {
     if (f == masterFilter) return true;
     if (f.orderBy != masterFilter.orderBy) return false;
     if (!masterFilter.limits) return true;
@@ -105,7 +105,7 @@ class MasterView {
   ///
   /// Returns true when the listener was added.
   bool addEventListener(
-      String type, QueryFilter filter, EventListener listener) {
+      String type, QueryFilter filter, EventListener /*!*/ listener) {
     if (!contains(filter)) return false;
     observers
         .putIfAbsent(
@@ -118,10 +118,12 @@ class MasterView {
   }
 
   /// Removes the event listener.
-  void removeEventListener(String type, Filter filter, EventListener listener) {
-    if (!observers.containsKey(filter)) return;
-    observers[filter].removeEventListener(type, listener);
-    if (!observers[filter].hasEventRegistrations) {
+  void removeEventListener(
+      String type, QueryFilter /*!*/ filter, EventListener /*!*/ listener) {
+    var target = observers[filter];
+    if (target == null) return;
+    target.removeEventListener(type, listener);
+    if (!target.hasEventRegistrations) {
       observers.remove(filter);
     }
   }
@@ -130,14 +132,14 @@ class MasterView {
   ///
   /// Removes and returns queries that are no longer contained by this master
   /// view.
-  Map<QueryFilter, EventTarget> applyOperation(
+  Map<QueryFilter, EventTarget /*!*/ > applyOperation(
       Operation operation, ViewOperationSource source, int writeId) {
     _data = _data.applyOperation(operation, source, writeId);
 
-    var out = <QueryFilter, EventTarget>{};
+    var out = <QueryFilter, EventTarget /*!*/ >{};
     for (var q in observers.keys.toList()) {
       if (!contains(q)) {
-        out[q] = observers.remove(q);
+        out[q] = observers.remove(q) /*!*/;
       }
     }
 
@@ -164,7 +166,8 @@ class SyncPoint {
 
   final Path<Name> path;
 
-  SyncPoint(this.name, this.path, {ViewCache data, this.persistenceManager}) {
+  SyncPoint(this.name, this.path,
+      {ViewCache data, @required this.persistenceManager}) {
     if (data == null) return;
     var q = QueryFilter();
     views[q] = MasterView(q).._data = data;
@@ -303,7 +306,7 @@ class SyncPoint {
   /// Adds an event listener for events of [type] and for data filtered by
   /// [filter].
   void addEventListener(
-      String type, QueryFilter filter, EventListener listener) {
+      String type, QueryFilter /*!*/ filter, EventListener /*!*/ listener) {
     if (views.values.any((m) => m.addEventListener(type, filter, listener))) {
       return;
     }
@@ -332,7 +335,8 @@ class SyncPoint {
 
   /// Removes an event listener for events of [type] and for data filtered by
   /// [filter].
-  void removeEventListener(String type, Filter filter, EventListener listener) {
+  void removeEventListener(
+      String type, QueryFilter /*!*/ filter, EventListener /*!*/ listener) {
     views.values.forEach((v) {
       v.removeEventListener(type, filter, listener);
       if (v.observers.isEmpty) _prunable = true;
@@ -341,7 +345,7 @@ class SyncPoint {
 
   /// Applies an operation to the view for [filter] at this [SyncPoint] or all
   /// views when [filter] is `null`.
-  void applyOperation(TreeOperation operation, Filter filter,
+  void applyOperation(TreeOperation operation, QueryFilter filter,
       ViewOperationSource source, int writeId) {
     if (filter == null || isCompleteFromParent) {
       if (source == ViewOperationSource.server) {
@@ -547,7 +551,7 @@ class SyncTree {
   /// Adds an event listener for events of [type] and for data at [path] and
   /// filtered by [filter].
   Future<Null> addEventListener(String type, Path<Name> path,
-      QueryFilter filter, EventListener listener) {
+      QueryFilter /*!*/ filter, EventListener /*!*/ listener) {
     return _doOnSyncPoint(path, (point) {
       point.addEventListener(type, filter, listener);
     });
@@ -555,8 +559,8 @@ class SyncTree {
 
   /// Removes an event listener for events of [type] and for data at [path] and
   /// filtered by [filter].
-  Future<Null> removeEventListener(
-      String type, Path<Name> path, Filter filter, EventListener listener) {
+  Future<Null> removeEventListener(String type, Path<Name> path,
+      QueryFilter /*!*/ filter, EventListener /*!*/ listener) {
     return _doOnSyncPoint(path, (point) {
       point.removeEventListener(type, filter, listener);
     });
@@ -578,7 +582,7 @@ class SyncTree {
     });
   }
 
-  void applyServerOperation(TreeOperation operation, Filter filter) {
+  void applyServerOperation(TreeOperation /*!*/ operation, QueryFilter filter) {
     _logger.fine(() => 'apply server operation $operation');
     persistenceManager.runInTransaction(() {
       persistenceManager.updateServerCache(operation, filter);
@@ -587,7 +591,7 @@ class SyncTree {
     });
   }
 
-  void applyListenRevoked(Path<Name> path, Filter filter) {
+  void applyListenRevoked(Path<Name> path, QueryFilter filter) {
     var view = root.subtreeNullable(path)?.value?.views?.remove(filter);
     if (view == null) return;
     view.observers.values.forEach((t) => t.dispatchEvent(CancelEvent(
@@ -608,7 +612,7 @@ class SyncTree {
   /// sync tree and all the relevant descendants.
   void _applyOperationToSyncPoints(
       TreeNode<Name, SyncPoint> tree,
-      Filter filter,
+      QueryFilter filter,
       TreeOperation operation,
       ViewOperationSource type,
       int writeId,
