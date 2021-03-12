@@ -1,8 +1,6 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.9
-
 import 'dart:collection';
 import 'package:sortedmap/sortedmap.dart';
 import 'package:collection/collection.dart';
@@ -17,7 +15,7 @@ class Path<K> extends UnmodifiableListView<K> {
 
   Path<K> child(K child) => Path.from(List.from(this)..add(child));
 
-  Path<K> get parent => isEmpty ? null : Path.from(take(length - 1));
+  Path<K>? get parent => isEmpty ? null : Path.from(take(length - 1));
 
   @override
   int get hashCode => const ListEquality().hash(this);
@@ -27,14 +25,14 @@ class Path<K> extends UnmodifiableListView<K> {
       other is Path && const ListEquality().equals(this, other);
 }
 
-class TreeNode<K extends Comparable, V>
-    implements Comparable<TreeNode<K, V> /*!*/ > {
-  V /*!*/ value;
+class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
+  V value;
 
-  final Map<K, TreeNode<K, V> /*!*/ > _children;
+  final Map<K, TreeNode<K, V>> _children;
 
-  TreeNode(this.value, [Map<K, TreeNode<K, V>> children])
-      : _children = (_cloneMap<K, TreeNode<K, V>>(children ?? {}));
+  TreeNode(this.value, [Map<K, TreeNode<K, V>?>? children])
+      : _children = _cloneMap<K, TreeNode<K, V>?>(children ?? {})
+            as Map<K, TreeNode<K, V>>;
 
   Map<K, TreeNode<K, V>> get children => _children;
 
@@ -45,12 +43,12 @@ class TreeNode<K extends Comparable, V>
     return Map<K, V>.from(map);
   }
 
-  TreeNode<K, V> subtreeNullable(Path<K> path) {
+  TreeNode<K, V>? subtreeNullable(Path<K> path) {
     if (path.isEmpty) return this;
     if (!children.containsKey(path.first)) {
       return null;
     }
-    var child = children[path.first];
+    var child = children[path.first]!;
     return child.subtreeNullable(path.skip(1));
   }
 
@@ -60,7 +58,7 @@ class TreeNode<K extends Comparable, V>
     if (!children.containsKey(path.first)) {
       children[path.first] = newInstance(value, path.first);
     }
-    var child = children[path.first];
+    var child = children[path.first]!;
     return child.subtree(path.skip(1), newInstance);
   }
 
@@ -97,14 +95,14 @@ class TreeNode<K extends Comparable, V>
   bool hasChild(Path<K> path) =>
       path.isEmpty ||
       children.containsKey(path.first) &&
-          children[path.first].hasChild(path.skip(1));
+          children[path.first]!.hasChild(path.skip(1));
 
   Iterable<TreeNode<K, V>> nodesOnPath(Path<K> path) sync* {
     yield this;
     if (path.isEmpty) return;
     var c = path.first;
     if (!children.containsKey(c)) return;
-    yield* children[c].nodesOnPath(path.skip(1));
+    yield* children[c]!.nodesOnPath(path.skip(1));
   }
 
   @override

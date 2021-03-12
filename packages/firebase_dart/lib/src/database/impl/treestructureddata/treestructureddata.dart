@@ -79,8 +79,8 @@ class TreeStructuredData extends TreeNode<Name, Value?> {
   TreeStructuredData clone() => TreeStructuredData._(value, children, priority);
 
   @override
-  UnmodifiableFilteredMap<Name, TreeStructuredData?> get children =>
-      super.children as UnmodifiableFilteredMap<Name, TreeStructuredData?>;
+  UnmodifiableFilteredMap<Name, TreeStructuredData> get children =>
+      super.children as UnmodifiableFilteredMap<Name, TreeStructuredData>;
 
   TreeStructuredData view(
           {required Pair start,
@@ -113,7 +113,7 @@ class TreeStructuredData extends TreeNode<Name, Value?> {
     if (isNil) return null;
     var c = Map<String, dynamic>.fromIterables(
         children.keys.map((k) => k.toString()),
-        children.values.map((v) => v!.toJson(exportFormat)));
+        children.values.map((v) => v.toJson(exportFormat)));
 
     if (exportFormat && priority != null) {
       if (isLeaf) c = {'.value': value!.toJson()};
@@ -157,7 +157,7 @@ class TreeStructuredData extends TreeNode<Name, Value?> {
       toHash += value!._hashText;
     }
     children.forEach((key, child) {
-      toHash += ':${key.asString()}:${child!.hash}';
+      toHash += ':${key.asString()}:${child.hash}';
     });
     return _hash = (toHash == ''
         ? ''
@@ -170,7 +170,7 @@ class TreeStructuredData extends TreeNode<Name, Value?> {
         children._map.clone()..remove(k), priority);
   }
 
-  TreeStructuredData withChild(Name k, TreeStructuredData? newChild) {
+  TreeStructuredData withChild(Name k, TreeStructuredData newChild) {
     return TreeStructuredData.nonLeaf(
         children._map.clone()..[k] = newChild, priority);
   }
