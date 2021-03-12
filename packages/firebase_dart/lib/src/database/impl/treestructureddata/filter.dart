@@ -1,9 +1,7 @@
-// @dart=2.9
-
 part of firebase.treestructureddata;
 
 abstract class TreeStructuredDataOrdering extends Ordering {
-  factory TreeStructuredDataOrdering(String /*!*/ orderBy) {
+  factory TreeStructuredDataOrdering(String orderBy) {
     switch (orderBy) {
       case '.key':
         return const TreeStructuredDataOrdering.byKey();
@@ -31,7 +29,7 @@ abstract class TreeStructuredDataOrdering extends Ordering {
   String get orderBy;
 
   @override
-  TreeStructuredData mapValue(covariant TreeStructuredData/*!*/ v);
+  TreeStructuredData mapValue(covariant TreeStructuredData v);
 
   @override
   int get hashCode => orderBy.hashCode;
@@ -45,8 +43,9 @@ class PriorityOrdering extends TreeStructuredDataOrdering {
   const PriorityOrdering() : super._();
 
   @override
-  TreeStructuredData mapValue(TreeStructuredData v) =>
-      TreeStructuredData.leaf(v?.priority);
+  TreeStructuredData mapValue(TreeStructuredData v) => v.priority == null
+      ? TreeStructuredData()
+      : TreeStructuredData.leaf(v.priority!);
 
   @override
   String get orderBy => '.priority';
@@ -99,20 +98,22 @@ class ChildOrdering extends TreeStructuredDataOrdering {
   String get orderBy => child;
 }
 
-extension QueryFilterX on Filter<Name, TreeStructuredData> {
-  Name get endKey => validInterval?.end?.key;
+extension QueryFilterX on Filter<Name, TreeStructuredData?> {
+  Name? get endKey => validInterval.end.key as Name?;
 
-  Name get startKey => validInterval?.start?.key;
+  Name? get startKey => validInterval.start.key as Name?;
 
-  TreeStructuredData get endValue => validInterval?.end?.value;
+  TreeStructuredData? get endValue =>
+      validInterval.end.value as TreeStructuredData?;
 
-  TreeStructuredData get startValue => validInterval?.start?.value;
+  TreeStructuredData? get startValue =>
+      validInterval.start.value as TreeStructuredData?;
 }
 
-class QueryFilter extends Filter<Name, TreeStructuredData> {
+class QueryFilter extends Filter<Name, TreeStructuredData?> {
   const QueryFilter(
       {KeyValueInterval validInterval = const KeyValueInterval(),
-      int limit,
+      int? limit,
       bool reversed = false,
       TreeStructuredDataOrdering ordering =
           const TreeStructuredDataOrdering.byPriority()})
@@ -126,13 +127,13 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
   String get orderBy => (ordering as TreeStructuredDataOrdering).orderBy;
 
   QueryFilter copyWith(
-      {String orderBy,
-      Name startAtKey,
-      TreeStructuredData startAtValue,
-      Name endAtKey,
-      TreeStructuredData endAtValue,
-      int limit,
-      bool reverse}) {
+      {String? orderBy,
+      Name? startAtKey,
+      TreeStructuredData? startAtValue,
+      Name? endAtKey,
+      TreeStructuredData? endAtValue,
+      int? limit,
+      bool? reverse}) {
     var ordering =
         orderBy == null ? this.ordering : TreeStructuredDataOrdering(orderBy);
     var validInterval = this.validInterval;
@@ -147,7 +148,7 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
       );
     }
     return QueryFilter(
-        ordering: ordering,
+        ordering: ordering as TreeStructuredDataOrdering,
         validInterval: validInterval,
         limit: limit ?? this.limit,
         reversed: reverse ?? reversed);
