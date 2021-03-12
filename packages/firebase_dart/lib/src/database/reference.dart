@@ -1,5 +1,3 @@
-
-
 part of firebase_dart;
 
 /// DatabaseReference represents a particular location in your Firebase
@@ -24,7 +22,7 @@ abstract class DatabaseReference implements Query {
   ///
   /// If this instance refers to the root of your Firebase Database, it has no
   /// parent, and therefore parent() will return null.
-  DatabaseReference parent();
+  DatabaseReference? parent();
 
   /// Gets a DatabaseReference for the root location.
   DatabaseReference root();

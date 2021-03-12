@@ -1,12 +1,9 @@
-// @dart=2.9
-
 import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/storage/impl/location.dart';
 import 'package:firebase_dart/storage.dart';
-import 'package:meta/meta.dart';
 
 import '../isolate.dart';
 import 'util.dart';
@@ -19,7 +16,8 @@ class StorageReferenceFunctionCall<T> extends BaseFunctionCall<T> {
 
   StorageReferenceFunctionCall(
       this.functionName, this.appName, this.bucket, this.path,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
   FirebaseStorage get storage =>
@@ -28,7 +26,7 @@ class StorageReferenceFunctionCall<T> extends BaseFunctionCall<T> {
   Reference getRef() => storage.ref().child(path);
 
   @override
-  Function get function {
+  Function? get function {
     switch (functionName) {
       case #delete:
         return getRef().delete;
@@ -52,7 +50,7 @@ class IsolateFirebaseStorage extends IsolateFirebaseService
   final Location _bucket;
 
   IsolateFirebaseStorage(
-      {@required IsolateFirebaseApp app, String storageBucket})
+      {required IsolateFirebaseApp app, String? storageBucket})
       : _bucket =
             Location.fromBucketSpec(storageBucket ?? app.options.storageBucket),
         super(app);
@@ -64,11 +62,7 @@ class IsolateFirebaseStorage extends IsolateFirebaseService
   }
 
   @override
-  Reference ref([String path]) {
-    if (_bucket == null) {
-      throw StorageException.noDefaultBucket();
-    }
-
+  Reference ref([String? path]) {
     var ref = IsolateStorageReference(this, _bucket);
     if (path != null) {
       return ref.child(path);
@@ -117,8 +111,8 @@ class IsolateStorageReference extends Reference {
   IsolateStorageReference(this.storage, this.location);
 
   Future<T> invoke<T>(Symbol method,
-      [List<dynamic> positionalArguments,
-      Map<Symbol, dynamic> namedArguments]) {
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments]) {
     return storage.app.commander.execute(
         StorageReferenceFunctionCall<FutureOr<T>>(
             method,
@@ -142,7 +136,7 @@ class IsolateStorageReference extends Reference {
   String get bucket => location.bucket;
 
   @override
-  Future<Uint8List> getData([int maxSize = 10485760]) async {
+  Future<Uint8List> getData([int? maxSize = 10485760]) async {
     return await invoke(#getData, [maxSize]);
   }
 
@@ -160,7 +154,7 @@ class IsolateStorageReference extends Reference {
   String get name => location.name;
 
   @override
-  IsolateStorageReference get parent {
+  IsolateStorageReference? get parent {
     var parentLocation = location.getParent();
     if (parentLocation == null) return null;
     return IsolateStorageReference(storage, parentLocation);
@@ -175,7 +169,7 @@ class IsolateStorageReference extends Reference {
   }
 
   @override
-  UploadTask putData(Uint8List data, [SettableMetadata metadata]) {
+  UploadTask putData(Uint8List data, [SettableMetadata? metadata]) {
     // TODO: implement putData
     throw UnimplementedError();
   }
@@ -186,7 +180,7 @@ class IsolateStorageReference extends Reference {
   }
 
   @override
-  Future<ListResult> list([ListOptions options]) {
+  Future<ListResult> list([ListOptions? options]) {
     return invoke(#list, [options]);
   }
 
@@ -198,7 +192,7 @@ class IsolateStorageReference extends Reference {
   @override
   UploadTask putString(String data,
       {PutStringFormat format = PutStringFormat.raw,
-      SettableMetadata metadata}) {
+      SettableMetadata? metadata}) {
     // TODO: implement putString
     throw UnimplementedError();
   }

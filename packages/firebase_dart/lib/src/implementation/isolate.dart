@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:async';
 
 import 'package:firebase_dart/implementation/pure_dart.dart';
@@ -11,7 +9,6 @@ import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/storage.dart';
-import 'package:meta/meta.dart';
 import 'package:http/http.dart' as http;
 
 import 'isolate/auth.dart';
@@ -20,7 +17,7 @@ import 'isolate/storage.dart';
 import 'isolate/util.dart';
 
 class IsolateFirebaseImplementation extends FirebaseImplementation {
-  final String storagePath;
+  final String? storagePath;
   final Platform platform;
 
   final Function(Uri url) launchUrl;
@@ -31,21 +28,20 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
 
   final Future<void> Function(String providerId) oauthSignOut;
 
-  final http.Client httpClient;
+  final http.Client? httpClient;
 
-  Future<IsolateCommander> _commander;
+  Future<IsolateCommander>? _commander;
 
   Future<IsolateCommander> get commander => _commander ??= _setup();
 
   IsolateFirebaseImplementation(
-      {@required this.storagePath,
-      @required this.platform,
-      @required this.launchUrl,
-      @required this.getAuthResult,
-      @required this.oauthSignIn,
-      @required this.oauthSignOut,
-      this.httpClient})
-      : assert(platform != null);
+      {required this.storagePath,
+      required this.platform,
+      required this.launchUrl,
+      required this.getAuthResult,
+      required this.oauthSignIn,
+      required this.oauthSignOut,
+      this.httpClient});
 
   Future<IsolateCommander> _setup() async {
     var worker = IsolateWorker()
@@ -119,7 +115,7 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
 
   @override
   FirebaseDatabase createDatabase(IsolateFirebaseApp app,
-      {String databaseURL}) {
+      {String? databaseURL}) {
     databaseURL = FirebaseDatabaseImpl.normalizeUrl(
         databaseURL ?? app.options.databaseURL);
     return FirebaseService.findService<IsolateFirebaseDatabase>(
@@ -129,7 +125,7 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
 
   @override
   FirebaseStorage createStorage(IsolateFirebaseApp app,
-      {String storageBucket}) {
+      {String? storageBucket}) {
     return FirebaseService.findService<IsolateFirebaseStorage>(
             app, (s) => s.bucket == storageBucket) ??
         IsolateFirebaseStorage(app: app, storageBucket: storageBucket);
@@ -153,5 +149,5 @@ abstract class IsolateFirebaseService extends FirebaseService {
   IsolateFirebaseService(IsolateFirebaseApp app) : super(app);
 
   @override
-  IsolateFirebaseApp get app => super.app;
+  IsolateFirebaseApp get app => super.app as IsolateFirebaseApp;
 }

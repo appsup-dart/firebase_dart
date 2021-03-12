@@ -1,11 +1,8 @@
-// @dart=2.9
-
 import 'dart:async';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
-import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../database.dart';
@@ -19,12 +16,13 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
   @override
   final String databaseURL;
 
-  IsolateFirebaseDatabase({@required IsolateFirebaseApp app, this.databaseURL})
+  IsolateFirebaseDatabase(
+      {required IsolateFirebaseApp app, required this.databaseURL})
       : super(app);
 
   Future<T> invoke<T>(Symbol method,
-      [List<dynamic> positionalArguments,
-      Map<Symbol, dynamic> namedArguments]) {
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments]) {
     return app.commander.execute(DatabaseFunctionCall<FutureOr<T>>(
         method, app.name, databaseURL, positionalArguments, namedArguments));
   }
@@ -68,14 +66,15 @@ class DatabaseFunctionCall<T> extends BaseFunctionCall<T> {
   final Symbol functionName;
 
   DatabaseFunctionCall(this.functionName, this.appName, this.databaseURL,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
   FirebaseDatabase get database =>
       FirebaseDatabase(app: Firebase.app(appName), databaseURL: databaseURL);
 
   @override
-  Function get function {
+  Function? get function {
     switch (functionName) {
       case #goOffline:
         return database.goOffline;
@@ -101,7 +100,8 @@ class QueryFunctionCall<T> extends BaseFunctionCall<T> {
 
   QueryFunctionCall(
       this.functionName, this.appName, this.databaseURL, this.path, this.filter,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
   FirebaseDatabase get database =>
@@ -129,32 +129,32 @@ class QueryFunctionCall<T> extends BaseFunctionCall<T> {
     }
     if (filter.startKey != null || filter.startValue != null) {
       if (filter.orderBy == '.key') {
-        query = query.startAt(filter.startKey.asString());
+        query = query.startAt(filter.startKey!.asString());
       } else {
-        query = query.startAt(filter.startValue.toJson(),
-            key: filter.startKey.asString());
+        query = query.startAt(filter.startValue!.toJson(),
+            key: filter.startKey!.asString());
       }
     }
     if (filter.endKey != null || filter.endValue != null) {
       if (filter.orderBy == '.key') {
-        query = query.endAt(filter.endKey.asString());
+        query = query.endAt(filter.endKey!.asString());
       } else {
-        query = query.endAt(filter.endValue.toJson(),
-            key: filter.endKey.asString());
+        query = query.endAt(filter.endValue!.toJson(),
+            key: filter.endKey!.asString());
       }
     }
     if (filter.limit != null) {
       if (filter.reversed) {
-        query = query.limitToLast(filter.limit);
+        query = query.limitToLast(filter.limit!);
       } else {
-        query = query.limitToFirst(filter.limit);
+        query = query.limitToFirst(filter.limit!);
       }
     }
     return query;
   }
 
   @override
-  Function get function {
+  Function? get function {
     switch (functionName) {
       case #keepSynced:
         return getQuery().keepSynced;
@@ -187,8 +187,8 @@ class IsolateQuery extends Query {
       : path = pathSegments.map(Uri.encodeComponent).join('/');
 
   Future<T> invoke<T>(Symbol method,
-      [List<dynamic> positionalArguments,
-      Map<Symbol, dynamic> namedArguments]) {
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments]) {
     return database.app.commander.execute(QueryFunctionCall<FutureOr<T>>(
         method,
         database.app.name,
@@ -200,7 +200,7 @@ class IsolateQuery extends Query {
   }
 
   @override
-  Query equalTo(dynamic value, {String key = '[ANY_NAME]'}) {
+  Query equalTo(dynamic value, {String? key = '[ANY_NAME]'}) {
     if (filter.orderBy == '.key' || key == '[ANY_NAME]') {
       return endAt(value).startAt(value);
     }
@@ -240,7 +240,7 @@ class IsolateQuery extends Query {
 
   @override
   Query orderByChild(String child) {
-    if (child == null || child.startsWith(r'$')) {
+    if (child.startsWith(r'$')) {
       throw ArgumentError("'$child' is not a valid child");
     }
 
@@ -263,7 +263,7 @@ class IsolateQuery extends Query {
   }
 
   @override
-  Query startAt(dynamic value, {String key = '[MIN_NAME]'}) {
+  Query startAt(dynamic value, {String? key = '[MIN_NAME]'}) {
     if (filter.orderBy == '.key') {
       if (key != '[MIN_NAME]') {
         throw ArgumentError(
@@ -278,7 +278,7 @@ class IsolateQuery extends Query {
   }
 
   @override
-  Query endAt(dynamic value, {String key = '[MAX_NAME]'}) {
+  Query endAt(dynamic value, {String? key = '[MAX_NAME]'}) {
     if (filter.orderBy == '.key') {
       if (key != '[MAX_NAME]') {
         throw ArgumentError(
@@ -292,7 +292,7 @@ class IsolateQuery extends Query {
         endAtValue: TreeStructuredData.fromJson(value)));
   }
 
-  Name _parseKey(String key, String allowedSpecialName) {
+  Name _parseKey(String? key, String allowedSpecialName) {
     if (key == '[MIN_NAME]' && key == allowedSpecialName) return Name.min;
     if (key == '[MAX_NAME]' && key == allowedSpecialName) return Name.max;
     if (key == null) {
@@ -329,7 +329,7 @@ class IsolateDisconnect extends OnDisconnect {
 }
 
 class IsolateDatabaseReference extends IsolateQuery with DatabaseReference {
-  OnDisconnect _onDisconnect;
+  late OnDisconnect _onDisconnect;
 
   IsolateDatabaseReference(
       IsolateFirebaseDatabase database, List<String> pathSegments)
@@ -345,7 +345,7 @@ class IsolateDatabaseReference extends IsolateQuery with DatabaseReference {
   OnDisconnect onDisconnect() => _onDisconnect;
 
   @override
-  DatabaseReference parent() => pathSegments.isEmpty
+  DatabaseReference? parent() => pathSegments.isEmpty
       ? null
       : IsolateDatabaseReference(
           database, [...pathSegments.sublist(0, pathSegments.length - 1)]);

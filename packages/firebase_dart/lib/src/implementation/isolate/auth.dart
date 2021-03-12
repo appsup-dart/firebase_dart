@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:async';
 
 import 'package:firebase_dart/auth.dart';
@@ -31,17 +29,17 @@ extension UserCredentialX on UserCredential {
   }
 
   Map<String, dynamic> toJson() => {
-        'user': user.toJson(),
+        'user': user!.toJson(),
         'additionalUserInfo': {
-          'providerId': additionalUserInfo.providerId,
-          'isNewUser': additionalUserInfo.isNewUser,
-          'profile': additionalUserInfo.profile,
-          'username': additionalUserInfo.username,
+          'providerId': additionalUserInfo!.providerId,
+          'isNewUser': additionalUserInfo!.isNewUser,
+          'profile': additionalUserInfo!.profile,
+          'username': additionalUserInfo!.username,
         },
         if (credential != null)
           'credential': {
-            'providerId': credential.providerId,
-            'signInMethod': credential.signInMethod,
+            'providerId': credential!.providerId,
+            'signInMethod': credential!.signInMethod,
           },
         'operationType': (this as UserCredentialImpl).operationType
       };
@@ -61,10 +59,10 @@ class IsolateUser extends UserInfo implements User {
   final List<UserInfo> providerData;
 
   @override
-  final String refreshToken;
+  final String? refreshToken;
 
   @override
-  final String tenantId;
+  final String? tenantId;
 
   final IsolateFirebaseAuth _auth;
 
@@ -84,8 +82,8 @@ class IsolateUser extends UserInfo implements User {
         super.fromJson(json);
 
   Future<T> invoke<T>(Symbol method,
-      [List<dynamic> positionalArguments,
-      Map<Symbol, dynamic> namedArguments]) {
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments]) {
     return _auth.app.commander.execute(CurrentUserFunctionCall<FutureOr<T>>(
         method, _auth.app.name, positionalArguments, namedArguments));
   }
@@ -127,7 +125,7 @@ class IsolateUser extends UserInfo implements User {
   }
 
   @override
-  Future<void> sendEmailVerification([ActionCodeSettings actionCodeSettings]) {
+  Future<void> sendEmailVerification([ActionCodeSettings? actionCodeSettings]) {
     // TODO: implement sendEmailVerification
     throw UnimplementedError();
   }
@@ -137,8 +135,8 @@ class IsolateUser extends UserInfo implements User {
         ...super.toJson(),
         'emailVerified': emailVerified,
         'isAnonymous': isAnonymous,
-        'createdAt': metadata.creationTime.millisecondsSinceEpoch,
-        'lastLoginAt': metadata.lastSignInTime.millisecondsSinceEpoch,
+        'createdAt': metadata.creationTime!.millisecondsSinceEpoch,
+        'lastLoginAt': metadata.lastSignInTime!.millisecondsSinceEpoch,
         'providerData': providerData.map((v) => v.toJson()).toList(),
         'token': {'refreshToken': refreshToken},
         'tenantId': tenantId,
@@ -169,21 +167,21 @@ class IsolateUser extends UserInfo implements User {
   }
 
   @override
-  Future<void> updateProfile({String displayName, String photoURL}) {
+  Future<void> updateProfile({String? displayName, String? photoURL}) {
     // TODO: implement updateProfile
     throw UnimplementedError();
   }
 
   @override
   Future<void> verifyBeforeUpdateEmail(String newEmail,
-      [ActionCodeSettings actionCodeSettings]) {
+      [ActionCodeSettings? actionCodeSettings]) {
     // TODO: implement verifyBeforeUpdateEmail
     throw UnimplementedError();
   }
 }
 
 class EncodeCall<T> extends BaseFunctionCall<Future> {
-  EncodeCall(FunctionCall<FutureOr<T>> baseCall) : super([baseCall], {});
+  EncodeCall(FunctionCall<FutureOr<T>?> baseCall) : super([baseCall], {});
 
   @override
   Function get function {
@@ -200,7 +198,7 @@ class EncodeCall<T> extends BaseFunctionCall<Future> {
 
   T decode(dynamic value, FirebaseAuth auth) {
     if (T == UserCredential) {
-      return UserCredentialX.fromJson(auth, value) as T;
+      return UserCredentialX.fromJson(auth as IsolateFirebaseAuth, value) as T;
     }
     return value;
   }
@@ -208,11 +206,11 @@ class EncodeCall<T> extends BaseFunctionCall<Future> {
 
 class IsolateFirebaseAuth extends IsolateFirebaseService
     implements FirebaseAuth {
-  final BehaviorSubject<User> _subject = BehaviorSubject();
+  final BehaviorSubject<User?> _subject = BehaviorSubject();
 
   Future<T> invoke<T>(Symbol method,
-      [List<dynamic> positionalArguments,
-      Map<Symbol, dynamic> namedArguments]) async {
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments]) async {
     var call = EncodeCall(FirebaseAuthFunctionCall<FutureOr<T>>(
         method, app.name, positionalArguments, namedArguments));
     return call.decode(await app.commander.execute(call), this);
@@ -220,7 +218,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   IsolateFirebaseAuth(IsolateFirebaseApp app) : super(app) {
     _subject.addStream(app.commander
-        .subscribe<Map<String, dynamic>>(FirebaseAuthFunctionCall(
+        .subscribe<Map<String, dynamic>?>(FirebaseAuthFunctionCall(
           #authChanges,
           app.name,
         ))
@@ -233,7 +231,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  Stream<User> authStateChanges() =>
+  Stream<User?> authStateChanges() =>
       _subject.stream.distinct((a, b) => a?.uid != b?.uid);
 
   @override
@@ -249,13 +247,13 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<UserCredential> createUserWithEmailAndPassword(
-      {String email, String password}) async {
+      {String? email, String? password}) async {
     return await invoke(#createUserWithEmailAndPassword, [],
         {#email: email, #password: password});
   }
 
   @override
-  User get currentUser => _subject.valueWrapper.value;
+  User? get currentUser => _subject.valueWrapper!.value;
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String email) async {
@@ -268,7 +266,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  Stream<User> idTokenChanges() => _subject.stream;
+  Stream<User?> idTokenChanges() => _subject.stream;
 
   @override
   bool isSignInWithEmailLink(String link) {
@@ -276,21 +274,21 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     throw UnimplementedError();
   }
 
-  String _languageCode;
+  String? _languageCode;
 
   @override
-  String get languageCode => _languageCode;
+  String? get languageCode => _languageCode;
 
   @override
   Future<void> sendPasswordResetEmail(
-      {String email, ActionCodeSettings actionCodeSettings}) async {
+      {String? email, ActionCodeSettings? actionCodeSettings}) async {
     await invoke(#sendPasswordResetEmail, [],
         {#email: email, #actionCodeSettings: actionCodeSettings});
   }
 
   @override
   Future<void> sendSignInLinkToEmail(
-      {String email, ActionCodeSettings actionCodeSettings}) async {
+      {String? email, ActionCodeSettings? actionCodeSettings}) async {
     await invoke(#sendSignInLinkToEmail, [],
         {#email: email, #actionCodeSettings: actionCodeSettings});
   }
@@ -323,13 +321,14 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<UserCredential> signInWithEmailAndPassword(
-      {String email, String password}) {
+      {String? email, String? password}) {
     return invoke(
         #signInWithEmailAndPassword, [], {#email: email, #password: password});
   }
 
   @override
-  Future<UserCredential> signInWithEmailLink({String email, String emailLink}) {
+  Future<UserCredential> signInWithEmailLink(
+      {String? email, String? emailLink}) {
     return invoke(
         #signInWithEmailLink, [], {#email: email, #emailLink: emailLink});
   }
@@ -362,14 +361,14 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<void> verifyPhoneNumber(
-      {String phoneNumber,
-      verificationCompleted,
-      verificationFailed,
-      codeSent,
-      codeAutoRetrievalTimeout,
-      String autoRetrievedSmsCodeForTesting,
+      {required String phoneNumber,
+      required PhoneVerificationCompleted verificationCompleted,
+      required PhoneVerificationFailed verificationFailed,
+      required PhoneCodeSent codeSent,
+      required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
+      String? autoRetrievedSmsCodeForTesting,
       Duration timeout = const Duration(seconds: 30),
-      int forceResendingToken}) {
+      int? forceResendingToken}) {
     // TODO: implement verifyPhoneNumber
     throw UnimplementedError();
   }
@@ -386,16 +385,17 @@ class CurrentUserFunctionCall<T> extends BaseFunctionCall<T> {
   final Symbol functionName;
 
   CurrentUserFunctionCall(this.functionName, this.appName,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
-  User get user =>
+  User? get user =>
       FirebaseAuth.instanceFor(app: Firebase.app(appName)).currentUser;
   @override
-  Function get function {
+  Function? get function {
     switch (functionName) {
       case #getIdToken:
-        return user.getIdToken;
+        return user!.getIdToken;
     }
     return null;
   }
@@ -406,7 +406,8 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
   final Symbol functionName;
 
   FirebaseAuthFunctionCall(this.functionName, this.appName,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
   FirebaseAuth get auth => FirebaseAuth.instanceFor(app: Firebase.app(appName));
@@ -459,7 +460,7 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
       case #authChanges:
         return () => auth
             .authStateChanges()
-            .map<Map<String, dynamic>>((v) => v?.toJson());
+            .map<Map<String, dynamic>?>((v) => v?.toJson());
     }
     throw UnsupportedError(
         'FirebaseAuthFunctionCall with reference $functionName not supported');
