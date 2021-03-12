@@ -103,7 +103,7 @@ class TrackedQueryManager {
   /// In-memory cache of tracked queries.
   ///
   /// Should always be in-sync with the DB.
-  TreeNode<Name, Map<QueryFilter, TrackedQuery>?> trackedQueryTree;
+  TreeNode<Name, Map<QueryFilter, TrackedQuery>> trackedQueryTree;
 
   /// DB, where we permanently store tracked queries.
   final PersistenceStorageEngine storageLayer;
@@ -117,8 +117,7 @@ class TrackedQueryManager {
   }
 
   TrackedQueryManager(this.storageLayer)
-      : trackedQueryTree =
-            TreeNode<Name, Map<QueryFilter, TrackedQuery>?>(null) {
+      : trackedQueryTree = TreeNode<Name, Map<QueryFilter, TrackedQuery>>({}) {
     resetPreviouslyActiveTrackedQueries();
 
     // Populate our cache from the storage layer.
@@ -143,8 +142,7 @@ class TrackedQueryManager {
 
   TrackedQuery? findTrackedQuery(QuerySpec query) {
     var child =
-        trackedQueryTree.subtree(query.path, (_, __) => TreeNode(null)).value;
-    if (child == null) return null;
+        trackedQueryTree.subtree(query.path, (_, __) => TreeNode({})).value;
     return child[query.normalize().params];
   }
 
@@ -153,12 +151,12 @@ class TrackedQueryManager {
     var trackedQuery = findTrackedQuery(query)!;
 
     storageLayer.deleteTrackedQuery(trackedQuery.id);
-    var trackedQueries = trackedQueryTree.subtreeNullable(query.path)!.value!;
+    var trackedQueries = trackedQueryTree.subtreeNullable(query.path)!.value;
     trackedQueries.remove(query.params);
     if (trackedQueries.isEmpty &&
         trackedQueryTree.subtreeNullable(query.path)!.isEmpty) {
       trackedQueryTree =
-          trackedQueryTree.removePath(query.path) ?? TreeNode(null);
+          trackedQueryTree.removePath(query.path) ?? TreeNode({});
     }
   }
 
@@ -274,12 +272,12 @@ class TrackedQueryManager {
     return prunableCount - countToKeep;
   }
 
-  void ensureCompleteTrackedQuery(Path path) {
+  void ensureCompleteTrackedQuery(Path<Name> path) {
     if (!includedInDefaultCompleteQuery(path)) {
       // TODO[persistence]: What if it's included in the tracked keys of a query?  Do we still want
       // to add a new tracked query for it?
 
-      var querySpec = QuerySpec(path as Path<Name>);
+      var querySpec = QuerySpec(path);
       var trackedQuery = findTrackedQuery(querySpec);
       if (trackedQuery == null) {
         trackedQuery = TrackedQuery(
@@ -296,11 +294,9 @@ class TrackedQueryManager {
     }
   }
 
-  bool hasActiveDefaultQuery(Path path) {
+  bool hasActiveDefaultQuery(Path<Name> path) {
     return trackedQueryTree.rootMostValueMatching(
-            path as Path<Name>?,
-            _hasActiveDefaultPredicate as bool Function(
-                Map<QueryFilter, TrackedQuery>?)) !=
+            path, _hasActiveDefaultPredicate) !=
         null;
   }
 
@@ -311,18 +307,16 @@ class TrackedQueryManager {
   /// Used for tests to assert we're still in-sync with the DB.
   ///
   /// Don't call it in production, since it's slow.
-  bool includedInDefaultCompleteQuery(Path path) {
+  bool includedInDefaultCompleteQuery(Path<Name> path) {
     return trackedQueryTree.findRootMostMatchingPath(
-            path as Path<Name>?,
-            _hasDefaultCompletePredicate as bool Function(
-                Map<QueryFilter, TrackedQuery>?)) !=
+            path, _hasDefaultCompletePredicate) !=
         null;
   }
 
-  Set<int> filteredQueryIdsAtPath(Path path) {
+  Set<int> filteredQueryIdsAtPath(Path<Name> path) {
     final ids = <int>{};
 
-    var queries = trackedQueryTree.subtreeNullable(path as Path<Name>)?.value;
+    var queries = trackedQueryTree.subtreeNullable(path)?.value;
     if (queries != null) {
       for (var query in queries.values) {
         if (query.querySpec.params.limits) {
@@ -341,7 +335,7 @@ class TrackedQueryManager {
     if (trackedSet == null) {
       trackedSet = <QueryFilter, TrackedQuery>{};
       trackedQueryTree =
-          trackedQueryTree.setValue(query.querySpec.path, trackedSet);
+          trackedQueryTree.setValue(query.querySpec.path, trackedSet, {});
     }
 
     // Sanity check.

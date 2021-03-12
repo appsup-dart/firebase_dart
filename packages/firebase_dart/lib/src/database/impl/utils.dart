@@ -6,9 +6,9 @@ import 'package:sortedmap/sortedmap.dart';
 
 typedef Predicate<T> = bool Function(T);
 
-extension TreeNodeX<T> on TreeNode<Name, T?> {
-  bool containsMatchingValue(Predicate<T?> predicate) {
-    if (value != null && predicate(value)) {
+extension TreeNodeXNonNull<T> on TreeNode<Name, T> {
+  bool containsMatchingValue(Predicate<T> predicate) {
+    if (predicate(value)) {
       return true;
     } else {
       for (var subtree in children.values) {
@@ -20,44 +20,34 @@ extension TreeNodeX<T> on TreeNode<Name, T?> {
     }
   }
 
-  T? leafMostValue(Path<Name> relativePath) {
-    // TODO: isn't this the value at relativePath
-    return leafMostValueMatching(relativePath, (_) => true);
-  }
-
   /// Returns the deepest value found between the root and the specified path
   /// that matches the predicate.
-  T? leafMostValueMatching(Path<Name> path, Predicate<T?> predicate) {
-    var currentValue = (value != null && predicate(value)) ? value : null;
-    TreeNode<Name, T?>? currentTree = this;
+  T? leafMostValueMatching(Path<Name> path, Predicate<T> predicate) {
+    var currentValue = predicate(value) ? value : null;
+    var currentTree = this;
     for (var key in path) {
-      currentTree = currentTree!.children[key];
-      if (currentTree == null) {
-        return currentValue;
-      } else {
-        if (currentTree.value != null && predicate(currentTree.value)) {
-          currentValue = currentTree.value;
-        }
+      if (!currentTree.children.containsKey(key)) {
+        return null;
+      }
+      currentTree = currentTree.children[key]!;
+      if (predicate(currentTree.value)) {
+        currentValue = currentTree.value;
       }
     }
     return currentValue;
   }
 
-  T? rootMostValue(Path<Name> relativePath) {
-    // TODO: isn't this the root?
-    return rootMostValueMatching(relativePath, (_) => true);
-  }
-
-  T? rootMostValueMatching(Path<Name>? relativePath, Predicate<T?> predicate) {
-    if (value != null && predicate(value)) {
+  T? rootMostValueMatching(Path<Name> relativePath, Predicate<T> predicate) {
+    if (predicate(value)) {
       return value;
     } else {
-      TreeNode<Name, T?>? currentTree = this;
-      for (var key in relativePath!) {
-        currentTree = currentTree!.children[key];
-        if (currentTree == null) {
+      var currentTree = this;
+      for (var key in relativePath) {
+        if (!currentTree.children.containsKey(key)) {
           return null;
-        } else if (currentTree.value != null && predicate(currentTree.value)) {
+        }
+        currentTree = currentTree.children[key]!;
+        if (predicate(currentTree.value)) {
           return currentTree.value;
         }
       }
@@ -69,21 +59,20 @@ extension TreeNodeX<T> on TreeNode<Name, T?> {
       findRootMostMatchingPath(relativePath, (v) => v != null);
 
   Path<Name>? findRootMostMatchingPath(
-      Path<Name>? relativePath, Predicate<T?> predicate) {
-    if (value != null && predicate(value)) {
+      Path<Name> relativePath, Predicate<T> predicate) {
+    if (predicate(value)) {
       return Path();
     } else {
-      if (relativePath!.isEmpty) {
+      if (relativePath.isEmpty) {
         return null;
       } else {
         var front = relativePath.first;
         var child = children[front];
         if (child != null) {
-          Path? path =
+          var path =
               child.findRootMostMatchingPath(relativePath.skip(1), predicate);
           if (path != null) {
-            // TODO: this seems inefficient
-            return Path<Name>.from([front, ...path as Iterable<Name>]);
+            return Path<Name>.from([front, ...path]);
           } else {
             return null;
           }
@@ -94,34 +83,40 @@ extension TreeNodeX<T> on TreeNode<Name, T?> {
     }
   }
 
-  TreeNode<Name, T?> setPath(Path<Name> path, TreeNode<Name, T?> subtree) {
-    if (path.isEmpty) return subtree;
-
-    var c = children[path.first] ?? TreeNode(null);
-
-    return TreeNode(
-        value, {...children, path.first: c.setPath(path.skip(1), subtree)});
-  }
-
-  TreeNode<Name, T?> setValue(Path<Name> path, T value) {
+  TreeNode<Name, T> setValue(Path<Name> path, T value, T defaultValue) {
     if (path.isEmpty) return TreeNode(value, children);
 
-    var c = children[path.first] ?? TreeNode(null);
+    var c = children[path.first] ?? TreeNode(defaultValue);
 
-    return TreeNode(
-        this.value, {...children, path.first: c.setValue(path.skip(1), value)});
+    return TreeNode(this.value, {
+      ...children,
+      path.first: c.setValue(path.skip(1), value, defaultValue)
+    });
   }
 
-  TreeNode<Name, T?>? removePath(Path<Name> path) {
+  TreeNode<Name, T>? removePath(Path<Name> path) {
     if (path.isEmpty) return null;
 
-    var c =
-        (this.children[path.first] ?? TreeNode(null)).removePath(path.skip(1));
+    if (!this.children.containsKey(path.first)) {
+      return this;
+    }
+    var c = this.children[path.first]!.removePath(path.skip(1));
 
-    var children = {...this.children, path.first: c};
-    if (c == null) children.remove(path.first);
+    var children = {...this.children, if (c != null) path.first: c};
     if (value == null && children.isEmpty) return null;
     return TreeNode(value, children);
+  }
+
+  TreeNode<Name, T> setPath(
+      Path<Name> path, TreeNode<Name, T> subtree, T defaultValue) {
+    if (path.isEmpty) return subtree;
+
+    var c = children[path.first] ?? TreeNode(defaultValue);
+
+    return TreeNode(value, {
+      ...children,
+      path.first: c.setPath(path.skip(1), subtree, defaultValue)
+    });
   }
 
   Iterable<T> get allNonNullValues sync* {

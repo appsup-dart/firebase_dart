@@ -128,8 +128,7 @@ class IncompleteData {
     if (path.isEmpty) {
       return IncompleteData._(TreeNode(null), filter);
     } else {
-      var newWriteTree = _writeTree.setPath(path, TreeNode(null))
-          as TreeNode<Name, TreeStructuredData>;
+      var newWriteTree = _writeTree.setPath(path, TreeNode(null), null);
       return IncompleteData._(newWriteTree, filter);
     }
   }
