@@ -1,5 +1,3 @@
-// @dart=2.9
-
 part of firebase_dart.database.backend_connection;
 
 class BackendConnection {
@@ -7,15 +5,15 @@ class BackendConnection {
   final String host;
   final SparseSnapshotTree _onDisconnect = SparseSnapshotTree();
 
-  BackendTransport _transport;
+  BackendTransport? _transport;
 
   SparseSnapshotTree get onDisconnect => _onDisconnect;
 
   BackendConnection(this.backend, this.host);
 
-  BackendTransport get transport => _transport;
+  BackendTransport? get transport => _transport;
 
-  final Map<String, Map<QueryFilter, Function>> _listeners = {};
+  final Map<String?, Map<QueryFilter?, Function>> _listeners = {};
 
   static int nextSessionId = 0;
 
@@ -23,7 +21,7 @@ class BackendConnection {
     _logger.fine('Opening a backend connection');
     _transport = BackendTransport()..open();
 
-    transport.channel.stream
+    transport!.channel.stream
         .asyncMap(_onMessage)
         .listen((_) => null, onDone: close);
 
@@ -36,11 +34,11 @@ class BackendConnection {
   }
 
   void sendMessage(Message message) {
-    transport.channel.sink.add(message);
+    transport!.channel.sink.add(message);
   }
 
   void _runOnDisconnectEvents() {
-    _onDisconnect.forEachNode((path, snap) {
+    _onDisconnect.forEachNode((path, TreeStructuredData? snap) {
       if (snap == null) return;
       backend.put(path.join('/'), snap.toJson(true));
     });
@@ -55,12 +53,12 @@ class BackendConnection {
       switch (message.action) {
         case DataMessage.actionAuth:
         case DataMessage.actionGauth:
-          var t = JsonWebToken.unverified(message.body.cred);
+          var t = JsonWebToken.unverified(message.body.cred!);
           data = {'auth': t.claims['d'] ?? t.claims.toJson()};
           await backend.auth(Auth(
               uid: t.claims.subject ?? t.claims['d']['uid'],
               provider: t.claims['provider_id'] ?? t.claims['d']['provider'],
-              token: t.claims['d'] ?? t.claims.toJson()));
+              token: t.claims['d'] ?? t.claims.toJson()!));
           break;
         case DataMessage.actionUnauth:
           await backend.auth(null);
@@ -75,7 +73,7 @@ class BackendConnection {
                                 ? DataMessage.actionListenRevoked
                                 : DataMessage.actionSet,
                             MessageBody(
-                                tag: message.body.query.limits
+                                tag: message.body.query!.limits
                                     ? message.body.tag
                                     : null,
                                 path: message.body.path,
@@ -89,7 +87,7 @@ class BackendConnection {
           try {
             await backend.listen(
               message.body.path,
-              listener,
+              listener as void Function(Event),
               query: message.body.query,
             );
           } on FirebaseDatabaseException catch (e) {
@@ -104,7 +102,7 @@ class BackendConnection {
                   );
           await backend.unlisten(
             message.body.path,
-            listener,
+            listener as void Function(Event)?,
             query: message.body.query,
           );
           break;
@@ -121,16 +119,16 @@ class BackendConnection {
           await backend.merge(message.body.path, message.body.data);
           break;
         case DataMessage.actionOnDisconnectCancel:
-          _onDisconnect.forget(Name.parsePath(message.body.path));
+          _onDisconnect.forget(Name.parsePath(message.body.path!));
           break;
         case DataMessage.actionOnDisconnectPut:
-          _onDisconnect.remember(Name.parsePath(message.body.path),
+          _onDisconnect.remember(Name.parsePath(message.body.path!),
               TreeStructuredData.fromJson(message.body.data));
           break;
         case DataMessage.actionOnDisconnectMerge:
           (message.body.data as Map).forEach((childName, child) {
             _onDisconnect.remember(
-                Name.parsePath(message.body.path).child(Name(childName)),
+                Name.parsePath(message.body.path!).child(Name(childName)),
                 TreeStructuredData.fromJson(child));
           });
           break;

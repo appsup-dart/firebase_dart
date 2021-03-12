@@ -2,9 +2,7 @@ library firebase.connection;
 
 import 'dart:async';
 
-import 'package:firebase_dart/database.dart'
-    show FirebaseDatabaseException, ServerValue;
-import 'package:meta/meta.dart';
+import 'package:firebase_dart/database.dart' show ServerValue;
 
 import 'connections/protocol.dart';
 import 'operations/tree.dart';

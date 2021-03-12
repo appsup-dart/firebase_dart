@@ -1,8 +1,6 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-
-
 part of firebase.protocol;
 
 /// Represents the transport channel to send and receive messages
@@ -33,7 +31,7 @@ class Transport {
       case 'http':
         var connectionUrl = url.replace(
             path: '.ws', scheme: url.scheme == 'https' ? 'wss' : 'ws');
-        var socket = websocket.connect(connectionUrl.toString())!;
+        var socket = websocket.connect(connectionUrl.toString());
         _channel = socket
             .cast<String>()
             .transform<String>(framesChannelTransformer)

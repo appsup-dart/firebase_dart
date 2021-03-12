@@ -99,7 +99,7 @@ class DataMessage extends _JsonObjectMessage {
   @override
   Map<String, dynamic> get _payloadJson => {
         if (action != null) 'a': action,
-        if (body != null) 'b': body,
+        'b': body,
         if (reqNum != null) 'r': reqNum,
         if (error != null) 'error': error,
       };
@@ -118,7 +118,7 @@ extension QueryFilterCodec on QueryFilter {
   static const String indexOn = 'i';
 
   Map<String, dynamic>? toJson() {
-    if (this == null || this == QueryFilter()) return null;
+    if (this == QueryFilter()) return null;
     return {
       if (limit != null) limitTo: limit,
       if (limit != null) viewFrom: reversed ? viewFromRight : viewFromLeft,

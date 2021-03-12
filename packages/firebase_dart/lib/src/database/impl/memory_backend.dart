@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
@@ -35,6 +35,6 @@ class MemoryBackend extends SecuredBackend {
 
     var connection = BackendConnection(backend, url.host)..open();
 
-    return connection.transport.foreignChannel;
+    return connection.transport!.foreignChannel;
   }
 }
