@@ -27,7 +27,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   late final UserManager userStorageManager = UserManager(this);
 
   /// Completes when latest logged in user is loaded from storage
-  late final Future<void> _onReady = _init();
+  late final Future<void> _onReady;
 
   late StreamSubscription _storageManagerUserChangedSubscription;
 
@@ -35,7 +35,9 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   FirebaseAuthImpl(FirebaseApp app, {Client? httpClient})
       : rpcHandler = RpcHandler(app.options.apiKey, httpClient: httpClient),
-        super(app);
+        super(app) {
+    _onReady = _init();
+  }
 
   Future<void> _init() async {
     _currentUser.add(await userStorageManager.getCurrentUser());
