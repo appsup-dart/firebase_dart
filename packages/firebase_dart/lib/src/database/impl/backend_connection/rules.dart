@@ -303,7 +303,7 @@ abstract class RuleDataSnapshot {
 
   /// Returns true if the specified child exists.
   Stream<bool> hasChild(String childPath) => _val().map((v) {
-        v = v.subtree(Name.parsePath(childPath));
+        v = v.subtreeNullable(Name.parsePath(childPath));
         return (v != null && !v.isNil);
       });
 

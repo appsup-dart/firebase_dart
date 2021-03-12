@@ -150,7 +150,7 @@ class TrackedQueryManager {
 
   TrackedQuery findTrackedQuery(QuerySpec query) {
     var child =
-        trackedQueryTree.subtree(query.path, (_, __) => TreeNode()).value;
+        trackedQueryTree.subtree(query.path, (_, __) => TreeNode(null)).value;
     if (child == null) return null;
     return child[query.normalize().params];
   }
@@ -161,11 +161,12 @@ class TrackedQueryManager {
     assert(trackedQuery != null, 'Query must exist to be removed.');
 
     storageLayer.deleteTrackedQuery(trackedQuery.id);
-    var trackedQueries = trackedQueryTree.subtree(query.path).value;
+    var trackedQueries = trackedQueryTree.subtreeNullable(query.path).value;
     trackedQueries.remove(query.params);
     if (trackedQueries.isEmpty &&
-        trackedQueryTree.subtree(query.path).isEmpty) {
-      trackedQueryTree = trackedQueryTree.removePath(query.path) ?? TreeNode();
+        trackedQueryTree.subtreeNullable(query.path).isEmpty) {
+      trackedQueryTree =
+          trackedQueryTree.removePath(query.path) ?? TreeNode(null);
     }
   }
 
@@ -209,7 +210,7 @@ class TrackedQueryManager {
   }
 
   void setQueriesComplete(Path<Name> path) {
-    var node = trackedQueryTree.subtree(path);
+    var node = trackedQueryTree.subtreeNullable(path);
     if (node == null) return;
     for (var value in node.allNonNullValues) {
       for (var e in value.entries) {
@@ -228,7 +229,7 @@ class TrackedQueryManager {
       // We didn't find a default complete query, so must not be complete.
       return false;
     } else {
-      var trackedQueries = trackedQueryTree.subtree(query.path)?.value;
+      var trackedQueries = trackedQueryTree.subtreeNullable(query.path)?.value;
       if (trackedQueries == null) return false;
       return trackedQueries != null &&
           trackedQueries.containsKey(query.params) &&
@@ -326,7 +327,7 @@ class TrackedQueryManager {
   Set<int> filteredQueryIdsAtPath(Path path) {
     final ids = <int>{};
 
-    var queries = trackedQueryTree.subtree(path)?.value;
+    var queries = trackedQueryTree.subtreeNullable(path)?.value;
     if (queries != null) {
       for (var query in queries.values) {
         if (query.querySpec.params.limits) {
@@ -340,7 +341,8 @@ class TrackedQueryManager {
   void cacheTrackedQuery(TrackedQuery query) {
     assertValidTrackedQuery(query.querySpec);
 
-    var trackedSet = trackedQueryTree.subtree(query.querySpec.path)?.value;
+    var trackedSet =
+        trackedQueryTree.subtreeNullable(query.querySpec.path)?.value;
     if (trackedSet == null) {
       trackedSet = <QueryFilter, TrackedQuery>{};
       trackedQueryTree =

@@ -30,7 +30,7 @@ class PruneForest {
   static final TreeNode<Name, bool> PRUNE_TREE = TreeNode(true);
   static final TreeNode<Name, bool> KEEP_TREE = TreeNode(false);
 
-  PruneForest() : pruneForest = TreeNode();
+  PruneForest() : pruneForest = TreeNode(null);
 
   PruneForest._(this.pruneForest);
 
@@ -50,7 +50,7 @@ class PruneForest {
 
   bool affectsPath(Path<Name> path) {
     return pruneForest.rootMostValue(path) != null ||
-        pruneForest.subtree(path)?.isEmpty == false;
+        pruneForest.subtreeNullable(path)?.isEmpty == false;
   }
 
   PruneForest directChild(Name key) {
@@ -129,7 +129,7 @@ class PruneForest {
 
   PruneForest _doAll(
       Path path, Set<Name> children, TreeNode<Name, bool> keepOrPruneTree) {
-    var subtree = pruneForest.subtree(path, (_, __) => TreeNode());
+    var subtree = pruneForest.subtree(path, (_, __) => TreeNode(null));
     var childrenMap = {
       ...subtree.children,
       for (var key in children) key: keepOrPruneTree

@@ -73,7 +73,8 @@ class DefaultPersistenceManager implements PersistenceManager {
       return IncompleteData.complete(v.value).withFilter(filter);
     } else {
       var queries =
-          _trackedQueryManager.trackedQueryTree.subtree(path)?.value ?? {};
+          _trackedQueryManager.trackedQueryTree.subtreeNullable(path)?.value ??
+              {};
       for (var p in queries.keys) {
         if (p.ordering == filter.ordering &&
             queries[p].complete &&

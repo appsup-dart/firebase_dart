@@ -588,7 +588,7 @@ class SyncTree {
   }
 
   void applyListenRevoked(Path<Name> path, Filter filter) {
-    var view = root.subtree(path).value.views.remove(filter);
+    var view = root.subtreeNullable(path)?.value?.views?.remove(filter);
     if (view == null) return;
     view.observers.values.forEach((t) => t.dispatchEvent(CancelEvent(
         FirebaseDatabaseException.permissionDenied()

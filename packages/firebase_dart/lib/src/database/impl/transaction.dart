@@ -230,7 +230,7 @@ class TransactionsTree {
     for (var n in root.nodesOnPath(path)) {
       n.abort(exception);
     }
-    var n = root.subtree(path);
+    var n = root.subtreeNullable(path);
     if (n == null) return;
 
     for (var n in n.childrenDeep) {
@@ -246,10 +246,15 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
   Map<Name, TransactionsNode> get children => super.children;
 
   @override
-  TransactionsNode subtree(Path<Name> path,
-          [TreeNode<Name, List<Transaction>> Function(
+  TransactionsNode subtreeNullable(Path<Name> path) =>
+      super.subtreeNullable(path);
+
+  @override
+  TransactionsNode subtree(
+          Path<Name> path,
+          TreeNode<Name, List<Transaction>> Function(
                   List<Transaction> parent, Name childName)
-              newInstance]) =>
+              newInstance) =>
       super.subtree(path, newInstance);
 
   /// All transactions in this node and child nodes are ready to be sent, in

@@ -32,7 +32,7 @@ class IncompleteData {
   final TreeNode<Name, TreeStructuredData> _writeTree;
   final QueryFilter filter;
 
-  IncompleteData.empty([QueryFilter filter]) : this._(TreeNode(), filter);
+  IncompleteData.empty([QueryFilter filter]) : this._(TreeNode(null), filter);
   IncompleteData.complete(TreeStructuredData data)
       : this._(TreeNode(data), data.children.filter);
   IncompleteData._(this._writeTree, this.filter) : assert(_writeTree != null);
@@ -66,7 +66,7 @@ class IncompleteData {
     }
     var tree = _writeTree.children[child];
     if (tree != null) return IncompleteData._(tree, null);
-    return IncompleteData._(TreeNode(), null);
+    return IncompleteData._(TreeNode(null), null);
   }
 
   IncompleteData child(Path<Name> path) {
@@ -81,7 +81,7 @@ class IncompleteData {
     Path rootMost = _writeTree.findRootMostPathWithValue(path);
     if (rootMost != null) {
       var v = _writeTree
-          .subtree(rootMost)
+          .subtreeNullable(rootMost)
           .value
           .getChild(path.skip(rootMost.length));
       if (v.isNil) return TreeStructuredData();
@@ -128,16 +128,16 @@ class IncompleteData {
 
   IncompleteData removeWrite(Path<Name> path) {
     if (path.isEmpty) {
-      return IncompleteData._(TreeNode(), filter);
+      return IncompleteData._(TreeNode(null), filter);
     } else {
-      var newWriteTree = _writeTree.setPath(path, TreeNode());
+      var newWriteTree = _writeTree.setPath(path, TreeNode(null));
       return IncompleteData._(newWriteTree, filter);
     }
   }
 
   void forEachCompleteNode(Function(Path<Name> k, TreeStructuredData v) f,
           [Path<Name> path]) =>
-      _writeTree.subtree(path ?? Path()).forEachNode((k, v) {
+      _writeTree.subtreeNullable(path ?? Path())?.forEachNode((k, v) {
         if (v == null) return;
         f(Path.from([...?path, ...k]), v);
       });
@@ -187,7 +187,7 @@ extension _WriteTreeX on TreeNode<Name, TreeStructuredData> {
     var c = path.first;
     return clone()
       ..children[c] =
-          (children[c] ?? TreeNode()).addOverwrite(path.skip(1), data);
+          (children[c] ?? TreeNode(null)).addOverwrite(path.skip(1), data);
   }
 
   TreeNode<Name, TreeStructuredData> addPriority(Path<Name> path, Value data) {

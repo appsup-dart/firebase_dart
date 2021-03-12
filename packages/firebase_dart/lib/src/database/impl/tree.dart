@@ -27,12 +27,13 @@ class Path<K> extends UnmodifiableListView<K> {
       other is Path && const ListEquality().equals(this, other);
 }
 
-class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
-  V value;
+class TreeNode<K extends Comparable, V>
+    implements Comparable<TreeNode<K, V> /*!*/ > {
+  V /*!*/ value;
 
-  final Map<K, TreeNode<K, V>> _children;
+  final Map<K, TreeNode<K, V> /*!*/ > _children;
 
-  TreeNode([this.value, Map<K, TreeNode<K, V>> children])
+  TreeNode(this.value, [Map<K, TreeNode<K, V>> children])
       : _children = (_cloneMap<K, TreeNode<K, V>>(children ?? {}));
 
   Map<K, TreeNode<K, V>> get children => _children;
@@ -44,15 +45,22 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
     return Map<K, V>.from(map);
   }
 
-  TreeNode<K, V> subtree(Path<K> path,
-      [TreeNode<K, V> Function(V parent, K name) newInstance]) {
+  TreeNode<K, V> subtreeNullable(Path<K> path) {
     if (path.isEmpty) return this;
-    newInstance ??= (p, n) => null;
+    if (!children.containsKey(path.first)) {
+      return null;
+    }
+    var child = children[path.first];
+    return child.subtreeNullable(path.skip(1));
+  }
+
+  TreeNode<K, V> subtree(
+      Path<K> path, TreeNode<K, V> Function(V parent, K name) newInstance) {
+    if (path.isEmpty) return this;
     if (!children.containsKey(path.first)) {
       children[path.first] = newInstance(value, path.first);
     }
     var child = children[path.first];
-    if (child == null) return children.remove(path.first);
     return child.subtree(path.skip(1), newInstance);
   }
 

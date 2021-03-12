@@ -291,7 +291,7 @@ class Repo {
   /// Gets the current cached value at location [path] with [filter].
   TreeStructuredData cachedValue(String path, QueryFilter filter) {
     path = _preparePath(path);
-    var tree = _syncTree.root.subtree(Name.parsePath(path));
+    var tree = _syncTree.root.subtreeNullable(Name.parsePath(path));
     if (tree = null) return null;
     return tree.value.valueForFilter(filter);
   }

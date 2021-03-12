@@ -99,7 +99,7 @@ extension TreeNodeX<T> on TreeNode<Name, T> {
   TreeNode<Name, T> setPath(Path<Name> path, TreeNode<Name, T> subtree) {
     if (path.isEmpty) return subtree;
 
-    var c = children[path.first] ?? TreeNode();
+    var c = children[path.first] ?? TreeNode(null);
 
     return TreeNode(
         value, {...children, path.first: c.setPath(path.skip(1), subtree)});
@@ -108,7 +108,7 @@ extension TreeNodeX<T> on TreeNode<Name, T> {
   TreeNode<Name, T> setValue(Path<Name> path, T value) {
     if (path.isEmpty) return TreeNode(value, children);
 
-    var c = children[path.first] ?? TreeNode();
+    var c = children[path.first] ?? TreeNode(null);
 
     return TreeNode(
         this.value, {...children, path.first: c.setValue(path.skip(1), value)});
@@ -117,7 +117,7 @@ extension TreeNodeX<T> on TreeNode<Name, T> {
   TreeNode<Name, T> removePath(Path<Name> path) {
     if (path.isEmpty) return null;
 
-    var c = this.children[path.first] ?? TreeNode();
+    var c = this.children[path.first] ?? TreeNode(null);
 
     c = c.removePath(path.skip(1));
     var children = {...this.children, path.first: c};
