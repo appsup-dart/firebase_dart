@@ -94,7 +94,7 @@ extension TreeNodeX<T> on TreeNode<Name, T?> {
     }
   }
 
-  TreeNode<Name, T?> setPath(Path<Name> path, TreeNode<Name, T> subtree) {
+  TreeNode<Name, T?> setPath(Path<Name> path, TreeNode<Name, T?> subtree) {
     if (path.isEmpty) return subtree;
 
     var c = children[path.first] ?? TreeNode(null);

@@ -29,13 +29,15 @@ abstract class Operation {
 /// Any write to an existing path or shadowing an existing path will modify that
 /// existing write to reflect the write added.
 class IncompleteData {
-  final TreeNode<Name, TreeStructuredData> _writeTree;
-  final QueryFilter filter;
+  final TreeNode<Name, TreeStructuredData /*?*/ > _writeTree;
+  final QueryFilter /*!*/ filter;
 
-  IncompleteData.empty([QueryFilter filter]) : this._(TreeNode(null), filter);
+  IncompleteData.empty([QueryFilter filter = const QueryFilter()])
+      : this._(TreeNode(null), filter);
   IncompleteData.complete(TreeStructuredData data)
       : this._(TreeNode(data), data.children.filter);
-  IncompleteData._(this._writeTree, this.filter) : assert(_writeTree != null);
+  IncompleteData._(this._writeTree, [this.filter = const QueryFilter()])
+      : assert(_writeTree != null);
 
   IncompleteData withFilter(QueryFilter filter) {
     return IncompleteData._(_writeTree, filter);
@@ -61,12 +63,11 @@ class IncompleteData {
   IncompleteData directChild(Name child) {
     if (isComplete) {
       return IncompleteData._(
-          TreeNode(_writeTree.value.children[child] ?? TreeStructuredData()),
-          null);
+          TreeNode(_writeTree.value.children[child] ?? TreeStructuredData()));
     }
     var tree = _writeTree.children[child];
-    if (tree != null) return IncompleteData._(tree, null);
-    return IncompleteData._(TreeNode(null), null);
+    if (tree != null) return IncompleteData._(tree);
+    return IncompleteData._(TreeNode(null));
   }
 
   IncompleteData child(Path<Name> path) {

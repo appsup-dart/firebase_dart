@@ -14,13 +14,13 @@ abstract class Event {
 
   Event(this.type);
 
-  EventTarget get target => _target;
+  EventTarget/*!*/ get target => _target;
 }
 
 typedef EventListener = void Function(Event event);
 
 class EventTarget {
-  final Map<String, Set<EventListener>> _eventRegistrations = {};
+  final Map<String, Set<EventListener/*!*/>> _eventRegistrations = {};
 
   bool get hasEventRegistrations =>
       _eventRegistrations.values.any((v) => v.isNotEmpty);
@@ -57,7 +57,7 @@ class EventTarget {
     events.where((e) => e.type == type).forEach((e) => listener(e));
   }
 
-  void removeEventListener(String type, EventListener listener) {
+  void removeEventListener(String type, EventListener/*!*/ listener) {
     if (listener == null) {
       _eventRegistrations.remove(type);
     } else {

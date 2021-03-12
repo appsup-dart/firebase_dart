@@ -13,27 +13,28 @@ import '../tree.dart';
 import '../treestructureddata.dart';
 
 class TreeOperation extends Operation {
-  final Path<Name> path;
-  final Operation nodeOperation;
+  final Path<Name> /*!*/ path;
+  final Operation /*?*/ nodeOperation;
 
   TreeOperation(this.path, this.nodeOperation);
 
-  factory TreeOperation.overwrite(Path<Name> path, TreeStructuredData value) {
+  factory TreeOperation.overwrite(
+      Path<Name> path, TreeStructuredData /*!*/ value) {
     if (path.isNotEmpty && path.last == Name('.priority')) {
       return TreeOperation(path.parent, SetPriority(value.value));
     }
     return TreeOperation(path, Overwrite(value));
   }
 
-  TreeOperation.merge(
-      Path<Name> path, Map<Path<Name>, TreeStructuredData> children)
+  TreeOperation.merge(Path<Name> /*!*/ path,
+      Map<Path<Name> /*!*/, TreeStructuredData /*!*/ > children)
       : this(path, Merge(children));
 
   factory TreeOperation.ack(Path<Name> path, bool success) =>
       Ack(path, success);
 
   @override
-  TreeStructuredData apply(TreeStructuredData value) {
+  TreeStructuredData /*!*/ apply(TreeStructuredData /*!*/ value) {
     return _applyOnPath(path, value);
   }
 
@@ -101,7 +102,7 @@ class Ack extends TreeOperation {
 }
 
 class Merge extends Operation {
-  final List<TreeOperation> overwrites;
+  final List<TreeOperation /*!*/ > overwrites;
 
   Merge._(this.overwrites);
   Merge(Map<Path<Name>, TreeStructuredData> children)
@@ -119,7 +120,7 @@ class Merge extends Operation {
         overwrites.where((t) => (t.nodeOperation as Overwrite).value.isNil);
     var setOperations =
         overwrites.where((t) => !(t.nodeOperation as Overwrite).value.isNil);
-    var v = removeOperations.fold(value, (v, o) => o.apply(v));
+    TreeStructuredData v = removeOperations.fold(value, (v, o) => o.apply(v));
     v = setOperations.fold(v, (v, o) => o.apply(v));
     v = setPriorityOperations.fold(v, (v, o) => o.apply(v));
     return v;
@@ -166,7 +167,7 @@ class Overwrite extends Operation {
   Iterable<Path<Name>> get completesPaths => [Path()];
 
   @override
-  Operation operationForChild(Name key) {
+  Operation/*!*/ operationForChild(Name key) {
     var child = value.children[key] ?? TreeStructuredData();
     return Overwrite(child);
   }

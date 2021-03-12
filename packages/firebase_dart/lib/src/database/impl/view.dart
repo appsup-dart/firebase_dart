@@ -86,7 +86,7 @@ class ViewCache {
   /// Remove a user operation
   ///
   /// This will cause the local version to be recalculated
-  ViewCache removeOperation(int writeId) {
+  ViewCache removeOperation(int/*!*/ writeId) {
     var viewCache = ViewCache(localVersion, serverVersion,
         pendingOperations.clone()..remove(writeId));
     viewCache.recalcLocalVersion();

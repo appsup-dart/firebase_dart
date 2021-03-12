@@ -50,7 +50,7 @@ class NoopPersistenceManager implements PersistenceManager {
   @override
   IncompleteData serverCache(Path<Name> path,
       [QueryFilter filter = const QueryFilter()]) {
-    return IncompleteData.empty();
+    return IncompleteData.empty(filter);
   }
 
   @override
