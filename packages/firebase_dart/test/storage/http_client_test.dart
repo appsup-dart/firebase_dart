@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'dart:async';
 
@@ -9,8 +9,8 @@ import 'package:http/http.dart';
 
 void main() async {
   group('HttpClient', () {
-    String token;
-    FutureOr<Response> Function(Request) handler;
+    String? token;
+    late FutureOr<Response> Function(Request) handler;
     var httpClient = HttpClient(MockClient((request) async {
       return handler(request);
     }), () async => token);

@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'dart:async';
 import 'dart:convert';
@@ -21,8 +21,8 @@ void main() async {
     var locationEscapes = Location.fromBucketSpec('b/').child('o?');
     var locationEscapesUrl = '/b/b%2F/o/o%3F';
 
-    String token;
-    FutureOr<Response> Function(Request) handler;
+    String? token;
+    late FutureOr<Response> Function(Request) handler;
     var httpClient = HttpClient(MockClient((request) async {
       return handler(request);
     }), () async => token);

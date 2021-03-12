@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/storage.dart';
@@ -128,9 +126,6 @@ void main() async {
           () {
         expect(root.child('a').child('/b').child('c').child('d/e').toString(),
             'gs://test-bucket/a/b/c/d/e');
-      });
-      test('StorageReference.child: throws on null instead of path', () {
-        expect(() => root.child(null), throwsArgumentError);
       });
     });
     group('StorageReference.getDownloadUrl', () {
