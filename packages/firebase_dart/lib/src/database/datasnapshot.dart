@@ -17,7 +17,7 @@ abstract class DataSnapshot {
   dynamic get value;
 
   /// The key of the location that generated this DataSnapshot.
-  String get key;
+  String? get key;
 }
 
 class MutableData {

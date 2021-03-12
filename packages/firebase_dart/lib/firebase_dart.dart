@@ -1,5 +1,3 @@
-// @dart=2.9
-
 library firebase_dart;
 
 export 'implementation/pure_dart.dart';

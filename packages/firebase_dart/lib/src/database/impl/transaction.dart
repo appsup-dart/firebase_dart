@@ -32,7 +32,7 @@ class Transaction implements Comparable<Transaction> {
   final bool applyLocally;
   final Repo repo;
   final int order;
-  final Completer<TreeStructuredData> completer = Completer();
+  final Completer<TreeStructuredData?> completer = Completer();
 
   static int _order = 0;
 
@@ -201,7 +201,7 @@ class TransactionsTree {
 
   TransactionsTree(this.repo);
 
-  Future<TreeStructuredData> startTransaction(Path<Name> path,
+  Future<TreeStructuredData?> startTransaction(Path<Name> path,
       TransactionHandler transactionUpdate, bool applyLocally) {
     var transaction = Transaction(repo, path, transactionUpdate, applyLocally);
     var node = root.subtree(path, (a, b) => TransactionsNode());

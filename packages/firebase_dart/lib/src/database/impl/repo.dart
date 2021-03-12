@@ -300,7 +300,7 @@ class Repo {
         reusable: true);
   }
 
-  Future<TreeStructuredData> transaction(
+  Future<TreeStructuredData?> transaction(
           String path, TransactionHandler update, bool applyLocally) =>
       _transactions.startTransaction(
           Name.parsePath(_preparePath(path)), update, applyLocally);
@@ -410,7 +410,8 @@ class StreamFactory {
     } else if (value is ChildMovedEvent) {
       if (type != 'child_moved') return null;
       return firebase.Event(
-          firebase.DataSnapshotImpl(ref.child(value.childKey.toString()), null),
+          firebase.DataSnapshotImpl(
+              ref.child(value.childKey.toString()), TreeStructuredData()),
           value.prevChildKey.toString());
     } else if (value is ChildRemovedEvent) {
       if (type != 'child_removed') return null;
