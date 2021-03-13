@@ -45,7 +45,7 @@ class SecurityTree {
 
     var data = root;
 
-    var locations = <String?, String>{};
+    var locations = <String, String>{};
 
     yield tree.value
         .canRead(root: root, data: data, auth: auth, locations: locations);
@@ -53,10 +53,12 @@ class SecurityTree {
       var node = tree.children[n.asString()];
       if (node == null) {
         var l = tree.children.keys.firstWhereOrNull((v) => v.startsWith(r'$'));
-        node = tree.children[l];
-        locations[l] = n.asString();
+        if (!tree.children.containsKey(l)) {
+          return;
+        }
+        node = tree.children[l]!;
+        locations[l!] = n.asString();
       }
-      if (node == null) return;
       tree = node;
 
       data = data!.child(BehaviorSubject.seeded(n.asString()));
@@ -83,7 +85,7 @@ class SecurityNode {
       {RuleDataSnapshot? root,
       RuleDataSnapshot? data,
       Auth? auth,
-      required Map<String?, String> locations}) {
+      required Map<String, String> locations}) {
     return (const _ExpressionEvaluator().eval(read, {
       'root': root,
       'data': data,
@@ -99,8 +101,8 @@ class _ExpressionEvaluator extends ExpressionEvaluator {
   const _ExpressionEvaluator();
 
   @override
-  dynamic eval(Expression expression, Map<String?, dynamic> context) {
-    var v = super.eval(expression, context as Map<String, dynamic>);
+  dynamic eval(Expression expression, Map<String, dynamic> context) {
+    var v = super.eval(expression, context);
 
     if (v == null) {
       return Stream<Null>.value(v);

@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'package:collection/collection.dart';
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
@@ -12,9 +12,9 @@ import 'package:test/test.dart';
 void main() {
   group('SyncTree', () {
     group('Completeness on user operation', () {
-      SyncTree syncTree;
+      late SyncTree syncTree;
       SyncPoint syncPoint;
-      MasterView view;
+      late MasterView view;
 
       setUp(() {
         syncTree = SyncTree('mem:///');
@@ -117,7 +117,7 @@ extension SyncTreeMeasurer on SyncTree {
         EqualitySet(IdentityEquality()));
 
     void handleOperation(
-        TreeNode<Name, Set<TreeStructuredData>> tree, Operation operation) {
+        TreeNode<Name, Set<TreeStructuredData>> tree, Operation? operation) {
       if (operation is TreeOperation) {
         handleOperation(
             tree.subtree(operation.path,

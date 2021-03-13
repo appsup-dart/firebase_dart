@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'dart:typed_data';
 
@@ -64,7 +64,7 @@ class SyncTreeBenchmark extends BenchmarkBase {
   }
 }
 
-void _doTest(int seed) {
+void _doTest(int? seed) {
   fakeAsync((fakeAsync) {
     var tester = RandomSyncTreeTester(seed: seed);
     for (var i = 0; i < 1000; i++) {

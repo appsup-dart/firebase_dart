@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
@@ -24,7 +24,7 @@ void main() {
       var v =
           empty.applyOperation(TreeOperation(Path(), SetPriority(prioValue)));
       expect(v.isComplete, false);
-      expect(v.directChild(Name('.priority')).completeValue.value, prioValue);
+      expect(v.directChild(Name('.priority')).completeValue!.value, prioValue);
       expect(v.isCompleteForPath(priorityPath), true);
       expect(v.toOperation(), isNotNull);
     });
@@ -46,7 +46,7 @@ void main() {
       var v = empty.applyOperation(
           TreeOperation.overwrite(Path(), TreeStructuredData()));
       expect(v.isComplete, true);
-      expect(v.completeValue.isNil, true);
+      expect(v.completeValue!.isNil, true);
       expect(v.toOperation(), isNotNull);
     });
 
@@ -132,9 +132,9 @@ void main() {
           .applyOperation(TreeOperation.overwrite(path, prioNode));
       var applied = v.toOperation().apply(TreeStructuredData());
       expect(applied.getChild(Name.parsePath('child')).priority, null);
-      expect(v.getCompleteDataAtPath(Name.parsePath('child')).priority, null);
+      expect(v.getCompleteDataAtPath(Name.parsePath('child'))!.priority, null);
       for (var node in v.completeChildren.entries) {
-        expect(node.value.priority, null);
+        expect(node.value!.priority, null);
       }
     });
 
@@ -534,7 +534,7 @@ void main() {
 }
 
 void assertNodeGetsCorrectPriority(
-    IncompleteData v, TreeStructuredData node, Value priority) {
+    IncompleteData v, TreeStructuredData node, Value? priority) {
   if (node.isEmpty) {
     expect(v.toOperation().apply(node), isEmpty);
   } else {
