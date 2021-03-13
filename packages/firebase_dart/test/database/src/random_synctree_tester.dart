@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:math';
 
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
@@ -22,10 +20,7 @@ import '../persistence/mock.dart';
 final _logger = Logger('firebase.test.random_synctree');
 
 class RandomSyncTreeTester {
-  SyncTree _syncTree;
-
-  SyncTree get syncTree => _syncTree;
-
+  late final SyncTree syncTree;
   static Logger get logger => _logger;
 
   final RandomGenerator random;
@@ -59,7 +54,7 @@ class RandomSyncTreeTester {
   TreeStructuredData get currentServerState => _currentServerState;
 
   RandomSyncTreeTester(
-      {int seed,
+      {int? seed,
       this.listenProbability = 0.1,
       this.unlistenProbability = 0.0,
       this.userOperationProbability = 0.1,
@@ -69,7 +64,7 @@ class RandomSyncTreeTester {
       this.serverOperationProbability = 0.1})
       : random =
             RandomGenerator(seed ?? DateTime.now().millisecondsSinceEpoch) {
-    _syncTree = SyncTree('test:///', remoteRegister: (path, query, tag) async {
+    syncTree = SyncTree('test:///', remoteRegister: (path, query, tag) async {
       outstandingListens.add(QuerySpec(path, query));
     }, remoteUnregister: (path, query) async {
       var spec = QuerySpec(path, query);
@@ -87,7 +82,7 @@ class RandomSyncTreeTester {
     var query = userListens.keys.toList()[random.nextInt(userListens.length)];
     _logger.fine('* $query');
     syncTree.removeEventListener(
-        'cancel', query.path, query.params, userListens.remove(query));
+        'cancel', query.path, query.params, userListens.remove(query)!);
   }
 
   void _generateUserListen() {
@@ -98,7 +93,7 @@ class RandomSyncTreeTester {
       userListens.remove(query);
     };
     syncTree.addEventListener(
-        'cancel', query.path, query.params, userListens[query]);
+        'cancel', query.path, query.params, userListens[query]!);
   }
 
   void _generateUserOperation() {
@@ -128,7 +123,7 @@ class RandomSyncTreeTester {
     var path = op.value.path;
     var isEmptyPriorityError = path.isNotEmpty &&
         path.last.isPriorityChildName &&
-        _currentServerState.getChild(path.parent).isEmpty;
+        _currentServerState.getChild(path.parent!).isEmpty;
 
     if (random.nextDouble() < revertProbability || isEmptyPriorityError) {
       syncTree.applyAck(op.value.path, op.key, false);
@@ -208,7 +203,8 @@ class RandomSyncTreeTester {
   }
 
   HivePersistenceStorageEngine get storageEngine =>
-      (_syncTree.persistenceManager as DefaultPersistenceManager).storageLayer;
+      (syncTree.persistenceManager as DefaultPersistenceManager).storageLayer
+          as HivePersistenceStorageEngine;
 
   void checkPersistedWrites() {
     expect(
@@ -290,8 +286,8 @@ extension SyncTreeX on SyncTree {
           },
           writeId);
     } else if (op is SetPriority) {
-      applyUserOverwrite(operation.path.child(Name('.priority')),
-          TreeStructuredData.leaf(op.priority), writeId);
+      applyUserOverwrite(
+          operation.path.child(Name('.priority')), op.value, writeId);
     } else {
       applyUserOverwrite(operation.path, (op as Overwrite).value, writeId);
     }
@@ -303,7 +299,7 @@ class RandomGenerator {
 
   final RandomGeneratorParameters parameters;
 
-  RandomGenerator([int seed])
+  RandomGenerator([int? seed])
       : _random = Random(seed),
         parameters = RandomGeneratorParameters() {
     print('Random seed $seed');
@@ -357,7 +353,7 @@ class RandomGenerator {
     }
   }
 
-  Value nextValue({bool allowNull = false}) {
+  Value? nextValue({bool allowNull = false}) {
     var randValue = nextDouble();
     if (allowNull && randValue < 0.2) {
       return null;
@@ -377,12 +373,12 @@ class RandomGenerator {
         ? TreeStructuredData()
         : nextBool()
             ? null
-            : TreeStructuredData.leaf(nextValue());
+            : TreeStructuredData.leaf(nextValue()!);
     var endValue = keyOnly
         ? TreeStructuredData()
         : nextBool()
             ? null
-            : TreeStructuredData.leaf(nextValue());
+            : TreeStructuredData.leaf(nextValue()!);
     if (startValue != null &&
         endValue != null &&
         Comparable.compare(startValue, endValue) > 0) {
@@ -428,13 +424,15 @@ class RandomGenerator {
 
   TreeStructuredData nextTreeValue(int currentDepth, {bool allowNull = true}) {
     if (currentDepth >= parameters.maxDepth) {
-      return TreeStructuredData.leaf(nextValue(allowNull: allowNull));
+      var v = nextValue(allowNull: allowNull);
+      return v == null ? TreeStructuredData() : TreeStructuredData.leaf(v);
     } else {
       var randValue = _random.nextDouble();
       if (allowNull && randValue < 0.2) {
         return TreeStructuredData();
       } else if (randValue < 0.4) {
-        return TreeStructuredData.leaf(nextValue(allowNull: allowNull));
+        var v = nextValue(allowNull: allowNull);
+        return v == null ? TreeStructuredData() : TreeStructuredData.leaf(v);
       } else {
         var numChildren = 1 +
             _random.nextInt(currentDepth == 0

@@ -26,8 +26,8 @@ class PruneForest {
 
   static final Predicate<bool?> PRUNE_PREDICATE = (prune) => prune == true;
 
-  static final TreeNode<Name, bool> PRUNE_TREE = TreeNode(true);
-  static final TreeNode<Name, bool> KEEP_TREE = TreeNode(false);
+  static final TreeNode<Name, bool?> PRUNE_TREE = TreeNode(true);
+  static final TreeNode<Name, bool?> KEEP_TREE = TreeNode(false);
 
   PruneForest() : pruneForest = TreeNode(null);
 
@@ -127,7 +127,7 @@ class PruneForest {
   }
 
   PruneForest _doAll(Path<Name> path, Set<Name> children,
-      TreeNode<Name, bool> keepOrPruneTree) {
+      TreeNode<Name, bool?> keepOrPruneTree) {
     var subtree = pruneForest.subtree(path, (_, __) => TreeNode(null));
     var childrenMap = {
       ...subtree.children,

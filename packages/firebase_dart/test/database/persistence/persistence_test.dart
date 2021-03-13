@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'dart:typed_data';
 
@@ -30,7 +30,7 @@ void main() async {
   });
 }
 
-void _doTest(int seed) {
+void _doTest(int? seed) {
   fakeAsync((fakeAsync) {
     var tester = RandomSyncTreeTester(seed: seed, unlistenProbability: 0.1);
 

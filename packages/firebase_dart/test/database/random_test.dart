@@ -67,7 +67,6 @@ class SyncTreeBenchmark extends BenchmarkBase {
 void _doTest(int seed) {
   fakeAsync((fakeAsync) {
     var tester = RandomSyncTreeTester(seed: seed);
-
     for (var i = 0; i < 1000; i++) {
       tester.next();
       fakeAsync.flushMicrotasks();
