@@ -416,14 +416,14 @@ class HandshakeInfo {
 final messageChannelTransformer = const _MessageChannelTransformer();
 
 class _MessageChannelTransformer
-    implements StreamChannelTransformer<Message, Object> {
+    implements StreamChannelTransformer<Message, Object?> {
   const _MessageChannelTransformer();
 
   @override
-  StreamChannel<Message> bind(StreamChannel<Object> channel) {
+  StreamChannel<Message> bind(StreamChannel<Object?> channel) {
     var stream = channel.stream
         .map<Message>((v) => Message.fromJson(v as Map<String, dynamic>));
-    var sink = StreamSinkTransformer<Message, Object>.fromHandlers(
+    var sink = StreamSinkTransformer<Message, Object?>.fromHandlers(
         handleData: (data, sink) {
       sink.add(data.toJson());
     }).bind(channel.sink);

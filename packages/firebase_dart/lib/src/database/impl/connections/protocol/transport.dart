@@ -35,7 +35,7 @@ class Transport {
         _channel = socket
             .cast<String>()
             .transform<String>(framesChannelTransformer)
-            .transform<dynamic>(jsonDocument)
+            .transform<Object?>(jsonDocument)
             .transform<Message>(messageChannelTransformer);
         break;
       case 'mem':

@@ -1,8 +1,6 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.9
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -40,7 +38,7 @@ void main() async {
   });
 
   group('https', () {
-    testsWith(s.secrets);
+    testsWith(s.secrets as Map<String, dynamic>);
   });
 
   group('FirebaseDatabase.delete', () {
@@ -159,7 +157,7 @@ void main() async {
       await db.reference().child('public').get();
       await expectLater(
           () => db.reference().child('private').get(),
-          throwsA(predicate((v) =>
+          throwsA(predicate((dynamic v) =>
               v is FirebaseDatabaseException &&
               v.code == FirebaseDatabaseException.permissionDenied().code)));
     });
@@ -169,9 +167,9 @@ void main() async {
 void testsWith(Map<String, dynamic> secrets) {
   var testUrl = '${secrets['host']}';
 
-  DatabaseReference ref, ref2;
+  late DatabaseReference ref, ref2;
 
-  FirebaseApp app1, app2, appAlt1, appAlt2;
+  FirebaseApp? app1, app2, appAlt1, appAlt2;
 
   setUpAll(() async {
     var options = getOptions();
@@ -182,10 +180,10 @@ void testsWith(Map<String, dynamic> secrets) {
   });
 
   tearDownAll(() async {
-    await app1.delete();
-    await app2.delete();
-    await appAlt1.delete();
-    await appAlt2.delete();
+    await app1!.delete();
+    await app2!.delete();
+    await appAlt1!.delete();
+    await appAlt2!.delete();
   });
 
   group('Recover from connection loss', () {
@@ -202,7 +200,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .map((s) => s.snapshot.value)
           .skipWhile((v) => !v)
           .take(2)
-          .listen(connectionStates.add);
+          .listen(connectionStates.add as void Function(dynamic)?);
       var ref = db.reference().child('test');
 
       var db2 = FirebaseDatabase(app: app2, databaseURL: testUrl);
@@ -254,8 +252,8 @@ void testsWith(Map<String, dynamic> secrets) {
       expect(ref2.child('object/hello').url.path, '/test/object/hello');
     });
     test('parent', () {
-      expect(ref.child('test').parent().key, null);
-      expect(ref.child('test/hello').parent().key, 'test');
+      expect(ref.child('test').parent()!.key, null);
+      expect(ref.child('test/hello').parent()!.key, 'test');
     });
     test('root', () {
       expect(ref.child('test').root().key, null);
@@ -263,7 +261,7 @@ void testsWith(Map<String, dynamic> secrets) {
     });
   });
   group('Authenticate', () {
-    String token, uid;
+    late String token, uid;
     setUp(() {
       var host = secrets['host'];
       var secret = secrets['secret'];
@@ -286,7 +284,7 @@ void testsWith(Map<String, dynamic> secrets) {
       var fromStream = ref.onAuth.first;
       await ref.authWithCustomToken(token);
 
-      expect((await fromStream)['uid'], uid);
+      expect((await fromStream)!['uid'], uid);
       expect(ref.auth['uid'], uid);
 
       fromStream = ref.onAuth.first;
@@ -315,7 +313,7 @@ void testsWith(Map<String, dynamic> secrets) {
       var token =
           'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InJpa0BwYXJ0YWdvLmJlIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJpYXQiOjE0NzIxMjIyMzgsInYiOjAsImQiOnsicHJvdmlkZXIiOiJwYXNzd29yZCIsInVpZCI6IjMzZTc1ZjI0LTE5MTAtNGI1Mi1hZDJjLWNmZGQwYWFjNzI4YiJ9fQ.ZO0zH6xgk58SKDqmqi9gWzsvzoSvPx6QCJizR94rzEc';
       var t = (FirebaseTokenCodec(null).decode(token));
-      expect(t.data['uid'], '33e75f24-1910-4b52-ad2c-cfdd0aac728b');
+      expect(t.data!['uid'], '33e75f24-1910-4b52-ad2c-cfdd0aac728b');
     });
   });
 
@@ -690,7 +688,7 @@ void testsWith(Map<String, dynamic> secrets) {
           return v..value = (v.value ?? 0) + 1;
         }).then((v) {
           expect(v.committed, isTrue);
-          expect(v.dataSnapshot.value, i + 1);
+          expect(v.dataSnapshot!.value, i + 1);
         }));
       }
       for (var i = 0; i < 10; i++) {
@@ -715,7 +713,7 @@ void testsWith(Map<String, dynamic> secrets) {
   });
 
   group('OnDisconnect', () {
-    Repo repo;
+    late Repo repo;
     setUp(() {
       ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
           .reference()
@@ -1089,7 +1087,7 @@ void testsWith(Map<String, dynamic> secrets) {
   });
 
   group('Complex operations', () {
-    DatabaseReference iref;
+    late DatabaseReference iref;
     setUp(() async {
       ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
           .reference()
@@ -1278,7 +1276,7 @@ void testsWith(Map<String, dynamic> secrets) {
       };
       await ref.set(data);
 
-      expect(await ref.child('cars/car001').get(), data['cars']['car001']);
+      expect(await ref.child('cars/car001').get(), data['cars']!['car001']);
     });
 
     test('Bugfix: crash when receiving merge', () async {
@@ -1287,7 +1285,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .child('test')
           .child('some/path');
 
-      ref.parent().orderByKey().equalTo('path').onValue.listen((_) => null);
+      ref.parent()!.orderByKey().equalTo('path').onValue.listen((_) => null);
       ref.child('child1').onValue.listen((_) => null);
       await ref.set({'child1': 'v', 'child2': 3});
 
@@ -1418,7 +1416,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Tests from firebase-android-sdk', () {
     group('FirebaseDatabase', () {
-      core.FirebaseApp app;
+      late core.FirebaseApp app;
       setUp(() async {
         app = await core.Firebase.initializeApp(
             options: FirebaseOptions(
@@ -1476,7 +1474,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
         var refs = List.generate(4, (_) => ref.push());
 
-        var events = <String>[];
+        var events = [];
         refs.forEach((ref) =>
             ref.onValue.map((e) => e.snapshot.value).listen(events.add));
 
