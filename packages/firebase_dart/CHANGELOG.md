@@ -1,12 +1,13 @@
 # Changelog
 
-## 1.0.0-dev.24
+## 1.0.0-dev.25
 
 - Added support for firebase auth service
 - Added support for firebase storage service
 - Rework of the API in line with flutterfire packages 
 - `.info` location with `connected`, `authenticated` and `serverTimeOffset`
 - Firebase database now supports persistence storage (use `setPersistenceEnabled`)
+- Null safety
 
 ## 0.7.15
 
