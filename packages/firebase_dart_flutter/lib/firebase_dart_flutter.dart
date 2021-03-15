@@ -22,7 +22,7 @@ class FirebaseDartFlutter {
     isolated = isolated && !kIsWeb;
     WidgetsFlutterBinding.ensureInitialized();
 
-    var path;
+    late var path;
     if (!kIsWeb) {
       var appDir = await getApplicationDocumentsDirectory();
       path = appDir.path;
@@ -38,7 +38,8 @@ class FirebaseDartFlutter {
         },
         getAuthResult: () async {
           if (!kIsWeb && platform_info.Platform.instance.isAndroid) {
-            return await _channel.invokeMapMethod('getAuthResult');
+            return (await _channel
+                .invokeMapMethod<String, dynamic>('getAuthResult'))!;
           }
 
           throw UnimplementedError();
@@ -47,14 +48,14 @@ class FirebaseDartFlutter {
           switch (provider.providerId) {
             case 'facebook.com':
               var facebookLogin = FacebookAuth.instance;
-              var accessToken = await facebookLogin.login();
+              var accessToken = (await facebookLogin.login())!;
 
-              return FacebookAuthProvider.credential(accessToken.token);
+              return FacebookAuthProvider.credential(accessToken.token!);
             case 'google.com':
               var account = await GoogleSignIn().signIn();
-              var auth = await account.authentication;
+              var auth = await account!.authentication;
               return GoogleAuthProvider.credential(
-                  idToken: auth.idToken, accessToken: auth.accessToken);
+                  idToken: auth.idToken!, accessToken: auth.accessToken!);
             case 'apple.com':
               if (!platform_info.Platform.instance.isIOS) {
                 return null;
@@ -66,7 +67,7 @@ class FirebaseDartFlutter {
                 ],
               );
               return provider.credential(
-                  idToken: credential.identityToken,
+                  idToken: credential.identityToken!,
                   accessToken: credential.authorizationCode);
           }
 

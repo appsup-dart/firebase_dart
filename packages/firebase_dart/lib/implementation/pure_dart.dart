@@ -1,5 +1,3 @@
-
-
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
@@ -10,6 +8,8 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 
 import 'dart:io' as io;
+
+export 'package:firebase_dart/src/auth/utils.dart' show Platform;
 
 const bool _kIsWeb = identical(0, 0.0);
 
@@ -46,7 +46,7 @@ class FirebaseDart {
       bool isolated = false,
       Function(Uri url)? launchUrl,
       Future<Map<String, dynamic>> Function()? getAuthResult,
-      Future<OAuthCredential> Function(OAuthProvider provider)? oauthSignIn,
+      Future<OAuthCredential?> Function(OAuthProvider provider)? oauthSignIn,
       Future<void> Function(String providerId)? oauthSignOut,
       http.Client? httpClient}) {
     platform ??= _kIsWeb
