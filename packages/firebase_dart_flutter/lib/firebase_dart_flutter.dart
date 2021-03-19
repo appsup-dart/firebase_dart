@@ -22,12 +22,10 @@ class FirebaseDartFlutter {
     isolated = isolated && !kIsWeb;
     WidgetsFlutterBinding.ensureInitialized();
 
-    late var path;
+    var path;
     if (!kIsWeb) {
       var appDir = await getApplicationDocumentsDirectory();
       path = appDir.path;
-
-      Hive.init(path);
     }
 
     FirebaseDart.setup(
