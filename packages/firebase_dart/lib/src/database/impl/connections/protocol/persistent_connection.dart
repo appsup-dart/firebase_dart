@@ -148,7 +148,9 @@ class PersistentConnectionImpl extends PersistentConnection
     }
     _lastConnectionEstablishedTime = null;
 
-    _onConnect.add(false);
+    if (!_onConnect.isClosed) {
+      _onConnect.add(false);
+    }
   }
 
   @override
