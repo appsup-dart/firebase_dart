@@ -1,5 +1,3 @@
-
-
 import 'package:collection/collection.dart';
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
@@ -150,7 +148,6 @@ extension SyncTreeMeasurer on SyncTree {
 
     var obsoleteCount = 0;
     root.forEachNode((key, value) {
-      if (value == null) return;
       value.removeWhere((element) => element == TreeStructuredData());
 
       obsoleteCount += value.length - Set.from(value).length;
