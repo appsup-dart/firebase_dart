@@ -1,12 +1,10 @@
-
-
 import 'package:firebase_dart/src/storage/impl/location.dart';
 
 import 'package:firebase_dart/src/storage/metadata.dart';
 
 import 'backend.dart';
 
-class MemoryBackend extends Backend {
+class MemoryStorageBackend extends StorageBackend {
   Map<Location, FullMetadataImpl> metadata = {};
 
   @override

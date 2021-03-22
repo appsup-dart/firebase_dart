@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
 
 class BackendConnection {
-  final Backend backend;
+  final AuthBackend backend;
 
   BackendConnection(this.backend);
 
@@ -292,7 +292,7 @@ class BackendConnection {
   }
 }
 
-abstract class Backend {
+abstract class AuthBackend {
   Future<BackendUser> getUserById(String uid);
 
   Future<BackendUser> getUserByEmail(String email);
@@ -316,16 +316,18 @@ abstract class Backend {
   Future<String> sendVerificationCode(String phoneNumber);
 
   Future<BackendUser> verifyPhoneNumber(String sessionInfo, String code);
+
+  Future<BackendUser> storeUser(BackendUser user);
+
+  Future<String?> receiveSmsCode(String phoneNumber);
 }
 
-abstract class BaseBackend extends Backend {
+abstract class BaseBackend extends AuthBackend {
   final JsonWebKey tokenSigningKey;
 
   final String? projectId;
 
   BaseBackend({required this.tokenSigningKey, required this.projectId});
-
-  Future<BackendUser> storeUser(BackendUser user);
 
   @override
   Future<BackendUser> createUser(

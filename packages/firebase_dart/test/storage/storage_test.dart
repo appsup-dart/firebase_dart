@@ -1,6 +1,7 @@
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/storage.dart';
+import 'package:firebase_dart/src/storage/backend/backend.dart';
 import 'package:firebase_dart/src/storage/backend/memory_backend.dart';
 import 'package:firebase_dart/src/storage/impl/location.dart';
 import 'package:firebase_dart/src/storage/metadata.dart';
@@ -165,7 +166,7 @@ FirebaseOptions getOptions(
 }
 
 class Tester {
-  final MemoryBackend backend;
+  final MemoryStorageBackend backend;
 
   final FirebaseApp app;
 
@@ -177,6 +178,6 @@ class Tester {
     var app = await Firebase.initializeApp(options: getOptions());
 
     var backend = FirebaseTesting.getBackend(app.options);
-    return Tester._(app, backend.storageBackend);
+    return Tester._(app, backend.storageBackend as MemoryStorageBackend);
   }
 }

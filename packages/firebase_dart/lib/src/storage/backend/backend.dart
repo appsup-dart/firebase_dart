@@ -1,5 +1,3 @@
-
-
 import 'dart:convert';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:firebase_dart/src/storage/metadata.dart';
@@ -7,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../impl/location.dart';
 
 class BackendConnection {
-  final Backend backend;
+  final StorageBackend backend;
 
   BackendConnection(this.backend);
 
@@ -35,6 +33,6 @@ class BackendConnection {
   }
 }
 
-abstract class Backend {
+abstract class StorageBackend {
   Future<FullMetadataImpl?> getMetadata(Location location);
 }

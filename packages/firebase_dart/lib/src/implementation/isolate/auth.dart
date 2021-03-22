@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
+import 'package:meta/meta.dart';
 import 'package:rxdart/subjects.dart';
 
 import '../isolate.dart';
@@ -13,7 +15,7 @@ extension UserCredentialX on UserCredential {
   static UserCredential fromJson(
       IsolateFirebaseAuth auth, Map<String, dynamic> json) {
     return UserCredentialImpl(
-      user: IsolateUser.fromJson(auth, json['user']),
+      user: auth.setUser(json['user']),
       additionalUserInfo: GenericAdditionalUserInfo(
           providerId: json['additionalUserInfo']['providerId'],
           isNewUser: json['additionalUserInfo']['isNewUser'],
@@ -45,138 +47,148 @@ extension UserCredentialX on UserCredential {
       };
 }
 
-class IsolateUser extends UserInfo implements User {
-  @override
-  final bool emailVerified;
+class UserBase implements UserInfo {
+  Map<String, dynamic> _json;
+
+  UserBase.fromJson(Map<String, dynamic> json) : _json = json;
 
   @override
-  final bool isAnonymous;
+  Map<String, dynamic> toJson() => _json;
 
   @override
-  final UserMetadata metadata;
+  int get hashCode => const DeepCollectionEquality.unordered().hash(_json);
 
   @override
-  final List<UserInfo> providerData;
+  bool operator ==(other) =>
+      other is IsolateUser &&
+      const DeepCollectionEquality.unordered().equals(_json, other._json);
+
+  bool get emailVerified => _json['emailVerified'];
+
+  bool get isAnonymous => _json['isAnonymous'];
+
+  UserMetadata get metadata => UserMetadata(
+        creationTime: DateTime.fromMillisecondsSinceEpoch(_json['createdAt']),
+        lastSignInTime:
+            DateTime.fromMillisecondsSinceEpoch(_json['lastLoginAt']),
+      );
+
+  List<UserInfo> get providerData =>
+      (_json['providerData'] as List).map((v) => UserInfo.fromJson(v)).toList();
+
+  String? get refreshToken => (_json['token'] ?? {})['refreshToken'];
+
+  String? get tenantId => _json['tenantId'];
 
   @override
-  final String? refreshToken;
+  String? get displayName => _json['displayName'];
 
   @override
-  final String? tenantId;
+  String? get email => _json['email'];
 
+  @override
+  String? get phoneNumber => _json['phoneNumber'];
+
+  @override
+  String? get photoURL => _json['photoUrl'];
+
+  @override
+  String get providerId => _json['providerId'] ?? 'firebase';
+
+  @override
+  String get uid => _json['uid'];
+}
+
+class IsolateUser extends UserBase implements User {
   final IsolateFirebaseAuth _auth;
 
   IsolateUser.fromJson(this._auth, Map<String, dynamic> json)
-      : emailVerified = json['emailVerified'],
-        isAnonymous = json['isAnonymous'],
-        metadata = UserMetadata(
-          creationTime: DateTime.fromMillisecondsSinceEpoch(json['createdAt']),
-          lastSignInTime:
-              DateTime.fromMillisecondsSinceEpoch(json['lastLoginAt']),
-        ),
-        providerData = (json['providerData'] as List)
-            .map((v) => UserInfo.fromJson(v))
-            .toList(),
-        refreshToken = (json['token'] ?? {})['refreshToken'],
-        tenantId = json['tenantId'],
-        super.fromJson(json);
+      : super.fromJson(json);
 
   Future<T> invoke<T>(Symbol method,
       [List<dynamic>? positionalArguments,
       Map<Symbol, dynamic>? namedArguments]) {
     return _auth.app.commander.execute(CurrentUserFunctionCall<FutureOr<T>>(
-        method, _auth.app.name, positionalArguments, namedArguments));
+        method, _auth.app.name, uid, positionalArguments, namedArguments));
+  }
+
+  @visibleForTesting
+  Future<void> setAccountInfo(AccountInfo accountInfo) async {
+    await invoke(#setAccountInfo, [accountInfo]);
   }
 
   @override
-  Future<void> delete() {
-    // TODO: implement delete
-    throw UnimplementedError();
+  Future<void> delete() async {
+    await invoke(#delete, []);
   }
 
   @override
-  Future<String> getIdToken([bool forceRefresh = false]) async {
-    return await invoke(#getIdToken, [forceRefresh]);
+  Future<String> getIdToken([bool forceRefresh = false]) {
+    return invoke(#getIdToken, [forceRefresh]);
   }
 
   @override
   Future<IdTokenResult> getIdTokenResult([bool forceRefresh = false]) {
-    // TODO: implement getIdTokenResult
-    throw UnimplementedError();
+    return invoke(#getIdTokenResult, [forceRefresh]);
   }
 
   @override
   Future<UserCredential> linkWithCredential(AuthCredential credential) {
-    // TODO: implement linkWithCredential
-    throw UnimplementedError();
+    return invoke(#linkWithCredential, [credential]);
   }
 
   @override
   Future<UserCredential> reauthenticateWithCredential(
       AuthCredential credential) {
-    // TODO: implement reauthenticateWithCredential
-    throw UnimplementedError();
+    return invoke(#reauthenticateWithCredential, [credential]);
   }
 
   @override
   Future<void> reload() {
-    // TODO: implement reload
-    throw UnimplementedError();
+    return invoke(#reload, []);
   }
 
   @override
-  Future<void> sendEmailVerification([ActionCodeSettings? actionCodeSettings]) {
-    // TODO: implement sendEmailVerification
-    throw UnimplementedError();
+  Future<void> sendEmailVerification(
+      [ActionCodeSettings? actionCodeSettings]) async {
+    await invoke(#sendEmailVerification, [actionCodeSettings]);
   }
 
   @override
-  Map<String, dynamic> toJson() => {
-        ...super.toJson(),
-        'emailVerified': emailVerified,
-        'isAnonymous': isAnonymous,
-        'createdAt': metadata.creationTime!.millisecondsSinceEpoch,
-        'lastLoginAt': metadata.lastSignInTime!.millisecondsSinceEpoch,
-        'providerData': providerData.map((v) => v.toJson()).toList(),
-        'token': {'refreshToken': refreshToken},
-        'tenantId': tenantId,
-      };
-
-  @override
-  Future<User> unlink(String providerId) {
-    // TODO: implement unlink
-    throw UnimplementedError();
+  Future<User> unlink(String providerId) async {
+    await invoke(#unlink, [providerId]);
+    await reload(); // reload to make sure, updated values have arrived in this isolate, can be replaced with other synchronization
+    return this;
   }
 
   @override
-  Future<void> updateEmail(String newEmail) {
-    // TODO: implement updateEmail
-    throw UnimplementedError();
+  Future<void> updateEmail(String newEmail) async {
+    await invoke(#updateEmail, [newEmail]);
+    await reload();
   }
 
   @override
-  Future<void> updatePassword(String newPassword) {
-    // TODO: implement updatePassword
-    throw UnimplementedError();
+  Future<void> updatePassword(String newPassword) async {
+    await invoke(#updatePassword, [newPassword]);
+    await reload();
   }
 
   @override
   Future<void> updatePhoneNumber(PhoneAuthCredential phoneCredential) {
-    // TODO: implement updatePhoneNumber
-    throw UnimplementedError();
+    return invoke(#updatePhoneNumber, [phoneCredential]);
   }
 
   @override
-  Future<void> updateProfile({String? displayName, String? photoURL}) {
-    // TODO: implement updateProfile
-    throw UnimplementedError();
+  Future<void> updateProfile({String? displayName, String? photoURL}) async {
+    await invoke(
+        #updateProfile, [], {#displayName: displayName, #photoURL: photoURL});
+    await reload();
   }
 
   @override
   Future<void> verifyBeforeUpdateEmail(String newEmail,
       [ActionCodeSettings? actionCodeSettings]) {
-    // TODO: implement verifyBeforeUpdateEmail
-    throw UnimplementedError();
+    return invoke(#verifyBeforeUpdateEmail, [newEmail, actionCodeSettings]);
   }
 }
 
@@ -217,12 +229,12 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   IsolateFirebaseAuth(IsolateFirebaseApp app) : super(app) {
-    _subject.addStream(app.commander
+    app.commander
         .subscribe<Map<String, dynamic>?>(FirebaseAuthFunctionCall(
-          #authChanges,
+          #userChanges,
           app.name,
         ))
-        .map((v) => v == null ? null : IsolateUser.fromJson(this, v)));
+        .forEach((v) => setUser(v));
   }
 
   @override
@@ -232,7 +244,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Stream<User?> authStateChanges() =>
-      _subject.stream.distinct((a, b) => a?.uid != b?.uid);
+      _subject.stream.distinct((a, b) => a?.uid == b?.uid);
 
   @override
   Future<ActionCodeInfo> checkActionCode(String code) async {
@@ -253,7 +265,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  User? get currentUser => _subject.valueWrapper!.value;
+  User? get currentUser => _subject.valueWrapper?.value;
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String email) async {
@@ -311,7 +323,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<UserCredential> signInWithCredential(AuthCredential credential) {
-    return invoke(#signInWithCredential, [credential.asMap()]);
+    return invoke(#signInWithCredential, [credential]);
   }
 
   @override
@@ -368,34 +380,93 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
       required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
       String? autoRetrievedSmsCodeForTesting,
       Duration timeout = const Duration(seconds: 30),
-      int? forceResendingToken}) {
-    // TODO: implement verifyPhoneNumber
-    throw UnimplementedError();
+      int? forceResendingToken}) async {
+    var worker = IsolateWorker()
+      ..registerFunction(#verificationCompleted, verificationCompleted)
+      ..registerFunction(#verificationFailed, verificationFailed)
+      ..registerFunction(#codeSent, codeSent)
+      ..registerFunction(#codeAutoRetrievalTimeout, codeAutoRetrievalTimeout);
+
+    await invoke(#verifyPhoneNumber, [
+      worker.commander
+    ], {
+      #phoneNumber: phoneNumber,
+      #timeout: timeout,
+      #forceResendingToken: forceResendingToken
+    });
   }
 
   @override
   Future<UserCredential> signInWithOAuthProvider(String providerId) {
     return invoke(#signInWithOAuthProvider, [providerId]);
   }
+
+  IsolateUser? setUser(Map<String, dynamic>? json) {
+    var last = currentUser as IsolateUser?;
+
+    var uid = json == null ? null : json['uid'];
+    if (last?.uid != uid) {
+      last = uid == null ? null : IsolateUser.fromJson(this, json!);
+    }
+    if (json != null) {
+      last?._json = json;
+    }
+    _subject.add(last);
+    return last;
+  }
 }
 
 class CurrentUserFunctionCall<T> extends BaseFunctionCall<T> {
   final String appName;
 
+  final String uid;
+
   final Symbol functionName;
 
-  CurrentUserFunctionCall(this.functionName, this.appName,
+  CurrentUserFunctionCall(this.functionName, this.appName, this.uid,
       [List<dynamic>? positionalArguments,
       Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
-  User? get user =>
-      FirebaseAuth.instanceFor(app: Firebase.app(appName)).currentUser;
+  User get user {
+    var user = FirebaseAuth.instanceFor(app: Firebase.app(appName)).currentUser;
+    if (user?.uid != uid) {
+      throw FirebaseAuthException.moduleDestroyed();
+    }
+    return user!;
+  }
+
   @override
   Function? get function {
     switch (functionName) {
       case #getIdToken:
-        return user!.getIdToken;
+        return user.getIdToken;
+      case #getIdTokenResult:
+        return user.getIdTokenResult;
+      case #delete:
+        return user.delete;
+      case #linkWithCredential:
+        return user.linkWithCredential;
+      case #reauthenticateWithCredential:
+        return user.reauthenticateWithCredential;
+      case #reload:
+        return user.reload;
+      case #sendEmailVerification:
+        return user.sendEmailVerification;
+      case #unlink:
+        return (providerId) async => (await user.unlink(providerId)).toJson();
+      case #updateEmail:
+        return user.updateEmail;
+      case #updatePassword:
+        return user.updatePassword;
+      case #updatePhoneNumber:
+        return user.updatePhoneNumber;
+      case #updateProfile:
+        return user.updateProfile;
+      case #verifyBeforeUpdateEmail:
+        return user.verifyBeforeUpdateEmail;
+      case #setAccountInfo:
+        return (user as FirebaseUserImpl).setAccountInfo;
     }
     return null;
   }
@@ -456,11 +527,30 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
       case #verifyPasswordResetCode:
         return auth.verifyPasswordResetCode;
       case #verifyPhoneNumber:
-        return auth.verifyPhoneNumber;
-      case #authChanges:
-        return () => auth
-            .authStateChanges()
-            .map<Map<String, dynamic>?>((v) => v?.toJson());
+        return (
+          IsolateCommander commander, {
+          required String phoneNumber,
+          Duration timeout = const Duration(seconds: 30),
+          int? forceResendingToken,
+        }) {
+          return auth.verifyPhoneNumber(
+              phoneNumber: phoneNumber,
+              timeout: timeout,
+              forceResendingToken: forceResendingToken,
+              codeAutoRetrievalTimeout: (verificationId) => commander.execute(
+                  RegisteredFunctionCall(
+                      #codeAutoRetrievalTimeout, [verificationId])),
+              verificationCompleted: (phoneAuthCredential) => commander.execute(
+                  RegisteredFunctionCall(
+                      #verificationCompleted, [phoneAuthCredential])),
+              verificationFailed: (exception) => commander.execute(
+                  RegisteredFunctionCall(#verificationFailed, [exception])),
+              codeSent: (verificationId, forceResendingToken) => commander.execute(
+                  RegisteredFunctionCall(#codeSent, [verificationId, forceResendingToken])));
+        };
+      case #userChanges:
+        return () =>
+            auth.userChanges().map<Map<String, dynamic>?>((v) => v?.toJson());
     }
     throw UnsupportedError(
         'FirebaseAuthFunctionCall with reference $functionName not supported');

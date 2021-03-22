@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/usermanager.dart';
 import 'package:hive/hive.dart';
@@ -15,7 +16,7 @@ void main() async {
   var appId = tester.app.options.appId;
 
   group('UserManager', () {
-    var auth = tester.auth;
+    var auth = tester.auth as FirebaseAuthImpl;
 
     var uid = 'defaultUserId';
     var jwt = createMockJwt(uid: uid, providerId: 'firebase');

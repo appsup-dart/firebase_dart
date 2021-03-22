@@ -70,10 +70,10 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
   }
 
   static Future<void> _setupInIsolate(
-    String storagePath,
-    Platform platform,
+    String? storagePath,
+    Platform? platform,
     IsolateCommander commander,
-    http.Client httpClient,
+    http.Client? httpClient,
   ) async {
     _registerFunctions();
     FirebaseDart.setup(

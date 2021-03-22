@@ -5,6 +5,7 @@ import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
     show SetAccountInfoResponse;
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
+import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 import 'package:quiver/core.dart';
 import 'package:rxdart/rxdart.dart';
@@ -21,7 +22,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   final String? _authDomain;
 
   @override
-  AccountInfo? _accountInfo;
+  late AccountInfo _accountInfo;
 
   String? _lastAccessToken;
 
@@ -30,6 +31,8 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   bool get isDestroyed => _destroyed;
 
   final BehaviorSubject<String?> _tokenUpdates = BehaviorSubject();
+
+  late final BehaviorSubject<User> _updates = BehaviorSubject.seeded(this);
 
   FirebaseUserImpl(this._auth, this._credential, [this._authDomain]);
 
@@ -47,7 +50,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         (user['credential'] as Map).cast(),
         httpClient: auth.rpcHandler.httpClient);
     var firebaseUser = FirebaseUserImpl(auth, credential, user['authDomain']);
-    firebaseUser._setAccountInfo(AccountInfo.fromJson(user));
+    firebaseUser.setAccountInfo(AccountInfo.fromJson(user));
     if (user['providerData'] is List) {
       for (var userInfo in user['providerData']) {
         if (userInfo != null) {
@@ -74,13 +77,15 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   Stream<String?> get accessTokenChanged => _tokenUpdates.stream.distinct();
 
+  Stream<User> get userChanged => _updates.stream;
+
   String? get lastAccessToken => _lastAccessToken;
 
   @override
   Future<void> reload() async {
     _checkDestroyed();
     await _reloadWithoutSaving();
-    // TODO notify auth listeners
+    _updates.add(this);
   }
 
   @override
@@ -141,7 +146,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         createdAt: user.createdAt == null
             ? null
             : DateTime.fromMillisecondsSinceEpoch(int.parse(user.createdAt!)));
-    _setAccountInfo(accountInfo);
+    setAccountInfo(accountInfo);
 
     _providerData.addAll((user.providerUserInfo ?? []).map((v) => UserInfo(
         providerId: v.providerId!,
@@ -159,13 +164,14 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   @override
   UserMetadata get metadata => UserMetadata(
-      creationTime: _accountInfo!.createdAt,
-      lastSignInTime: _accountInfo!.lastLoginAt);
+      creationTime: _accountInfo.createdAt,
+      lastSignInTime: _accountInfo.lastLoginAt);
 
   /// Sets the user account info.
-  void _setAccountInfo(AccountInfo? accountInfo) {
+  void setAccountInfo(AccountInfo accountInfo) {
     _accountInfo = accountInfo;
     _providerData.clear();
+    _updates.add(this);
   }
 
   /// Ensures the user is still logged
@@ -178,7 +184,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     if (this == other) {
       return;
     }
-    _setAccountInfo(other!._accountInfo);
+    setAccountInfo(other!._accountInfo);
 
     for (var userInfo in other.providerData) {
       _providerData.add(userInfo);
@@ -190,7 +196,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   Map<String, dynamic> toJson() => {
         'apiKey': _rpcHandler.apiKey,
         if (_authDomain != null) 'authDomain': _authDomain,
-        ..._accountInfo!.toJson(),
+        ..._accountInfo.toJson(),
         'credential': _credential.toJson(),
         'providerData': [...providerData.map((v) => v.toJson())]
       };
@@ -263,8 +269,9 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     // Remove the phone number if the phone provider was unlinked.
     if (!remainingProviderIds.contains(PhoneAuthProvider.PROVIDER_ID)) {
       _accountInfo =
-          AccountInfo.fromJson(_accountInfo!.toJson()..remove('phoneNumber'));
+          AccountInfo.fromJson(_accountInfo.toJson()..remove('phoneNumber'));
     }
+    _updates.add(this);
 
     return this;
   }
@@ -305,7 +312,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
     // Update properties.
     _accountInfo = AccountInfo.fromJson({
-      ..._accountInfo!.toJson(),
+      ..._accountInfo.toJson(),
       'displayName': response.displayName,
       'photoUrl': response.photoUrl
     });
@@ -321,6 +328,8 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         });
       }
     }
+
+    _updates.add(this);
   }
 
   /// Updates the current tokens using a server response, if new tokens are

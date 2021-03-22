@@ -1,4 +1,5 @@
 import 'package:firebase_dart/auth.dart';
+import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:firebase_dart/src/implementation.dart';
@@ -8,6 +9,8 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 
 import 'dart:io' as io;
+
+import 'package:jose/jose.dart';
 
 export 'package:firebase_dart/src/auth/utils.dart' show Platform;
 
@@ -77,6 +80,12 @@ class FirebaseDart {
       } else if (!_kIsWeb) PersistenceStorage.setupMemoryStorage();
 
       initPlatform(platform);
+      if (httpClient is TestClient) {
+        httpClient.baseClient;
+      }
+      JsonWebKeySetLoader.global =
+          DefaultJsonWebKeySetLoader(httpClient: httpClient);
+
       FirebaseImplementation.install(PureDartFirebaseImplementation(
           launchUrl: launchUrl,
           getAuthResult: getAuthResult,

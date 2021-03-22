@@ -89,17 +89,32 @@ class IsolateTask<T> extends IsolateRunnable {
 
   Future<Result<T>> _run() async {
     try {
-      var v = await functionCall.run()!;
+      var v = await functionCall.run() as T;
       return Result.value(v);
     } catch (e, tr) {
-      return ErrorResult(e.toString(), StackTrace.fromString(tr.toString()));
+      return ErrorResult(
+          e is Error ? e.toString() : e, StackTrace.fromString(tr.toString()));
     }
   }
 
   @override
   void run() async {
     var v = await _run();
-    _sendPort.send(v);
+    try {
+      _sendPort.send(v);
+    } catch (e) {
+      throw IsolateTransferException('$e: $v');
+    }
+  }
+}
+
+class IsolateTransferException implements Exception {
+  final String message;
+  IsolateTransferException(this.message);
+
+  @override
+  String toString() {
+    return 'IsolateTransferException: $message';
   }
 }
 
