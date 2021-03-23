@@ -16,9 +16,33 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
   @override
   final String databaseURL;
 
+  final BehaviorSubject<Duration> _serverTime =
+      BehaviorSubject.seeded(Duration());
+
+  final BehaviorSubject<Map<String, dynamic>?> _auth = BehaviorSubject();
+
+  late final StreamSubscription _infoSubscription;
+  late final StreamSubscription _authSubscription;
+
   IsolateFirebaseDatabase(
       {required IsolateFirebaseApp app, required this.databaseURL})
-      : super(app);
+      : super(app) {
+    _infoSubscription =
+        reference().child('.info/serverTimeOffset').onValue.listen((v) {
+      _serverTime.add(Duration(milliseconds: v.snapshot.value));
+    });
+
+    _authSubscription = app.commander
+        .subscribe(DatabaseFunctionCall<Stream<Map<String, dynamic>?>>(
+      #onAuth,
+      app.name,
+      databaseURL,
+      [],
+    ))
+        .listen((v) {
+      _auth.add(v);
+    });
+  }
 
   Future<T> invoke<T>(Symbol method,
       [List<dynamic>? positionalArguments,
@@ -27,7 +51,7 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
         method, app.name, databaseURL, positionalArguments, namedArguments));
   }
 
-  DateTime get serverTime => throw UnimplementedError();
+  DateTime get serverTime => DateTime.now().add(_serverTime.value!);
 
   @override
   Future<void> goOffline() async {
@@ -58,6 +82,33 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
   Future<bool> setPersistenceEnabled(bool enabled) async {
     return await invoke(#setPersistenceEnabled, [enabled]);
   }
+
+  @override
+  Future<void> delete() async {
+    await _infoSubscription.cancel();
+    await _authSubscription.cancel();
+    return super.delete();
+  }
+
+  void mockConnectionLost() {
+    invoke(#mockConnectionLost, []);
+  }
+
+  void mockResetMessage() {
+    invoke(#mockResetMessage, []);
+  }
+
+  Future<void> auth(String token) {
+    return invoke(#auth, [token]);
+  }
+
+  Future<void> unauth() {
+    return invoke(#unauth, []);
+  }
+
+  Stream<Map<String, dynamic>?> get onAuth => _auth.stream;
+
+  Map<String, dynamic>? get currentAuthData => _auth.value;
 }
 
 class DatabaseFunctionCall<T> extends BaseFunctionCall<T> {
@@ -86,6 +137,16 @@ class DatabaseFunctionCall<T> extends BaseFunctionCall<T> {
         return database.setPersistenceCacheSizeBytes;
       case #setPersistenceEnabled:
         return database.setPersistenceEnabled;
+      case #mockConnectionLost:
+        return Repo(database).mockConnectionLost;
+      case #mockResetMessage:
+        return Repo(database).mockResetMessage;
+      case #auth:
+        return Repo(database).auth;
+      case #unauth:
+        return Repo(database).unauth;
+      case #onAuth:
+        return () => Repo(database).onAuth;
     }
     return null;
   }

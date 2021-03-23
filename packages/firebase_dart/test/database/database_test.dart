@@ -11,9 +11,9 @@ import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/src/database/token.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
-import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/database/impl/memory_backend.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
+import 'package:firebase_dart/src/testing/database.dart';
 import 'package:test/test.dart';
 
 import '../secrets.dart'
@@ -21,8 +21,12 @@ import '../secrets.dart'
     if (dart.library.io) '../secrets_io.dart' as s;
 import '../util.dart';
 
-void main() async {
-  await FirebaseTesting.setup();
+void main() {
+  return runDatabaseTests(isolated: false);
+}
+
+void runDatabaseTests({bool isolated = false}) async {
+  await FirebaseTesting.setup(isolated: isolated);
 
 /*   StreamSubscription logSubscription;
   setUp(() {
@@ -231,9 +235,9 @@ void testsWith(Map<String, dynamic> secrets) {
     }
 
     test('Recover when internet connection broken',
-        () => connectionLostTests((db) => Repo(db).mockConnectionLost()));
+        () => connectionLostTests((db) => db.mockConnectionLost()));
     test('Recover when reset message received',
-        () => connectionLostTests((db) => Repo(db).mockResetMessage()));
+        () => connectionLostTests((db) => db.mockResetMessage()));
   });
 
   group('Reference location', () {
@@ -281,13 +285,14 @@ void testsWith(Map<String, dynamic> secrets) {
 
     test('auth/unauth', () async {
       await ref.child('test').get();
-      var fromStream = ref.onAuth.first;
+      var fromStream = ref.onAuth.where((v) => v != null).first;
       await ref.authWithCustomToken(token);
 
       expect((await fromStream)!['uid'], uid);
-      expect(ref.auth['uid'], uid);
+      expect(ref.auth!['uid'], uid);
 
-      fromStream = ref.onAuth.first;
+      var current = ref.auth;
+      fromStream = ref.onAuth.where((v) => v != current).first;
 
       await ref.unauth();
 

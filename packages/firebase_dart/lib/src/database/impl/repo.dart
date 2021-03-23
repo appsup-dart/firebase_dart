@@ -150,13 +150,13 @@ class Repo {
   void interrupt() => _connection.interrupt(_interruptReason);
 
   /// The current authData
-  dynamic get authData => _connection.authData;
+  Map<String, dynamic>? get authData => _connection.authData;
 
   /// Stream of auth data.
   ///
   /// When a user is logged in, its auth data is posted. When logged of, `null`
   /// is posted.
-  Stream<Map?> get onAuth => _connection.onAuth;
+  Stream<Map<String, dynamic>?> get onAuth => _connection.onAuth;
 
   /// Tries to authenticate with [token].
   ///
@@ -361,10 +361,8 @@ class Repo {
     _onDisconnect.value = null;
   }
 
-  @visibleForTesting
   void mockConnectionLost() => _connection.mockConnectionLost();
 
-  @visibleForTesting
   void mockResetMessage() => _connection.mockResetMessage();
 
   void _updateInfo(String pathString, dynamic value) {
