@@ -141,7 +141,8 @@ class IsolateFirebaseApp extends FirebaseApp {
   @override
   Future<void> delete() async {
     await commander.execute(RegisteredFunctionCall(#app.delete, [name]));
-    return super.delete();
+    await super.delete();
+    await FirebaseService.deleteAllForApp(this);
   }
 }
 

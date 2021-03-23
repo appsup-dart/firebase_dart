@@ -1,5 +1,3 @@
-
-
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/core.dart';
@@ -8,8 +6,12 @@ import 'package:test/test.dart';
 
 import '../util.dart';
 
-void main() async {
-  await FirebaseTesting.setup();
+void main() {
+  return runCoreTests(isolated: false);
+}
+
+void runCoreTests({bool isolated = false}) async {
+  await FirebaseTesting.setup(isolated: isolated);
 
   group('Firebase', () {
     FirebaseApp? app;
