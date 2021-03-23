@@ -125,7 +125,7 @@ class Repo {
 
   RemoteListenerRegistrar get registrar => _syncTree.registrar;
 
-  Future triggerDisconnect() => _connection.disconnect();
+  Future<void> triggerDisconnect() => _connection.disconnect();
 
   void purgeOutstandingWrites() {
     _logger.fine('Purging writes');

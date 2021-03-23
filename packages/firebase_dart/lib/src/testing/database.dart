@@ -21,8 +21,11 @@ abstract class FirebaseDatabaseTestingController {
 
   void mockResetMessage();
 
+  Future<void> triggerDisconnect();
+
   Future<void> authenticate(String token);
   Future<void> unauth();
+
   Stream<Map<String, dynamic>?> get onAuth;
 
   Map<String, dynamic>? get auth;
@@ -52,6 +55,9 @@ class FirebaseDatabaseIsolateTestingController
 
   @override
   Map<String, dynamic>? get auth => db.currentAuthData;
+
+  @override
+  Future<void> triggerDisconnect() => db.triggerDisconnect();
 }
 
 @visibleForTesting
@@ -77,6 +83,9 @@ class FirebaseDatabaseImplTestingController
 
   @override
   Map<String, dynamic>? get auth => repo.authData;
+
+  @override
+  Future<void> triggerDisconnect() => repo.triggerDisconnect();
 }
 
 @visibleForTesting
@@ -87,6 +96,8 @@ extension FirebaseDatabaseTestingX on FirebaseDatabase {
   void mockConnectionLost() => _controller.mockConnectionLost();
 
   void mockResetMessage() => _controller.mockResetMessage();
+
+  Future<void> triggerDisconnect() => _controller.triggerDisconnect();
 }
 
 @visibleForTesting

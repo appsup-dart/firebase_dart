@@ -130,7 +130,7 @@ abstract class DatabaseReference implements Query {
       {Duration timeout = const Duration(seconds: 5)});
 }
 
-typedef TransactionHandler = FutureOr<MutableData>? Function(
+typedef TransactionHandler = FutureOr<MutableData?> Function(
     MutableData mutableData);
 
 /// The results of the transaction.

@@ -63,59 +63,8 @@ void runDatabaseTests({bool isolated = false}) async {
       expect(isDone, true);
     });
 
-    test('FirebaseDatabase.delete should close transports', () async {
-      var app = await core.Firebase.initializeApp(
-          name: 'my_app', options: getOptions());
-
-      var db = FirebaseDatabase(app: app, databaseURL: testUrl);
-      var ref = db.reference().child('test/some-key');
-      await ref.once();
-
-      expect(
-          Transport.openTransports
-              .any((v) => v.url.host == Uri.parse(testUrl).host),
-          isTrue);
-
-      await app.delete();
-
-      expect(
-          Transport.openTransports
-              .any((v) => v.url.host == Uri.parse(testUrl).host),
-          isFalse);
-    });
-
-    test('FirebaseDatabase.delete should remove Repo', () async {
-      var app = await core.Firebase.initializeApp(
-          name: 'my_app', options: getOptions());
-
-      var db = FirebaseDatabase(app: app, databaseURL: testUrl);
-      var ref = db.reference().child('test/some-key');
-      await ref.once();
-
-      expect(Repo.hasInstance(db), isTrue);
-
-      await app.delete();
-
-      expect(Repo.hasInstance(db), isFalse);
-    });
-
-    test(
-        'FirebaseDatabase.delete should not create a Repo when not already exists',
-        () async {
-      var app = await core.Firebase.initializeApp(
-          name: 'my_app', options: getOptions());
-
-      var db = FirebaseDatabase(app: app, databaseURL: testUrl);
-
-      await app.delete();
-
-      expect(Repo.hasInstance(db), isFalse);
-    });
-
-    test('FirebaseDatabase.delete should stop all timers', () async {
-      var timers = <Timer, StackTrace>{};
-
-      await runZoned(() async {
+    if (!isolated) {
+      test('FirebaseDatabase.delete should close transports', () async {
         var app = await core.Firebase.initializeApp(
             name: 'my_app', options: getOptions());
 
@@ -123,49 +72,102 @@ void runDatabaseTests({bool isolated = false}) async {
         var ref = db.reference().child('test/some-key');
         await ref.once();
 
-        await app.delete();
-      },
-          zoneSpecification: ZoneSpecification(
-            createTimer: (self, parent, zone, duration, f) {
-              var timer = parent.createTimer(zone, duration, f);
-              timers[timer] = StackTrace.current;
-              return timer;
-            },
-            createPeriodicTimer: (self, parent, zone, duration, f) {
-              var timer = parent.createPeriodicTimer(zone, duration, f);
-              timers[timer] = StackTrace.current;
-              return timer;
-            },
-          ));
+        expect(
+            Transport.openTransports
+                .any((v) => v.url.host == Uri.parse(testUrl).host),
+            isTrue);
 
-      timers.forEach((key, value) {
-        if (key.isActive) {
-          fail('Timer still active: created here $value');
-        }
+        await app.delete();
+
+        expect(
+            Transport.openTransports
+                .any((v) => v.url.host == Uri.parse(testUrl).host),
+            isFalse);
+      });
+
+      test('FirebaseDatabase.delete should remove Repo', () async {
+        var app = await core.Firebase.initializeApp(
+            name: 'my_app', options: getOptions());
+
+        var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+        var ref = db.reference().child('test/some-key');
+        await ref.once();
+
+        expect(Repo.hasInstance(db), isTrue);
+
+        await app.delete();
+
+        expect(Repo.hasInstance(db), isFalse);
+      });
+      test(
+          'FirebaseDatabase.delete should not create a Repo when not already exists',
+          () async {
+        var app = await core.Firebase.initializeApp(
+            name: 'my_app', options: getOptions());
+
+        var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+
+        await app.delete();
+
+        expect(Repo.hasInstance(db), isFalse);
+      });
+      test('FirebaseDatabase.delete should stop all timers', () async {
+        var timers = <Timer, StackTrace>{};
+
+        await runZoned(() async {
+          var app = await core.Firebase.initializeApp(
+              name: 'my_app', options: getOptions());
+
+          var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+          var ref = db.reference().child('test/some-key');
+          await ref.once();
+
+          await app.delete();
+        },
+            zoneSpecification: ZoneSpecification(
+              createTimer: (self, parent, zone, duration, f) {
+                var timer = parent.createTimer(zone, duration, f);
+                timers[timer] = StackTrace.current;
+                return timer;
+              },
+              createPeriodicTimer: (self, parent, zone, duration, f) {
+                var timer = parent.createPeriodicTimer(zone, duration, f);
+                timers[timer] = StackTrace.current;
+                return timer;
+              },
+            ));
+
+        timers.forEach((key, value) {
+          if (key.isActive) {
+            fail('Timer still active: created here $value');
+          }
+        });
+      });
+    }
+  });
+
+  if (!isolated) {
+    group('Permissions', () {
+      test('Listening without read permission should throw permission denied',
+          () async {
+        var backend = MemoryBackend.getInstance('test_s');
+        backend.securityRules = {
+          'public': {'.read': 'true'},
+          'private': {'.read': 'auth!=null'}
+        };
+
+        var app = await core.Firebase.initializeApp(
+            name: 'my_app', options: getOptions());
+        var db = FirebaseDatabase(app: app, databaseURL: 'mem://test_s');
+        await db.reference().child('public').get();
+        await expectLater(
+            () => db.reference().child('private').get(),
+            throwsA(predicate((dynamic v) =>
+                v is FirebaseDatabaseException &&
+                v.code == FirebaseDatabaseException.permissionDenied().code)));
       });
     });
-  });
-
-  group('Permissions', () {
-    test('Listening without read permission should throw permission denied',
-        () async {
-      var backend = MemoryBackend.getInstance('test_s');
-      backend.securityRules = {
-        'public': {'.read': 'true'},
-        'private': {'.read': 'auth!=null'}
-      };
-
-      var app = await core.Firebase.initializeApp(
-          name: 'my_app', options: getOptions());
-      var db = FirebaseDatabase(app: app, databaseURL: 'mem://test_s');
-      await db.reference().child('public').get();
-      await expectLater(
-          () => db.reference().child('private').get(),
-          throwsA(predicate((dynamic v) =>
-              v is FirebaseDatabaseException &&
-              v.code == FirebaseDatabaseException.permissionDenied().code)));
-    });
-  });
+  }
 }
 
 void testsWith(Map<String, dynamic> secrets) {
@@ -718,12 +720,10 @@ void testsWith(Map<String, dynamic> secrets) {
   });
 
   group('OnDisconnect', () {
-    late Repo repo;
+    late FirebaseDatabase db;
     setUp(() {
-      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/disconnect');
-      repo = Repo(FirebaseDatabase(app: app1, databaseURL: testUrl));
+      db = FirebaseDatabase(app: app1, databaseURL: testUrl);
+      ref = db.reference().child('test/disconnect');
     });
 
     test('put', () async {
@@ -731,7 +731,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await ref.onDisconnect().set('disconnected');
 
-      await repo.triggerDisconnect();
+      await db.triggerDisconnect();
 
       await Future.delayed(Duration(milliseconds: 200));
 
@@ -743,7 +743,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await ref.onDisconnect().update({'state': 'disconnected'});
 
-      await repo.triggerDisconnect();
+      await db.triggerDisconnect();
 
       await Future.delayed(Duration(milliseconds: 200));
 
@@ -756,7 +756,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await ref.onDisconnect().cancel();
 
-      await repo.triggerDisconnect();
+      await db.triggerDisconnect();
 
       await Future.delayed(Duration(milliseconds: 200));
 

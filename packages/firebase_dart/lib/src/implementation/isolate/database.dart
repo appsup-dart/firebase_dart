@@ -98,6 +98,10 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
     invoke(#mockResetMessage, []);
   }
 
+  Future<void> triggerDisconnect() {
+    return invoke(#triggerDisconnect, []);
+  }
+
   Future<void> auth(String token) {
     return invoke(#auth, [token]);
   }
@@ -141,6 +145,8 @@ class DatabaseFunctionCall<T> extends BaseFunctionCall<T> {
         return Repo(database).mockConnectionLost;
       case #mockResetMessage:
         return Repo(database).mockResetMessage;
+      case #triggerDisconnect:
+        return Repo(database).triggerDisconnect;
       case #auth:
         return Repo(database).auth;
       case #unauth:
@@ -233,6 +239,13 @@ class QueryFunctionCall<T> extends BaseFunctionCall<T> {
         return getRef().onDisconnect().update;
       case #on:
         return getQuery().on;
+      case #runTransaction:
+        return (IsolateCommander commander, {required Duration timeout}) {
+          return getRef().runTransaction(
+              (mutableData) => commander.execute(
+                  RegisteredFunctionCall(#transactionHandler, [mutableData])),
+              timeout: timeout);
+        };
     }
     return null;
   }
@@ -380,7 +393,7 @@ class IsolateDisconnect extends OnDisconnect {
 
   @override
   Future set(value, {priority}) {
-    return reference.invoke(#disconnectSet, [value, priority]);
+    return reference.invoke(#disconnectSet, [value], {#priority: priority});
   }
 
   @override
@@ -423,9 +436,11 @@ class IsolateDatabaseReference extends IsolateQuery with DatabaseReference {
   @override
   Future<TransactionResult> runTransaction(transactionHandler,
       {Duration timeout = const Duration(seconds: 5),
-      bool fireLocalEvents = true}) {
-    // TODO: implement runTransaction
-    throw UnimplementedError();
+      bool fireLocalEvents = true}) async {
+    var worker = IsolateWorker()
+      ..registerFunction(#transactionHandler, transactionHandler);
+
+    return invoke(#runTransaction, [worker.commander], {#timeout: timeout});
   }
 
   @override
