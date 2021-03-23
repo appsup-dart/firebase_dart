@@ -196,4 +196,14 @@ class IsolateStorageReference extends Reference {
     // TODO: implement putString
     throw UnimplementedError();
   }
+
+  @override
+  String toString() => location.toString();
+
+  @override
+  bool operator ==(other) =>
+      other is IsolateStorageReference && other.location == location;
+
+  @override
+  int get hashCode => location.hashCode;
 }
