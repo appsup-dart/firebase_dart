@@ -9,7 +9,6 @@ import 'package:firebase_dart/database.dart'
     show FirebaseDatabaseException, MutableData, TransactionHandler;
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:logging/logging.dart';
-import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:sortedmap/sortedmap.dart';
 

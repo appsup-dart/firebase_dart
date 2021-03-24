@@ -5,7 +5,6 @@ import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
     show SetAccountInfoResponse;
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
-import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 import 'package:quiver/core.dart';
 import 'package:rxdart/rxdart.dart';
