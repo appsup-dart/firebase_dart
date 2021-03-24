@@ -1,3 +1,5 @@
+
+
 part of firebase_dart.database.backend_connection;
 
 class SecuredBackend extends Backend {
@@ -16,19 +18,19 @@ class SecuredBackend extends Backend {
   }
 
   @override
-  Future<void> auth(Auth auth) {
+  Future<void> auth(Auth? auth) {
     return super.auth(auth);
     // TODO reevaluate listeners
   }
 
   @override
-  Future<void> listen(String path, EventListener listener,
-      {QueryFilter query = const QueryFilter(), String hash}) async {
+  Future<void> listen(String? path, EventListener listener,
+      {QueryFilter? query = const QueryFilter(), String? hash}) async {
     var completer = Completer();
 
     var root = RuleDataSnapshotFromBackend.root(unsecuredBackend);
     securityTree
-        .canRead(auth: currentAuth, path: path, root: root)
+        .canRead(auth: currentAuth, path: path!, root: root)
         .listen((canRead) {
       if (!canRead) {
         if (completer.isCompleted) {
@@ -48,19 +50,19 @@ class SecuredBackend extends Backend {
   }
 
   @override
-  Future<void> unlisten(String path, EventListener listener,
-      {QueryFilter query = const QueryFilter()}) async {
+  Future<void> unlisten(String? path, EventListener? listener,
+      {QueryFilter? query = const QueryFilter()}) async {
     await unsecuredBackend.unlisten(path, listener, query: query);
   }
 
   @override
-  Future<void> merge(String path, Map<String, dynamic> children) async {
+  Future<void> merge(String? path, Map<String, dynamic>? children) async {
     // TODO check write rules and validate rules
     await unsecuredBackend.merge(path, children);
   }
 
   @override
-  Future<void> put(String path, value, {String hash}) async {
+  Future<void> put(String? path, value, {String? hash}) async {
     // TODO check write rules and validate rules
     await unsecuredBackend.put(path, value, hash: hash);
   }

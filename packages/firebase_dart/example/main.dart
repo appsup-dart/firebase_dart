@@ -23,7 +23,7 @@ void main() async {
   await auth.signInAnonymously();
 
   user = auth.currentUser;
-  print('current user (after sign in anonymously) = ${user.uid}');
+  print('current user (after sign in anonymously) = ${user!.uid}');
 
   await user.updateProfile(displayName: 'Jane Doe');
 
@@ -36,7 +36,7 @@ void main() async {
   var m = await ref.getMetadata();
   print('content type of file test.txt: ${m.contentType}');
 
-  var v = utf8.decode(await ref.getData(m.sizeBytes));
+  var v = utf8.decode((await ref.getData(m.size))!);
   print('content of file test.txt: $v');
 
   var database = FirebaseDatabase(app: app);

@@ -73,19 +73,19 @@ class DataMessage extends _JsonObjectMessage {
   static const String actionSecurityDebug = 'sd';
 
   /// The action to be performed
-  final String action;
+  final String? action;
 
   /// A request number
   ///
   /// This number links requests sent to the server to responses received from
   /// the server.
-  final int reqNum;
+  final int? reqNum;
 
   /// The body
   final MessageBody body;
 
   /// Contains an error in case the request could not be executed
-  final String error;
+  final String? error;
 
   DataMessage(this.action, this.body, {this.error, this.reqNum});
 
@@ -99,7 +99,7 @@ class DataMessage extends _JsonObjectMessage {
   @override
   Map<String, dynamic> get _payloadJson => {
         if (action != null) 'a': action,
-        if (body != null) 'b': body,
+        'b': body,
         if (reqNum != null) 'r': reqNum,
         if (error != null) 'error': error,
       };
@@ -117,8 +117,8 @@ extension QueryFilterCodec on QueryFilter {
   static const String viewFromRight = 'r';
   static const String indexOn = 'i';
 
-  Map<String, dynamic> toJson() {
-    if (this == null || this == QueryFilter()) return null;
+  Map<String, dynamic>? toJson() {
+    if (this == QueryFilter()) return null;
     return {
       if (limit != null) limitTo: limit,
       if (limit != null) viewFrom: reversed ? viewFromRight : viewFromLeft,
@@ -146,10 +146,11 @@ extension QueryFilterCodec on QueryFilter {
     };
   }
 
-  static QueryFilter fromJson(Map<String, dynamic> json) {
+  static QueryFilter fromJson(Map<String, dynamic>? json) {
     if (json == null) return QueryFilter();
-    var ordering =
-        TreeStructuredDataOrdering(json[indexOn]) ?? PriorityOrdering();
+    var ordering = json[indexOn] == null
+        ? PriorityOrdering()
+        : TreeStructuredDataOrdering(json[indexOn]);
     var limit = json[limitTo];
     var isViewFromRight = json[viewFrom] == viewFromRight;
 
@@ -205,15 +206,15 @@ extension QueryFilterCodec on QueryFilter {
 class MessageBody {
   static const String statusOk = 'ok';
 
-  final int tag;
-  final QueryFilter query;
-  final String path;
-  final String hash;
+  final int? tag;
+  final QueryFilter? query;
+  final String? path;
+  final String? hash;
   final dynamic data;
   final dynamic stats;
-  final String cred;
-  final String message;
-  final String status;
+  final String? cred;
+  final String? message;
+  final String? status;
 
   MessageBody(
       {this.tag,
@@ -230,10 +231,10 @@ class MessageBody {
     return MessageBody(
         tag: json['t'],
         query: json['q'] is Map
-            ? QueryFilterCodec.fromJson(json['q'] as Map<String, dynamic>)
+            ? QueryFilterCodec.fromJson(json['q'] as Map<String, dynamic>?)
             : json['q'] is List && json['q'].isNotEmpty
                 ? QueryFilterCodec.fromJson(
-                    json['q'].first as Map<String, dynamic>)
+                    json['q'].first as Map<String, dynamic>?)
                 : null,
         path: json['p'],
         hash: json['h'],
@@ -244,8 +245,9 @@ class MessageBody {
         status: json['s']);
   }
 
-  Iterable<String> get warnings =>
-      data is Map ? (data['w'] as Iterable)?.map((v) => v as String) : const [];
+  Iterable<String>? get warnings => data is Map
+      ? (data['w'] as Iterable?)?.map((v) => v as String)
+      : const [];
 
   Map<String, dynamic> toJson() {
     var json = <String, dynamic>{};
@@ -253,7 +255,7 @@ class MessageBody {
     if (path != null) json['p'] = path;
     if (hash != null) json['h'] = hash;
     if (tag != null) json['t'] = tag;
-    if (query != null) json['q'] = query.toJson();
+    if (query != null) json['q'] = query!.toJson();
     if (data != null) json['d'] = data;
     if (stats != null) json['c'] = stats;
     if (message != null) json['msg'] = message;
@@ -329,7 +331,7 @@ class PongMessage extends ControlMessage {
 /// Message sent by the server when the client should reconnect
 class ResetMessage extends ControlMessage {
   /// The host to reconnect to
-  final String host;
+  final String? host;
 
   ResetMessage(this.host);
 
@@ -342,18 +344,18 @@ class ResetMessage extends ControlMessage {
   String get type => ControlMessage.typeControlReset;
 
   @override
-  String get jsonData => host;
+  String? get jsonData => host;
 }
 
 /// Message sent by the server when the client should shut down
 class ShutdownMessage extends ControlMessage {
   /// The reason of this request
-  final String reason;
+  final String? reason;
 
   ShutdownMessage(this.reason);
 
   @override
-  String get jsonData => reason;
+  String? get jsonData => reason;
 
   @override
   String get type => ControlMessage.typeControlShutdown;
@@ -386,13 +388,13 @@ class HandshakeInfo {
   final DateTime timestamp;
 
   /// Version
-  final String version;
+  final String? version;
 
   /// Host
-  final String host;
+  final String? host;
 
   /// The session id
-  final String sessionId;
+  final String? sessionId;
 
   HandshakeInfo(this.timestamp, this.version, this.host, this.sessionId);
 
@@ -414,13 +416,14 @@ class HandshakeInfo {
 final messageChannelTransformer = const _MessageChannelTransformer();
 
 class _MessageChannelTransformer
-    implements StreamChannelTransformer<Message, Object> {
+    implements StreamChannelTransformer<Message, Object?> {
   const _MessageChannelTransformer();
 
   @override
-  StreamChannel<Message> bind(StreamChannel<Object> channel) {
-    var stream = channel.stream.map<Message>((v) => Message.fromJson(v));
-    var sink = StreamSinkTransformer<Message, Object>.fromHandlers(
+  StreamChannel<Message> bind(StreamChannel<Object?> channel) {
+    var stream = channel.stream
+        .map<Message>((v) => Message.fromJson(v as Map<String, dynamic>));
+    var sink = StreamSinkTransformer<Message, Object?>.fromHandlers(
         handleData: (data, sink) {
       sink.add(data.toJson());
     }).bind(channel.sink);

@@ -1,17 +1,21 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-part of firebase_dart;
+
+
+import 'dart:convert';
+
+import 'package:jose/jose.dart';
 
 class _Encoder extends Converter<FirebaseToken, String> {
-  final String secret;
+  final String? secret;
 
   const _Encoder(this.secret);
 
   @override
   String convert(FirebaseToken data) {
     var key = JsonWebKey.symmetric(
-        key: secret.codeUnits.fold(
+        key: secret!.codeUnits.fold(
             BigInt.from(0), (a, b) => a * BigInt.from(256) + BigInt.from(b)));
     var builder = JsonWebSignatureBuilder()
       ..jsonContent = data.toJson()
@@ -22,19 +26,19 @@ class _Encoder extends Converter<FirebaseToken, String> {
 }
 
 class _Decoder extends Converter<String, FirebaseToken> {
-  final String secret;
+  final String? secret;
 
   const _Decoder(this.secret);
 
   @override
   FirebaseToken convert(String input) {
     return FirebaseToken.fromJson(
-        JsonWebToken.unverified(input).claims.toJson());
+        JsonWebToken.unverified(input).claims.toJson()!);
   }
 }
 
 class FirebaseTokenCodec extends Codec<FirebaseToken, String> {
-  final String secret;
+  final String? secret;
 
   const FirebaseTokenCodec(this.secret);
 
@@ -46,18 +50,18 @@ class FirebaseTokenCodec extends Codec<FirebaseToken, String> {
 }
 
 class FirebaseToken {
-  final int version;
+  final int? version;
   final DateTime issuedAt;
-  final Map<String, dynamic> data;
+  final Map<String, dynamic>? data;
 
-  final DateTime notBefore;
-  final DateTime expires;
-  final bool admin;
-  final bool debug;
+  final DateTime? notBefore;
+  final DateTime? expires;
+  final bool? admin;
+  final bool? debug;
 
   FirebaseToken(this.data,
       {this.version = 0,
-      DateTime issuedAt,
+      DateTime? issuedAt,
       this.notBefore,
       this.expires,
       this.debug,
@@ -65,7 +69,7 @@ class FirebaseToken {
       : issuedAt = issuedAt ?? DateTime.now();
 
   factory FirebaseToken.fromJson(Map<String, dynamic> json) {
-    return FirebaseToken(json['d'] as Map<String, dynamic>,
+    return FirebaseToken(json['d'] as Map<String, dynamic>?,
         version: json['v'],
         issuedAt: DateTime.fromMillisecondsSinceEpoch(json['iat']),
         notBefore: json.containsKey('nbf')
@@ -80,8 +84,8 @@ class FirebaseToken {
 
   Map<String, dynamic> toJson() {
     var out = {'v': version, 'iat': issuedAt.millisecondsSinceEpoch, 'd': data};
-    if (notBefore != null) out['nbf'] = notBefore.millisecondsSinceEpoch;
-    if (expires != null) out['exp'] = expires.millisecondsSinceEpoch;
+    if (notBefore != null) out['nbf'] = notBefore!.millisecondsSinceEpoch;
+    if (expires != null) out['exp'] = expires!.millisecondsSinceEpoch;
     if (debug == true) out['debug'] = true;
     if (admin == true) out['admin'] = true;
 

@@ -12,13 +12,13 @@ import '../treestructureddata.dart';
 
 class TreeOperation extends Operation {
   final Path<Name> path;
-  final Operation nodeOperation;
+  final Operation? nodeOperation;
 
   TreeOperation(this.path, this.nodeOperation);
 
   factory TreeOperation.overwrite(Path<Name> path, TreeStructuredData value) {
     if (path.isNotEmpty && path.last == Name('.priority')) {
-      return TreeOperation(path.parent, SetPriority(value.value));
+      return TreeOperation(path.parent!, SetPriority(value.value));
     }
     return TreeOperation(path, Overwrite(value));
   }
@@ -36,9 +36,9 @@ class TreeOperation extends Operation {
   }
 
   @override
-  TreeOperation operationForChild(Name key) {
+  TreeOperation? operationForChild(Name key) {
     if (path.isEmpty) {
-      var op = nodeOperation.operationForChild(key);
+      var op = nodeOperation!.operationForChild(key);
       if (op == null) return null;
       return TreeOperation(path, op);
     }
@@ -50,12 +50,12 @@ class TreeOperation extends Operation {
   String toString() => 'TreeOperation[$path,$nodeOperation]';
 
   @override
-  Iterable<Path<Name>> get completesPaths => nodeOperation.completesPaths
+  Iterable<Path<Name>> get completesPaths => nodeOperation!.completesPaths
       .map<Path<Name>>((p) => Path.from(List.from(path)..addAll(p)));
 
   TreeStructuredData _applyOnPath(Path<Name> path, TreeStructuredData value) {
     if (path.isEmpty) {
-      return nodeOperation.apply(value);
+      return nodeOperation!.apply(value);
     } else {
       var k = path.first;
       var child = value.children[k] ?? TreeStructuredData();
@@ -84,7 +84,7 @@ class Ack extends TreeOperation {
   Ack(Path<Name> path, this.success) : super(path, null);
 
   @override
-  Ack operationForChild(Name key) {
+  Ack? operationForChild(Name key) {
     if (path.isEmpty) return this;
     if (path.first != key) return null;
     return Ack(path.skip(1), success);
@@ -104,7 +104,7 @@ class Merge extends Operation {
   Merge._(this.overwrites);
   Merge(Map<Path<Name>, TreeStructuredData> children)
       : this._(children.keys
-            .map((p) => TreeOperation.overwrite(p, children[p]))
+            .map((p) => TreeOperation.overwrite(p, children[p]!))
             .toList());
 
   @override
@@ -117,7 +117,8 @@ class Merge extends Operation {
         overwrites.where((t) => (t.nodeOperation as Overwrite).value.isNil);
     var setOperations =
         overwrites.where((t) => !(t.nodeOperation as Overwrite).value.isNil);
-    var v = removeOperations.fold(value, (v, o) => o.apply(v));
+    var v =
+        removeOperations.fold<TreeStructuredData>(value, (v, o) => o.apply(v));
     v = setOperations.fold(v, (v, o) => o.apply(v));
     v = setPriorityOperations.fold(v, (v, o) => o.apply(v));
     return v;
@@ -128,9 +129,8 @@ class Merge extends Operation {
       overwrites.expand<Path<Name>>((c) => c.completesPaths);
 
   @override
-  Operation operationForChild(Name key) {
-    var o =
-        overwrites.map((o) => o.operationForChild(key)).where((o) => o != null);
+  Operation? operationForChild(Name key) {
+    var o = overwrites.map((o) => o.operationForChild(key)).whereNotNull();
     if (o.isEmpty) return null;
     return Merge._(o.toList());
   }
@@ -164,7 +164,7 @@ class Overwrite extends Operation {
   Iterable<Path<Name>> get completesPaths => [Path()];
 
   @override
-  Operation operationForChild(Name key) {
+  Operation? operationForChild(Name key) {
     var child = value.children[key] ?? TreeStructuredData();
     return Overwrite(child);
   }
@@ -177,7 +177,7 @@ class Overwrite extends Operation {
 }
 
 class SetPriority extends Operation implements Overwrite {
-  final Value priority;
+  final Value? priority;
 
   SetPriority(this.priority);
 
@@ -195,10 +195,12 @@ class SetPriority extends Operation implements Overwrite {
       ];
 
   @override
-  Operation operationForChild(Name key) => null;
+  Operation? operationForChild(Name key) => null;
 
   @override
-  TreeStructuredData get value => TreeStructuredData.leaf(priority);
+  TreeStructuredData get value => priority == null
+      ? TreeStructuredData()
+      : TreeStructuredData.leaf(priority!);
 
   @override
   int get hashCode => priority.hashCode;
@@ -214,7 +216,7 @@ class TreeEventGenerator extends EventGenerator {
   Iterable<Event> generateEvents(String eventType, IncompleteData oldValue,
       IncompleteData newValue) sync* {
     var newChildren = newValue.value.children;
-    var oldChildren = oldValue.value?.children ?? const {};
+    Map<Name, TreeStructuredData> oldChildren = oldValue.value.children;
     if (!newValue.isComplete) {
       // do not generate events when value is incomplete
       return;
@@ -254,7 +256,7 @@ class TreeEventGenerator extends EventGenerator {
         }
         return;
       case 'child_moved':
-        Name lastKeyBefore(List<Name> list, Name key) {
+        Name? lastKeyBefore(List<Name> list, Name key) {
           var index = list.indexOf(key);
           if (index <= 0) return null;
           return list[index - 1];

@@ -1,3 +1,5 @@
+
+
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
@@ -163,8 +165,6 @@ void main() {
                 })),
             ViewOperationSource.server,
             null);
-        print(j.containsPoint(
-            o.mapKeyValue(Name('key-001'), TreeStructuredData.fromJson(1))));
         expect(
             view.contains(QueryFilter(ordering: o, validInterval: j, limit: 3)),
             false);

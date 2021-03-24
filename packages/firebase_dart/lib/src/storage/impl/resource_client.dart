@@ -1,3 +1,5 @@
+
+
 import 'package:firebase_dart/src/storage.dart';
 
 import 'location.dart';
@@ -21,16 +23,16 @@ class ResourceClient {
 
   Uri get url => _makeUrl(location.fullServerUrl());
 
-  Future<StorageMetadataImpl> getMetadata() async {
+  Future<FullMetadataImpl> getMetadata() async {
     var response = await httpClient.get(url);
 
     var obj = _handleResponse(response);
 
-    return StorageMetadataImpl.fromJson(obj);
+    return FullMetadataImpl.fromJson(obj);
   }
 
-  Future<ListResult> getList(
-      {String delimiter, String pageToken, int maxResults}) async {
+  Future<Map<String, dynamic>?> getList(
+      {String? delimiter, String? pageToken, int? maxResults}) async {
     var uri =
         _makeUrl(location.bucketOnlyServerUrl()).replace(queryParameters: {
       'prefix': location.isRoot ? '' : '${location.path}/',
@@ -40,29 +42,27 @@ class ResourceClient {
     });
 
     var response = await httpClient.get(uri);
-    var obj = _handleResponse(response);
-
-    return ListResult.fromJson(obj);
+    return _handleResponse(response);
   }
 
-  Future<String> getDownloadUrl() async {
+  Future<String?> getDownloadUrl() async {
     var metadata = await getMetadata();
-    if (metadata.downloadTokens == null || metadata.downloadTokens.isEmpty) {
+    if (metadata.downloadTokens == null || metadata.downloadTokens!.isEmpty) {
       // This can happen if objects are uploaded through GCS and retrieved
       // through list, so we don't want to throw an Error.
       return null;
     }
-    var token = metadata.downloadTokens.first;
+    var token = metadata.downloadTokens!.first;
     var urlPart = '/b/' +
-        Uri.encodeComponent(metadata.bucket) +
+        Uri.encodeComponent(metadata.bucket!) +
         '/o/' +
-        Uri.encodeComponent(metadata.path);
+        Uri.encodeComponent(metadata.fullPath);
     var base = _makeUrl(urlPart);
     return base
         .replace(queryParameters: {'alt': 'media', 'token': token}).toString();
   }
 
-  Future<StorageMetadataImpl> updateMetadata(StorageMetadata metadata) async {
+  Future<FullMetadataImpl> updateMetadata(SettableMetadata metadata) async {
     var response = await httpClient.patch(url,
         body: json.encode({
           if (metadata.cacheControl != null)
@@ -79,7 +79,7 @@ class ResourceClient {
 
     var obj = _handleResponse(response);
 
-    return StorageMetadataImpl.fromJson(obj);
+    return FullMetadataImpl.fromJson(obj);
   }
 
   Future<void> deleteObject() async {
@@ -116,20 +116,27 @@ class ResourceClient {
   }
 }
 
-class ListResult {
-  final List<StorageMetadataImpl> items;
+class ListResultImpl extends ListResult {
+  @override
+  final List<Reference> items;
 
-  final String nextPageToken;
+  @override
+  final String? nextPageToken;
 
-  final List<String> prefixes;
+  @override
+  final List<Reference> prefixes;
 
-  ListResult({this.items, this.nextPageToken, this.prefixes});
+  @override
+  final FirebaseStorage storage;
 
-  ListResult.fromJson(Map<String, dynamic> json)
-      : this(
+  ListResultImpl(this.storage, {required this.items, this.nextPageToken, required this.prefixes});
+
+  ListResultImpl.fromJson(Reference reference, Map<String, dynamic> json)
+      : this(reference.storage,
             items: (json['items'] as List)
-                .map((v) => StorageMetadataImpl.fromJson(v))
+                .map((v) => reference.child(v['name']))
                 .toList(),
             nextPageToken: json['nextPageToken'],
-            prefixes: (json['prefixes'] as List).cast());
+            prefixes:
+                (json['prefixes'] as List).map((v) => reference.child(v)) as List<Reference>);
 }

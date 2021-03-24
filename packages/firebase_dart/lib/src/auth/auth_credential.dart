@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:meta/meta.dart';
 
 /// Interface that represents the credentials returned by an auth provider.
 /// Implementations specify the details about each auth provider's credential
@@ -14,22 +13,21 @@ class AuthCredential {
   /// identifier returned in [fetchSignInMethodsForEmail].
   final String signInMethod;
 
-  const AuthCredential({@required this.providerId, @required this.signInMethod})
-      : assert(providerId != null),
-        assert(signInMethod != null);
+  const AuthCredential({required this.providerId, required this.signInMethod});
 
-  Map<String, dynamic> toJson() => {
+  /// Returns the current instance as a serialized [Map].
+  Map<String, dynamic> asMap() => {
         'providerId': providerId,
         'signInMethod': signInMethod,
       };
 
   @override
-  int get hashCode => MapEquality().hash(toJson());
+  int get hashCode => MapEquality().hash(asMap());
 
   @override
   bool operator ==(other) =>
-      other is AuthCredential && MapEquality().equals(toJson(), other.toJson());
+      other is AuthCredential && MapEquality().equals(asMap(), other.asMap());
 
   @override
-  String toString() => '$runtimeType${toJson()}';
+  String toString() => '$runtimeType${asMap()}';
 }

@@ -1,3 +1,5 @@
+
+
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:logging/logging.dart';
@@ -34,7 +36,7 @@ class DefaultPersistenceManager implements PersistenceManager {
   }
 
   @override
-  void updateServerCache(TreeOperation operation, [QueryFilter filter]) {
+  void updateServerCache(TreeOperation operation, [QueryFilter? filter]) {
     filter ??= QueryFilter();
     if (filter.limits) {
       var o = operation.nodeOperation;
@@ -71,10 +73,11 @@ class DefaultPersistenceManager implements PersistenceManager {
       return IncompleteData.complete(v.value).withFilter(filter);
     } else {
       var queries =
-          _trackedQueryManager.trackedQueryTree.subtree(path)?.value ?? {};
+          _trackedQueryManager.trackedQueryTree.subtreeNullable(path)?.value ??
+              {};
       for (var p in queries.keys) {
         if (p.ordering == filter.ordering &&
-            queries[p].complete &&
+            queries[p]!.complete &&
             _completeQueryContains(p, v, filter)) {
           return IncompleteData.complete(v.value).withFilter(filter);
         }

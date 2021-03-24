@@ -1,3 +1,5 @@
+
+
 import 'package:firebase_dart/src/database/impl/persistence/prune_forest.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
@@ -133,7 +135,7 @@ void main() {
       forest = forest.keep(Name.parsePath('foo/baz'));
       forest = forest.keep(Name.parsePath('bar'));
       var actualPaths = <Path>{};
-      forest.foldKeptNodes(null, (relativePath, value, _) {
+      forest.foldKeptNodes(null, (relativePath, value, dynamic _) {
         actualPaths.add(relativePath);
         return null;
       });

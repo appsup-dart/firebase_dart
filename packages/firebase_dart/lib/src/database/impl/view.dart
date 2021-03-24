@@ -17,7 +17,7 @@ class ViewCache {
   final SortedMap<int, TreeOperation> pendingOperations;
 
   ViewCache(this._localVersion, this.serverVersion,
-      [SortedMap<int, TreeOperation> pendingOperations])
+      [SortedMap<int, TreeOperation>? pendingOperations])
       : pendingOperations = pendingOperations ?? SortedMap();
 
   /// The local version of the data, i.e. the server version with the pending
@@ -38,7 +38,7 @@ class ViewCache {
   ViewCache child(Name c) {
     var childPendingOperations = SortedMap<int, TreeOperation>();
     for (var k in pendingOperations.keys) {
-      var o = pendingOperations[k].operationForChild(c);
+      var o = pendingOperations[k]!.operationForChild(c);
       if (o != null) {
         childPendingOperations[k] = o;
       }
@@ -75,9 +75,8 @@ class ViewCache {
   ///
   /// The operation will be applied to the local version
   ViewCache addOperation(int writeId, Operation op) {
-    assert(op != null);
-    return ViewCache(
-        localVersion, serverVersion, pendingOperations.clone()..[writeId] = op)
+    return ViewCache(localVersion, serverVersion,
+        pendingOperations.clone()..[writeId] = op as TreeOperation)
       .._applyPendingOperation(op);
   }
 
@@ -94,15 +93,15 @@ class ViewCache {
   /// Applies a user or server operation to this view and returns the updated
   /// view
   ViewCache applyOperation(
-      Operation operation, ViewOperationSource source, int writeId) {
+      Operation operation, ViewOperationSource source, int? writeId) {
     switch (source) {
       case ViewOperationSource.user:
-        return addOperation(writeId, operation);
+        return addOperation(writeId!, operation);
       case ViewOperationSource.ack:
-        return removeOperation(writeId);
+        return removeOperation(writeId!);
       case ViewOperationSource.server:
       default:
-        var result = serverVersion.applyOperation(operation);
+        var result = serverVersion.applyOperation(operation as TreeOperation);
         return updateServerVersion(result);
     }
   }

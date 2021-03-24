@@ -6,9 +6,9 @@ import 'package:sortedmap/sortedmap.dart';
 
 typedef Predicate<T> = bool Function(T);
 
-extension TreeNodeX<T> on TreeNode<Name, T> {
+extension TreeNodeXNonNull<T> on TreeNode<Name, T> {
   bool containsMatchingValue(Predicate<T> predicate) {
-    if (value != null && predicate(value)) {
+    if (predicate(value)) {
       return true;
     } else {
       for (var subtree in children.values) {
@@ -20,44 +20,34 @@ extension TreeNodeX<T> on TreeNode<Name, T> {
     }
   }
 
-  T leafMostValue(Path<Name> relativePath) {
-    // TODO: isn't this the value at relativePath
-    return leafMostValueMatching(relativePath, (_) => true);
-  }
-
   /// Returns the deepest value found between the root and the specified path
   /// that matches the predicate.
-  T leafMostValueMatching(Path<Name> path, Predicate<T> predicate) {
-    var currentValue = (value != null && predicate(value)) ? value : null;
+  T? leafMostValueMatching(Path<Name> path, Predicate<T> predicate) {
+    var currentValue = predicate(value) ? value : null;
     var currentTree = this;
     for (var key in path) {
-      currentTree = currentTree.children[key];
-      if (currentTree == null) {
-        return currentValue;
-      } else {
-        if (currentTree.value != null && predicate(currentTree.value)) {
-          currentValue = currentTree.value;
-        }
+      if (!currentTree.children.containsKey(key)) {
+        return null;
+      }
+      currentTree = currentTree.children[key]!;
+      if (predicate(currentTree.value)) {
+        currentValue = currentTree.value;
       }
     }
     return currentValue;
   }
 
-  T rootMostValue(Path<Name> relativePath) {
-    // TODO: isn't this the root?
-    return rootMostValueMatching(relativePath, (_) => true);
-  }
-
-  T rootMostValueMatching(Path<Name> relativePath, Predicate<T> predicate) {
-    if (value != null && predicate(value)) {
+  T? rootMostValueMatching(Path<Name> relativePath, Predicate<T> predicate) {
+    if (predicate(value)) {
       return value;
     } else {
       var currentTree = this;
       for (var key in relativePath) {
-        currentTree = currentTree.children[key];
-        if (currentTree == null) {
+        if (!currentTree.children.containsKey(key)) {
           return null;
-        } else if (currentTree.value != null && predicate(currentTree.value)) {
+        }
+        currentTree = currentTree.children[key]!;
+        if (predicate(currentTree.value)) {
           return currentTree.value;
         }
       }
@@ -65,12 +55,12 @@ extension TreeNodeX<T> on TreeNode<Name, T> {
     }
   }
 
-  Path<Name> findRootMostPathWithValue(Path<Name> relativePath) =>
+  Path<Name>? findRootMostPathWithValue(Path<Name> relativePath) =>
       findRootMostMatchingPath(relativePath, (v) => v != null);
 
-  Path<Name> findRootMostMatchingPath(
+  Path<Name>? findRootMostMatchingPath(
       Path<Name> relativePath, Predicate<T> predicate) {
-    if (value != null && predicate(value)) {
+    if (predicate(value)) {
       return Path();
     } else {
       if (relativePath.isEmpty) {
@@ -79,10 +69,9 @@ extension TreeNodeX<T> on TreeNode<Name, T> {
         var front = relativePath.first;
         var child = children[front];
         if (child != null) {
-          Path path =
+          var path =
               child.findRootMostMatchingPath(relativePath.skip(1), predicate);
           if (path != null) {
-            // TODO: this seems inefficient
             return Path<Name>.from([front, ...path]);
           } else {
             return null;
@@ -94,38 +83,44 @@ extension TreeNodeX<T> on TreeNode<Name, T> {
     }
   }
 
-  TreeNode<Name, T> setPath(Path<Name> path, TreeNode<Name, T> subtree) {
-    if (path.isEmpty) return subtree;
-
-    var c = children[path.first] ?? TreeNode();
-
-    return TreeNode(
-        value, {...children, path.first: c.setPath(path.skip(1), subtree)});
-  }
-
-  TreeNode<Name, T> setValue(Path<Name> path, T value) {
+  TreeNode<Name, T> setValue(Path<Name> path, T value, T defaultValue) {
     if (path.isEmpty) return TreeNode(value, children);
 
-    var c = children[path.first] ?? TreeNode();
+    var c = children[path.first] ?? TreeNode(defaultValue);
 
-    return TreeNode(
-        this.value, {...children, path.first: c.setValue(path.skip(1), value)});
+    return TreeNode(this.value, {
+      ...children,
+      path.first: c.setValue(path.skip(1), value, defaultValue)
+    });
   }
 
-  TreeNode<Name, T> removePath(Path<Name> path) {
+  TreeNode<Name, T>? removePath(Path<Name> path) {
     if (path.isEmpty) return null;
 
-    var c = this.children[path.first] ?? TreeNode();
+    if (!this.children.containsKey(path.first)) {
+      return this;
+    }
+    var c = this.children[path.first]!.removePath(path.skip(1));
 
-    c = c.removePath(path.skip(1));
-    var children = {...this.children, path.first: c};
-    if (c == null) children.remove(path.first);
+    var children = {...this.children, if (c != null) path.first: c};
     if (value == null && children.isEmpty) return null;
     return TreeNode(value, children);
   }
 
+  TreeNode<Name, T> setPath(
+      Path<Name> path, TreeNode<Name, T> subtree, T defaultValue) {
+    if (path.isEmpty) return subtree;
+
+    var c = children[path.first] ?? TreeNode(defaultValue);
+
+    return TreeNode(value, {
+      ...children,
+      path.first: c.setPath(path.skip(1), subtree, defaultValue)
+    });
+  }
+
   Iterable<T> get allNonNullValues sync* {
-    if (value != null) yield value;
+    if (value != null) yield value!;
     for (var c in children.values) {
       yield* c.allNonNullValues;
     }
@@ -149,7 +144,7 @@ class TreeNodeEquality<K extends Comparable, V>
   }
 
   @override
-  bool isValidKey(Object o) {
+  bool isValidKey(Object? o) {
     return o is TreeNode<K, V>;
   }
 }
@@ -169,7 +164,7 @@ extension TreeStructuredDataX on TreeStructuredData {
   TreeStructuredData updateChild(Path<Name> path, TreeStructuredData value) {
     if (path.isEmpty) return value;
     if (path.last.isPriorityChildName) {
-      return updatePriority(path.parent, value.value);
+      return updatePriority(path.parent!, value.value);
     }
 
     var c = children[path.first] ?? TreeStructuredData();
@@ -180,11 +175,11 @@ extension TreeStructuredDataX on TreeStructuredData {
     return withChild(path.first, newChild);
   }
 
-  TreeStructuredData updatePriority(Path<Name> path, Value priority) {
+  TreeStructuredData updatePriority(Path<Name> path, Value? priority) {
     var c = getChild(path);
     if (c.isNil) return this;
     if (c.isEmpty) {
-      c = TreeStructuredData.leaf(c.value, priority);
+      c = TreeStructuredData.leaf(c.value!, priority);
     } else {
       c = TreeStructuredData.nonLeaf(c.children, priority);
     }
@@ -202,7 +197,7 @@ extension KeyValueIntervalX on KeyValueInterval {
   }
 
   static KeyValueInterval coverAll(Iterable<KeyValueInterval> intervals) {
-    assert(intervals != null && intervals.isNotEmpty);
+    assert(intervals.isNotEmpty);
     var min = intervals
         .map((i) => i.start)
         .reduce((a, b) => a.compareTo(b) < 0 ? a : b);
@@ -217,7 +212,7 @@ extension KeyValueIntervalX on KeyValueInterval {
     var ordered = <KeyValueInterval>[...intervals]
       ..sort((a, b) => Comparable.compare(a.start, b.start));
 
-    KeyValueInterval last;
+    KeyValueInterval? last;
     while (ordered.isNotEmpty) {
       var i = ordered.removeAt(0);
       if (last == null) {

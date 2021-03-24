@@ -10,7 +10,7 @@ part of firebase_dart;
 /// `DatabaseReference`s (ie. `child`).
 abstract class DatabaseReference implements Query {
   /// Getter for onDisconnect.
-  Disconnect get onDisconnect;
+  OnDisconnect onDisconnect();
 
   /// Gets a DatabaseReference for the location at the specified relative path.
   ///
@@ -22,7 +22,7 @@ abstract class DatabaseReference implements Query {
   ///
   /// If this instance refers to the root of your Firebase Database, it has no
   /// parent, and therefore parent() will return null.
-  DatabaseReference parent();
+  DatabaseReference? parent();
 
   /// Gets a DatabaseReference for the root location.
   DatabaseReference root();
@@ -31,7 +31,7 @@ abstract class DatabaseReference implements Query {
   /// https://SampleChat.firebaseIO-demo.com/users/fred)
   ///
   /// [key] on the root of a Firebase is `null`.
-  String get key => url.pathSegments.isEmpty
+  String? get key => url.pathSegments.isEmpty
       ? null
       : url.pathSegments.lastWhere((s) => s.isNotEmpty);
 
@@ -127,21 +127,21 @@ abstract class DatabaseReference implements Query {
   /// finished.
   Future<TransactionResult> runTransaction(
       TransactionHandler transactionHandler,
-      {Duration timeout = const Duration(seconds: 5),
-      bool fireLocalEvents = true});
+      {Duration timeout = const Duration(seconds: 5)});
 }
 
-typedef TransactionHandler = MutableData Function(MutableData mutableData);
+typedef TransactionHandler = FutureOr<MutableData?> Function(
+    MutableData mutableData);
 
 /// The results of the transaction.
 abstract class TransactionResult {
   /// null if no errors occurred, otherwise it contains the error
-  FirebaseDatabaseException get error;
+  FirebaseDatabaseException? get error;
 
   /// True if the transaction successfully completed, false if it was aborted or
   /// an error occurred
   bool get committed;
 
   /// The current data at the location or null if an error occurred
-  DataSnapshot get dataSnapshot;
+  DataSnapshot? get dataSnapshot;
 }

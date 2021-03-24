@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../impl/location.dart';
 
 class BackendConnection {
-  final Backend backend;
+  final StorageBackend backend;
 
   BackendConnection(this.backend);
 
@@ -33,6 +33,6 @@ class BackendConnection {
   }
 }
 
-abstract class Backend {
-  Future<StorageMetadataImpl> getMetadata(Location location);
+abstract class StorageBackend {
+  Future<FullMetadataImpl?> getMetadata(Location location);
 }

@@ -1,5 +1,3 @@
-import 'package:meta/meta.dart';
-
 import '../auth_credential.dart';
 import '../auth_provider.dart';
 
@@ -19,21 +17,15 @@ class PhoneAuthProvider extends AuthProvider {
   /// Create a new [PhoneAuthCredential] from a provided [verificationId] and
   /// [smsCode].
   static AuthCredential credential(
-      {@required String verificationId, @required String smsCode}) {
-    assert(verificationId != null);
-    assert(smsCode != null);
+      {required String verificationId, required String smsCode}) {
     return PhoneAuthCredential(
         verificationId: verificationId, smsCode: smsCode);
   }
 
-  /// Create a [PhoneAuthCredential] from an internal token, where the ID
-  /// relates to a natively stored credential.
   static AuthCredential credentialFromTemporaryProof({
-    @required String temporaryProof,
-    @required String phoneNumber,
+    required String temporaryProof,
+    required String phoneNumber,
   }) {
-    assert(temporaryProof != null);
-    assert(phoneNumber != null);
     return PhoneAuthCredential(
         temporaryProof: temporaryProof, phoneNumber: phoneNumber);
   }
@@ -43,14 +35,14 @@ class PhoneAuthProvider extends AuthProvider {
 /// [PhoneAuthProvider.credential].
 class PhoneAuthCredential extends AuthCredential {
   /// The SMS code sent to and entered by the user.
-  final String smsCode;
+  final String? smsCode;
 
   /// The phone auth verification ID.
-  final String verificationId;
+  final String? verificationId;
 
-  final String temporaryProof;
+  final String? temporaryProof;
 
-  final String phoneNumber;
+  final String? phoneNumber;
 
   PhoneAuthCredential(
       {this.verificationId,
@@ -63,9 +55,9 @@ class PhoneAuthCredential extends AuthCredential {
         );
 
   @override
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> asMap() {
     return {
-      ...super.toJson(),
+      ...super.asMap(),
       'verificationId': verificationId,
       'smsCode': smsCode
     };

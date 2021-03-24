@@ -1,11 +1,11 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:expressions/expressions.dart';
 import 'package:firebase_dart/src/database/impl/events/cancel.dart';
 import 'package:firebase_dart/src/database/impl/events/value.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
-import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../backend_connection.dart';
@@ -29,15 +29,16 @@ class SecurityTree {
     return SecurityTree._(process(json));
   }
 
-  Stream<bool> canRead({RuleDataSnapshot root, String path, Auth auth}) {
-    return CombineLatestStream(
+  Stream<bool> canRead(
+      {RuleDataSnapshot? root, required String path, Auth? auth}) {
+    return CombineLatestStream<bool?, bool>(
         _canReadStreams(root: root, path: path, auth: auth), (l) {
       return l.any((element) => element ?? false);
     });
   }
 
-  Iterable<Stream<bool>> _canReadStreams(
-      {RuleDataSnapshot root, String path, Auth auth}) sync* {
+  Iterable<Stream<bool?>> _canReadStreams(
+      {RuleDataSnapshot? root, required String path, Auth? auth}) sync* {
     var p = Name.parsePath(path);
 
     var tree = this.root;
@@ -51,15 +52,16 @@ class SecurityTree {
     for (var n in p) {
       var node = tree.children[n.asString()];
       if (node == null) {
-        var l = tree.children.keys
-            .firstWhere((v) => v.startsWith(r'$'), orElse: () => null);
-        node = tree.children[l];
-        locations[l] = n.asString();
+        var l = tree.children.keys.firstWhereOrNull((v) => v.startsWith(r'$'));
+        if (!tree.children.containsKey(l)) {
+          return;
+        }
+        node = tree.children[l]!;
+        locations[l!] = n.asString();
       }
-      if (node == null) return;
       tree = node;
 
-      data = data.child(BehaviorSubject.seeded(n.asString()));
+      data = data!.child(BehaviorSubject.seeded(n.asString()));
 
       yield node.value
           .canRead(root: root, data: data, auth: auth, locations: locations);
@@ -73,20 +75,25 @@ class SecurityNode {
   final Expression validate;
   final List<String> indexOn;
 
-  SecurityNode({this.read, this.write, this.validate, this.indexOn});
+  SecurityNode(
+      {required this.read,
+      required this.write,
+      required this.validate,
+      required this.indexOn});
 
-  Stream<bool> canRead(
-      {RuleDataSnapshot root,
-      RuleDataSnapshot data,
-      Auth auth,
-      Map<String, String> locations}) {
-    return const _ExpressionEvaluator().eval(read, {
+  Stream<bool?> canRead(
+      {RuleDataSnapshot? root,
+      RuleDataSnapshot? data,
+      Auth? auth,
+      required Map<String, String> locations}) {
+    return (const _ExpressionEvaluator().eval(read, {
       'root': root,
       'data': data,
       'now': DateTime.now().millisecondsSinceEpoch,
       'auth': auth,
       ...locations
-    }).cast<bool>();
+    }) as Stream)
+        .cast<bool?>();
   }
 }
 
@@ -268,7 +275,7 @@ abstract class RuleDataSnapshot {
   /// data.child('name').val(), not data.val().name).
   Stream<dynamic> val() => _val().map((v) {
         if (v.isNil) return null;
-        if (v.isLeaf) return v.value.value;
+        if (v.isLeaf) return v.value!.value;
         return const SentinalObjectValue._();
       });
 
@@ -301,8 +308,8 @@ abstract class RuleDataSnapshot {
 
   /// Returns true if the specified child exists.
   Stream<bool> hasChild(String childPath) => _val().map((v) {
-        v = v.subtree(Name.parsePath(childPath));
-        return (v != null && !v.isNil);
+        v = v.subtreeNullable(Name.parsePath(childPath)) as TreeStructuredData;
+        return (!v.isNil);
       });
 
   /// Checks for the existence of children.
@@ -310,9 +317,9 @@ abstract class RuleDataSnapshot {
   /// If no arguments are provided, it will return true if the [RuleDataSnapshot]
   /// has any children. If an array of child names is provided, it will return
   /// true only if all of the specified children exist in the RuleDataSnapshot.
-  Stream<bool> hasChildren([List<String> children]) => _val().map((v) {
+  Stream<bool> hasChildren([List<String>? children]) => _val().map((v) {
         if (v.isEmpty) return false;
-        return children
+        return children!
             .map((v) => Name(v))
             .every((element) => v.children.containsKey(element));
       });
@@ -325,7 +332,7 @@ abstract class RuleDataSnapshot {
   Stream<bool> exists() => val().map((v) => v != null);
 
   /// Gets the priority of the data in a [RuleDataSnapshot].
-  Stream<dynamic> getPriority() => _val().map((v) => v.priority.value);
+  Stream<dynamic> getPriority() => _val().map((v) => v.priority!.value);
 
   /// Returns true if this [RuleDataSnapshot] contains a numeric value.
   Stream<bool> isNumber() => val().map((v) => v is num);
@@ -357,7 +364,7 @@ class RuleDataSnapshotFromBackend extends RuleDataSnapshot {
         if (event is ValueEvent<TreeStructuredData>) {
           controller.add(event.value);
         } else if (event is CancelEvent) {
-          controller.addError(event.error, event.stackTrace);
+          controller.addError(event.error!, event.stackTrace);
         } else {
           throw ArgumentError('Unexpected event type ${event.runtimeType}');
         }
@@ -394,8 +401,5 @@ class Auth {
   /// The contents of the Firebase Auth ID token.
   final Map<String, dynamic> token;
 
-  Auth({@required this.provider, @required this.uid, @required this.token})
-      : assert(uid != null),
-        assert(provider != null),
-        assert(token != null);
+  Auth({required this.provider, required this.uid, required this.token});
 }

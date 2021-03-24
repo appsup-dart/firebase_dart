@@ -1,3 +1,5 @@
+
+
 part of firebase_dart;
 
 /// The entry point for accessing a Firebase Database.
@@ -17,7 +19,7 @@ abstract class FirebaseDatabase {
   /// Gets an instance of [FirebaseDatabase].
   ///
   /// If app is specified, its options should include a `databaseURL`.
-  factory FirebaseDatabase({FirebaseApp app, String databaseURL}) {
+  factory FirebaseDatabase({FirebaseApp? app, String? databaseURL}) {
     return FirebaseImplementation.installation
         .createDatabase(app ?? Firebase.app(), databaseURL: databaseURL);
   }
@@ -65,17 +67,21 @@ abstract class FirebaseDatabase {
   /// network connectivity at that time).
   Future<bool> setPersistenceEnabled(bool enabled);
 
-  /// By default Firebase Database will use up to 10MB of disk space to cache
-  /// data.
+  /// Attempts to set the size of the persistence cache.
   ///
-  /// If the cache grows beyond this size, Firebase Database will start removing
-  /// data that hasn't been recently used. If you find that your application
-  /// caches too little or too much data, call this method to change the cache
-  /// size. This method must be called before creating your first Database
-  /// reference and only needs to be called once per application.
+  /// By default the Firebase Database client will use up to 10MB of disk space
+  /// to cache data. If the cache grows beyond this size, the client will start
+  /// removing data that hasn’t been recently used. If you find that your
+  /// application caches too little or too much data, call this method to change
+  /// the cache size.
+  ///
+  /// This property must be set before calling methods on database references
+  /// and only needs to be called once per application. The returned Future will
+  /// complete with true if the operation was successful or false if the value
+  /// could not be set (because database references have already been created).
   ///
   /// Note that the specified cache size is only an approximation and the size
   /// on disk may temporarily exceed it at times. Cache sizes smaller than 1 MB
   /// or greater than 100 MB are not supported.
-  void setPersistenceCacheSizeBytes(int cacheSizeInBytes);
+  Future<bool> setPersistenceCacheSizeBytes(int cacheSizeInBytes);
 }

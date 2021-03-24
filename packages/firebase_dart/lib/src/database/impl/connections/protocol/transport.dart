@@ -8,7 +8,7 @@ class Transport {
   /// The url to connect to
   final Uri url;
 
-  StreamChannel<Message> _channel;
+  StreamChannel<Message>? _channel;
 
   Transport(this.url);
 
@@ -20,7 +20,7 @@ class Transport {
   }
 
   /// The channel to send to and receive from
-  StreamChannel<Message> get channel => _channel;
+  StreamChannel<Message>? get channel => _channel;
 
   /// Connects to the [url] and initiates the [channel]
   ///
@@ -35,7 +35,7 @@ class Transport {
         _channel = socket
             .cast<String>()
             .transform<String>(framesChannelTransformer)
-            .transform<dynamic>(jsonDocument)
+            .transform<Object?>(jsonDocument)
             .transform<Message>(messageChannelTransformer);
         break;
       case 'mem':
@@ -48,7 +48,7 @@ class Transport {
   }
 
   void close() async {
-    await channel.sink.close();
+    await channel!.sink.close();
     _openTransports.remove(this);
   }
 }

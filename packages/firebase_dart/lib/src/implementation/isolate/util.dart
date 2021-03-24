@@ -5,34 +5,35 @@ import 'package:async/async.dart';
 import 'package:rxdart/rxdart.dart';
 
 abstract class FunctionCall<T> {
-  List<dynamic> get positionalArguments;
-  Map<Symbol, dynamic> get namedArguments;
-  Function get function;
+  List<dynamic>? get positionalArguments;
+  Map<Symbol, dynamic>? get namedArguments;
+  Function? get function;
 
   T run();
 }
 
 abstract class BaseFunctionCall<T> implements FunctionCall<T> {
   @override
-  final List<dynamic> positionalArguments;
+  final List<dynamic>? positionalArguments;
   @override
-  final Map<Symbol, dynamic> namedArguments;
+  final Map<Symbol, dynamic>? namedArguments;
 
   BaseFunctionCall(this.positionalArguments, this.namedArguments);
 
   @override
-  T run() => Function.apply(function, positionalArguments, namedArguments);
+  T run() => Function.apply(function!, positionalArguments, namedArguments);
 }
 
 class RegisteredFunctionCall<T> extends BaseFunctionCall<T> {
   final Symbol functionName;
 
   RegisteredFunctionCall(this.functionName,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
   @override
-  Function get function =>
+  Function? get function =>
       IsolateWorker.current._functionRegister[functionName];
 }
 
@@ -41,7 +42,8 @@ class StaticFunctionCall<T> extends BaseFunctionCall<T> {
   final Function function;
 
   StaticFunctionCall(this.function,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 }
 
@@ -71,7 +73,9 @@ class IsolateStream<T> extends IsolateRunnable {
 
   @override
   void run() async {
-    var stream = Result.captureStream(functionCall.run()).endWith(null);
+    var stream = Result.captureStream(functionCall.run())
+        .cast<Result<T>?>()
+        .endWith(null);
     _subscriptions[_sendPort] = stream.listen(_sendPort.send);
   }
 }
@@ -79,23 +83,38 @@ class IsolateStream<T> extends IsolateRunnable {
 class IsolateTask<T> extends IsolateRunnable {
   final SendPort _sendPort;
 
-  final FunctionCall<FutureOr<T>> functionCall;
+  final FunctionCall<FutureOr<T>?> functionCall;
 
   IsolateTask(this.functionCall, this._sendPort);
 
   Future<Result<T>> _run() async {
     try {
-      var v = await functionCall.run();
+      var v = await functionCall.run() as T;
       return Result.value(v);
     } catch (e, tr) {
-      return ErrorResult(e.toString(), StackTrace.fromString(tr.toString()));
+      return ErrorResult(
+          e is Error ? e.toString() : e, StackTrace.fromString(tr.toString()));
     }
   }
 
   @override
   void run() async {
     var v = await _run();
-    _sendPort.send(v);
+    try {
+      _sendPort.send(v);
+    } catch (e) {
+      throw IsolateTransferException('$e: $v');
+    }
+  }
+}
+
+class IsolateTransferException implements Exception {
+  final String message;
+  IsolateTransferException(this.message);
+
+  @override
+  String toString() {
+    return 'IsolateTransferException: $message';
   }
 }
 
@@ -105,7 +124,7 @@ class IsolateCommander {
   IsolateCommander._(this._sendPort);
 
   /// Request to execute a task on another isolate
-  Future<T> execute<T>(FunctionCall<FutureOr<T>> call) async {
+  Future<T> execute<T>(FunctionCall<FutureOr<T>?> call) async {
     var port = ReceivePort();
     var task = IsolateTask<T>(call, port.sendPort);
     _sendPort.send(task);
@@ -119,8 +138,11 @@ class IsolateCommander {
   Stream<T> subscribe<T>(FunctionCall<Stream<T>> call) {
     var port = ReceivePort();
 
-    return Result.releaseStream(
-        port.cast<Result<T>>().takeWhile((v) => v != null)).doOnListen(() {
+    return Result.releaseStream(port
+            .cast<Result<T>?>()
+            .takeWhile((v) => v != null)
+            .cast<Result<T>>())
+        .doOnListen(() {
       _sendPort.send(IsolateStream<T>(call, port.sendPort));
     }).doOnCancel(() {
       _sendPort.send(CancelStreamSubscription(port.sendPort));
@@ -168,8 +190,9 @@ class IsolateWorker {
 
     errors.cast<List>().listen((message) {
       var error = message[0];
-      var stackTrace =
-          message[1] == null ? null : StackTrace.fromString(message[1]);
+      var stackTrace = message[1] == null
+          ? StackTrace.current
+          : StackTrace.fromString(message[1]);
       Zone.current.handleUncaughtError(error, stackTrace);
     });
     await Isolate.spawn(_isolateEntry, port.sendPort,
@@ -190,7 +213,8 @@ class IsolateWorkerControlFunctionCall<T> extends BaseFunctionCall<T> {
   final Symbol functionName;
 
   IsolateWorkerControlFunctionCall(this.functionName,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
   @override

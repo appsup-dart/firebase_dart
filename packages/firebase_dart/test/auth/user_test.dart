@@ -2,13 +2,18 @@ import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
+import 'package:firebase_dart/src/implementation/isolate/auth.dart';
 import 'package:test/test.dart';
 
 import 'auth_test.dart';
 import 'jwt_util.dart';
 
-void main() async {
-  var tester = await Tester.create();
+void main() {
+  return runUserTests();
+}
+
+void runUserTests({bool isolated = false}) async {
+  var tester = await Tester.create(isolated: isolated);
   var auth = tester.auth;
 
   group('FirebaseUserImpl', () {
@@ -17,7 +22,7 @@ void main() async {
 
     test('FirebaseUserImpl serialization', () {
       var json = {
-        'apiKey': auth.rpcHandler.apiKey,
+        'apiKey': auth.app.options.apiKey,
         'uid': uid,
         'displayName': 'defaultDisplayName',
         'lastLoginAt': 1506050282000,
@@ -53,7 +58,7 @@ void main() async {
           }
         ]
       };
-      var user = FirebaseUserImpl.fromJson(json, auth: auth);
+      var user = UserBase.fromJson(json);
 
       expect(user.uid, 'defaultUserId');
       expect(user.displayName, 'defaultDisplayName');
@@ -61,12 +66,11 @@ void main() async {
       expect(user.photoURL, 'https://www.default.com/default/default.png');
       expect(user.providerId, 'firebase');
       expect(user.isAnonymous, isFalse);
-      expect(user.metadata.creationTime.millisecondsSinceEpoch, 1506044998000);
+      expect(user.metadata.creationTime!.millisecondsSinceEpoch, 1506044998000);
       expect(
-          user.metadata.lastSignInTime.millisecondsSinceEpoch, 1506050282000);
+          user.metadata.lastSignInTime!.millisecondsSinceEpoch, 1506050282000);
 
       expect(user.toJson(), json);
-      expect(user.lastAccessToken, jwt);
     });
   });
 
@@ -79,13 +83,16 @@ void main() async {
         var result = await auth.createUserWithEmailAndPassword(
             email: email, password: pass);
 
-        var user = result.user as FirebaseUserImpl;
+        var user = result.user!;
 
         await user.delete();
 
-        expect(user.isDestroyed, isTrue);
+        if (user is FirebaseUserImpl) {
+          expect(user.isDestroyed, isTrue);
+        }
 
-        expect(await tester.backend.getUserByEmail(email), isNull);
+        await expectLater(() => tester.backend.getUserByEmail(email),
+            throwsA(FirebaseAuthException.userDeleted()));
       });
     });
 
@@ -96,7 +103,7 @@ void main() async {
       test('sendEmailVerification: success', () async {
         var result =
             await auth.signInWithEmailAndPassword(email: email, password: pass);
-        var user = result.user;
+        var user = result.user!;
 
         await user.sendEmailVerification();
       });
@@ -104,26 +111,35 @@ void main() async {
       test('sendEmailVerification: local copy wrong email', () async {
         var result =
             await auth.signInWithEmailAndPassword(email: email, password: pass);
-        var user = result.user;
+        var user = result.user!;
 
         // This user does not have an email.
-        var user1 = FirebaseUserImpl.fromJson({
-          ...user.toJson()..remove('email'),
-        }, auth: auth);
+        if (user is FirebaseUserImpl) {
+          user.setAccountInfo(
+              AccountInfo.fromJson(user.toJson()..remove('email')));
+        } else if (user is IsolateUser) {
+          await user.setAccountInfo(
+              AccountInfo.fromJson(user.toJson()..remove('email')));
+        }
 
-        expect(user1.email, isNull);
-        await user1.sendEmailVerification();
-        expect(user1.email, email);
+        expect(user.email, isNull);
+        await user.sendEmailVerification();
+        await Future.delayed(Duration(milliseconds: 100));
+        expect(user.email, email);
 
         // This user has the wrong email.
-        var user2 = FirebaseUserImpl.fromJson({
-          ...user.toJson(),
-          'email': 'wrong@email.com',
-        }, auth: auth);
+        var info = AccountInfo.fromJson(
+            {...user.toJson(), 'email': 'wrong@email.com'});
+        if (user is FirebaseUserImpl) {
+          user.setAccountInfo(info);
+        } else if (user is IsolateUser) {
+          await user.setAccountInfo(info);
+        }
 
-        expect(user2.email, 'wrong@email.com');
-        await user2.sendEmailVerification();
-        expect(user2.email, email);
+        expect(user.email, 'wrong@email.com');
+        await user.sendEmailVerification();
+        await Future.delayed(Duration(milliseconds: 100));
+        expect(user.email, email);
       });
     });
 
@@ -132,7 +148,7 @@ void main() async {
       var password = 'password';
 
       setUp(() {
-        tester.backend.storeUser(BackendUser()
+        tester.backend.storeUser(BackendUser('user2')
           ..email = email
           ..rawPassword = password
           ..phoneNumber = '+16505550101'
@@ -163,7 +179,7 @@ void main() async {
         var r = await auth.signInWithEmailAndPassword(
             email: email, password: password);
 
-        var user = r.user;
+        var user = r.user!;
         var providerIds = user.providerData.map((v) => v.providerId).toSet();
         expect(providerIds, ['providerId1', 'providerId2', 'phone']);
 
@@ -175,14 +191,14 @@ void main() async {
         var r = await auth.signInWithEmailAndPassword(
             email: email, password: password);
 
-        var user = r.user;
+        var user = r.user!;
         var providerIds = user.providerData.map((v) => v.providerId).toSet();
         expect(providerIds, ['providerId1', 'providerId2', 'phone']);
 
         // User on server has only one federated provider linked despite the local
         // copy having three.
         var backendUser = await tester.backend.getUserById(user.uid);
-        backendUser.providerUserInfo
+        backendUser.providerUserInfo!
             .removeWhere((element) => element.providerId != 'providerId1');
         await tester.backend.storeUser(backendUser);
 
@@ -193,7 +209,7 @@ void main() async {
         var r = await auth.signInWithEmailAndPassword(
             email: email, password: password);
 
-        var user = r.user;
+        var user = r.user!;
         var providerIds = user.providerData.map((v) => v.providerId).toSet();
         expect(providerIds, ['providerId1', 'providerId2', 'phone']);
 
@@ -217,9 +233,9 @@ void main() async {
       test('updateProfile: success', () async {
         var u = await tester.backend.getUserById('user1');
         var r = await auth.signInWithEmailAndPassword(
-            email: u.email, password: u.rawPassword);
+            email: u.email!, password: u.rawPassword!);
 
-        var user = r.user;
+        var user = r.user!;
 
         await user.updateProfile(
             displayName: 'Jack Smith',
@@ -237,9 +253,9 @@ void main() async {
         var u = await tester.backend.getUserById('user1');
 
         var r = await auth.signInWithEmailAndPassword(
-            email: u.email, password: u.rawPassword);
+            email: u.email!, password: u.rawPassword!);
 
-        var user = r.user;
+        var user = r.user!;
 
         await user.updateProfile(
             displayName: 'Jack Smith',
@@ -254,9 +270,9 @@ void main() async {
         var u = await tester.backend.getUserById('user1');
 
         var r = await auth.signInWithEmailAndPassword(
-            email: u.email, password: u.rawPassword);
+            email: u.email!, password: u.rawPassword!);
 
-        var user = r.user;
+        var user = r.user!;
 
         await user.updateProfile();
       });
@@ -268,8 +284,8 @@ void main() async {
         await tester.backend.storeUser(u..emailVerified = true);
 
         var r = await auth.signInWithEmailAndPassword(
-            email: u.email, password: u.rawPassword);
-        var user = r.user;
+            email: u.email!, password: u.rawPassword!);
+        var user = r.user!;
         expect(user.email, 'user@example.com');
         expect(user.emailVerified, isTrue);
 
@@ -285,12 +301,12 @@ void main() async {
         await tester.backend.storeUser(u..emailVerified = true);
 
         var r = await auth.signInWithEmailAndPassword(
-            email: u.email, password: u.rawPassword);
+            email: u.email!, password: u.rawPassword!);
         var user = r.user;
 
         await auth.signOut();
 
-        expect(() => user.updateEmail('newuser@example.com'),
+        expect(() => user!.updateEmail('newuser@example.com'),
             throwsA(FirebaseAuthException.moduleDestroyed()));
       });
     });
@@ -301,8 +317,8 @@ void main() async {
         await tester.backend.storeUser(u..emailVerified = true);
 
         var r = await auth.signInWithEmailAndPassword(
-            email: u.email, password: u.rawPassword);
-        var user = r.user;
+            email: u.email!, password: u.rawPassword!);
+        var user = r.user!;
 
         await user.updatePassword('newPassword');
       });
@@ -311,12 +327,12 @@ void main() async {
         await tester.backend.storeUser(u..emailVerified = true);
 
         var r = await auth.signInWithEmailAndPassword(
-            email: u.email, password: u.rawPassword);
+            email: u.email!, password: u.rawPassword!);
         var user = r.user;
 
         await auth.signOut();
 
-        expect(() => user.updatePassword('newPassword'),
+        expect(() => user!.updatePassword('newPassword'),
             throwsA(FirebaseAuthException.moduleDestroyed()));
       });
     });

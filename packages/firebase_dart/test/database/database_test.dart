@@ -8,11 +8,12 @@ import 'dart:math';
 import 'package:firebase_dart/core.dart' hide Firebase;
 import 'package:firebase_dart/core.dart' as core;
 import 'package:firebase_dart/database.dart';
+import 'package:firebase_dart/src/database/token.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
-import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/database/impl/memory_backend.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
+import 'package:firebase_dart/src/testing/database.dart';
 import 'package:test/test.dart';
 
 import '../secrets.dart'
@@ -20,8 +21,12 @@ import '../secrets.dart'
     if (dart.library.io) '../secrets_io.dart' as s;
 import '../util.dart';
 
-void main() async {
-  await FirebaseTesting.setup();
+void main() {
+  return runDatabaseTests(isolated: false);
+}
+
+void runDatabaseTests({bool isolated = false}) async {
+  await FirebaseTesting.setup(isolated: isolated);
 
 /*   StreamSubscription logSubscription;
   setUp(() {
@@ -37,7 +42,7 @@ void main() async {
   });
 
   group('https', () {
-    testsWith(s.secrets);
+    testsWith(s.secrets as Map<String, dynamic>);
   });
 
   group('FirebaseDatabase.delete', () {
@@ -58,59 +63,8 @@ void main() async {
       expect(isDone, true);
     });
 
-    test('FirebaseDatabase.delete should close transports', () async {
-      var app = await core.Firebase.initializeApp(
-          name: 'my_app', options: getOptions());
-
-      var db = FirebaseDatabase(app: app, databaseURL: testUrl);
-      var ref = db.reference().child('test/some-key');
-      await ref.once();
-
-      expect(
-          Transport.openTransports
-              .any((v) => v.url.host == Uri.parse(testUrl).host),
-          isTrue);
-
-      await app.delete();
-
-      expect(
-          Transport.openTransports
-              .any((v) => v.url.host == Uri.parse(testUrl).host),
-          isFalse);
-    });
-
-    test('FirebaseDatabase.delete should remove Repo', () async {
-      var app = await core.Firebase.initializeApp(
-          name: 'my_app', options: getOptions());
-
-      var db = FirebaseDatabase(app: app, databaseURL: testUrl);
-      var ref = db.reference().child('test/some-key');
-      await ref.once();
-
-      expect(Repo.hasInstance(db), isTrue);
-
-      await app.delete();
-
-      expect(Repo.hasInstance(db), isFalse);
-    });
-
-    test(
-        'FirebaseDatabase.delete should not create a Repo when not already exists',
-        () async {
-      var app = await core.Firebase.initializeApp(
-          name: 'my_app', options: getOptions());
-
-      var db = FirebaseDatabase(app: app, databaseURL: testUrl);
-
-      await app.delete();
-
-      expect(Repo.hasInstance(db), isFalse);
-    });
-
-    test('FirebaseDatabase.delete should stop all timers', () async {
-      var timers = <Timer, StackTrace>{};
-
-      await runZoned(() async {
+    if (!isolated) {
+      test('FirebaseDatabase.delete should close transports', () async {
         var app = await core.Firebase.initializeApp(
             name: 'my_app', options: getOptions());
 
@@ -118,57 +72,110 @@ void main() async {
         var ref = db.reference().child('test/some-key');
         await ref.once();
 
-        await app.delete();
-      },
-          zoneSpecification: ZoneSpecification(
-            createTimer: (self, parent, zone, duration, f) {
-              var timer = parent.createTimer(zone, duration, f);
-              timers[timer] = StackTrace.current;
-              return timer;
-            },
-            createPeriodicTimer: (self, parent, zone, duration, f) {
-              var timer = parent.createPeriodicTimer(zone, duration, f);
-              timers[timer] = StackTrace.current;
-              return timer;
-            },
-          ));
+        expect(
+            Transport.openTransports
+                .any((v) => v.url.host == Uri.parse(testUrl).host),
+            isTrue);
 
-      timers.forEach((key, value) {
-        if (key.isActive) {
-          fail('Timer still active: created here $value');
-        }
+        await app.delete();
+
+        expect(
+            Transport.openTransports
+                .any((v) => v.url.host == Uri.parse(testUrl).host),
+            isFalse);
+      });
+
+      test('FirebaseDatabase.delete should remove Repo', () async {
+        var app = await core.Firebase.initializeApp(
+            name: 'my_app', options: getOptions());
+
+        var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+        var ref = db.reference().child('test/some-key');
+        await ref.once();
+
+        expect(Repo.hasInstance(db), isTrue);
+
+        await app.delete();
+
+        expect(Repo.hasInstance(db), isFalse);
+      });
+      test(
+          'FirebaseDatabase.delete should not create a Repo when not already exists',
+          () async {
+        var app = await core.Firebase.initializeApp(
+            name: 'my_app', options: getOptions());
+
+        var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+
+        await app.delete();
+
+        expect(Repo.hasInstance(db), isFalse);
+      });
+      test('FirebaseDatabase.delete should stop all timers', () async {
+        var timers = <Timer, StackTrace>{};
+
+        await runZoned(() async {
+          var app = await core.Firebase.initializeApp(
+              name: 'my_app', options: getOptions());
+
+          var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+          var ref = db.reference().child('test/some-key');
+          await ref.once();
+
+          await app.delete();
+        },
+            zoneSpecification: ZoneSpecification(
+              createTimer: (self, parent, zone, duration, f) {
+                var timer = parent.createTimer(zone, duration, f);
+                timers[timer] = StackTrace.current;
+                return timer;
+              },
+              createPeriodicTimer: (self, parent, zone, duration, f) {
+                var timer = parent.createPeriodicTimer(zone, duration, f);
+                timers[timer] = StackTrace.current;
+                return timer;
+              },
+            ));
+
+        timers.forEach((key, value) {
+          if (key.isActive) {
+            fail('Timer still active: created here $value');
+          }
+        });
+      });
+    }
+  });
+
+  if (!isolated) {
+    group('Permissions', () {
+      test('Listening without read permission should throw permission denied',
+          () async {
+        var backend = MemoryBackend.getInstance('test_s');
+        backend.securityRules = {
+          'public': {'.read': 'true'},
+          'private': {'.read': 'auth!=null'}
+        };
+
+        var app = await core.Firebase.initializeApp(
+            name: 'my_app', options: getOptions());
+        var db = FirebaseDatabase(app: app, databaseURL: 'mem://test_s');
+        await db.reference().child('public').get();
+        await expectLater(
+            () => db.reference().child('private').get(),
+            throwsA(predicate((dynamic v) =>
+                v is FirebaseDatabaseException &&
+                v.code == FirebaseDatabaseException.permissionDenied().code)));
       });
     });
-  });
-
-  group('Permissions', () {
-    test('Listening without read permission should throw permission denied',
-        () async {
-      var backend = MemoryBackend.getInstance('test_s');
-      backend.securityRules = {
-        'public': {'.read': 'true'},
-        'private': {'.read': 'auth!=null'}
-      };
-
-      var app = await core.Firebase.initializeApp(
-          name: 'my_app', options: getOptions());
-      var db = FirebaseDatabase(app: app, databaseURL: 'mem://test_s');
-      await db.reference().child('public').get();
-      await expectLater(
-          () => db.reference().child('private').get(),
-          throwsA(predicate((v) =>
-              v is FirebaseDatabaseException &&
-              v.code == FirebaseDatabaseException.permissionDenied().code)));
-    });
-  });
+  }
 }
 
 void testsWith(Map<String, dynamic> secrets) {
   var testUrl = '${secrets['host']}';
 
-  DatabaseReference ref, ref2;
+  late DatabaseReference ref, ref2;
 
-  FirebaseApp app1, app2, appAlt1, appAlt2;
+  FirebaseApp? app1, app2, appAlt1, appAlt2;
 
   setUpAll(() async {
     var options = getOptions();
@@ -179,10 +186,10 @@ void testsWith(Map<String, dynamic> secrets) {
   });
 
   tearDownAll(() async {
-    await app1.delete();
-    await app2.delete();
-    await appAlt1.delete();
-    await appAlt2.delete();
+    await app1!.delete();
+    await app2!.delete();
+    await appAlt1!.delete();
+    await appAlt2!.delete();
   });
 
   group('Recover from connection loss', () {
@@ -199,7 +206,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .map((s) => s.snapshot.value)
           .skipWhile((v) => !v)
           .take(2)
-          .listen(connectionStates.add);
+          .listen(connectionStates.add as void Function(dynamic)?);
       var ref = db.reference().child('test');
 
       var db2 = FirebaseDatabase(app: app2, databaseURL: testUrl);
@@ -230,9 +237,9 @@ void testsWith(Map<String, dynamic> secrets) {
     }
 
     test('Recover when internet connection broken',
-        () => connectionLostTests((db) => Repo(db).mockConnectionLost()));
+        () => connectionLostTests((db) => db.mockConnectionLost()));
     test('Recover when reset message received',
-        () => connectionLostTests((db) => Repo(db).mockResetMessage()));
+        () => connectionLostTests((db) => db.mockResetMessage()));
   });
 
   group('Reference location', () {
@@ -251,8 +258,8 @@ void testsWith(Map<String, dynamic> secrets) {
       expect(ref2.child('object/hello').url.path, '/test/object/hello');
     });
     test('parent', () {
-      expect(ref.child('test').parent().key, null);
-      expect(ref.child('test/hello').parent().key, 'test');
+      expect(ref.child('test').parent()!.key, null);
+      expect(ref.child('test/hello').parent()!.key, 'test');
     });
     test('root', () {
       expect(ref.child('test').root().key, null);
@@ -260,7 +267,7 @@ void testsWith(Map<String, dynamic> secrets) {
     });
   });
   group('Authenticate', () {
-    String token, uid;
+    late String token, uid;
     setUp(() {
       var host = secrets['host'];
       var secret = secrets['secret'];
@@ -280,13 +287,14 @@ void testsWith(Map<String, dynamic> secrets) {
 
     test('auth/unauth', () async {
       await ref.child('test').get();
-      var fromStream = ref.onAuth.first;
+      var fromStream = ref.onAuth.where((v) => v != null).first;
       await ref.authWithCustomToken(token);
 
-      expect((await fromStream)['uid'], uid);
-      expect(ref.auth['uid'], uid);
+      expect((await fromStream)!['uid'], uid);
+      expect(ref.auth!['uid'], uid);
 
-      fromStream = ref.onAuth.first;
+      var current = ref.auth;
+      fromStream = ref.onAuth.where((v) => v != current).first;
 
       await ref.unauth();
 
@@ -300,7 +308,7 @@ void testsWith(Map<String, dynamic> secrets) {
         return;
       }
       ref = ref.child('test-protected');
-      ref.onValue.listen((e) => print(e.snapshot.value));
+      ref.onValue.listen((e) => null);
       await ref.authWithCustomToken(token);
       await ref.set('hello world');
       expect(await ref.get(), 'hello world');
@@ -312,7 +320,7 @@ void testsWith(Map<String, dynamic> secrets) {
       var token =
           'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InJpa0BwYXJ0YWdvLmJlIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJpYXQiOjE0NzIxMjIyMzgsInYiOjAsImQiOnsicHJvdmlkZXIiOiJwYXNzd29yZCIsInVpZCI6IjMzZTc1ZjI0LTE5MTAtNGI1Mi1hZDJjLWNmZGQwYWFjNzI4YiJ9fQ.ZO0zH6xgk58SKDqmqi9gWzsvzoSvPx6QCJizR94rzEc';
       var t = (FirebaseTokenCodec(null).decode(token));
-      print(t.toJson());
+      expect(t.data!['uid'], '33e75f24-1910-4b52-ad2c-cfdd0aac728b');
     });
   });
 
@@ -344,17 +352,14 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('Initial value', () async {
-      print(await ref.get());
+      await ref.get();
     });
 
     test('Value after set', () async {
       var v = 'Hello world ${Random().nextDouble()}';
       await ref.set(v);
-      print('set to $v');
       expect(await ref.get(), v);
-      print('got value');
       await ref.set('Hello all');
-      print('set to Hello all');
       expect(await ref.get(), 'Hello all');
     });
 
@@ -483,7 +488,7 @@ void testsWith(Map<String, dynamic> secrets) {
       var f = ref
           .orderByValue()
           .onChildMoved
-          .where((e) => e.prevChild != null)
+          .where((e) => e.previousSiblingKey != null)
           .first;
 
       await ref.get();
@@ -495,7 +500,7 @@ void testsWith(Map<String, dynamic> secrets) {
       var e = await f;
 
       expect(e.snapshot.key, 'hi');
-      expect(e.prevChild, 'hello');
+      expect(e.previousSiblingKey, 'hello');
     });
   });
 
@@ -587,7 +592,6 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await Future.delayed(Duration(seconds: 1));
       var values = events.map((e) => e.snapshot.value).toList();
-      print(values);
       expect(values.length, 3);
       expect(values[0], null);
 
@@ -598,7 +602,6 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await ref.set({'hello': 'world', 'it is now': ServerValue.timestamp});
 
-      print(await ref.child('it is now').get());
       expect(await ref.child('it is now').get() is num, isTrue);
     });
 
@@ -609,7 +612,7 @@ void testsWith(Map<String, dynamic> secrets) {
       await ref.set('hello');
 
       await Stream.periodic(Duration(milliseconds: 10)).take(10).forEach((_) {
-        ref.runTransaction((v) {
+        ref.runTransaction((v) async {
           return v..value = ServerValue.timestamp;
         });
       });
@@ -630,15 +633,17 @@ void testsWith(Map<String, dynamic> secrets) {
     test('Counter', () async {
       await ref.set(0);
 
-      ref.onValue.listen((e) => print('onValue ${e.snapshot.value}'));
+      ref.onValue.listen((e) => null);
       await ref.onValue.first;
       var f1 = Stream.periodic(Duration(milliseconds: 10))
           .take(10)
-          .map((i) => ref.runTransaction((v) => v..value = (v.value ?? 0) + 1))
+          .map((i) =>
+              ref.runTransaction((v) async => v..value = (v.value ?? 0) + 1))
           .toList();
       var f2 = Stream.periodic(Duration(milliseconds: 50))
           .take(10)
-          .map((i) => ref.runTransaction((v) => v..value = (v.value ?? 0) + 1))
+          .map((i) =>
+              ref.runTransaction((v) async => v..value = (v.value ?? 0) + 1))
           .toList();
 
       await Future.wait((await f1)..addAll(await f2));
@@ -653,11 +658,11 @@ void testsWith(Map<String, dynamic> secrets) {
           .take(10)
           .map((i) => ref
               .child('object/count')
-              .runTransaction((v) => v..value = (v.value ?? 0) + 1))
+              .runTransaction((v) async => v..value = (v.value ?? 0) + 1))
           .toList();
       var f2 = Stream.periodic(Duration(milliseconds: 50))
           .take(10)
-          .map((i) => ref.runTransaction((v) {
+          .map((i) => ref.runTransaction((v) async {
                 v.value ??= {};
                 v.value
                     .putIfAbsent('object', () => {})
@@ -668,7 +673,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .toList();
       var f3 = Stream.periodic(Duration(milliseconds: 30))
           .take(10)
-          .map((i) => ref.child('object').runTransaction((v) {
+          .map((i) => ref.child('object').runTransaction((v) async {
                 v.value ??= {};
                 v.value.putIfAbsent('count', () => 0);
                 v.value['count']++;
@@ -686,16 +691,15 @@ void testsWith(Map<String, dynamic> secrets) {
 
       var futures = <Future>[];
       for (var i = 0; i < 10; i++) {
-        futures.add(ref.child('object/count').runTransaction((v) {
-          print('run $i ${v.value}');
+        futures.add(ref.child('object/count').runTransaction((v) async {
           return v..value = (v.value ?? 0) + 1;
         }).then((v) {
           expect(v.committed, isTrue);
-          expect(v.dataSnapshot.value, i + 1);
+          expect(v.dataSnapshot!.value, i + 1);
         }));
       }
       for (var i = 0; i < 10; i++) {
-        futures.add(ref.child('object').runTransaction((v) {
+        futures.add(ref.child('object').runTransaction((v) async {
           v.value ??= {};
           v.value.putIfAbsent('count', () => 0);
           v.value['count']++;
@@ -716,20 +720,18 @@ void testsWith(Map<String, dynamic> secrets) {
   });
 
   group('OnDisconnect', () {
-    Repo repo;
+    late FirebaseDatabase db;
     setUp(() {
-      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/disconnect');
-      repo = Repo(FirebaseDatabase(app: app1, databaseURL: testUrl));
+      db = FirebaseDatabase(app: app1, databaseURL: testUrl);
+      ref = db.reference().child('test/disconnect');
     });
 
     test('put', () async {
       await ref.set('hello');
 
-      await ref.onDisconnect.set('disconnected');
+      await ref.onDisconnect().set('disconnected');
 
-      await repo.triggerDisconnect();
+      await db.triggerDisconnect();
 
       await Future.delayed(Duration(milliseconds: 200));
 
@@ -739,9 +741,9 @@ void testsWith(Map<String, dynamic> secrets) {
       await ref.set({'hello': 'world'});
       ref.child('state').onValue.listen((_) {});
 
-      await ref.onDisconnect.update({'state': 'disconnected'});
+      await ref.onDisconnect().update({'state': 'disconnected'});
 
-      await repo.triggerDisconnect();
+      await db.triggerDisconnect();
 
       await Future.delayed(Duration(milliseconds: 200));
 
@@ -750,11 +752,11 @@ void testsWith(Map<String, dynamic> secrets) {
     test('cancel', () async {
       await ref.set({'hello': 'world'});
 
-      await ref.onDisconnect.update({'state': 'disconnected'});
+      await ref.onDisconnect().update({'state': 'disconnected'});
 
-      await ref.onDisconnect.cancel();
+      await ref.onDisconnect().cancel();
 
-      await repo.triggerDisconnect();
+      await db.triggerDisconnect();
 
       await Future.delayed(Duration(milliseconds: 200));
 
@@ -800,9 +802,10 @@ void testsWith(Map<String, dynamic> secrets) {
 
       expect(await q.startAt('b').get(), {'text1': 'b', 'text2': 'c'});
 
-      expect(await q.startAt('b', 'text1').get(), {'text1': 'b', 'text2': 'c'});
+      expect(await q.startAt('b', key: 'text1').get(),
+          {'text1': 'b', 'text2': 'c'});
 
-      expect(await q.startAt('b', 'text2').get(), {'text2': 'c'});
+      expect(await q.startAt('b', key: 'text2').get(), {'text2': 'c'});
     });
 
     test('Order by key', () async {
@@ -844,9 +847,10 @@ void testsWith(Map<String, dynamic> secrets) {
 
       expect(await q.startAt(2).get(), {'text1': 'c', 'text3': 'a'});
 
-      expect(await q.startAt(2, 'text1').get(), {'text1': 'c', 'text3': 'a'});
+      expect(
+          await q.startAt(2, key: 'text1').get(), {'text1': 'c', 'text3': 'a'});
 
-      expect(await q.startAt(2, 'text2').get(), {'text3': 'a'});
+      expect(await q.startAt(2, key: 'text2').get(), {'text3': 'a'});
     });
     test('Order by child', () async {
       await ref.set({
@@ -880,12 +884,12 @@ void testsWith(Map<String, dynamic> secrets) {
         'text1': {'order': 'c'}
       });
 
-      expect(await q.startAt('b', 'text2').get(), {
+      expect(await q.startAt('b', key: 'text2').get(), {
         'text2': {'order': 'b'},
         'text1': {'order': 'c'}
       });
 
-      expect(await q.startAt('b', 'text3').get(), {
+      expect(await q.startAt('b', key: 'text3').get(), {
         'text1': {'order': 'c'}
       });
     });
@@ -960,7 +964,7 @@ void testsWith(Map<String, dynamic> secrets) {
         'text1': {'order': 'c'}
       });
 
-      expect(await q.startAt('b', 'text6').endAt('c').get(), {
+      expect(await q.startAt('b', key: 'text6').endAt('c').get(), {
         'text6': {'order': 'b'},
         'text1': {'order': 'c'}
       });
@@ -1032,7 +1036,7 @@ void testsWith(Map<String, dynamic> secrets) {
         var s = query.limitToFirst(2).onValue.listen((event) {});
         await query.limitToFirst(2).get();
 
-        var v = await query.startAt(null, 'key-002').limitToFirst(2).get();
+        var v = await query.startAt(null, key: 'key-002').limitToFirst(2).get();
 
         expect(v, {'key-002': 2, 'key-003': 3});
 
@@ -1051,7 +1055,7 @@ void testsWith(Map<String, dynamic> secrets) {
         var s = query.limitToFirst(2).onValue.listen((event) {});
         await query.limitToFirst(2).get();
 
-        var v = await query.startAt(null, 'key-002').limitToFirst(2).get();
+        var v = await query.startAt(null, key: 'key-002').limitToFirst(2).get();
 
         expect(v, {'key-002': 2, 'key-003': 3});
 
@@ -1088,7 +1092,7 @@ void testsWith(Map<String, dynamic> secrets) {
   });
 
   group('Complex operations', () {
-    DatabaseReference iref;
+    late DatabaseReference iref;
     setUp(() async {
       ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
           .reference()
@@ -1123,7 +1127,7 @@ void testsWith(Map<String, dynamic> secrets) {
     test('Upgrade subquery to master view', () async {
       await iref.set({'text1': 'b', 'text2': 'c', 'text3': 'a'});
 
-      var s1 = ref.orderByKey().limitToFirst(1).onValue.listen(print);
+      var s1 = ref.orderByKey().limitToFirst(1).onValue.listen((_) => null);
       var l = ref
           .orderByKey()
           .startAt('text2')
@@ -1150,7 +1154,7 @@ void testsWith(Map<String, dynamic> secrets) {
           .limitToFirst(2)
           .onValue
           .map((e) => e.snapshot.value)
-          .listen(print);
+          .listen((_) => null);
 
       await wait(500);
 
@@ -1158,10 +1162,6 @@ void testsWith(Map<String, dynamic> secrets) {
       var l = ref
           .child('text2')
           .onValue
-          .map((v) {
-            print(v.snapshot.value);
-            return v;
-          })
           .map((e) => e.snapshot.value)
           .take(3)
           .toList();
@@ -1192,7 +1192,7 @@ void testsWith(Map<String, dynamic> secrets) {
         'child2': {'a': 1, 'b': 2, 'c': 3}
       });
 
-      var sub = ref.orderByKey().limitToFirst(1).onValue.listen(print);
+      var sub = ref.orderByKey().limitToFirst(1).onValue.listen((_) => null);
 
       await Future.delayed(Duration(milliseconds: 500));
 
@@ -1221,13 +1221,13 @@ void testsWith(Map<String, dynamic> secrets) {
         'child2': {'a': 1, 'b': 2, 'c': 3}
       });
 
-      var sub = ref.orderByKey().onValue.listen(print);
+      var sub = ref.orderByKey().onValue.listen((_) => null);
       var sub2 = ref
           .child('child2')
           .orderByKey()
           .limitToFirst(1)
           .onValue
-          .listen(print);
+          .listen((_) => null);
       await wait(500);
 
       var l = ref
@@ -1251,8 +1251,7 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('with canceled parent', () async {
-      var sub = ref.root().onValue.listen((v) => print(v.snapshot.value),
-          onError: (e) => print('error $e'));
+      var sub = ref.root().onValue.listen((v) => null, onError: (e) => null);
       await wait(400);
 
       await iref.set('hello world');
@@ -1272,10 +1271,7 @@ void testsWith(Map<String, dynamic> secrets) {
       var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
           .reference()
           .child('test');
-      ref
-          .child('cars')
-          .onValue
-          .listen((e) => print('on value ${e.snapshot.value}'));
+      ref.child('cars').onValue.listen((e) => null);
 
       var data = {
         'cars': {
@@ -1285,7 +1281,7 @@ void testsWith(Map<String, dynamic> secrets) {
       };
       await ref.set(data);
 
-      expect(await ref.child('cars/car001').get(), data['cars']['car001']);
+      expect(await ref.child('cars/car001').get(), data['cars']!['car001']);
     });
 
     test('Bugfix: crash when receiving merge', () async {
@@ -1294,8 +1290,8 @@ void testsWith(Map<String, dynamic> secrets) {
           .child('test')
           .child('some/path');
 
-      ref.parent().orderByKey().equalTo('path').onValue.listen(print);
-      ref.child('child1').onValue.listen(print);
+      ref.parent()!.orderByKey().equalTo('path').onValue.listen((_) => null);
+      ref.child('child1').onValue.listen((_) => null);
       await ref.set({'child1': 'v', 'child2': 3});
 
       await ref.update({'hello': 'world'});
@@ -1388,7 +1384,7 @@ void testsWith(Map<String, dynamic> secrets) {
       var s = ref.onValue.listen((v) => l.add(v.snapshot.value));
 
       await ref.get();
-      await ref.runTransaction((v) => v..value = 42);
+      await ref.runTransaction((v) async => v..value = 42);
       await ref.get();
       expect(l, [null, 42]);
 
@@ -1425,7 +1421,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Tests from firebase-android-sdk', () {
     group('FirebaseDatabase', () {
-      core.FirebaseApp app;
+      late core.FirebaseApp app;
       setUp(() async {
         app = await core.Firebase.initializeApp(
             options: FirebaseOptions(
@@ -1483,7 +1479,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
         var refs = List.generate(4, (_) => ref.push());
 
-        var events = <String>[];
+        var events = [];
         refs.forEach((ref) =>
             ref.onValue.map((e) => e.snapshot.value).listen(events.add));
 
@@ -1528,14 +1524,14 @@ void testsWith(Map<String, dynamic> secrets) {
 
         await db.goOffline();
 
-        var t1 = ref.runTransaction((data) {
+        var t1 = ref.runTransaction((data) async {
           return data..value = 1;
         });
-        var t2 = ref.runTransaction((data) {
+        var t2 = ref.runTransaction((data) async {
           return data..value = 2;
         });
 
-        await Future.microtask(() => null);
+        await wait(400);
 
         expect(events, [
           'value-null',
@@ -1563,7 +1559,7 @@ void testsWith(Map<String, dynamic> secrets) {
             .reference()
             .child('test/transaction/foo');
 
-        var r = await ref.runTransaction((currentData) {
+        var r = await ref.runTransaction((currentData) async {
           return currentData..value = 42;
         });
 
@@ -1585,7 +1581,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
         await ref.get();
 
-        await ref.runTransaction((currentData) {
+        await ref.runTransaction((currentData) async {
           return currentData..value = 42;
         });
 

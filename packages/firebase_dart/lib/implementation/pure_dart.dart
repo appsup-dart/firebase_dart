@@ -1,4 +1,5 @@
 import 'package:firebase_dart/auth.dart';
+import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:firebase_dart/src/implementation.dart';
@@ -8,6 +9,10 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 
 import 'dart:io' as io;
+
+import 'package:jose/jose.dart';
+
+export 'package:firebase_dart/src/auth/utils.dart' show Platform;
 
 const bool _kIsWeb = identical(0, 0.0);
 
@@ -39,14 +44,14 @@ class FirebaseDart {
   /// can be usefull for testing purposes, but is generally unnecessary.
   ///
   static void setup(
-      {String storagePath,
-      Platform platform,
+      {String? storagePath,
+      Platform? platform,
       bool isolated = false,
-      Function(Uri url) launchUrl,
-      Future<Map<String, dynamic>> Function() getAuthResult,
-      Future<OAuthCredential> Function(OAuthProvider provider) oauthSignIn,
-      Future<void> Function(String providerId) oauthSignOut,
-      http.Client httpClient}) {
+      Function(Uri url)? launchUrl,
+      Future<Map<String, dynamic>> Function()? getAuthResult,
+      Future<OAuthCredential?> Function(OAuthProvider provider)? oauthSignIn,
+      Future<void> Function(String providerId)? oauthSignOut,
+      http.Client? httpClient}) {
     platform ??= _kIsWeb
         ? Platform.web(
             currentUrl: Uri.base.toString(),
@@ -75,6 +80,12 @@ class FirebaseDart {
       } else if (!_kIsWeb) PersistenceStorage.setupMemoryStorage();
 
       initPlatform(platform);
+      if (httpClient is TestClient) {
+        httpClient.baseClient;
+      }
+      JsonWebKeySetLoader.global =
+          DefaultJsonWebKeySetLoader(httpClient: httpClient);
+
       FirebaseImplementation.install(PureDartFirebaseImplementation(
           launchUrl: launchUrl,
           getAuthResult: getAuthResult,

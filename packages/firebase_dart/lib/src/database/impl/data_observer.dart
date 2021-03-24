@@ -14,7 +14,7 @@ abstract class Operation {
 
   Iterable<Path<Name>> get completesPaths;
 
-  Operation operationForChild(Name key);
+  Operation? operationForChild(Name key);
 }
 
 /// This class holds a collection of writes that can be applied to nodes in
@@ -27,19 +27,20 @@ abstract class Operation {
 /// Any write to an existing path or shadowing an existing path will modify that
 /// existing write to reflect the write added.
 class IncompleteData {
-  final TreeNode<Name, TreeStructuredData> _writeTree;
+  final TreeNode<Name, TreeStructuredData?> _writeTree;
   final QueryFilter filter;
 
-  IncompleteData.empty([QueryFilter filter]) : this._(TreeNode(), filter);
+  IncompleteData.empty([QueryFilter filter = const QueryFilter()])
+      : this._(TreeNode(null), filter);
   IncompleteData.complete(TreeStructuredData data)
-      : this._(TreeNode(data), data.children.filter);
-  IncompleteData._(this._writeTree, this.filter) : assert(_writeTree != null);
+      : this._(TreeNode(data), data.children.filter as QueryFilter);
+  IncompleteData._(this._writeTree, [this.filter = const QueryFilter()]);
 
   IncompleteData withFilter(QueryFilter filter) {
     return IncompleteData._(_writeTree, filter);
   }
 
-  TreeStructuredData _cachedValue;
+  TreeStructuredData? _cachedValue;
   TreeStructuredData get value {
     return _cachedValue ??=
         toOperation().apply(TreeStructuredData(filter: filter));
@@ -59,12 +60,11 @@ class IncompleteData {
   IncompleteData directChild(Name child) {
     if (isComplete) {
       return IncompleteData._(
-          TreeNode(_writeTree.value.children[child] ?? TreeStructuredData()),
-          null);
+          TreeNode(_writeTree.value!.children[child] ?? TreeStructuredData()));
     }
     var tree = _writeTree.children[child];
-    if (tree != null) return IncompleteData._(tree, null);
-    return IncompleteData._(TreeNode(), null);
+    if (tree != null) return IncompleteData._(tree);
+    return IncompleteData._(TreeNode(null));
   }
 
   IncompleteData child(Path<Name> path) {
@@ -72,15 +72,15 @@ class IncompleteData {
     return directChild(path.first).child(path.skip(1));
   }
 
-  TreeStructuredData get completeValue => isComplete ? value : null;
+  TreeStructuredData? get completeValue => isComplete ? value : null;
 
   /// Returns the value at [path] when it is complete, null otherwise
-  TreeStructuredData getCompleteDataAtPath(Path<Name> path) {
-    Path rootMost = _writeTree.findRootMostPathWithValue(path);
+  TreeStructuredData? getCompleteDataAtPath(Path<Name> path) {
+    Path? rootMost = _writeTree.findRootMostPathWithValue(path);
     if (rootMost != null) {
       var v = _writeTree
-          .subtree(rootMost)
-          .value
+          .subtreeNullable(rootMost as Path<Name>)!
+          .value!
           .getChild(path.skip(rootMost.length));
       if (v.isNil) return TreeStructuredData();
       return v;
@@ -89,14 +89,14 @@ class IncompleteData {
     }
   }
 
-  Map<Name, TreeStructuredData> get completeChildren {
+  Map<Name, TreeStructuredData?> get completeChildren {
     if (_writeTree.value != null) {
-      return _writeTree.value.children;
+      return _writeTree.value!.children;
     } else {
       return Map.fromEntries(_writeTree.children.entries
           .where((v) => v.value.value != null)
           .map((e) => MapEntry(e.key,
-              e.value.value.isNil ? TreeStructuredData() : e.value.value)));
+              e.value.value!.isNil ? TreeStructuredData() : e.value.value)));
     }
   }
 
@@ -126,16 +126,16 @@ class IncompleteData {
 
   IncompleteData removeWrite(Path<Name> path) {
     if (path.isEmpty) {
-      return IncompleteData._(TreeNode(), filter);
+      return IncompleteData._(TreeNode(null), filter);
     } else {
-      var newWriteTree = _writeTree.setPath(path, TreeNode());
+      var newWriteTree = _writeTree.setPath(path, TreeNode(null), null);
       return IncompleteData._(newWriteTree, filter);
     }
   }
 
   void forEachCompleteNode(Function(Path<Name> k, TreeStructuredData v) f,
-          [Path<Name> path]) =>
-      _writeTree.subtree(path ?? Path()).forEachNode((k, v) {
+          [Path<Name>? path]) =>
+      _writeTree.subtreeNullable(path ?? Path())?.forEachNode((k, v) {
         if (v == null) return;
         f(Path.from([...?path, ...k]), v);
       });
@@ -174,22 +174,23 @@ class EventGenerator {
   }
 }
 
-extension _WriteTreeX on TreeNode<Name, TreeStructuredData> {
-  TreeNode<Name, TreeStructuredData> addOverwrite(
+extension _WriteTreeX on TreeNode<Name, TreeStructuredData?> {
+  TreeNode<Name, TreeStructuredData?> addOverwrite(
       Path<Name> path, TreeStructuredData data) {
     if (value != null) {
-      return TreeNode(TreeOperation.overwrite(path, data).apply(value));
+      return TreeNode(TreeOperation.overwrite(path, data).apply(value!));
     }
 
     if (path.isEmpty) return TreeNode(data);
     var c = path.first;
     return clone()
       ..children[c] =
-          (children[c] ?? TreeNode()).addOverwrite(path.skip(1), data);
+          (children[c] ?? TreeNode(null)).addOverwrite(path.skip(1), data);
   }
 
-  TreeNode<Name, TreeStructuredData> addPriority(Path<Name> path, Value data) {
-    return addOverwrite(
-        path.child(Name('.priority')), TreeStructuredData.leaf(data));
+  TreeNode<Name, TreeStructuredData?> addPriority(
+      Path<Name> path, Value? data) {
+    return addOverwrite(path.child(Name('.priority')),
+        data == null ? TreeStructuredData() : TreeStructuredData.leaf(data));
   }
 }

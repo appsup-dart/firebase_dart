@@ -2,62 +2,66 @@ import 'package:firebase_dart/src/storage.dart';
 
 import 'impl/location.dart';
 
-class StorageMetadataImpl implements StorageMetadata {
+class FullMetadataImpl implements FullMetadata {
   @override
-  final String bucket;
-
-  @override
-  final String generation;
+  final String? bucket;
 
   @override
-  final String metadataGeneration;
+  final String? generation;
 
   @override
-  final String path;
+  final String? metadataGeneration;
 
   @override
-  final int sizeBytes;
-
-  final String type;
+  final String fullPath;
 
   @override
-  final DateTime creationTime;
+  final int? size;
+
+  final String? type;
 
   @override
-  final DateTime updatedTime;
+  final DateTime? timeCreated;
 
   @override
-  final String md5Hash;
+  final DateTime? updated;
 
   @override
-  final String cacheControl;
+  final String? md5Hash;
 
   @override
-  final String contentDisposition;
+  final String? cacheControl;
 
   @override
-  final String contentEncoding;
+  final String? contentDisposition;
 
   @override
-  final String contentLanguage;
+  final String? contentEncoding;
 
   @override
-  final String contentType;
-
-  final List<String> downloadTokens;
+  final String? contentLanguage;
 
   @override
-  final Map<String, String> customMetadata;
+  final String? contentType;
 
-  StorageMetadataImpl({
+  final List<String>? downloadTokens;
+
+  @override
+  final Map<String, String>? customMetadata;
+
+  @override
+  final String? metageneration;
+
+  FullMetadataImpl({
     this.bucket,
     this.generation,
     this.metadataGeneration,
-    this.path,
-    this.sizeBytes,
+    this.metageneration,
+    required this.fullPath,
+    this.size,
     this.type,
-    this.creationTime,
-    this.updatedTime,
+    this.timeCreated,
+    this.updated,
     this.md5Hash,
     this.cacheControl,
     this.contentDisposition,
@@ -69,20 +73,21 @@ class StorageMetadataImpl implements StorageMetadata {
   });
 
   @override
-  String get name => Location(bucket, path.split('/')).name;
+  String get name => Location(bucket!, fullPath.split('/')).name;
 
-  factory StorageMetadataImpl.fromJson(Map<String, dynamic> json) =>
-      StorageMetadataImpl(
+  factory FullMetadataImpl.fromJson(Map<String, dynamic> json) =>
+      FullMetadataImpl(
           bucket: json['bucket'],
           generation: json['generation'],
-          metadataGeneration: json['metageneration'],
-          path: json['name'],
+          metageneration: json['metageneration'],
+          metadataGeneration: json['metadataGeneration'],
+          fullPath: json['name'],
           type: 'file',
-          sizeBytes: json['size'] == null ? null : int.parse(json['size']),
-          creationTime: json['timeCreated'] == null
+          size: json['size'] == null ? null : int.parse(json['size']),
+          timeCreated: json['timeCreated'] == null
               ? null
               : DateTime.parse(json['timeCreated']),
-          updatedTime:
+          updated:
               json['updated'] == null ? null : DateTime.parse(json['updated']),
           md5Hash: json['md5Hash'],
           cacheControl: json['cacheControl'],
@@ -90,21 +95,22 @@ class StorageMetadataImpl implements StorageMetadata {
           contentEncoding: json['contentEncoding'],
           contentLanguage: json['contentLanguage'],
           contentType: json['contentType'],
-          customMetadata: (json['metadata'] as Map)?.cast(),
-          downloadTokens: (json['downloadTokens'] as String)
+          customMetadata: (json['metadata'] as Map?)?.cast(),
+          downloadTokens: (json['downloadTokens'] as String?)
               ?.split(',')
-              ?.where((v) => v.isNotEmpty)
-              ?.toList());
+              .where((v) => v.isNotEmpty)
+              .toList());
 
   Map<String, dynamic> toJson() => {
         'bucket': bucket,
         'generation': generation,
-        'metageneration': metadataGeneration,
-        'name': path,
+        'metadataGeneration': metadataGeneration,
+        'metageneration': metageneration,
+        'name': fullPath,
         'file': type,
-        'size': sizeBytes?.toString(),
-        'timeCreated': creationTime?.toIso8601String(),
-        'updated': updatedTime?.toIso8601String(),
+        'size': size?.toString(),
+        'timeCreated': timeCreated?.toIso8601String(),
+        'updated': updated?.toIso8601String(),
         'md5Hash': md5Hash,
         'cacheControl': cacheControl,
         'contentDisposition': contentDisposition,

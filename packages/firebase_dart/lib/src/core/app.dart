@@ -1,3 +1,5 @@
+
+
 part of firebase_dart.core;
 
 /// Represents a single Firebase app instance.

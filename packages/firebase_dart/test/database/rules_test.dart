@@ -1,3 +1,5 @@
+
+
 import 'package:firebase_dart/src/database/impl/backend_connection/rules.dart';
 import 'package:firebase_dart/src/database/impl/memory_backend.dart';
 import 'package:test/test.dart';
@@ -78,12 +80,12 @@ void main() {
 }
 
 void testRead(
-    {SecurityTree tree,
-    RuleDataSnapshot root,
-    Auth auth,
-    Map<String, bool> paths}) async {
+    {SecurityTree? tree,
+    RuleDataSnapshot? root,
+    Auth? auth,
+    required Map<String, bool> paths}) async {
   for (var p in paths.keys) {
-    var v = await tree.canRead(root: root, path: p, auth: auth).first;
+    var v = await tree!.canRead(root: root, path: p, auth: auth).first;
     expect(v, paths[p]);
   }
 }

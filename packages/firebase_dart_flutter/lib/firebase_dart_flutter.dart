@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
 import 'package:package_info/package_info.dart';
@@ -26,8 +25,6 @@ class FirebaseDartFlutter {
     if (!kIsWeb) {
       var appDir = await getApplicationDocumentsDirectory();
       path = appDir.path;
-
-      Hive.init(path);
     }
 
     FirebaseDart.setup(
@@ -38,7 +35,8 @@ class FirebaseDartFlutter {
         },
         getAuthResult: () async {
           if (!kIsWeb && platform_info.Platform.instance.isAndroid) {
-            return await _channel.invokeMapMethod('getAuthResult');
+            return (await _channel
+                .invokeMapMethod<String, dynamic>('getAuthResult'))!;
           }
 
           throw UnimplementedError();
@@ -52,9 +50,9 @@ class FirebaseDartFlutter {
               return FacebookAuthProvider.credential(accessToken.token);
             case 'google.com':
               var account = await GoogleSignIn().signIn();
-              var auth = await account.authentication;
+              var auth = await account!.authentication;
               return GoogleAuthProvider.credential(
-                  idToken: auth.idToken, accessToken: auth.accessToken);
+                  idToken: auth.idToken!, accessToken: auth.accessToken!);
             case 'apple.com':
               if (!platform_info.Platform.instance.isIOS) {
                 return null;
@@ -66,7 +64,7 @@ class FirebaseDartFlutter {
                 ],
               );
               return provider.credential(
-                  idToken: credential.identityToken,
+                  idToken: credential.identityToken!,
                   accessToken: credential.authorizationCode);
           }
 

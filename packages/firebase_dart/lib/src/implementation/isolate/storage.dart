@@ -4,42 +4,9 @@ import 'dart:typed_data';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/storage/impl/location.dart';
 import 'package:firebase_dart/storage.dart';
-import 'package:meta/meta.dart';
 
 import '../isolate.dart';
 import 'util.dart';
-
-class StorageFunctionCall<T> extends BaseFunctionCall<T> {
-  final String appName;
-  final String bucket;
-  final Symbol functionName;
-
-  StorageFunctionCall(this.functionName, this.appName, this.bucket,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
-      : super(positionalArguments, namedArguments);
-
-  FirebaseStorage get storage =>
-      FirebaseStorage.instanceFor(app: Firebase.app(appName), bucket: bucket);
-
-  @override
-  Function get function {
-    switch (functionName) {
-      case #getMaxDownloadRetryTimeMillis:
-        return storage.getMaxDownloadRetryTimeMillis;
-      case #getMaxOperationRetryTimeMillis:
-        return storage.getMaxOperationRetryTimeMillis;
-      case #getMaxUploadRetryTimeMillis:
-        return storage.getMaxUploadRetryTimeMillis;
-      case #setMaxDownloadRetryTimeMillis:
-        return storage.setMaxDownloadRetryTimeMillis;
-      case #setMaxOperationRetryTimeMillis:
-        return storage.setMaxOperationRetryTimeMillis;
-      case #setMaxUploadRetryTimeMillis:
-        return storage.setMaxUploadRetryTimeMillis;
-    }
-    return null;
-  }
-}
 
 class StorageReferenceFunctionCall<T> extends BaseFunctionCall<T> {
   final String appName;
@@ -49,16 +16,17 @@ class StorageReferenceFunctionCall<T> extends BaseFunctionCall<T> {
 
   StorageReferenceFunctionCall(
       this.functionName, this.appName, this.bucket, this.path,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
   FirebaseStorage get storage =>
       FirebaseStorage.instanceFor(app: Firebase.app(appName), bucket: bucket);
 
-  StorageReference getRef() => storage.ref().child(path);
+  Reference getRef() => storage.ref().child(path);
 
   @override
-  Function get function {
+  Function? get function {
     switch (functionName) {
       case #delete:
         return getRef().delete;
@@ -82,45 +50,19 @@ class IsolateFirebaseStorage extends IsolateFirebaseService
   final Location _bucket;
 
   IsolateFirebaseStorage(
-      {@required IsolateFirebaseApp app, String storageBucket})
+      {required IsolateFirebaseApp app, String? storageBucket})
       : _bucket =
             Location.fromBucketSpec(storageBucket ?? app.options.storageBucket),
         super(app);
 
-  Future<T> invoke<T>(Symbol method,
-      [List<dynamic> positionalArguments,
-      Map<Symbol, dynamic> namedArguments]) {
-    return app.commander.execute(StorageFunctionCall<FutureOr<T>>(
-        method, app.name, storageBucket, positionalArguments, namedArguments));
-  }
-
   @override
-  Future<int> getMaxDownloadRetryTimeMillis() async {
-    return await invoke(#getMaxDownloadRetryTimeMillis, []);
-  }
-
-  @override
-  Future<int> getMaxOperationRetryTimeMillis() async {
-    return await invoke(#getMaxOperationRetryTimeMillis, []);
-  }
-
-  @override
-  Future<int> getMaxUploadRetryTimeMillis() async {
-    return await invoke(#getMaxUploadRetryTimeMillis, []);
-  }
-
-  @override
-  Future<StorageReference> getReferenceFromUrl(String fullUrl) async {
+  Reference refFromURL(String fullUrl) {
     var location = Location.fromUrl(fullUrl);
     return IsolateStorageReference(this, location);
   }
 
   @override
-  StorageReference ref([String path]) {
-    if (_bucket == null) {
-      throw StorageException.noDefaultBucket();
-    }
-
+  Reference ref([String? path]) {
     var ref = IsolateStorageReference(this, _bucket);
     if (path != null) {
       return ref.child(path);
@@ -130,25 +72,38 @@ class IsolateFirebaseStorage extends IsolateFirebaseService
   }
 
   @override
-  Future<void> setMaxDownloadRetryTimeMillis(int time) async {
-    await invoke(#setMaxDownloadRetryTimeMillis, [time]);
+  String get bucket => _bucket.bucket;
+
+  @override
+  // TODO: implement maxDownloadRetryTime
+  Duration get maxDownloadRetryTime => throw UnimplementedError();
+
+  @override
+  // TODO: implement maxOperationRetryTime
+  Duration get maxOperationRetryTime => throw UnimplementedError();
+
+  @override
+  // TODO: implement maxUploadRetryTime
+  Duration get maxUploadRetryTime => throw UnimplementedError();
+
+  @override
+  void setMaxDownloadRetryTime(Duration time) {
+    // TODO: implement setMaxDownloadRetryTime
   }
 
   @override
-  Future<void> setMaxOperationRetryTimeMillis(int time) async {
-    await invoke(#setMaxOperationRetryTimeMillis, [time]);
+  void setMaxOperationRetryTime(Duration time) {
+    // TODO: implement setMaxOperationRetryTime
   }
 
   @override
-  Future<void> setMaxUploadRetryTimeMillis(int time) async {
-    await invoke(#setMaxUploadRetryTimeMillis, [time]);
+  void setMaxUploadRetryTime(Duration time) {
+    // TODO: implement setMaxUploadRetryTime
   }
-
-  @override
-  String get storageBucket => _bucket.bucket;
 }
 
-class IsolateStorageReference extends StorageReference {
+class IsolateStorageReference extends Reference {
+  @override
   final IsolateFirebaseStorage storage;
 
   final Location location;
@@ -156,13 +111,13 @@ class IsolateStorageReference extends StorageReference {
   IsolateStorageReference(this.storage, this.location);
 
   Future<T> invoke<T>(Symbol method,
-      [List<dynamic> positionalArguments,
-      Map<Symbol, dynamic> namedArguments]) {
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments]) {
     return storage.app.commander.execute(
         StorageReferenceFunctionCall<FutureOr<T>>(
             method,
             storage.app.name,
-            storage.storageBucket,
+            storage.bucket,
             location.path,
             positionalArguments,
             namedArguments));
@@ -178,55 +133,77 @@ class IsolateStorageReference extends StorageReference {
   }
 
   @override
-  Future<String> getBucket() async => location.bucket;
+  String get bucket => location.bucket;
 
   @override
-  Future<Uint8List> getData(int maxSize) async {
+  Future<Uint8List> getData([int? maxSize = 10485760]) async {
     return await invoke(#getData, [maxSize]);
   }
 
   @override
-  Future<Uri> getDownloadURL() async {
+  Future<String> getDownloadURL() async {
     return await invoke(#getDownloadURL, []);
   }
 
   @override
-  Future<StorageMetadata> getMetadata() async {
+  Future<FullMetadata> getMetadata() async {
     return await invoke(#getMetadata, []);
   }
 
   @override
-  Future<String> getName() async => location.name;
+  String get name => location.name;
 
   @override
-  IsolateStorageReference getParent() {
+  IsolateStorageReference? get parent {
     var parentLocation = location.getParent();
     if (parentLocation == null) return null;
     return IsolateStorageReference(storage, parentLocation);
   }
 
   @override
-  Future<String> getPath() async => location.path;
+  String get fullPath => location.path;
 
   @override
-  StorageReference getRoot() {
+  Reference get root {
     return IsolateStorageReference(storage, location.getRoot());
   }
 
   @override
-  FirebaseStorage getStorage() => storage;
-
-  @override
-  StorageUploadTask putData(Uint8List data, [StorageMetadata metadata]) {
+  UploadTask putData(Uint8List data, [SettableMetadata? metadata]) {
     // TODO: implement putData
     throw UnimplementedError();
   }
 
   @override
-  Future<StorageMetadata> updateMetadata(StorageMetadata metadata) async {
+  Future<FullMetadata> updateMetadata(SettableMetadata metadata) async {
     return await invoke(#updateMetadata, [metadata]);
   }
 
   @override
-  String get path => location.path;
+  Future<ListResult> list([ListOptions? options]) {
+    return invoke(#list, [options]);
+  }
+
+  @override
+  Future<ListResult> listAll() {
+    return invoke(#listAll);
+  }
+
+  @override
+  UploadTask putString(String data,
+      {PutStringFormat format = PutStringFormat.raw,
+      SettableMetadata? metadata}) {
+    // TODO: implement putString
+    throw UnimplementedError();
+  }
+
+  @override
+  String toString() => location.toString();
+
+  @override
+  bool operator ==(other) =>
+      other is IsolateStorageReference && other.location == location;
+
+  @override
+  int get hashCode => location.hashCode;
 }

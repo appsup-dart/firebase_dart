@@ -1,3 +1,5 @@
+
+
 abstract class CachePolicy {
   bool shouldPrune(int currentSizeBytes, int countOfPrunableQueries);
 

@@ -2,10 +2,14 @@ import 'dart:convert';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart' as auth;
 import 'package:firebase_dart/src/auth/backend/memory_backend.dart' as auth;
+import 'package:firebase_dart/src/auth/backend/memory_backend.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
+import 'package:firebase_dart/src/implementation/isolate/store.dart';
+import 'package:firebase_dart/src/implementation/isolate/util.dart';
 import 'package:firebase_dart/src/storage/backend/backend.dart' as storage;
 import 'package:firebase_dart/src/storage/backend/memory_backend.dart'
     as storage;
@@ -17,16 +21,63 @@ import 'package:jose/jose.dart';
 export 'package:firebase_dart/src/auth/backend/backend.dart' show BackendUser;
 
 class FirebaseTesting {
-  static final JsonWebKey _tokenSigningKey = JsonWebKey.generate('RS256');
-
   /// Initializes the pure dart firebase implementation for testing purposes.
-  static Future<void> setup() async {
+  static Future<void> setup({bool isolated = false}) async {
+    var worker = IsolateWorker()
+      ..registerFunction(#getAuthBackend, (projectId) {
+        var auth =
+            BackendImpl.getAuthBackendByApiKey(projectId) as StoreBackend;
+        return StoreBackend(
+            users: IsolateStore.forStore(auth.users),
+            smsCodes: IsolateStore.forStore(auth.smsCodes),
+            projectId: projectId,
+            tokenSigningKey: BackendImpl._tokenSigningKey);
+      })
+      ..registerFunction(#getStorageBackend, (bucket) {
+        return BackendImpl.getStorageBackend(bucket);
+      })
+      ..registerFunction(
+          #getTokenSigningKey, () => BackendImpl._tokenSigningKey);
+
+    ApplicationVerifier.instance = DummyApplicationVerifier();
+    FirebaseDart.setup(
+        isolated: isolated,
+        platform: Platform.web(
+            currentUrl: 'http://localhost', isMobile: true, isOnline: true),
+        httpClient: TestClient(worker.commander));
+  }
+
+  static Backend getBackend(FirebaseOptions options) => BackendImpl(options);
+}
+
+class TestClient extends http.BaseClient {
+  late http.Client baseClient = _createClient(this);
+
+  final IsolateCommander commander;
+
+  TestClient(this.commander);
+
+  Future<auth.AuthBackend> getAuthBackend(String apiKey) {
+    return commander.execute(RegisteredFunctionCall(#getAuthBackend, [apiKey]));
+  }
+
+  Future<storage.StorageBackend> getStorageBackend(String bucket) {
+    return commander
+        .execute(RegisteredFunctionCall(#getStorageBackend, [bucket]));
+  }
+
+  Future<JsonWebKey> getTokenSigningKey() {
+    return commander.execute(RegisteredFunctionCall(#getTokenSigningKey));
+  }
+
+  static http.Client _createClient(TestClient client) {
+    ApplicationVerifier.instance = DummyApplicationVerifier();
     var openIdClient = ProxyClient({
       RegExp('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'):
           http.MockClient((request) async {
         return http.Response(
             json.encode({
-              'keys': [_tokenSigningKey]
+              'keys': [await client.getTokenSigningKey()]
             }),
             200);
       }),
@@ -51,16 +102,14 @@ class FirebaseTesting {
           throw FirebaseAuthException.invalidApiKey();
         }
 
-        var projectId = Backend._apiKeys[apiKey];
-        var authBackend = Backend.getAuthBackend(projectId);
-        assert(authBackend != null);
+        var authBackend = await client.getAuthBackend(apiKey);
 
         var body = request.bodyFields;
 
         switch (body['grant_type']) {
           case 'refresh_token':
             var uid =
-                await authBackend.verifyRefreshToken(body['refresh_token']);
+                await authBackend.verifyRefreshToken(body['refresh_token']!);
 
             var accessToken = await authBackend.generateRefreshToken(uid);
             return http.Response(
@@ -76,8 +125,6 @@ class FirebaseTesting {
         }
       }),
     });
-    JsonWebKeySetLoader.global =
-        DefaultJsonWebKeySetLoader(httpClient: openIdClient);
 
     var httpClient = ProxyClient({
       ...openIdClient.clients,
@@ -87,9 +134,7 @@ class FirebaseTesting {
           throw FirebaseAuthException.invalidApiKey();
         }
 
-        var projectId = Backend._apiKeys[apiKey];
-        var authBackend = Backend.getAuthBackend(projectId);
-        assert(authBackend != null);
+        var authBackend = await client.getAuthBackend(apiKey);
 
         var connection = auth.BackendConnection(authBackend);
         return connection.handleRequest(r);
@@ -97,27 +142,33 @@ class FirebaseTesting {
       RegExp('https://firebasestorage.googleapis.com/v0/b/.*'):
           http.MockClient((r) async {
         var bucket = r.url.pathSegments[2];
-        var storageBackend = Backend.getStorageBackend(bucket);
-        assert(storageBackend != null);
+        var storageBackend = await client.getStorageBackend(bucket);
 
         var connection = storage.BackendConnection(storageBackend);
         return connection.handleRequest(r);
       }),
     });
 
-    FirebaseDart.setup(
-        platform: Platform.web(
-            currentUrl: 'http://localhost', isMobile: true, isOnline: true),
-        httpClient: httpClient);
+    return httpClient;
   }
 
-  static Backend getBackend(FirebaseOptions options) => Backend(options);
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    return baseClient.send(request);
+  }
 }
 
-class Backend {
+abstract class Backend {
+  auth.AuthBackend get authBackend;
+  storage.StorageBackend get storageBackend;
+}
+
+class BackendImpl extends Backend {
+  static final JsonWebKey _tokenSigningKey = JsonWebKey.generate('RS256');
+
   final FirebaseOptions options;
 
-  Backend(this.options) {
+  BackendImpl(this.options) {
     var existing = _apiKeys[options.apiKey];
     assert(existing == null || existing == options.projectId);
     _apiKeys[options.apiKey] = options.projectId;
@@ -125,22 +176,29 @@ class Backend {
 
   static final Map<String, String> _apiKeys = {};
 
-  static final Map<String, auth.MemoryBackend> _authBackends = {};
+  static final Map<String, auth.StoreBackend> _authBackends = {};
 
-  static final Map<String, storage.MemoryBackend> _storageBackends = {};
+  static final Map<String, storage.MemoryStorageBackend> _storageBackends = {};
 
-  static auth.MemoryBackend getAuthBackend(String projectId) =>
+  static auth.AuthBackend getAuthBackendByApiKey(String apiKey) {
+    var projectId = _apiKeys[apiKey];
+    return getAuthBackend(projectId!);
+  }
+
+  static auth.AuthBackend getAuthBackend(String projectId) =>
       _authBackends.putIfAbsent(
           projectId,
-          () => auth.MemoryBackend(
-              tokenSigningKey: FirebaseTesting._tokenSigningKey,
-              projectId: projectId));
+          () => auth.StoreBackend(
+              tokenSigningKey: _tokenSigningKey, projectId: projectId));
 
-  static storage.MemoryBackend getStorageBackend(String bucket) =>
-      _storageBackends.putIfAbsent(bucket, () => storage.MemoryBackend());
+  static storage.MemoryStorageBackend getStorageBackend(String bucket) =>
+      _storageBackends.putIfAbsent(
+          bucket, () => storage.MemoryStorageBackend());
 
-  auth.MemoryBackend get authBackend => getAuthBackend(options.projectId);
+  @override
+  auth.AuthBackend get authBackend => getAuthBackend(options.projectId);
 
-  storage.MemoryBackend get storageBackend =>
-      getStorageBackend(options.storageBucket);
+  @override
+  storage.MemoryStorageBackend get storageBackend =>
+      getStorageBackend(options.storageBucket!);
 }

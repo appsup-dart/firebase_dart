@@ -7,33 +7,32 @@ import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:firebase_dart/src/storage/service.dart';
 import 'package:http/http.dart' as http;
-import 'package:meta/meta.dart';
 
 import '../implementation.dart';
 
 class PureDartFirebaseImplementation extends FirebaseImplementation {
-  final http.Client _httpClient;
+  final http.Client? _httpClient;
 
   final Function(Uri url) launchUrl;
 
   final Future<Map<String, dynamic>> Function() getAuthResult;
 
-  final Future<OAuthCredential> Function(OAuthProvider provider) oauthSignIn;
+  final Future<OAuthCredential?> Function(OAuthProvider provider) oauthSignIn;
 
   final Future<void> Function(String providerId) oauthSignOut;
 
   PureDartFirebaseImplementation(
-      {@required this.launchUrl,
-      @required this.getAuthResult,
-      @required this.oauthSignIn,
-      @required this.oauthSignOut,
-      http.Client httpClient})
+      {required this.launchUrl,
+      required this.getAuthResult,
+      required this.oauthSignIn,
+      required this.oauthSignOut,
+      http.Client? httpClient})
       : _httpClient = httpClient;
 
   static PureDartFirebaseImplementation get installation =>
-      FirebaseImplementation.installation;
+      FirebaseImplementation.installation as PureDartFirebaseImplementation;
   @override
-  FirebaseDatabase createDatabase(FirebaseApp app, {String databaseURL}) {
+  FirebaseDatabase createDatabase(FirebaseApp app, {String? databaseURL}) {
     return FirebaseService.findService<FirebaseDatabaseImpl>(
             app,
             (s) =>
@@ -55,12 +54,9 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
   }
 
   @override
-  FirebaseStorage createStorage(FirebaseApp app, {String storageBucket}) {
-    return FirebaseService.findService<FirebaseStorageImpl>(
-            app,
-            (s) =>
-                s.storageBucket ==
-                (storageBucket ?? app.options.storageBucket)) ??
+  FirebaseStorage createStorage(FirebaseApp app, {String? storageBucket}) {
+    return FirebaseService.findService<FirebaseStorageImpl>(app,
+            (s) => s.bucket == (storageBucket ?? app.options.storageBucket)) ??
         FirebaseStorageImpl(app, storageBucket, httpClient: _httpClient);
   }
 }

@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:firebase_dart/core.dart';
 import 'package:meta/meta.dart';
 
@@ -8,7 +9,7 @@ class FirebaseAppImpl extends FirebaseApp {
   Future<void> delete() async {
     // first call super to remove from list of apps, so it is no longer available
     await super.delete();
-    await FirebaseService._deleteAllForApp(this);
+    await FirebaseService.deleteAllForApp(this);
   }
 }
 
@@ -26,7 +27,7 @@ class FirebaseService {
     _services.putIfAbsent(app, () => {}).add(this);
   }
 
-  static Future<void> _deleteAllForApp(FirebaseApp app) async {
+  static Future<void> deleteAllForApp(FirebaseApp app) async {
     var services = _services.remove(app) ?? {};
     for (var s in services) {
       await s.delete();
@@ -38,10 +39,8 @@ class FirebaseService {
     _isDeleted = true;
   }
 
-  static T findService<T extends FirebaseService>(FirebaseApp app,
-          [bool Function(T service) predicate]) =>
-      _services[app]?.firstWhere(
-          (element) =>
-              element is T && (predicate == null || predicate(element)),
-          orElse: () => null);
+  static T? findService<T extends FirebaseService?>(FirebaseApp app,
+          [bool Function(T service)? predicate]) =>
+      _services[app]?.firstWhereOrNull((element) =>
+          element is T && (predicate == null || predicate(element as T))) as T?;
 }

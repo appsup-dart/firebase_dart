@@ -1,6 +1,8 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
+
+
 part of firebase.treestructureddata;
 
 class _SpecialName extends Name {
@@ -10,13 +12,13 @@ class _SpecialName extends Name {
   Iterable<Match> allMatches(String string, [int start = 0]) => [];
 
   @override
-  Match matchAsPrefix(String string, [int start = 0]) => null;
+  Match? matchAsPrefix(String string, [int start = 0]) => null;
 
   @override
   int get length => 0;
 
   @override
-  int asInt() => null;
+  int? asInt() => null;
 }
 
 abstract class Name implements Pattern, Comparable<Name> {
@@ -43,7 +45,7 @@ abstract class Name implements Pattern, Comparable<Name> {
       _value.allMatches(string, start);
 
   @override
-  Match matchAsPrefix(String string, [int start = 0]) =>
+  Match? matchAsPrefix(String string, [int start = 0]) =>
       _value.matchAsPrefix(string, start);
 
   @override
@@ -60,7 +62,7 @@ abstract class Name implements Pattern, Comparable<Name> {
 
   String asString() => _value;
 
-  int asInt();
+  int? asInt();
 
   int get length => _value.length;
 
@@ -102,8 +104,8 @@ abstract class Name implements Pattern, Comparable<Name> {
 class _NameImpl extends Name {
   _NameImpl(String value) : super._(value);
 
-  MapEntry<Null, int> _intValue;
+  MapEntry<Null, int?>? _intValue;
 
   @override
-  int asInt() => (_intValue ??= MapEntry(null, int.tryParse(_value))).value;
+  int? asInt() => (_intValue ??= MapEntry(null, int.tryParse(_value))).value;
 }

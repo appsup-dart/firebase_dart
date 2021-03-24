@@ -1,13 +1,11 @@
-import 'package:firebase_dart/auth.dart';
-
+import '../auth_credential.dart';
 import '../auth_provider.dart';
+import '../error.dart';
 
 /// Security Assertion Markup Language based provider.
 class SAMLAuthProvider extends AuthProvider {
   // ignore: public_member_api_docs
-  SAMLAuthProvider(String providerId)
-      : assert(providerId != null),
-        super(providerId) {
+  SAMLAuthProvider(String providerId) : super(providerId) {
     // SAML provider IDs must be prefixed with the SAML_PREFIX.
     if (!isSaml(providerId)) {
       throw FirebaseAuthException.argumentError(
@@ -21,8 +19,7 @@ class SAMLAuthCredential extends AuthCredential {
   final String pendingToken;
 
   SAMLAuthCredential(String providerId, this.pendingToken)
-      : assert(pendingToken != null),
-        super(providerId: providerId, signInMethod: providerId) {
+      : super(providerId: providerId, signInMethod: providerId) {
     // SAML provider IDs must be prefixed with the SAML_PREFIX.
     if (!isSaml(providerId)) {
       throw FirebaseAuthException.argumentError(
@@ -31,8 +28,8 @@ class SAMLAuthCredential extends AuthCredential {
   }
 
   @override
-  Map<String, dynamic> toJson() =>
-      {...super.toJson(), 'pendingToken': pendingToken};
+  Map<String, dynamic> asMap() =>
+      {...super.asMap(), 'pendingToken': pendingToken};
 }
 
 const String samlPrefix = 'saml.';

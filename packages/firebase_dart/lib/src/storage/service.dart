@@ -14,8 +14,8 @@ class FirebaseStorageImpl extends FirebaseService implements FirebaseStorage {
 
   final HttpClient httpClient;
 
-  FirebaseStorageImpl(FirebaseApp app, String storageBucket,
-      {http.Client httpClient})
+  FirebaseStorageImpl(FirebaseApp app, String? storageBucket,
+      {http.Client? httpClient})
       : _bucket =
             Location.fromBucketSpec(storageBucket ?? app.options.storageBucket),
         httpClient = HttpClient(httpClient ?? http.Client(), () async {
@@ -30,12 +30,8 @@ class FirebaseStorageImpl extends FirebaseService implements FirebaseStorage {
   /// Returns a firebaseStorage.Reference for the given path in the default
   /// bucket.
   @override
-  StorageReference ref([String path]) {
-    if (_bucket == null) {
-      throw StorageException.noDefaultBucket();
-    }
-
-    var ref = StorageReferenceImpl(this, _bucket);
+  Reference ref([String? path]) {
+    var ref = ReferenceImpl(this, _bucket);
     if (path != null) {
       return ref.child(path);
     } else {
@@ -44,41 +40,41 @@ class FirebaseStorageImpl extends FirebaseService implements FirebaseStorage {
   }
 
   @override
-  Future<int> getMaxDownloadRetryTimeMillis() {
+  Duration get maxDownloadRetryTime {
     // TODO: implement getMaxDownloadRetryTimeMillis
     throw UnimplementedError();
   }
 
   @override
-  Future<int> getMaxOperationRetryTimeMillis() async =>
-      httpClient.maxUploadRetryTime.inMilliseconds;
+  Duration get maxOperationRetryTime =>
+      Duration(milliseconds: httpClient.maxUploadRetryTime.inMilliseconds);
 
   @override
-  Future<int> getMaxUploadRetryTimeMillis() async =>
-      httpClient.maxUploadRetryTime.inMilliseconds;
+  Duration get maxUploadRetryTime =>
+      Duration(milliseconds: httpClient.maxUploadRetryTime.inMilliseconds);
 
   @override
-  Future<StorageReference> getReferenceFromUrl(String url) async {
+  Reference refFromURL(String url) {
     var location = Location.fromUrl(url);
-    return StorageReferenceImpl(this, location);
+    return ReferenceImpl(this, location);
   }
 
   @override
-  Future<void> setMaxDownloadRetryTimeMillis(int millis) {
+  void setMaxDownloadRetryTime(Duration time) {
     // TODO: implement setMaxDownloadRetryTimeMillis
     throw UnimplementedError();
   }
 
   @override
-  Future<void> setMaxOperationRetryTimeMillis(int millis) async {
-    httpClient.maxOperationRetryTime = Duration(milliseconds: millis);
+  void setMaxOperationRetryTime(Duration time) {
+    httpClient.maxOperationRetryTime = time;
   }
 
   @override
-  Future<void> setMaxUploadRetryTimeMillis(int millis) async {
-    httpClient.maxUploadRetryTime = Duration(milliseconds: millis);
+  void setMaxUploadRetryTime(Duration time) {
+    httpClient.maxUploadRetryTime = time;
   }
 
   @override
-  String get storageBucket => _bucket.bucket;
+  String get bucket => _bucket.bucket;
 }

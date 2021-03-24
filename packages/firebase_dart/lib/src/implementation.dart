@@ -1,3 +1,5 @@
+
+
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/database.dart';
@@ -5,7 +7,7 @@ import 'package:firebase_dart/src/core.dart';
 import 'package:firebase_dart/storage.dart';
 
 abstract class FirebaseImplementation {
-  static FirebaseImplementation _installation;
+  static FirebaseImplementation? _installation;
 
   static FirebaseImplementation get installation {
     var i = _installation;
@@ -24,10 +26,10 @@ abstract class FirebaseImplementation {
   Future<FirebaseApp> createApp(String name, FirebaseOptions options);
 
   FirebaseDatabase createDatabase(covariant FirebaseApp app,
-      {String databaseURL});
+      {String? databaseURL});
 
   FirebaseAuth createAuth(covariant FirebaseApp app);
 
   FirebaseStorage createStorage(covariant FirebaseApp app,
-      {String storageBucket});
+      {String? storageBucket});
 }

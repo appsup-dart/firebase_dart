@@ -5,13 +5,9 @@ library firebase_dart;
 
 import 'dart:async';
 import 'dart:collection';
-import 'dart:convert' show Converter, Codec;
-import 'dart:convert';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/implementation.dart';
-import 'package:jose/jose.dart';
-import 'package:meta/meta.dart';
 
 part 'database/database.dart';
 part 'database/datasnapshot.dart';
@@ -21,4 +17,3 @@ part 'database/exception.dart';
 part 'database/query.dart';
 part 'database/reference.dart';
 part 'database/server_value.dart';
-part 'database/token.dart';

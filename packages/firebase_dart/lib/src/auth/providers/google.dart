@@ -1,5 +1,3 @@
-import 'package:meta/meta.dart';
-
 import '../auth_provider.dart';
 import 'oauth.dart';
 
@@ -54,7 +52,6 @@ class GoogleAuthProvider extends AuthProvider {
 
   /// Adds Google OAuth scope.
   GoogleAuthProvider addScope(String scope) {
-    assert(scope != null);
     _scopes.add(scope);
     return this;
   }
@@ -63,13 +60,12 @@ class GoogleAuthProvider extends AuthProvider {
   /// request for popup and redirect sign-in operations.
   GoogleAuthProvider setCustomParameters(
       Map<dynamic, dynamic> customOAuthParameters) {
-    assert(customOAuthParameters != null);
     _parameters = customOAuthParameters;
     return this;
   }
 
   /// Create a new [GoogleAuthCredential] from a provided [accessToken].
-  static OAuthCredential credential({String idToken, String accessToken}) {
+  static OAuthCredential credential({String? idToken, String? accessToken}) {
     assert(accessToken != null || idToken != null,
         'At least one of ID token and access token is required');
     return GoogleAuthCredential._(
@@ -82,7 +78,7 @@ class GoogleAuthProvider extends AuthProvider {
 /// An [AuthCredential] for authenticating via google.com
 class GoogleAuthCredential extends OAuthCredential {
   GoogleAuthCredential._(
-      {@required String idToken, @required String accessToken})
+      {required String? idToken, required String? accessToken})
       : super(
             providerId: GoogleAuthProvider.PROVIDER_ID,
             signInMethod: GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD,

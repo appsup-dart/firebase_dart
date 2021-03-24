@@ -1,5 +1,3 @@
-import 'package:meta/meta.dart';
-
 /// RegExp to detect if the email address given is valid
 final emailAddressRegExp = RegExp(r'^[^@]+@[^@]+$');
 
@@ -9,7 +7,6 @@ bool isValidEmailAddress(String email) {
 }
 
 void initPlatform(Platform platform) {
-  assert(platform != null);
   Platform._current = platform;
 }
 
@@ -17,29 +14,27 @@ abstract class Platform {
   final bool isOnline;
   final bool isMobile;
 
-  Platform({@required this.isMobile, this.isOnline = true})
-      : assert(isMobile != null),
-        assert(isOnline != null);
+  Platform({required this.isMobile, this.isOnline = true});
 
   factory Platform.web(
-      {@required String currentUrl,
-      @required bool isMobile,
-      @required bool isOnline}) = WebPlatform;
+      {required String currentUrl,
+      required bool isMobile,
+      required bool isOnline}) = WebPlatform;
 
   factory Platform.android(
-      {@required String packageId,
-      @required String sha1Cert,
-      @required bool isOnline}) = AndroidPlatform;
+      {required String packageId,
+      required String sha1Cert,
+      required bool isOnline}) = AndroidPlatform;
 
-  factory Platform.ios({@required String appId, @required bool isOnline}) =
+  factory Platform.ios({required String appId, required bool isOnline}) =
       IOsPlatform;
 
-  factory Platform.macos({@required String appId, @required bool isOnline}) =
+  factory Platform.macos({required String appId, required bool isOnline}) =
       MacOsPlatform;
 
-  factory Platform.linux({@required bool isOnline}) = LinuxPlatform;
+  factory Platform.linux({required bool isOnline}) = LinuxPlatform;
 
-  factory Platform.windows({@required bool isOnline}) = WindowsPlatform;
+  factory Platform.windows({required bool isOnline}) = WindowsPlatform;
 
   factory Platform.fromJson(Map<String, dynamic> json) {
     switch (json['type']) {
@@ -77,7 +72,7 @@ abstract class Platform {
     throw ArgumentError('Unknown platform ${json['type']}');
   }
 
-  static Platform _current;
+  static Platform? _current;
   static Platform get current {
     var c = _current;
     if (c == null) throw StateError('No platform initialized.');
@@ -91,12 +86,8 @@ class WebPlatform extends Platform {
   final String currentUrl;
 
   WebPlatform(
-      {@required this.currentUrl,
-      @required bool isMobile,
-      bool isOnline = true})
-      : assert(currentUrl != null),
-        assert(isMobile != null),
-        super(isMobile: isMobile, isOnline: isOnline);
+      {required this.currentUrl, required bool isMobile, bool isOnline = true})
+      : super(isMobile: isMobile, isOnline: isOnline);
 
   @override
   Map<String, dynamic> toJson() => {
@@ -113,12 +104,8 @@ class AndroidPlatform extends Platform {
   final String sha1Cert;
 
   AndroidPlatform(
-      {@required this.packageId,
-      @required this.sha1Cert,
-      @required bool isOnline})
-      : assert(packageId != null),
-        assert(sha1Cert != null),
-        super(isMobile: true, isOnline: isOnline);
+      {required this.packageId, required this.sha1Cert, required bool isOnline})
+      : super(isMobile: true, isOnline: isOnline);
 
   @override
   bool get isMobile => true;
@@ -135,9 +122,8 @@ class AndroidPlatform extends Platform {
 class IOsPlatform extends Platform {
   final String appId;
 
-  IOsPlatform({@required this.appId, @required bool isOnline})
-      : assert(appId != null),
-        super(isMobile: true, isOnline: isOnline);
+  IOsPlatform({required this.appId, required bool isOnline})
+      : super(isMobile: true, isOnline: isOnline);
 
   @override
   Map<String, dynamic> toJson() => {
@@ -150,9 +136,8 @@ class IOsPlatform extends Platform {
 class MacOsPlatform extends Platform {
   final String appId;
 
-  MacOsPlatform({@required this.appId, @required bool isOnline})
-      : assert(appId != null),
-        super(isMobile: false, isOnline: isOnline);
+  MacOsPlatform({required this.appId, required bool isOnline})
+      : super(isMobile: false, isOnline: isOnline);
 
   @override
   Map<String, dynamic> toJson() => {
@@ -163,7 +148,7 @@ class MacOsPlatform extends Platform {
 }
 
 class LinuxPlatform extends Platform {
-  LinuxPlatform({@required bool isOnline})
+  LinuxPlatform({required bool isOnline})
       : super(isMobile: false, isOnline: isOnline);
 
   @override
@@ -174,7 +159,7 @@ class LinuxPlatform extends Platform {
 }
 
 class WindowsPlatform extends Platform {
-  WindowsPlatform({@required bool isOnline})
+  WindowsPlatform({required bool isOnline})
       : super(isMobile: false, isOnline: isOnline);
 
   @override

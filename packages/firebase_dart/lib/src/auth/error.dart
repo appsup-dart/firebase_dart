@@ -1,26 +1,25 @@
-import 'package:firebase_dart/auth.dart';
-import 'package:firebase_dart/core.dart';
-import 'package:meta/meta.dart';
+import 'package:firebase_dart/src/core/exception.dart';
+import 'package:firebase_dart/src/auth/auth_credential.dart';
 
 /// Generic exception related to Firebase Authentication.
 ///
 /// Check the error code and message for more details.
 class FirebaseAuthException extends FirebaseException {
-  final String email;
+  final String? email;
 
-  final String phoneNumber;
+  final String? phoneNumber;
 
-  final AuthCredential credential;
+  final AuthCredential? credential;
 
   FirebaseAuthException._(
-      {@required String code,
-      @required String message,
+      {required String code,
+      required String? message,
       this.email,
       this.phoneNumber,
       this.credential})
       : super(plugin: 'auth', code: code, message: message);
 
-  FirebaseAuthException(String code, [String message])
+  FirebaseAuthException(String code, [String? message])
       : this._(code: code, message: message);
 
   FirebaseAuthException.adminOnlyOperation()
@@ -382,10 +381,10 @@ class FirebaseAuthException extends FirebaseException {
                 'disabled');
 
   FirebaseAuthException replace(
-          {String message,
-          String email,
-          String phoneNumber,
-          AuthCredential credential}) =>
+          {String? message,
+          String? email,
+          String? phoneNumber,
+          AuthCredential? credential}) =>
       FirebaseAuthException._(
           code: code,
           message: message ?? this.message,

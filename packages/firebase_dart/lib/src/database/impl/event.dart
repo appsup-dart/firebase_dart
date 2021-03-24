@@ -6,7 +6,7 @@ import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'operations/tree.dart';
 
 abstract class Event {
-  EventTarget _target;
+  late EventTarget _target;
 
   final String type;
 
@@ -24,7 +24,7 @@ class EventTarget {
       _eventRegistrations.values.any((v) => v.isNotEmpty);
 
   Iterable<String> get eventTypesWithRegistrations =>
-      _eventRegistrations.keys.where((k) => _eventRegistrations[k].isNotEmpty);
+      _eventRegistrations.keys.where((k) => _eventRegistrations[k]!.isNotEmpty);
 
   IncompleteData _oldValue = IncompleteData.empty();
 
@@ -42,7 +42,7 @@ class EventTarget {
   void dispatchEvent(Event event) {
     event._target = this;
     if (!_eventRegistrations.containsKey(event.type)) return;
-    _eventRegistrations[event.type].toList().forEach((l) => l(event));
+    _eventRegistrations[event.type]!.toList().forEach((l) => l(event));
   }
 
   void addEventListener(String type, EventListener listener) {
@@ -55,7 +55,7 @@ class EventTarget {
     events.where((e) => e.type == type).forEach((e) => listener(e));
   }
 
-  void removeEventListener(String type, EventListener listener) {
+  void removeEventListener(String type, EventListener? listener) {
     if (listener == null) {
       _eventRegistrations.remove(type);
     } else {

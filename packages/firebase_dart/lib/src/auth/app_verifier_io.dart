@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:firebase_dart/src/auth/auth.dart';
 
 import 'app_verifier.dart';
+import 'impl/auth.dart';
 
 class RecaptchaVerifier extends BaseRecaptchaVerifier {
   @override
@@ -37,7 +38,7 @@ class RecaptchaVerifier extends BaseRecaptchaVerifier {
 
   @override
   Future<String> verify(FirebaseAuth auth) async {
-    var siteKey = await getRecaptchaParameters(auth);
+    var siteKey = await getRecaptchaParameters(auth as FirebaseAuthImpl);
     var html = '''
 <html>
   <head>
@@ -77,7 +78,6 @@ class RecaptchaVerifier extends BaseRecaptchaVerifier {
       default:
         throw UnsupportedError(
             'Unsupported platform: ${Platform.operatingSystem}');
-        break;
     }
   }
 }

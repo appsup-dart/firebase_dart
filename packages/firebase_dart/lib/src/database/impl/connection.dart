@@ -2,25 +2,19 @@ library firebase.connection;
 
 import 'dart:async';
 
-import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
-import 'package:meta/meta.dart';
+import 'package:firebase_dart/database.dart' show ServerValue;
 
 import 'connections/protocol.dart';
 import 'operations/tree.dart';
 import 'tree.dart';
 import 'treestructureddata.dart';
 
-@alwaysThrows
-void throwServerError(String status, String details) {
-  throw FirebaseDatabaseException(code: status ?? 'unknown', details: details);
-}
-
 enum OperationEventType { overwrite, merge, listenRevoked }
 
 class OperationEvent {
-  final Path<Name> path;
-  final OperationEventType type;
-  final QueryFilter query;
+  final Path<Name>? path;
+  final OperationEventType? type;
+  final QueryFilter? query;
   final dynamic data;
 
   OperationEvent(this.type, this.path, this.data, this.query) {
@@ -41,13 +35,14 @@ class OperationEvent {
     }
   }
 
-  TreeOperation get operation {
+  TreeOperation? get operation {
     switch (type) {
       case OperationEventType.overwrite:
-        return TreeOperation.overwrite(path, TreeStructuredData.fromJson(data));
+        return TreeOperation.overwrite(
+            path!, TreeStructuredData.fromJson(data));
       case OperationEventType.merge:
         return TreeOperation.merge(
-            path,
+            path!,
             Map.fromIterables(
                 (data as Map).keys.map((k) => Name.parsePath(k.toString())),
                 (data as Map)
@@ -66,7 +61,8 @@ class OperationEvent {
 /// authentication credentials and on disconnect writes) and reattempt any
 /// outstanding writes.
 abstract class PersistentConnection {
-  factory PersistentConnection(Uri uri, {AuthTokenProvider authTokenProvider}) {
+  factory PersistentConnection(Uri uri,
+      {AuthTokenProvider? authTokenProvider}) {
     return PersistentConnectionImpl(uri, authTokenProvider: authTokenProvider);
   }
 
@@ -87,9 +83,9 @@ abstract class PersistentConnection {
   Stream<OperationEvent> get onDataOperation;
 
   /// Stream of auth events.
-  Stream<Map<String, dynamic>> get onAuth;
+  Stream<Map<String, dynamic>?> get onAuth;
 
-  Map<String, dynamic> get authData;
+  Map<String, dynamic>? get authData;
 
   // Lifecycle
 
@@ -104,7 +100,7 @@ abstract class PersistentConnection {
   // auth
 
   /// Authenticates with the token.
-  Future<void> refreshAuthToken(String token);
+  Future<void> refreshAuthToken(String? token);
 
   // listens
 
@@ -112,10 +108,10 @@ abstract class PersistentConnection {
   ///
   /// Returns possible warning messages.
   Future<Iterable<String>> listen(String path,
-      {QueryFilter query, String hash});
+      {QueryFilter? query, String? hash});
 
   /// Unregisters a listener
-  Future<Null> unlisten(String path, {QueryFilter query});
+  Future<Null> unlisten(String path, {QueryFilter? query});
 
   // writes
 
@@ -123,10 +119,10 @@ abstract class PersistentConnection {
   void purgeOutstandingWrites();
 
   /// Overwrites some value at a particular path.
-  Future<Null> put(String path, dynamic value, {String hash});
+  Future<Null> put(String path, dynamic value, {String? hash});
 
   /// Merges children at a particular path.
-  Future<Null> merge(String path, Map<String, dynamic> value, {String hash});
+  Future<Null> merge(String path, Map<String, dynamic> value, {String? hash});
 
   // disconnects
 
@@ -165,4 +161,4 @@ enum ConnectionState {
   connected,
 }
 
-typedef AuthTokenProvider = Future<String> Function(bool forceRefresh);
+typedef AuthTokenProvider = Future<String?>? Function(bool forceRefresh);

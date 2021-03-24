@@ -1,15 +1,17 @@
 import 'dart:convert';
 
-import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/auth/providers/saml.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/util/proxy.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
-import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 
+import '../action_code.dart';
+import '../auth_credential.dart';
+import '../auth_provider.dart';
+import '../error.dart';
 import 'error.dart';
 import 'identitytoolkit.dart';
 
@@ -21,11 +23,11 @@ class RpcHandler {
   final String apiKey;
 
   /// The tenant ID.
-  String tenantId;
+  String? tenantId;
 
   RelyingpartyResource get relyingparty => identitytoolkitApi.relyingparty;
 
-  RpcHandler(this.apiKey, {@required http.Client httpClient})
+  RpcHandler(this.apiKey, {required http.Client? httpClient})
       : httpClient = ProxyClient({
           RegExp('https://securetoken.google.com/.*/.well-known/openid-configuration'):
               http.MockClient((request) async {
@@ -49,7 +51,7 @@ class RpcHandler {
             IdentitytoolkitApi(clientViaApiKey(apiKey, baseClient: httpClient));
 
   /// Gets the list of authorized domains for the specified project.
-  Future<List<String>> getAuthorizedDomains() async {
+  Future<List<String>?> getAuthorizedDomains() async {
     var response = await relyingparty.getProjectConfig();
     return response.authorizedDomains;
   }
@@ -66,7 +68,7 @@ class RpcHandler {
   }
 
   /// Gets the list of authorized domains for the specified project.
-  Future<String> getDynamicLinkDomain() async {
+  Future<String?> getDynamicLinkDomain() async {
     var response = await relyingparty.getProjectConfig(
         $fields: _toQueryString({'returnDynamicLink': 'true'}));
 
@@ -86,7 +88,7 @@ class RpcHandler {
 
   /// Checks if the provided Android package name belongs to the project.
   Future<void> isAndroidPackageNameValid(String androidPackageName,
-      [String sha1Cert]) async {
+      [String? sha1Cert]) async {
     // When no sha1Cert is passed, this will either resolve if the identifier is
     // valid or throw INVALID_APP_ID if not.
     // When sha1Cert is also passed, this will either resolve or fail with an
@@ -118,7 +120,7 @@ class RpcHandler {
   }
 
   /// Gets the list of IDPs that can be used to log in for the given identifier.
-  Future<List<String>> fetchProvidersForIdentifier(String identifier) async {
+  Future<List<String>?> fetchProvidersForIdentifier(String identifier) async {
     var response = await _createAuthUri(identifier);
     return response.allProviders;
   }
@@ -135,9 +137,6 @@ class RpcHandler {
   ///
   /// Returns a future that resolves with the ID token.
   Future<openid.Credential> verifyCustomToken(String token) async {
-    if (token == null) {
-      throw FirebaseAuthException.invalidCustomToken();
-    }
     var response = await relyingparty
         .verifyCustomToken(IdentitytoolkitRelyingpartyVerifyCustomTokenRequest()
           ..token = token
@@ -153,7 +152,7 @@ class RpcHandler {
   Future<openid.Credential> emailLinkSignIn(
       String email, String oobCode) async {
     _validateEmail(email);
-    if (oobCode == null || oobCode.isEmpty) {
+    if (oobCode.isEmpty) {
       throw FirebaseAuthException.internalError();
     }
     var response = await relyingparty
@@ -170,7 +169,7 @@ class RpcHandler {
   ///
   /// Returns a future that resolves with the ID token.
   Future<openid.Credential> verifyPassword(
-      String email, String password) async {
+      String email, String? password) async {
     _validateEmail(email);
     _validatePassword(password);
 
@@ -187,7 +186,8 @@ class RpcHandler {
   /// Creates an email/password account.
   ///
   /// Returns a future that resolves with the ID token.
-  Future<openid.Credential> createAccount(String email, String password) async {
+  Future<openid.Credential> createAccount(
+      String email, String? password) async {
     _validateEmail(email);
     _validateStrongPassword(password);
     var response = await relyingparty
@@ -201,7 +201,7 @@ class RpcHandler {
   }
 
   /// Deletes the user's account corresponding to the idToken given.
-  Future<void> deleteAccount(String idToken) async {
+  Future<void> deleteAccount(String? idToken) async {
     if (idToken == null) {
       throw FirebaseAuthException.internalError();
     }
@@ -230,13 +230,15 @@ class RpcHandler {
     }
 
     return _credentialFromIdToken(
-        idToken: response.idToken,
+        idToken: response.idToken!,
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn);
   }
 
   Future<openid.Credential> _credentialFromIdToken(
-      {String idToken, String refreshToken, String expiresIn}) async {
+      {required String idToken,
+      String? refreshToken,
+      String? expiresIn}) async {
     var client =
         await openid.Client.forIdToken(idToken, httpClient: httpClient);
     return client.createCredential(
@@ -249,10 +251,10 @@ class RpcHandler {
 
   /// Requests verifyAssertion endpoint
   Future<openid.Credential> verifyAssertion(
-      {String sessionId,
-      String requestUri,
-      String postBody,
-      String pendingIdToken}) async {
+      {String? sessionId,
+      String? requestUri,
+      String? postBody,
+      String? pendingIdToken}) async {
     var response = await _verifyAssertion(
         IdentitytoolkitRelyingpartyVerifyAssertionRequest()
           ..postBody = postBody
@@ -261,18 +263,18 @@ class RpcHandler {
           ..pendingIdToken = pendingIdToken);
 
     return _credentialFromIdToken(
-        idToken: response.idToken,
+        idToken: response.idToken!,
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn);
   }
 
   /// Requests verifyAssertion endpoint for federated account linking
   Future<VerifyAssertionResponse> verifyAssertionForLinking(
-      {String idToken,
-      String sessionId,
-      String requestUri,
-      String postBody,
-      String pendingToken}) async {
+      {String? idToken,
+      String? sessionId,
+      String? requestUri,
+      String? postBody,
+      String? pendingToken}) async {
     if (idToken == null) {
       throw FirebaseAuthException.internalError();
     }
@@ -286,10 +288,10 @@ class RpcHandler {
 
   /// Requests verifyAssertion endpoint for an existing federated account
   Future<VerifyAssertionResponse> verifyAssertionForExisting(
-      {String sessionId,
-      String requestUri,
-      String postBody,
-      String pendingToken}) async {
+      {String? sessionId,
+      String? requestUri,
+      String? postBody,
+      String? pendingToken}) async {
     return _verifyAssertion(IdentitytoolkitRelyingpartyVerifyAssertionRequest()
       ..returnIdpCredential = true
       ..autoCreate = false
@@ -341,12 +343,12 @@ class RpcHandler {
     try {
       return await action();
     } on DetailedApiRequestError catch (e) {
-      var errorCode = e.message;
+      var errorCode = e.message!;
       var errorMessage;
       // Get detailed message if available.
       var match = RegExp(r'^([^\s]+)\s*:\s*(.*)$').firstMatch(errorCode);
       if (match != null) {
-        errorCode = match.group(1);
+        errorCode = match.group(1)!;
         errorMessage = match.group(2);
       }
 
@@ -363,7 +365,7 @@ class RpcHandler {
     _validateIdTokenResponse(response);
 
     return _credentialFromIdToken(
-        idToken: response.idToken,
+        idToken: response.idToken!,
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn);
   }
@@ -371,8 +373,8 @@ class RpcHandler {
   /// Requests getOobCode endpoint for passwordless email sign-in.
   ///
   /// Returns future that resolves with user's email.
-  Future<String> sendSignInLinkToEmail(
-      {@required String email, ActionCodeSettings actionCodeSettings}) async {
+  Future<String?> sendSignInLinkToEmail(
+      {required String email, ActionCodeSettings? actionCodeSettings}) async {
     _validateEmail(email);
     var response = await relyingparty
         .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
@@ -385,7 +387,7 @@ class RpcHandler {
     return response.email;
   }
 
-  Relyingparty _createRelyingparty(ActionCodeSettings actionCodeSettings) {
+  Relyingparty _createRelyingparty(ActionCodeSettings? actionCodeSettings) {
     if (actionCodeSettings == null) return Relyingparty();
     return Relyingparty()
       ..continueUrl = actionCodeSettings.url
@@ -400,8 +402,8 @@ class RpcHandler {
   /// Requests getOobCode endpoint for password reset.
   ///
   /// Returns future that resolves with user's email.
-  Future<String> sendPasswordResetEmail(
-      {@required String email, ActionCodeSettings actionCodeSettings}) async {
+  Future<String?> sendPasswordResetEmail(
+      {required String email, ActionCodeSettings? actionCodeSettings}) async {
     _validateEmail(email);
     var response = await relyingparty
         .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
@@ -417,8 +419,8 @@ class RpcHandler {
   /// Requests getOobCode endpoint for email verification.
   ///
   /// Returns future that resolves with user's email.
-  Future<String> sendEmailVerification(
-      {@required String idToken, ActionCodeSettings actionCodeSettings}) async {
+  Future<String?> sendEmailVerification(
+      {required String idToken, ActionCodeSettings? actionCodeSettings}) async {
     var response = await relyingparty
         .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
           ..requestType = 'VERIFY_EMAIL'
@@ -433,7 +435,7 @@ class RpcHandler {
   /// Requests resetPassword endpoint for password reset.
   ///
   /// Returns future that resolves with user's email.
-  Future<String> confirmPasswordReset(String code, String newPassword) async {
+  Future<String?> confirmPasswordReset(String code, String newPassword) async {
     _validateApplyActionCode(code);
     var response = await relyingparty
         .resetPassword(IdentitytoolkitRelyingpartyResetPasswordRequest()
@@ -459,7 +461,7 @@ class RpcHandler {
 
   /// Applies an out-of-band email action code, such as an email verification
   /// code.
-  Future<String> applyActionCode(String code) async {
+  Future<String?> applyActionCode(String code) async {
     _validateApplyActionCode(code);
     var response = await relyingparty.setAccountInfo(
         IdentitytoolkitRelyingpartySetAccountInfoRequest()..oobCode = code);
@@ -472,7 +474,7 @@ class RpcHandler {
 
   /// Updates the providers for the account associated with the idToken.
   Future<SetAccountInfoResponse> deleteLinkedAccounts(
-      String idToken, List<String> providersToDelete) async {
+      String idToken, List<String>? providersToDelete) async {
     if (providersToDelete == null) {
       throw FirebaseAuthException.internalError();
     }
@@ -496,7 +498,7 @@ class RpcHandler {
     var request = IdentitytoolkitRelyingpartySetAccountInfoRequest()
       ..idToken = idToken
       ..returnSecureToken = true;
-    var fieldsToDelete = <String>[];
+    var fieldsToDelete = <String?>[];
 
     // Copy over the relevant fields from profileData, or explicitly flag a field
     // for deletion if null is passed as the value. Note that this currently only
@@ -523,7 +525,7 @@ class RpcHandler {
     }
 
     if (fieldsToDelete.isNotEmpty) {
-      request.deleteAttribute = fieldsToDelete;
+      request.deleteAttribute = fieldsToDelete.whereType<String>().toList();
     }
     var response = await relyingparty.setAccountInfo(request);
 
@@ -533,9 +535,6 @@ class RpcHandler {
   /// Requests setAccountInfo endpoint for updateEmail operation.
   Future<SetAccountInfoResponse> updateEmail(
       String idToken, String newEmail) async {
-    if (idToken == null) {
-      throw FirebaseAuthException.internalError();
-    }
     _validateEmail(newEmail);
     var response = await relyingparty
         .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
@@ -548,9 +547,6 @@ class RpcHandler {
   /// Requests setAccountInfo endpoint for updatePassword operation.
   Future<SetAccountInfoResponse> updatePassword(
       String idToken, String newPassword) async {
-    if (idToken == null) {
-      throw FirebaseAuthException.internalError();
-    }
     _validateStrongPassword(newPassword);
     var response = await relyingparty
         .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
@@ -565,9 +561,6 @@ class RpcHandler {
   /// used to link an existing account to a email and password account.
   Future<SetAccountInfoResponse> updateEmailAndPassword(
       String idToken, String newEmail, String newPassword) async {
-    if (idToken == null) {
-      throw FirebaseAuthException.internalError();
-    }
     _validateEmail(newEmail);
     _validateStrongPassword(newPassword);
     var response = await relyingparty
@@ -584,10 +577,7 @@ class RpcHandler {
   /// with the ID token.
   Future<EmailLinkSigninResponse> emailLinkSignInForLinking(
       String idToken, String email, String oobCode) async {
-    if (idToken == null ||
-        idToken.isEmpty ||
-        oobCode == null ||
-        oobCode.isEmpty) {
+    if (idToken.isEmpty || oobCode.isEmpty) {
       throw FirebaseAuthException.internalError();
     }
     _validateEmail(email);
@@ -604,11 +594,11 @@ class RpcHandler {
   /// Requests createAuthUri endpoint to retrieve the authUri and session ID for
   /// the start of an OAuth handshake.
   Future<CreateAuthUriResponse> getAuthUri(
-      String providerId, String continueUri,
-      [Map<String, dynamic> customParameters,
-      List<String> additionalScopes,
-      String email,
-      String sessionId]) async {
+      String? providerId, String? continueUri,
+      [Map<String, dynamic>? customParameters,
+      List<String>? additionalScopes,
+      String? email,
+      String? sessionId]) async {
     if (continueUri == null) {
       throw FirebaseAuthException.missingContinueUri();
     }
@@ -623,7 +613,7 @@ class RpcHandler {
     var request = IdentitytoolkitRelyingpartyCreateAuthUriRequest()
       ..providerId = providerId
       ..continueUri = continueUri
-      ..customParameter = customParameters ?? {};
+      ..customParameter = customParameters as Map<String, String>? ?? {};
     if (email != null) request.identifier = email;
     if (scopes != null) request.oauthScope = scopes;
     if (sessionId != null) request.sessionId = sessionId;
@@ -648,7 +638,7 @@ class RpcHandler {
   /// Requests sendVerificationCode endpoint for verifying the user's ownership of
   /// a phone number. It resolves with a sessionInfo (verificationId).
   Future<String> sendVerificationCode(
-      {String phoneNumber, String recaptchaToken}) async {
+      {String? phoneNumber, String? recaptchaToken}) async {
     // In the future, we could support other types of assertions so for now,
     // we are keeping the request an object.
 
@@ -662,16 +652,16 @@ class RpcHandler {
     if (response.sessionInfo == null) {
       throw FirebaseAuthException.internalError();
     }
-    return response.sessionInfo;
+    return response.sessionInfo!;
   }
 
   /// Requests verifyPhoneNumber endpoint for sign in/sign up phone number
   /// authentication flow and resolves with the STS token response.
   Future<openid.Credential> verifyPhoneNumber(
-      {String sessionInfo,
-      String code,
-      String temporaryProof,
-      String phoneNumber}) async {
+      {String? sessionInfo,
+      String? code,
+      String? temporaryProof,
+      String? phoneNumber}) async {
     var request = IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest()
       ..sessionInfo = sessionInfo
       ..code = code
@@ -686,11 +676,11 @@ class RpcHandler {
   /// Requests verifyPhoneNumber endpoint for link/update phone number
   /// authentication flow and resolves with the STS token response.
   Future<openid.Credential> verifyPhoneNumberForLinking(
-      {String sessionInfo,
-      String code,
-      String temporaryProof,
-      String phoneNumber,
-      String idToken}) async {
+      {String? sessionInfo,
+      String? code,
+      String? temporaryProof,
+      String? phoneNumber,
+      String? idToken}) async {
     // idToken should be required here.
     if (idToken == null) {
       throw FirebaseAuthException.internalError();
@@ -707,7 +697,7 @@ class RpcHandler {
 
     if (response.temporaryProof != null) {
       throw _errorInfoFromResponse(
-          FirebaseAuthException.credentialAlreadyInUse(), response);
+          FirebaseAuthException.credentialAlreadyInUse(), response)!;
     }
 
     return handleIdTokenResponse(response);
@@ -716,10 +706,10 @@ class RpcHandler {
   /// Requests verifyPhoneNumber endpoint for reauthenticating with a phone number
   /// and resolves with the STS token response.
   Future<openid.Credential> verifyPhoneNumberForExisting(
-      {String sessionInfo,
-      String code,
-      String temporaryProof,
-      String phoneNumber}) async {
+      {String? sessionInfo,
+      String? code,
+      String? temporaryProof,
+      String? phoneNumber}) async {
     var request = IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest()
       ..sessionInfo = sessionInfo
       ..code = code
@@ -732,14 +722,14 @@ class RpcHandler {
 
     if (response.temporaryProof != null) {
       throw _errorInfoFromResponse(
-          FirebaseAuthException.credentialAlreadyInUse(), response);
+          FirebaseAuthException.credentialAlreadyInUse(), response)!;
     }
 
     return handleIdTokenResponse(response);
   }
 
   /// Updates the custom locale header.
-  void updateCustomLocaleHeader(String languageCode) {
+  void updateCustomLocaleHeader(String? languageCode) {
     identitytoolkitApi.updateCustomLocaleHeader(languageCode);
   }
 
@@ -767,8 +757,8 @@ class RpcHandler {
   }
 
   /// Returns the IDP and its comma separated scope strings serialized.
-  String _getAdditionalScopes(String providerId,
-      [List<String> additionalScopes]) {
+  String? _getAdditionalScopes(String providerId,
+      [List<String>? additionalScopes]) {
     if (additionalScopes != null && additionalScopes.isNotEmpty) {
       // Return stringified scopes.
       return json.encode({providerId: additionalScopes.join(',')});
@@ -788,7 +778,7 @@ class RpcHandler {
     }
   }
 
-  FirebaseAuthException _errorFromVerifyAssertionResponse(
+  FirebaseAuthException? _errorFromVerifyAssertionResponse(
       VerifyAssertionResponse response) {
     if (response.needConfirmation ?? false) {
       // Account linking required, previously logged in to another account
@@ -837,8 +827,8 @@ class RpcHandler {
     }
   }
 
-  FirebaseAuthException _errorInfoFromResponse(
-      FirebaseAuthException error, IdTokenResponse response) {
+  FirebaseAuthException? _errorInfoFromResponse(
+      FirebaseAuthException? error, IdTokenResponse response) {
     var message, email, phoneNumber;
     if (response is VerifyAssertionResponse) {
       email = response.email;
@@ -858,13 +848,13 @@ class RpcHandler {
   }
 
   /// Constructs an Auth credential from a backend response.
-  AuthCredential _getCredentialFromResponse(dynamic response) {
+  AuthCredential? _getCredentialFromResponse(dynamic response) {
     // Handle phone Auth credential responses, as they have a different format
     // from other backend responses (i.e. no providerId).
     if (response is IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse) {
       return PhoneAuthProvider.credentialFromTemporaryProof(
-          temporaryProof: response.temporaryProof,
-          phoneNumber: response.phoneNumber);
+          temporaryProof: response.temporaryProof!,
+          phoneNumber: response.phoneNumber!);
     }
 
     if (response is VerifyAssertionResponse) {
@@ -885,15 +875,15 @@ class RpcHandler {
                 accessToken: response.oauthAccessToken);
 
           case FacebookAuthProvider.PROVIDER_ID:
-            return FacebookAuthProvider.credential(response.oauthAccessToken);
+            return FacebookAuthProvider.credential(response.oauthAccessToken!);
 
           case GithubAuthProvider.PROVIDER_ID:
-            return GithubAuthProvider.credential(response.oauthAccessToken);
+            return GithubAuthProvider.credential(response.oauthAccessToken!);
 
           case TwitterAuthProvider.PROVIDER_ID:
             return TwitterAuthProvider.credential(
-                accessToken: response.oauthAccessToken,
-                secret: response.oauthTokenSecret);
+                accessToken: response.oauthAccessToken!,
+                secret: response.oauthTokenSecret!);
 
           default: // TODO: is this still VerifyAssertionResponse?
             if (response.oauthAccessToken == null &&
@@ -904,7 +894,7 @@ class RpcHandler {
             }
             if (response.pendingToken != null) {
               if (isSaml(providerId)) {
-                return SAMLAuthCredential(providerId, response.pendingToken);
+                return SAMLAuthCredential(providerId, response.pendingToken!);
               } else {
                 // OIDC and non-default providers excluding Twitter.
                 return OAuthCredential(
@@ -929,7 +919,7 @@ class RpcHandler {
   }
 
   /// Returns the developer facing error corresponding to the server code provided
-  FirebaseAuthException _getDeveloperErrorFromCode(String serverErrorCode) {
+  FirebaseAuthException _getDeveloperErrorFromCode(String? serverErrorCode) {
     // Encapsulate the server error code in a typical server error response with
     // the code populated within. This will convert the response to a developer
     // facing one.
@@ -957,7 +947,7 @@ class RpcHandler {
     // token, a credential with raw nonce and OIDC ID token needs to be returned.
     if (response.oauthIdToken != null &&
         response.providerId != null &&
-        response.providerId.startsWith('oidc.') &&
+        response.providerId!.startsWith('oidc.') &&
         // Use pendingToken instead of idToken and rawNonce when available.
         response.pendingToken == null) {
       if (request.sessionId != null) {
@@ -1003,7 +993,7 @@ class RpcHandler {
 
   /// Validates an action code.
   void _validateApplyActionCode(String oobCode) {
-    if (oobCode == null || oobCode.isEmpty) {
+    if (oobCode.isEmpty) {
       throw FirebaseAuthException.invalidOobCode();
     }
   }
@@ -1016,7 +1006,7 @@ class RpcHandler {
   }
 
   /// Validates a password
-  void _validatePassword(String password) {
+  void _validatePassword(String? password) {
     if (password == null || password.isEmpty) {
       throw FirebaseAuthException.invalidPassword();
     }
@@ -1038,7 +1028,7 @@ class RpcHandler {
   }
 
   /// Validates a password
-  void _validateStrongPassword(String password) {
+  void _validateStrongPassword(String? password) {
     if (password == null || password.isEmpty) {
       throw FirebaseAuthException.weakPassword();
     }

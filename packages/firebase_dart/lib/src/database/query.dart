@@ -1,6 +1,8 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
+
+
 part of firebase_dart;
 
 /// A Query filters the data at a Firebase location so only a subset of the
@@ -63,7 +65,7 @@ abstract class Query {
   ///
   /// startAt() can be combined with endAt() or limitToFirst() or limitToLast()
   /// to create further restrictive queries.
-  Query startAt(dynamic value, [String key]);
+  Query startAt(dynamic value, {String? key});
 
   /// Creates a [Query] with the specified ending point. The generated Query
   /// includes children which match the specified ending point. If no arguments
@@ -76,10 +78,10 @@ abstract class Query {
   ///
   /// endAt() can be combined with startAt() or limitToFirst() or limitToLast()
   /// to create further restrictive queries.
-  Query endAt(dynamic value, [String key]);
+  Query endAt(dynamic value, {String? key});
 
   /// Creates a [Query] which includes children which match the specified value.
-  Query equalTo(dynamic value, [String key]);
+  Query equalTo(dynamic value, {String? key});
 
   /// Generates a new [Query] object limited to the first certain number of
   /// children.

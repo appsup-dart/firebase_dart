@@ -17,12 +17,12 @@ abstract class DataSnapshot {
   dynamic get value;
 
   /// The key of the location that generated this DataSnapshot.
-  String get key;
+  String? get key;
 }
 
 class MutableData {
   /// The key of the location that generated this MutableData.
-  final String key;
+  final String? key;
 
   /// Returns the mutable contents of this MutableData as native types.
   dynamic value;

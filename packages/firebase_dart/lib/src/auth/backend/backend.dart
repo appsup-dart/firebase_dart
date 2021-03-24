@@ -7,16 +7,15 @@ import 'package:firebase_dart/src/auth/rpc/error.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
-import 'package:meta/meta.dart';
 
 class BackendConnection {
-  final Backend backend;
+  final AuthBackend backend;
 
   BackendConnection(this.backend);
 
   Future<GetAccountInfoResponse> getAccountInfo(
       IdentitytoolkitRelyingpartyGetAccountInfoRequest request) async {
-    var user = await _userFromIdToken(request.idToken);
+    var user = await _userFromIdToken(request.idToken!);
     return GetAccountInfoResponse()
       ..kind = 'identitytoolkit#GetAccountInfoResponse'
       ..users = [user];
@@ -44,7 +43,11 @@ class BackendConnection {
 
   Future<VerifyPasswordResponse> verifyPassword(
       IdentitytoolkitRelyingpartyVerifyPasswordRequest request) async {
-    var user = await backend.getUserByEmail(request.email);
+    var email = request.email;
+    if (email == null) {
+      throw ArgumentError('Invalid request: missing email');
+    }
+    var user = await backend.getUserByEmail(email);
 
     if (user.rawPassword == request.password) {
       var refreshToken = await backend.generateRefreshToken(user.localId);
@@ -64,17 +67,21 @@ class BackendConnection {
 
   Future<CreateAuthUriResponse> createAuthUri(
       IdentitytoolkitRelyingpartyCreateAuthUriRequest request) async {
-    var user = await backend.getUserByEmail(request.identifier);
+    var email = request.identifier;
+    if (email == null) {
+      throw ArgumentError('Invalid request: missing identifier');
+    }
+    var user = await backend.getUserByEmail(email);
 
     return CreateAuthUriResponse()
       ..kind = 'identitytoolkit#CreateAuthUriResponse'
-      ..allProviders = [for (var p in user.providerUserInfo) p.providerId]
-      ..signinMethods = [for (var p in user.providerUserInfo) p.providerId];
+      ..allProviders = [for (var p in user.providerUserInfo!) p.providerId!]
+      ..signinMethods = [for (var p in user.providerUserInfo!) p.providerId!];
   }
 
   Future<VerifyCustomTokenResponse> verifyCustomToken(
       IdentitytoolkitRelyingpartyVerifyCustomTokenRequest request) async {
-    var user = await _userFromIdToken(request.token);
+    var user = await _userFromIdToken(request.token!);
 
     var refreshToken = await backend.generateRefreshToken(user.localId);
     return VerifyCustomTokenResponse()
@@ -88,26 +95,32 @@ class BackendConnection {
 
   Future<DeleteAccountResponse> deleteAccount(
       IdentitytoolkitRelyingpartyDeleteAccountRequest request) async {
-    var user = await _userFromIdToken(request.idToken);
+    var user = await _userFromIdToken(request.idToken!);
     await backend.deleteUser(user.localId);
     return DeleteAccountResponse()
       ..kind = 'identitytoolkit#DeleteAccountResponse';
   }
 
-  Future<BackendUser> _userFromIdToken(String idToken) {
+  Future<BackendUser> _userFromIdToken(String idToken) async {
     var jwt = JsonWebToken.unverified(idToken); // TODO verify
     var uid = jwt.claims['uid'] ?? jwt.claims.subject;
-    return backend.getUserById(uid);
+    if (uid == null) {
+      throw ArgumentError('Invalid id token (${jwt.claims}): no subject');
+    }
+    var user = await backend.getUserById(uid);
+
+    return user;
   }
 
   Future<GetOobConfirmationCodeResponse> getOobConfirmationCode(
       Relyingparty request) async {
-    var user = (request.idToken != null)
-        ? await _userFromIdToken(request.idToken)
-        : await backend.getUserByEmail(request.email);
-    if (user == null) {
-      throw FirebaseAuthException.userDeleted();
-    }
+    var idToken = request.idToken;
+    var email = request.email;
+    var user = idToken != null
+        ? await _userFromIdToken(idToken)
+        : email != null
+            ? await backend.getUserByEmail(email)
+            : throw ArgumentError('Invalid request: missing idToken or email');
     return GetOobConfirmationCodeResponse()
       ..kind = 'identitytoolkit#GetOobConfirmationCodeResponse'
       ..email = user.email;
@@ -117,7 +130,7 @@ class BackendConnection {
       IdentitytoolkitRelyingpartyResetPasswordRequest request) async {
     BackendUser user;
     try {
-      user = await _userFromIdToken(request.oobCode);
+      user = await _userFromIdToken(request.oobCode!);
     } on ArgumentError {
       throw FirebaseAuthException.invalidOobCode();
     }
@@ -129,11 +142,11 @@ class BackendConnection {
 
   Future<SetAccountInfoResponse> setAccountInfo(
       IdentitytoolkitRelyingpartySetAccountInfoRequest request) async {
-    var user = await _userFromIdToken(request.idToken);
+    var user = await _userFromIdToken(request.idToken!);
     if (request.deleteProvider != null) {
-      user.providerUserInfo.removeWhere(
-          (element) => request.deleteProvider.contains(element.providerId));
-      if (request.deleteProvider.contains('phone')) {
+      user.providerUserInfo!.removeWhere(
+          (element) => request.deleteProvider!.contains(element.providerId));
+      if (request.deleteProvider!.contains('phone')) {
         user.phoneNumber = null;
       }
     }
@@ -144,7 +157,7 @@ class BackendConnection {
       user.photoUrl = request.photoUrl;
     }
     if (request.deleteAttribute != null) {
-      for (var a in request.deleteAttribute) {
+      for (var a in request.deleteAttribute!) {
         switch (a) {
           case 'displayName':
             user.displayName = null;
@@ -171,7 +184,7 @@ class BackendConnection {
               uid: user.localId, providerId: 'password')
           : null
       ..providerUserInfo = [
-        for (var u in user.providerUserInfo)
+        for (var u in user.providerUserInfo!)
           SetAccountInfoResponseProviderUserInfo()
             ..providerId = u.providerId
             ..photoUrl = u.photoUrl
@@ -183,7 +196,11 @@ class BackendConnection {
       sendVerificationCode(
           IdentitytoolkitRelyingpartySendVerificationCodeRequest
               request) async {
-    var token = await backend.sendVerificationCode(request.phoneNumber);
+    var phoneNumber = request.phoneNumber;
+    if (phoneNumber == null) {
+      throw ArgumentError('Invalid request: missing phoneNumber');
+    }
+    var token = await backend.sendVerificationCode(phoneNumber);
     return IdentitytoolkitRelyingpartySendVerificationCodeResponse()
       ..sessionInfo = token;
   }
@@ -191,8 +208,15 @@ class BackendConnection {
   Future<IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse>
       verifyPhoneNumber(
           IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest request) async {
-    var user =
-        await backend.verifyPhoneNumber(request.sessionInfo, request.code);
+    var sessionInfo = request.sessionInfo;
+    if (sessionInfo == null) {
+      throw ArgumentError('Invalid request: missing sessionInfo');
+    }
+    var code = request.code;
+    if (code == null) {
+      throw ArgumentError('Invalid request: missing code');
+    }
+    var user = await backend.verifyPhoneNumber(sessionInfo, code);
 
     return IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse()
       ..localId = user.localId
@@ -268,7 +292,7 @@ class BackendConnection {
   }
 }
 
-abstract class Backend {
+abstract class AuthBackend {
   Future<BackendUser> getUserById(String uid);
 
   Future<BackendUser> getUserByEmail(String email);
@@ -276,14 +300,14 @@ abstract class Backend {
   Future<BackendUser> getUserByPhoneNumber(String phoneNumber);
 
   Future<BackendUser> createUser(
-      {@required String email, @required String password});
+      {required String? email, required String? password});
 
   Future<BackendUser> updateUser(BackendUser user);
 
   Future<void> deleteUser(String uid);
 
   Future<String> generateIdToken(
-      {@required String uid, @required String providerId});
+      {required String uid, required String providerId});
 
   Future<String> generateRefreshToken(String uid);
 
@@ -292,28 +316,29 @@ abstract class Backend {
   Future<String> sendVerificationCode(String phoneNumber);
 
   Future<BackendUser> verifyPhoneNumber(String sessionInfo, String code);
-}
-
-abstract class BaseBackend extends Backend {
-  final JsonWebKey tokenSigningKey;
-
-  final String projectId;
-
-  BaseBackend({@required this.tokenSigningKey, @required this.projectId});
 
   Future<BackendUser> storeUser(BackendUser user);
 
+  Future<String?> receiveSmsCode(String phoneNumber);
+}
+
+abstract class BaseBackend extends AuthBackend {
+  final JsonWebKey tokenSigningKey;
+
+  final String? projectId;
+
+  BaseBackend({required this.tokenSigningKey, required this.projectId});
+
   @override
   Future<BackendUser> createUser(
-      {@required String email, @required String password}) async {
+      {required String? email, required String? password}) async {
     var uid = _generateRandomString(24);
     var now = (clock.now().millisecondsSinceEpoch ~/ 1000).toString();
-    return storeUser(BackendUser()
+    return storeUser(BackendUser(uid)
       ..createdAt = now
       ..lastLoginAt = now
       ..email = email
       ..rawPassword = password
-      ..localId = uid
       ..providerUserInfo = [
         if (password != null)
           UserInfoProviderUserInfo()
@@ -329,7 +354,7 @@ abstract class BaseBackend extends Backend {
 
   @override
   Future<String> generateIdToken(
-      {@required String uid, @required String providerId}) async {
+      {required String uid, required String providerId}) async {
     var builder = JsonWebSignatureBuilder()
       ..jsonContent = _jwtPayloadFor(uid, providerId)
       ..addRecipient(tokenSigningKey);
@@ -349,7 +374,7 @@ abstract class BaseBackend extends Backend {
     var store = JsonWebKeyStore()..addKey(tokenSigningKey);
     var jws = JsonWebSignature.fromCompactSerialization(token);
     var payload = await jws.getPayload(store);
-    return payload.jsonContent;
+    return payload.jsonContent!;
   }
 
   static final _random = Random(DateTime.now().millisecondsSinceEpoch);
@@ -366,7 +391,7 @@ abstract class BaseBackend extends Backend {
     var now = clock.now().millisecondsSinceEpoch ~/ 1000;
     return {
       'iss': 'https://securetoken.google.com/$projectId',
-      if (providerId != null) 'provider_id': providerId,
+      'provider_id': providerId,
       'aud': '$projectId',
       'auth_time': now,
       'sub': uid,
@@ -378,4 +403,11 @@ abstract class BaseBackend extends Backend {
   }
 }
 
-class BackendUser extends UserInfo {}
+class BackendUser extends UserInfo {
+  BackendUser(String localId) {
+    this.localId = localId;
+  }
+
+  @override
+  String get localId => super.localId!;
+}

@@ -13,7 +13,10 @@ class Location {
             host: Uri.encodeComponent(bucket),
             pathSegments: pathSegments);
 
-  factory Location.fromBucketSpec(String bucketString) {
+  factory Location.fromBucketSpec(String? bucketString) {
+    if (bucketString == null) {
+      throw StorageException.noDefaultBucket();
+    }
     try {
       var bucketLocation = Location.fromUrl(bucketString);
       if (bucketLocation.isRoot) {
@@ -34,9 +37,9 @@ class Location {
       case 'gs':
         var m = RegExp(r'^gs://([A-Za-z0-9\.\-_]+)(/(.*))?$').firstMatch(url);
         if (m == null) break;
-        var segments = m.group(3).split('/');
+        var segments = m.group(3)!.split('/');
         if (segments.last.isEmpty) segments.removeLast();
-        return Location(m.group(1), segments);
+        return Location(m.group(1)!, segments);
       case 'http':
       case 'https':
         if (uri.pathSegments.length < 4 ||
@@ -68,7 +71,7 @@ class Location {
     return Location(bucket, [...uri.pathSegments, ...segments]);
   }
 
-  Location getParent() {
+  Location? getParent() {
     if (isRoot) return null;
     return Location(
         bucket, [...uri.pathSegments.take(uri.pathSegments.length - 1)]);

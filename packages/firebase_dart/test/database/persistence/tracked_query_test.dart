@@ -1,3 +1,5 @@
+
+
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
@@ -60,7 +62,7 @@ void main() async {
         manager.storageLayer.beginTransaction();
         manager.setQueryActive(sampleFooQuery);
         manager.storageLayer.endTransaction();
-        var q = manager.findTrackedQuery(sampleFooQuery);
+        var q = manager.findTrackedQuery(sampleFooQuery)!;
         expect(q.active, true);
         expect(clock.now(), q.lastUse);
         manager.verifyCache();
@@ -69,7 +71,7 @@ void main() async {
         manager.storageLayer.beginTransaction();
         manager.setQueryInactive(sampleFooQuery);
         manager.storageLayer.endTransaction();
-        q = manager.findTrackedQuery(sampleFooQuery);
+        q = manager.findTrackedQuery(sampleFooQuery)!;
         expect(q.active, false);
         expect(clock.now(), q.lastUse);
         manager.verifyCache();
@@ -82,7 +84,7 @@ void main() async {
       manager.setQueryActive(sampleFooQuery);
       manager.setQueryCompleteIfExists(sampleFooQuery);
       manager.storageLayer.endTransaction();
-      expect(manager.findTrackedQuery(sampleFooQuery).complete, true);
+      expect(manager.findTrackedQuery(sampleFooQuery)!.complete, true);
       manager.verifyCache();
     });
 
@@ -103,34 +105,34 @@ void main() async {
       manager.storageLayer.endTransaction();
 
       expect(
-          manager.findTrackedQuery(QuerySpec(Name.parsePath('foo'))).complete,
+          manager.findTrackedQuery(QuerySpec(Name.parsePath('foo')))!.complete,
           true);
       expect(
           manager
-              .findTrackedQuery(QuerySpec(Name.parsePath('foo/bar')))
+              .findTrackedQuery(QuerySpec(Name.parsePath('foo/bar')))!
               .complete,
           true);
       expect(
           manager
               .findTrackedQuery(
-                  QuerySpec(Name.parsePath('foo'), sampleQueryParams))
+                  QuerySpec(Name.parsePath('foo'), sampleQueryParams))!
               .complete,
           true);
       expect(
           manager
               .findTrackedQuery(
-                  QuerySpec(Name.parsePath('foo/baz'), sampleQueryParams))
+                  QuerySpec(Name.parsePath('foo/baz'), sampleQueryParams))!
               .complete,
           true);
       expect(
           manager
-              .findTrackedQuery(QuerySpec(Name.parsePath('elsewhere')))
+              .findTrackedQuery(QuerySpec(Name.parsePath('elsewhere')))!
               .complete,
           false);
       expect(
           manager
               .findTrackedQuery(
-                  QuerySpec(Name.parsePath('elsewhere'), sampleQueryParams))
+                  QuerySpec(Name.parsePath('elsewhere'), sampleQueryParams))!
               .complete,
           false);
       manager.verifyCache();
@@ -303,7 +305,7 @@ void main() async {
         manager.storageLayer.beginTransaction();
         manager.ensureCompleteTrackedQuery(Name.parsePath('foo'));
         manager.storageLayer.endTransaction();
-        var query = manager.findTrackedQuery(QuerySpec(Name.parsePath('foo')));
+        var query = manager.findTrackedQuery(QuerySpec(Name.parsePath('foo')))!;
         expect(query.complete, true);
         expect(query.lastUse, clock.now());
       });
@@ -323,7 +325,7 @@ void main() async {
         manager.ensureCompleteTrackedQuery(Name.parsePath('foo'));
         manager.storageLayer.endTransaction();
         expect(
-            manager.findTrackedQuery(QuerySpec(Name.parsePath('foo'))).lastUse,
+            manager.findTrackedQuery(QuerySpec(Name.parsePath('foo')))!.lastUse,
             lastTick);
       });
     });

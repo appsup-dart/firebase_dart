@@ -6,11 +6,15 @@ import 'package:test/test.dart';
 
 import '../util.dart';
 
-void main() async {
-  await FirebaseTesting.setup();
+void main() {
+  return runCoreTests(isolated: false);
+}
+
+void runCoreTests({bool isolated = false}) async {
+  await FirebaseTesting.setup(isolated: isolated);
 
   group('Firebase', () {
-    FirebaseApp app;
+    FirebaseApp? app;
 
     tearDown(() async {
       await app?.delete();
@@ -23,8 +27,8 @@ void main() async {
           () async {
         app = await Firebase.initializeApp(options: getOptions());
 
-        expect(app.name, '[DEFAULT]');
-        expect(app.options, getOptions());
+        expect(app!.name, '[DEFAULT]');
+        expect(app!.options, getOptions());
       });
 
       test('Firebase.initializeApp should throw when already exists', () async {

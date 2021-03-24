@@ -10,9 +10,9 @@ import 'package:test/test.dart';
 void main() {
   group('SyncTree', () {
     group('Completeness on user operation', () {
-      SyncTree syncTree;
+      late SyncTree syncTree;
       SyncPoint syncPoint;
-      MasterView view;
+      late MasterView view;
 
       setUp(() {
         syncTree = SyncTree('mem:///');
@@ -111,16 +111,18 @@ void main() {
 
 extension SyncTreeMeasurer on SyncTree {
   int get obsoleteTreeStructuredDataInstanceCount {
-    var root = TreeNode<Name, Set<TreeStructuredData>>();
+    var root = TreeNode<Name, Set<TreeStructuredData>>(
+        EqualitySet(IdentityEquality()));
 
     void handleOperation(
-        TreeNode<Name, Set<TreeStructuredData>> tree, Operation operation) {
+        TreeNode<Name, Set<TreeStructuredData>> tree, Operation? operation) {
       if (operation is TreeOperation) {
         handleOperation(
-            tree.subtree(operation.path, (parent, name) => TreeNode()),
+            tree.subtree(operation.path,
+                (parent, name) => TreeNode(EqualitySet(IdentityEquality()))),
             operation.nodeOperation);
       } else if (operation is Overwrite) {
-        var set = tree.value ??= EqualitySet(IdentityEquality());
+        var set = tree.value;
         set.add(operation.value);
         operation.value.children.forEach((key, value) {
           handleOperation(
@@ -134,7 +136,8 @@ extension SyncTreeMeasurer on SyncTree {
     }
 
     this.root.forEachNode((key, value) {
-      var tree = root.subtree(key, (parent, name) => TreeNode());
+      var tree = root.subtree(
+          key, (parent, name) => TreeNode(EqualitySet(IdentityEquality())));
       for (var view in value.views.values) {
         for (var data in [view.data.localVersion, view.data.serverVersion]) {
           var op = data.toOperation();
@@ -145,7 +148,6 @@ extension SyncTreeMeasurer on SyncTree {
 
     var obsoleteCount = 0;
     root.forEachNode((key, value) {
-      if (value == null) return;
       value.removeWhere((element) => element == TreeStructuredData());
 
       obsoleteCount += value.length - Set.from(value).length;

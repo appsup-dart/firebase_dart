@@ -8,7 +8,6 @@ import 'package:firebase_dart/src/database/impl/persistence/hive_engine.dart';
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
 import 'package:hive/hive.dart';
-import 'package:meta/meta.dart';
 import 'package:quiver/core.dart' as quiver;
 
 import '../../database.dart';
@@ -19,7 +18,7 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
   @override
   final String databaseURL;
 
-  FirebaseDatabaseImpl({@required FirebaseApp app, String databaseURL})
+  FirebaseDatabaseImpl({required FirebaseApp app, String? databaseURL})
       : databaseURL = normalizeUrl(databaseURL ?? app.options.databaseURL),
         super(app);
 
@@ -44,7 +43,7 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
     repo.purgeOutstandingWrites();
   }
 
-  PersistenceManager _persistenceManager;
+  PersistenceManager? _persistenceManager;
 
   int _persistenceCacheSize = 10 * 1024 * 1024;
 
@@ -76,7 +75,7 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
     return true;
   }
 
-  static String normalizeUrl(String url) {
+  static String normalizeUrl(String? url) {
     if (url == null) {
       throw ArgumentError.notNull('databaseURL');
     }
@@ -113,15 +112,16 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
       other.databaseURL == databaseURL;
 
   @override
-  void setPersistenceCacheSizeBytes(int cacheSizeInBytes) {
-    assert(cacheSizeInBytes != null);
+  Future<bool> setPersistenceCacheSizeBytes(int cacheSizeInBytes) async {
+    if (_persistenceManager != null) return false;
     _persistenceCacheSize = cacheSizeInBytes;
+    return true;
   }
 }
 
 class DataSnapshotImpl extends DataSnapshot {
   @override
-  final String key;
+  final String? key;
 
   final TreeStructuredData treeStructuredData;
 
@@ -129,34 +129,30 @@ class DataSnapshotImpl extends DataSnapshot {
       : key = ref.key;
 
   @override
-  dynamic get value => treeStructuredData?.toJson();
-}
-
-extension QueryExtensionForTesting on Query {
-  FirebaseDatabase get database => (this as QueryImpl)._db;
+  dynamic get value => treeStructuredData.toJson();
 }
 
 class QueryImpl extends Query {
   final List<String> _pathSegments;
   final String _path;
-  final FirebaseDatabase _db;
+  final FirebaseDatabase db;
   final QueryFilter filter;
   final Repo _repo;
 
-  QueryImpl._(this._db, this._pathSegments, this.filter)
+  QueryImpl._(this.db, this._pathSegments, this.filter)
       : _path = _pathSegments.map(Uri.encodeComponent).join('/'),
-        _repo = Repo(_db);
+        _repo = Repo(db);
 
   @override
   Stream<Event> on(String eventType) =>
       _repo.createStream(reference(), filter, eventType);
 
   Query _withFilter(QueryFilter filter) =>
-      QueryImpl._(_db, _pathSegments, filter);
+      QueryImpl._(db, _pathSegments, filter);
 
   @override
   Query orderByChild(String child) {
-    if (child == null || child.startsWith(r'$')) {
+    if (child.startsWith(r'$')) {
       throw ArgumentError("'$child' is not a valid child");
     }
 
@@ -173,7 +169,7 @@ class QueryImpl extends Query {
   Query orderByPriority() =>
       _withFilter(filter.copyWith(orderBy: r'.priority'));
 
-  Name _parseKey(String key, String allowedSpecialName) {
+  Name _parseKey(String? key, String allowedSpecialName) {
     if (key == '[MIN_NAME]' && key == allowedSpecialName) return Name.min;
     if (key == '[MAX_NAME]' && key == allowedSpecialName) return Name.max;
     if (key == null) {
@@ -189,15 +185,15 @@ class QueryImpl extends Query {
   }
 
   @override
-  Query equalTo(dynamic value, [String key = '[ANY_NAME]']) {
+  Query equalTo(dynamic value, {String? key = '[ANY_NAME]'}) {
     if (filter.orderBy == '.key' || key == '[ANY_NAME]') {
       return endAt(value).startAt(value);
     }
-    return endAt(value, key).startAt(value, key);
+    return endAt(value, key: key).startAt(value, key: key);
   }
 
   @override
-  Query startAt(dynamic value, [String key = '[MIN_NAME]']) {
+  Query startAt(dynamic value, {String? key = '[MIN_NAME]'}) {
     if (filter.orderBy == '.key') {
       if (key != '[MIN_NAME]') {
         throw ArgumentError(
@@ -212,7 +208,7 @@ class QueryImpl extends Query {
   }
 
   @override
-  Query endAt(dynamic value, [String key = '[MAX_NAME]']) {
+  Query endAt(dynamic value, {String? key = '[MAX_NAME]'}) {
     if (filter.orderBy == '.key') {
       if (key != '[MAX_NAME]') {
         throw ArgumentError(
@@ -235,7 +231,7 @@ class QueryImpl extends Query {
       _withFilter(filter.copyWith(limit: limit, reverse: true));
 
   @override
-  DatabaseReference reference() => ReferenceImpl(_db, _pathSegments);
+  DatabaseReference reference() => ReferenceImpl(db, _pathSegments);
 
   @override
   Future<void> keepSynced(bool value) async {
@@ -244,7 +240,7 @@ class QueryImpl extends Query {
 }
 
 class ReferenceImpl extends QueryImpl with DatabaseReference {
-  Disconnect _onDisconnect;
+  late OnDisconnect _onDisconnect;
 
   ReferenceImpl(FirebaseDatabase db, List<String> path)
       : super._(db, path, const QueryFilter()) {
@@ -252,7 +248,7 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
   }
 
   @override
-  Disconnect get onDisconnect => _onDisconnect;
+  OnDisconnect onDisconnect() => _onDisconnect;
 
   @override
   Uri get url => _repo.url.replace(path: _path);
@@ -291,39 +287,25 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
 
   @override
   DatabaseReference child(String c) => ReferenceImpl(
-      _db, [..._pathSegments, ...c.split('/').map(Uri.decodeComponent)]);
+      db, [..._pathSegments, ...c.split('/').map(Uri.decodeComponent)]);
 
   @override
-  DatabaseReference parent() => _pathSegments.isEmpty
+  DatabaseReference? parent() => _pathSegments.isEmpty
       ? null
       : ReferenceImpl(
-          _db, [..._pathSegments.sublist(0, _pathSegments.length - 1)]);
+          db, [..._pathSegments.sublist(0, _pathSegments.length - 1)]);
 
   @override
-  DatabaseReference root() => ReferenceImpl(_db, []);
+  DatabaseReference root() => ReferenceImpl(db, []);
 }
 
-extension LegacyAuthExtension on DatabaseReference {
-  Repo get repo => (this as ReferenceImpl)._repo;
-
-  Future<void> authWithCustomToken(String token) => authenticate(token);
-
-  dynamic get auth => repo.authData;
-
-  Stream<Map> get onAuth => repo.onAuth;
-
-  Future unauth() => repo.unauth();
-
-  Future<void> authenticate(String token) => repo.auth(token);
-}
-
-class DisconnectImpl extends Disconnect {
+class DisconnectImpl extends OnDisconnect {
   final ReferenceImpl _ref;
 
   DisconnectImpl(this._ref);
 
   @override
-  Future setWithPriority(dynamic value, dynamic priority) =>
+  Future set(dynamic value, {dynamic priority}) =>
       _ref._repo.onDisconnectSetWithPriority(_ref._path, value, priority);
 
   @override
@@ -336,13 +318,14 @@ class DisconnectImpl extends Disconnect {
 
 class TransactionResultImpl implements TransactionResult {
   @override
-  final FirebaseDatabaseException error;
+  final FirebaseDatabaseException? error;
   @override
   final bool committed;
   @override
-  final DataSnapshot dataSnapshot;
+  final DataSnapshot? dataSnapshot;
 
-  const TransactionResultImpl({this.error, this.committed, this.dataSnapshot});
+  const TransactionResultImpl(
+      {this.error, required this.committed, this.dataSnapshot});
 
   const TransactionResultImpl.success(DataSnapshot snapshot)
       : this(dataSnapshot: snapshot, committed: true);

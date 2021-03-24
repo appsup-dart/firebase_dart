@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
-import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../database.dart';
@@ -17,17 +16,42 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
   @override
   final String databaseURL;
 
-  IsolateFirebaseDatabase({@required IsolateFirebaseApp app, this.databaseURL})
-      : super(app);
+  final BehaviorSubject<Duration> _serverTime =
+      BehaviorSubject.seeded(Duration());
+
+  final BehaviorSubject<Map<String, dynamic>?> _auth = BehaviorSubject();
+
+  late final StreamSubscription _infoSubscription;
+  late final StreamSubscription _authSubscription;
+
+  IsolateFirebaseDatabase(
+      {required IsolateFirebaseApp app, required this.databaseURL})
+      : super(app) {
+    _infoSubscription =
+        reference().child('.info/serverTimeOffset').onValue.listen((v) {
+      _serverTime.add(Duration(milliseconds: v.snapshot.value));
+    });
+
+    _authSubscription = app.commander
+        .subscribe(DatabaseFunctionCall<Stream<Map<String, dynamic>?>>(
+      #onAuth,
+      app.name,
+      databaseURL,
+      [],
+    ))
+        .listen((v) {
+      _auth.add(v);
+    });
+  }
 
   Future<T> invoke<T>(Symbol method,
-      [List<dynamic> positionalArguments,
-      Map<Symbol, dynamic> namedArguments]) {
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments]) {
     return app.commander.execute(DatabaseFunctionCall<FutureOr<T>>(
         method, app.name, databaseURL, positionalArguments, namedArguments));
   }
 
-  DateTime get serverTime => throw UnimplementedError();
+  DateTime get serverTime => DateTime.now().add(_serverTime.value!);
 
   @override
   Future<void> goOffline() async {
@@ -50,14 +74,45 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
   }
 
   @override
-  void setPersistenceCacheSizeBytes(int cacheSizeInBytes) async {
-    await invoke(#setPersistenceCacheSizeBytes, [cacheSizeInBytes]);
+  Future<bool> setPersistenceCacheSizeBytes(int cacheSizeInBytes) {
+    return invoke(#setPersistenceCacheSizeBytes, [cacheSizeInBytes]);
   }
 
   @override
   Future<bool> setPersistenceEnabled(bool enabled) async {
     return await invoke(#setPersistenceEnabled, [enabled]);
   }
+
+  @override
+  Future<void> delete() async {
+    await _infoSubscription.cancel();
+    await _authSubscription.cancel();
+    return super.delete();
+  }
+
+  void mockConnectionLost() {
+    invoke(#mockConnectionLost, []);
+  }
+
+  void mockResetMessage() {
+    invoke(#mockResetMessage, []);
+  }
+
+  Future<void> triggerDisconnect() {
+    return invoke(#triggerDisconnect, []);
+  }
+
+  Future<void> auth(String token) {
+    return invoke(#auth, [token]);
+  }
+
+  Future<void> unauth() {
+    return invoke(#unauth, []);
+  }
+
+  Stream<Map<String, dynamic>?> get onAuth => _auth.stream;
+
+  Map<String, dynamic>? get currentAuthData => _auth.value;
 }
 
 class DatabaseFunctionCall<T> extends BaseFunctionCall<T> {
@@ -66,14 +121,15 @@ class DatabaseFunctionCall<T> extends BaseFunctionCall<T> {
   final Symbol functionName;
 
   DatabaseFunctionCall(this.functionName, this.appName, this.databaseURL,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
   FirebaseDatabase get database =>
       FirebaseDatabase(app: Firebase.app(appName), databaseURL: databaseURL);
 
   @override
-  Function get function {
+  Function? get function {
     switch (functionName) {
       case #goOffline:
         return database.goOffline;
@@ -85,6 +141,18 @@ class DatabaseFunctionCall<T> extends BaseFunctionCall<T> {
         return database.setPersistenceCacheSizeBytes;
       case #setPersistenceEnabled:
         return database.setPersistenceEnabled;
+      case #mockConnectionLost:
+        return Repo(database).mockConnectionLost;
+      case #mockResetMessage:
+        return Repo(database).mockResetMessage;
+      case #triggerDisconnect:
+        return Repo(database).triggerDisconnect;
+      case #auth:
+        return Repo(database).auth;
+      case #unauth:
+        return Repo(database).unauth;
+      case #onAuth:
+        return () => Repo(database).onAuth;
     }
     return null;
   }
@@ -99,7 +167,8 @@ class QueryFunctionCall<T> extends BaseFunctionCall<T> {
 
   QueryFunctionCall(
       this.functionName, this.appName, this.databaseURL, this.path, this.filter,
-      [List<dynamic> positionalArguments, Map<Symbol, dynamic> namedArguments])
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
   FirebaseDatabase get database =>
@@ -127,31 +196,32 @@ class QueryFunctionCall<T> extends BaseFunctionCall<T> {
     }
     if (filter.startKey != null || filter.startValue != null) {
       if (filter.orderBy == '.key') {
-        query = query.startAt(filter.startKey.asString());
+        query = query.startAt(filter.startKey!.asString());
       } else {
-        query = query.startAt(
-            filter.startValue.toJson(), filter.startKey.asString());
+        query = query.startAt(filter.startValue!.toJson(),
+            key: filter.startKey!.asString());
       }
     }
     if (filter.endKey != null || filter.endValue != null) {
       if (filter.orderBy == '.key') {
-        query = query.endAt(filter.endKey.asString());
+        query = query.endAt(filter.endKey!.asString());
       } else {
-        query = query.endAt(filter.endValue.toJson(), filter.endKey.asString());
+        query = query.endAt(filter.endValue!.toJson(),
+            key: filter.endKey!.asString());
       }
     }
     if (filter.limit != null) {
       if (filter.reversed) {
-        query = query.limitToLast(filter.limit);
+        query = query.limitToLast(filter.limit!);
       } else {
-        query = query.limitToFirst(filter.limit);
+        query = query.limitToFirst(filter.limit!);
       }
     }
     return query;
   }
 
   @override
-  Function get function {
+  Function? get function {
     switch (functionName) {
       case #keepSynced:
         return getQuery().keepSynced;
@@ -162,13 +232,20 @@ class QueryFunctionCall<T> extends BaseFunctionCall<T> {
       case #update:
         return getRef().update;
       case #disconnectCancel:
-        return getRef().onDisconnect.cancel;
-      case #disconnectSetWithPriority:
-        return getRef().onDisconnect.setWithPriority;
+        return getRef().onDisconnect().cancel;
+      case #disconnectSet:
+        return getRef().onDisconnect().set;
       case #disconnectUpdate:
-        return getRef().onDisconnect.update;
+        return getRef().onDisconnect().update;
       case #on:
         return getQuery().on;
+      case #runTransaction:
+        return (IsolateCommander commander, {required Duration timeout}) {
+          return getRef().runTransaction(
+              (mutableData) => commander.execute(
+                  RegisteredFunctionCall(#transactionHandler, [mutableData])),
+              timeout: timeout);
+        };
     }
     return null;
   }
@@ -184,8 +261,8 @@ class IsolateQuery extends Query {
       : path = pathSegments.map(Uri.encodeComponent).join('/');
 
   Future<T> invoke<T>(Symbol method,
-      [List<dynamic> positionalArguments,
-      Map<Symbol, dynamic> namedArguments]) {
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments]) {
     return database.app.commander.execute(QueryFunctionCall<FutureOr<T>>(
         method,
         database.app.name,
@@ -197,11 +274,11 @@ class IsolateQuery extends Query {
   }
 
   @override
-  Query equalTo(dynamic value, [String key = '[ANY_NAME]']) {
+  Query equalTo(dynamic value, {String? key = '[ANY_NAME]'}) {
     if (filter.orderBy == '.key' || key == '[ANY_NAME]') {
       return endAt(value).startAt(value);
     }
-    return endAt(value, key).startAt(value, key);
+    return endAt(value, key: key).startAt(value, key: key);
   }
 
   @override
@@ -237,7 +314,7 @@ class IsolateQuery extends Query {
 
   @override
   Query orderByChild(String child) {
-    if (child == null || child.startsWith(r'$')) {
+    if (child.startsWith(r'$')) {
       throw ArgumentError("'$child' is not a valid child");
     }
 
@@ -260,7 +337,7 @@ class IsolateQuery extends Query {
   }
 
   @override
-  Query startAt(dynamic value, [String key = '[MIN_NAME]']) {
+  Query startAt(dynamic value, {String? key = '[MIN_NAME]'}) {
     if (filter.orderBy == '.key') {
       if (key != '[MIN_NAME]') {
         throw ArgumentError(
@@ -275,7 +352,7 @@ class IsolateQuery extends Query {
   }
 
   @override
-  Query endAt(dynamic value, [String key = '[MAX_NAME]']) {
+  Query endAt(dynamic value, {String? key = '[MAX_NAME]'}) {
     if (filter.orderBy == '.key') {
       if (key != '[MAX_NAME]') {
         throw ArgumentError(
@@ -289,7 +366,7 @@ class IsolateQuery extends Query {
         endAtValue: TreeStructuredData.fromJson(value)));
   }
 
-  Name _parseKey(String key, String allowedSpecialName) {
+  Name _parseKey(String? key, String allowedSpecialName) {
     if (key == '[MIN_NAME]' && key == allowedSpecialName) return Name.min;
     if (key == '[MAX_NAME]' && key == allowedSpecialName) return Name.max;
     if (key == null) {
@@ -304,7 +381,7 @@ class IsolateQuery extends Query {
   }
 }
 
-class IsolateDisconnect extends Disconnect {
+class IsolateDisconnect extends OnDisconnect {
   final IsolateDatabaseReference reference;
 
   IsolateDisconnect(this.reference);
@@ -315,8 +392,8 @@ class IsolateDisconnect extends Disconnect {
   }
 
   @override
-  Future setWithPriority(value, priority) {
-    return reference.invoke(#disconnectSetWithPriority, [value, priority]);
+  Future set(value, {priority}) {
+    return reference.invoke(#disconnectSet, [value], {#priority: priority});
   }
 
   @override
@@ -326,7 +403,7 @@ class IsolateDisconnect extends Disconnect {
 }
 
 class IsolateDatabaseReference extends IsolateQuery with DatabaseReference {
-  Disconnect _onDisconnect;
+  late OnDisconnect _onDisconnect;
 
   IsolateDatabaseReference(
       IsolateFirebaseDatabase database, List<String> pathSegments)
@@ -339,10 +416,10 @@ class IsolateDatabaseReference extends IsolateQuery with DatabaseReference {
       database, [...pathSegments, ...c.split('/').map(Uri.decodeComponent)]);
 
   @override
-  Disconnect get onDisconnect => _onDisconnect;
+  OnDisconnect onDisconnect() => _onDisconnect;
 
   @override
-  DatabaseReference parent() => pathSegments.isEmpty
+  DatabaseReference? parent() => pathSegments.isEmpty
       ? null
       : IsolateDatabaseReference(
           database, [...pathSegments.sublist(0, pathSegments.length - 1)]);
@@ -359,9 +436,11 @@ class IsolateDatabaseReference extends IsolateQuery with DatabaseReference {
   @override
   Future<TransactionResult> runTransaction(transactionHandler,
       {Duration timeout = const Duration(seconds: 5),
-      bool fireLocalEvents = true}) {
-    // TODO: implement runTransaction
-    throw UnimplementedError();
+      bool fireLocalEvents = true}) async {
+    var worker = IsolateWorker()
+      ..registerFunction(#transactionHandler, transactionHandler);
+
+    return invoke(#runTransaction, [worker.commander], {#timeout: timeout});
   }
 
   @override

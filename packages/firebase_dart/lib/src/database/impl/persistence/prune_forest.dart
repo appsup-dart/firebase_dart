@@ -19,16 +19,17 @@ import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 /// * 'false' cannot be a descendant of 'false' (we'll just keep the more
 /// shallow 'false').
 class PruneForest {
-  final TreeNode<Name, bool> pruneForest;
+  final TreeNode<Name, bool?> pruneForest;
 
-  static final Predicate<bool> KEEP_PREDICATE = (prune) => !prune;
+  static final Predicate<bool?> KEEP_PREDICATE =
+      (prune) => prune != null && !prune;
 
-  static final Predicate<bool> PRUNE_PREDICATE = (prune) => prune;
+  static final Predicate<bool?> PRUNE_PREDICATE = (prune) => prune == true;
 
-  static final TreeNode<Name, bool> PRUNE_TREE = TreeNode(true);
-  static final TreeNode<Name, bool> KEEP_TREE = TreeNode(false);
+  static final TreeNode<Name, bool?> PRUNE_TREE = TreeNode(true);
+  static final TreeNode<Name, bool?> KEEP_TREE = TreeNode(false);
 
-  PruneForest() : pruneForest = TreeNode();
+  PruneForest() : pruneForest = TreeNode(null);
 
   PruneForest._(this.pruneForest);
 
@@ -37,18 +38,18 @@ class PruneForest {
   /// Indicates that path is marked for pruning, so anything below it that
   /// didn't have keep() called on it should be pruned.
   bool shouldPruneUnkeptDescendants(Path<Name> path) {
-    var shouldPrune = pruneForest.leafMostValue(path);
+    var shouldPrune = pruneForest.leafMostValueMatching(path, (v) => v != null);
     return shouldPrune != null && shouldPrune;
   }
 
   bool shouldKeep(Path<Name> path) {
-    var shouldPrune = pruneForest.leafMostValue(path);
+    var shouldPrune = pruneForest.leafMostValueMatching(path, (v) => v != null);
     return shouldPrune != null && !shouldPrune;
   }
 
   bool affectsPath(Path<Name> path) {
-    return pruneForest.rootMostValue(path) != null ||
-        pruneForest.subtree(path)?.isEmpty == false;
+    return pruneForest.rootMostValueMatching(path, (v) => v != null) != null ||
+        pruneForest.subtreeNullable(path)?.isEmpty == false;
   }
 
   PruneForest directChild(Name key) {
@@ -71,7 +72,7 @@ class PruneForest {
     }
   }
 
-  T foldKeptNodes<T>(T startValue, T Function(Path<Name>, bool, T accum) f) {
+  T foldKeptNodes<T>(T startValue, T Function(Path<Name>, bool?, T accum) f) {
     pruneForest.forEachNode((key, value) {
       if (value == false) {
         startValue = f(key, value, startValue);
@@ -88,22 +89,22 @@ class PruneForest {
       // This path will already be pruned
       return this;
     } else {
-      var newPruneTree = pruneForest.setPath(path, PRUNE_TREE);
+      var newPruneTree = pruneForest.setPath(path, PRUNE_TREE, null);
       return PruneForest._(newPruneTree);
     }
   }
 
-  PruneForest keep(Path path) {
+  PruneForest keep(Path<Name> path) {
     if (pruneForest.rootMostValueMatching(path, KEEP_PREDICATE) != null) {
       // This path will already be kept
       return this;
     } else {
-      var newPruneTree = pruneForest.setPath(path, KEEP_TREE);
+      var newPruneTree = pruneForest.setPath(path, KEEP_TREE, null);
       return PruneForest._(newPruneTree);
     }
   }
 
-  PruneForest keepAll(Path path, Set<Name> children) {
+  PruneForest keepAll(Path<Name> path, Set<Name> children) {
     if (pruneForest.rootMostValueMatching(path, KEEP_PREDICATE) != null) {
       // This path will already be kept
       return this;
@@ -112,7 +113,7 @@ class PruneForest {
     }
   }
 
-  PruneForest pruneAll(Path path, Set<Name> children) {
+  PruneForest pruneAll(Path<Name> path, Set<Name> children) {
     if (pruneForest.rootMostValueMatching(path, KEEP_PREDICATE) != null) {
       throw ArgumentError("Can't prune path that was kept previously!");
     }
@@ -125,15 +126,15 @@ class PruneForest {
     }
   }
 
-  PruneForest _doAll(
-      Path path, Set<Name> children, TreeNode<Name, bool> keepOrPruneTree) {
-    var subtree = pruneForest.subtree(path, (_, __) => TreeNode());
+  PruneForest _doAll(Path<Name> path, Set<Name> children,
+      TreeNode<Name, bool?> keepOrPruneTree) {
+    var subtree = pruneForest.subtree(path, (_, __) => TreeNode(null));
     var childrenMap = {
       ...subtree.children,
       for (var key in children) key: keepOrPruneTree
     };
     return PruneForest._(
-        pruneForest.setPath(path, TreeNode(subtree.value, childrenMap)));
+        pruneForest.setPath(path, TreeNode(subtree.value, childrenMap), null));
   }
 
   @override

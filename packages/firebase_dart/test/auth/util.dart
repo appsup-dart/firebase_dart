@@ -1,3 +1,5 @@
+
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -22,7 +24,7 @@ FirebaseOptions getOptions(
 }
 
 class Expectation {
-  dynamic _response;
+  late dynamic _response;
   dynamic _body;
   Map<String, String> _headers = {};
   int httpCode = 200;
@@ -41,7 +43,7 @@ class Expectation {
     _body = body;
   }
 
-  void expectHeaders(Map<String, String> headers) {
+  void expectHeaders(Map<String, String>? headers) {
     _headers = headers ?? {};
   }
 
@@ -80,16 +82,13 @@ final Map<String, Expectation> _expectations = {};
 Expectation when(String method, String url) {
   url = Uri.parse(url).replace(query: '').toString();
 
-  print('$method:::$url');
   return _expectations['$method:::$url'] = Expectation();
 }
 
 var mockHttpClient = http.MockClient((r) async {
-  print('mock ${r.url}');
   var url = r.url.replace(query: '');
   var e = _expectations['${r.method}:::$url'];
   if (e == null) {
-    print('No server response defined for ${r.method} $url');
     throw Exception('No server response defined for ${r.method} $url');
   }
   return await e._do(r);
@@ -128,7 +127,7 @@ class ProxyClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     for (var p in clients.keys) {
       if (p.allMatches(request.url.replace(query: '').toString()).isNotEmpty) {
-        return clients[p].send(request);
+        return clients[p]!.send(request);
       }
     }
     throw ArgumentError('No client defined for url ${request.url}');

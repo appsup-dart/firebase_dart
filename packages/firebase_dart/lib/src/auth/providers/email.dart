@@ -1,5 +1,3 @@
-import 'package:meta/meta.dart';
-
 import '../auth_credential.dart';
 import '../auth_provider.dart';
 
@@ -22,20 +20,16 @@ abstract class EmailAuthProvider extends AuthProvider {
   EmailAuthProvider() : super(PROVIDER_ID);
 
   static AuthCredential credential({
-    @required String email,
-    @required String password,
+    required String email,
+    required String password,
   }) {
-    assert(email != null);
-    assert(password != null);
     return EmailAuthCredential._(email: email, password: password);
   }
 
   static AuthCredential credentialWithLink({
-    @required String email,
-    @required String emailLink,
+    required String email,
+    required String emailLink,
   }) {
-    assert(email != null);
-    assert(emailLink != null);
     return EmailAuthCredential._(email: email, emailLink: emailLink);
   }
 }
@@ -47,37 +41,28 @@ class EmailAuthCredential extends AuthCredential {
   final String email;
 
   /// The user account password.
-  final String password;
+  final String? password;
 
   /// The sign-in email link.
-  final String emailLink;
+  final String? emailLink;
+
+  EmailAuthCredential._({required this.email, this.password, this.emailLink})
+      : super(
+            providerId: EmailAuthProvider.PROVIDER_ID,
+            signInMethod: password == null
+                ? EmailAuthProvider.EMAIL_LINK_SIGN_IN_METHOD
+                : EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD);
+
+  EmailAuthCredential.fromJson(Map<String, dynamic> json)
+      : this._(
+            email: json['email'],
+            password: json['secret'],
+            emailLink: json['emailLink']);
 
   @override
-  String get providerId => 'password';
-
-  @override
-  String get signInMethod => password == null
-      ? EmailAuthProvider.EMAIL_LINK_SIGN_IN_METHOD
-      : EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD;
-
-  EmailAuthCredential._({@required this.email, this.password, this.emailLink});
-
-  factory EmailAuthCredential.fromJson(Map<String, dynamic> json) {
-    if (json != null &&
-        json['email'] != null &&
-        (json['secret'] != null || json['emailLink'] != null)) {
-      return EmailAuthCredential._(
-          email: json['email'],
-          password: json['secret'],
-          emailLink: json['emailLink']);
-    }
-    return null;
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
+  Map<String, String?> asMap() {
     return {
-      ...super.toJson(),
+      ...super.asMap() as Map<String, String?>,
       'email': email,
       'secret': password,
       'emailLink': emailLink,

@@ -5,15 +5,17 @@ import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/implementation/testing.dart';
-import 'package:firebase_dart/src/auth/app_verifier.dart';
-import 'package:firebase_dart/src/auth/backend/backend.dart';
-import 'package:firebase_dart/src/auth/backend/memory_backend.dart';
+import 'package:firebase_dart/src/auth/backend/backend.dart' as auth_lib;
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
+import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:firebase_dart/src/database/impl/memory_backend.dart'
     as database;
+import 'package:firebase_dart/src/implementation.dart';
+import 'package:firebase_dart/src/implementation/isolate.dart';
+import 'package:firebase_dart/src/implementation/isolate/util.dart';
 import 'package:test/test.dart';
 
 import 'jwt_util.dart';
@@ -22,8 +24,12 @@ import 'util.dart';
 const identityToolkitBaseUrl =
     'https://www.googleapis.com/identitytoolkit/v3/relyingparty';
 
-void main() async {
-  var tester = await Tester.create();
+void main() {
+  return runAuthTests();
+}
+
+void runAuthTests({bool isolated = false}) async {
+  var tester = await Tester.create(isolated: isolated);
   var auth = tester.auth;
 
   group('FirebaseAuth', () {
@@ -31,25 +37,25 @@ void main() async {
       test('FirebaseAuth.signInAnonymously: success', () async {
         var result = await auth.signInAnonymously() as UserCredentialImpl;
 
-        expect(result.user.uid, hasLength(24));
+        expect(result.user!.uid, hasLength(24));
         expect(result.credential, isNull);
         expect(result.additionalUserInfo.providerId, isNull);
         expect(result.additionalUserInfo.isNewUser, isTrue);
         expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
 
-        expect(result.user.isAnonymous, isTrue);
+        expect(result.user!.isAnonymous, isTrue);
 
         // Confirm anonymous state saved.
-        var user = await auth.userStorageManager.getCurrentUser();
-        expect(user.toJson(), result.user.toJson());
-        expect(user.isAnonymous, isTrue);
+        var user = await tester.getStoredUser();
+        expect(user!, result.user!.toJson());
+        expect(user['isAnonymous'], isTrue);
       });
 
       test('FirebaseAuth.signInAnonymously: anonymous user already signed in',
           () async {
         var uid = 'defaultUserId';
         var jwt = createMockJwt(uid: uid, providerId: 'firebase');
-        var user = FirebaseUserImpl.fromJson({
+        var user = {
           'apiKey': 'apiKey',
           'uid': uid,
           'displayName': 'defaultDisplayName',
@@ -85,37 +91,36 @@ void main() async {
               'phoneNumber': null
             }
           ]
-        }, auth: auth);
+        };
 
         // Save anonymous user as current in storage.
-        await auth.userStorageManager.setCurrentUser(user);
-        var u = await auth.userStorageManager.getCurrentUser();
+        await tester.setStoredUser(user);
 
-        print(u?.uid);
         await Future.delayed(Duration(milliseconds: 300));
 
         // All listeners should be called once with the saved anonymous user.
         var stateChanged = 0;
         var s = auth.authStateChanges().listen((user) {
+          print('auth state changes ${user?.uid}');
           stateChanged++;
           expect(stateChanged, 1);
-          expect(user.uid, uid);
+          expect(user!.uid, uid);
         });
         // signInAnonymously should resolve with the already signed in anonymous
         // user without calling RPC handler underneath.
         var result = await auth.signInAnonymously() as UserCredentialImpl;
-        expect(result.user.toJson(), user.toJson());
+        expect(result.user!.toJson(), user);
         expect(result.additionalUserInfo,
             GenericAdditionalUserInfo(providerId: null, isNewUser: false));
         expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
         expect(auth.currentUser, result.user);
-        expect(result.user.isAnonymous, isTrue);
+        expect(result.user!.isAnonymous, isTrue);
 
         // Save reference to current user.
         var currentUser = auth.currentUser;
 
         // Sign in anonymously again.
-        result = await auth.signInAnonymously();
+        result = await auth.signInAnonymously() as UserCredentialImpl;
 
         // Exact same reference should be returned.
         expect(result.user, same(currentUser));
@@ -133,14 +138,13 @@ void main() async {
         var result = await auth.signInWithEmailAndPassword(
             email: expectedEmail, password: expectedPass) as UserCredentialImpl;
 
-        print(result.user.email);
-        expect(result.user.uid, 'user1');
+        expect(result.user!.uid, 'user1');
         expect(result.credential, isNull);
         expect(result.additionalUserInfo.providerId, 'password');
         expect(result.additionalUserInfo.isNewUser, isFalse);
         expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
 
-        expect(result.user.isAnonymous, isFalse);
+        expect(result.user!.isAnonymous, isFalse);
       });
 
       test('FirebaseAuth.signInWithEmailAndPassword: wrong password', () async {
@@ -167,14 +171,14 @@ void main() async {
         var result = await auth.signInWithCustomToken(expectedCustomToken);
 
         // Anonymous status should be set to false.
-        expect(result.user.isAnonymous, isFalse);
-        expect(result.additionalUserInfo.providerId, isNull);
-        expect(result.additionalUserInfo.isNewUser, isFalse);
+        expect(result.user!.isAnonymous, isFalse);
+        expect(result.additionalUserInfo!.providerId, isNull);
+        expect(result.additionalUserInfo!.isNewUser, isFalse);
 
         // Confirm anonymous state saved.
-        var user = await auth.userStorageManager.getCurrentUser();
-        expect(user.toJson(), result.user.toJson());
-        expect(user.isAnonymous, isFalse);
+        var user = await tester.getStoredUser();
+        expect(user!, result.user!.toJson());
+        expect(user['isAnonymous'], isFalse);
       });
     });
 
@@ -187,10 +191,10 @@ void main() async {
         var result = await auth.createUserWithEmailAndPassword(
             email: email, password: pass);
 
-        expect(result.user.email, email);
-        expect(result.user.isAnonymous, isFalse);
-        expect(result.additionalUserInfo.providerId, 'password');
-        expect(result.additionalUserInfo.isNewUser, isTrue);
+        expect(result.user!.email, email);
+        expect(result.user!.isAnonymous, isFalse);
+        expect(result.additionalUserInfo!.providerId, 'password');
+        expect(result.additionalUserInfo!.isNewUser, isTrue);
       });
     });
 
@@ -245,7 +249,7 @@ void main() async {
         var r = await auth.signInWithEmailAndPassword(
             email: expectedEmail, password: expectedNewPassword);
 
-        expect(r.user.email, expectedEmail);
+        expect(r.user!.email, expectedEmail);
       });
 
       test('FirebaseAuth.confirmPasswordReset: error', () async {
@@ -266,8 +270,6 @@ void main() async {
 
         var credential = Completer<AuthCredential>();
 
-        ApplicationVerifier.instance = DummyApplicationVerifier();
-
         await auth.verifyPhoneNumber(
             phoneNumber: phoneNumber,
             timeout: Duration(),
@@ -281,57 +283,62 @@ void main() async {
             codeAutoRetrievalTimeout: (verificationId) async {
               var code = await tester.backend.receiveSmsCode(phoneNumber);
               credential.complete(PhoneAuthProvider.credential(
-                  verificationId: verificationId, smsCode: code));
+                  verificationId: verificationId, smsCode: code!));
             });
 
         var r = await auth.signInWithCredential(await credential.future);
 
-        expect(r.user.uid, 'user1');
-        expect(r.user.phoneNumber, phoneNumber);
+        expect(r.user!.uid, 'user1');
+        expect(r.user!.phoneNumber, phoneNumber);
       });
     });
   });
 
-  group('FirebaseAuthImpl', () {
-    group('FirebaseAuthImpl.delete', () {
-      test('FirebaseAuthImpl.delete should trigger onDone on authStateChanges',
-          () async {
-        var app =
-            await Firebase.initializeApp(options: getOptions(), name: 'app1');
+  if (!isolated) {
+    group('FirebaseAuthImpl', () {
+      group('FirebaseAuthImpl.delete', () {
+        test(
+            'FirebaseAuthImpl.delete should trigger onDone on authStateChanges',
+            () async {
+          var app =
+              await Firebase.initializeApp(options: getOptions(), name: 'app1');
 
-        var auth = FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
+          var auth = FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
 
-        var isDone = false;
-        auth
-            .authStateChanges()
-            .listen((_) => null, onDone: () => isDone = true);
-        await app.delete();
+          var isDone = false;
+          auth
+              .authStateChanges()
+              .listen((_) => null, onDone: () => isDone = true);
+          await app.delete();
 
-        expect(auth.isDeleted, isTrue);
-        expect(isDone, isTrue);
-      });
-      test('FirebaseAuthImpl.delete: recreating a deleted app should function',
-          () async {
-        var app =
-            await Firebase.initializeApp(options: getOptions(), name: 'app1');
-        var auth = FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
-        auth.currentUser;
+          expect(auth.isDeleted, isTrue);
+          expect(isDone, isTrue);
+        });
+        test(
+            'FirebaseAuthImpl.delete: recreating a deleted app should function',
+            () async {
+          var app =
+              await Firebase.initializeApp(options: getOptions(), name: 'app1');
+          var auth = FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
+          auth.currentUser;
 
-        await app.delete();
-        app = await Firebase.initializeApp(options: getOptions(), name: 'app1');
+          await app.delete();
+          app =
+              await Firebase.initializeApp(options: getOptions(), name: 'app1');
 
-        var auth2 = FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
-        expect(auth2.currentUser, isNull);
-        await auth2.signInAnonymously();
-        expect(auth2.currentUser, isNotNull);
-        await app.delete();
+          var auth2 = FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
+          expect(auth2.currentUser, isNull);
+          await auth2.signInAnonymously();
+          expect(auth2.currentUser, isNotNull);
+          await app.delete();
+        });
       });
     });
-  });
+  }
 
   group('Pass authentication to other services', () {
     test('Should auth before listen on database', () async {
-      FirebaseDatabase db;
+      late FirebaseDatabase db;
       var backend = database.MemoryBackend.getInstance('test');
       backend.securityRules = {'.read': 'auth!=null'};
       var s = auth.authStateChanges().listen((user) async {
@@ -348,23 +355,58 @@ void main() async {
 }
 
 class Tester {
-  final MemoryBackend backend;
+  final auth_lib.AuthBackend backend;
 
   final FirebaseApp app;
 
   Tester._(this.app, this.backend);
 
-  FirebaseAuthImpl get auth => FirebaseAuth.instanceFor(app: app);
+  FirebaseAuth get auth => FirebaseAuth.instanceFor(app: app);
 
-  static Future<Tester> create() async {
-    await FirebaseTesting.setup();
+  Future<Map<String, dynamic>?> getStoredUser() async {
+    if (auth is FirebaseAuthImpl) {
+      return _getStoredUser(_key);
+    }
+    var commander = await (FirebaseImplementation.installation
+            as IsolateFirebaseImplementation)
+        .commander;
+    return commander.execute(StaticFunctionCall(_getStoredUser, [_key]));
+  }
+
+  static Future<Map<String, dynamic>?> _getStoredUser(String key) async {
+    var box = await PersistenceStorage.openBox('firebase_auth');
+    return box.get(key);
+  }
+
+  Future<void> setStoredUser(Map<String, dynamic>? user) async {
+    if (auth is FirebaseAuthImpl) {
+      return _setStoredUser(_key, user);
+    }
+    var commander = await (FirebaseImplementation.installation
+            as IsolateFirebaseImplementation)
+        .commander;
+    return commander.execute(StaticFunctionCall(_setStoredUser, [_key, user]));
+  }
+
+  static Future<void> _setStoredUser(
+      String key, Map<String, dynamic>? user) async {
+    var box = await PersistenceStorage.openBox('firebase_auth');
+    return box.put(key, user);
+  }
+
+  String get appId => auth.app.options.appId;
+
+  String get _key => 'firebase:FirebaseUser:$appId';
+
+  static Future<Tester> create({bool isolated = false}) async {
+    PersistenceStorage.setupMemoryStorage();
+    await FirebaseTesting.setup(isolated: isolated);
 
     var app = await Firebase.initializeApp(options: getOptions());
 
     var backend = FirebaseTesting.getBackend(app.options);
 
-    await backend.authBackend.storeUser(BackendUser()
-      ..localId = 'user1'
+    await backend.authBackend.storeUser(BackendUser('user1')
       ..createdAt = clock.now().millisecondsSinceEpoch.toString()
       ..lastLoginAt = clock.now().millisecondsSinceEpoch.toString()
       ..email = 'user@example.com'

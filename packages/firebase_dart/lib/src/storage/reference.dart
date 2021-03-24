@@ -1,3 +1,5 @@
+
+
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/storage.dart';
@@ -7,14 +9,15 @@ import 'impl/resource_client.dart';
 import 'service.dart';
 
 /// Provides methods to interact with a bucket in the Firebase Storage service.
-class StorageReferenceImpl implements StorageReference {
+class ReferenceImpl implements Reference {
   final Location location;
 
+  @override
   final FirebaseStorageImpl storage;
 
   final ResourceClient requests;
 
-  StorageReferenceImpl(this.storage, this.location)
+  ReferenceImpl(this.storage, this.location)
       : requests = ResourceClient(location, storage.httpClient);
 
   /// The URL for the bucket and path this object references, in the form
@@ -25,32 +28,32 @@ class StorageReferenceImpl implements StorageReference {
   /// A reference to the object obtained by appending childPath, removing any
   /// duplicate, beginning, or trailing slashes.
   @override
-  StorageReferenceImpl child(String childPath) =>
-      StorageReferenceImpl(storage, location.child(childPath));
+  ReferenceImpl child(String childPath) =>
+      ReferenceImpl(storage, location.child(childPath));
 
   /// A reference to the parent of the current object, or null if the current
   /// object is the root.
   @override
-  StorageReferenceImpl getParent() {
+  ReferenceImpl? get parent {
     var parentLocation = location.getParent();
     if (parentLocation == null) return null;
-    return StorageReferenceImpl(storage, parentLocation);
+    return ReferenceImpl(storage, parentLocation);
   }
 
   /// An reference to the root of this object's bucket.
   @override
-  StorageReferenceImpl getRoot() {
-    return StorageReferenceImpl(storage, location.getRoot());
+  ReferenceImpl get root {
+    return ReferenceImpl(storage, location.getRoot());
   }
 
   @override
-  Future<Uri> getDownloadURL() async {
+  Future<String> getDownloadURL() async {
     _throwIfRoot('getDownloadURL');
     var url = await requests.getDownloadUrl();
     if (url == null) {
       throw StorageException.noDownloadURL();
     }
-    return Uri.parse(url);
+    return url;
   }
 
   void _throwIfRoot(String name) {
@@ -74,39 +77,33 @@ class StorageReferenceImpl implements StorageReference {
   }
 
   @override
-  Future<String> getBucket() async => location.bucket;
+  String get bucket => location.bucket;
 
   @override
-  Future<Uint8List> getData(int maxSize) async {
+  Future<Uint8List> getData([int? maxSize = 10485760]) async {
     var url = await getDownloadURL();
-    var response = await storage.httpClient.get(url);
+    var response = await storage.httpClient.get(Uri.parse(url));
     if (response.statusCode == 200) {
       return response.bodyBytes;
     }
     throw StorageException.internalError(
-        'Unable to download $path: ${response.reasonPhrase}');
+        'Unable to download $fullPath: ${response.reasonPhrase}');
   }
 
   @override
-  Future<StorageMetadata> getMetadata() async {
+  Future<FullMetadata> getMetadata() async {
     _throwIfRoot('getMetadata');
     return await requests.getMetadata();
   }
 
   @override
-  Future<String> getName() async => location.name;
+  String get name => location.name;
 
   @override
-  Future<String> getPath() async => location.path;
+  String get fullPath => location.path;
 
   @override
-  FirebaseStorage getStorage() => storage;
-
-  @override
-  String get path => location.path;
-
-  @override
-  StorageUploadTask putData(Uint8List data, [StorageMetadata metadata]) {
+  UploadTask putData(Uint8List data, [SettableMetadata? metadata]) {
     // TODO: implement putData
 /*
     args.validate(
@@ -120,7 +117,7 @@ class StorageReferenceImpl implements StorageReference {
   }
 
   @override
-  Future<StorageMetadata> updateMetadata(StorageMetadata metadata) async {
+  Future<FullMetadata> updateMetadata(SettableMetadata metadata) async {
     _throwIfRoot('updateMetadata');
 
 /* TODO
@@ -133,8 +130,28 @@ class StorageReferenceImpl implements StorageReference {
 
   @override
   bool operator ==(other) =>
-      other is StorageReferenceImpl && other.location == location;
+      other is ReferenceImpl && other.location == location;
 
   @override
   int get hashCode => location.hashCode;
+
+  @override
+  Future<ListResult> list([ListOptions? options]) {
+    // TODO: implement list
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ListResult> listAll() {
+    // TODO: implement listAll
+    throw UnimplementedError();
+  }
+
+  @override
+  UploadTask putString(String data,
+      {PutStringFormat format = PutStringFormat.raw,
+      SettableMetadata? metadata}) {
+    // TODO: implement putString
+    throw UnimplementedError();
+  }
 }
