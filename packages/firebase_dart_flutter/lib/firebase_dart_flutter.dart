@@ -45,9 +45,9 @@ class FirebaseDartFlutter {
           switch (provider.providerId) {
             case 'facebook.com':
               var facebookLogin = FacebookAuth.instance;
-              var accessToken = (await facebookLogin.login())!;
+              var accessToken = await facebookLogin.login();
 
-              return FacebookAuthProvider.credential(accessToken.token!);
+              return FacebookAuthProvider.credential(accessToken.token);
             case 'google.com':
               var account = await GoogleSignIn().signIn();
               var auth = await account!.authentication;
