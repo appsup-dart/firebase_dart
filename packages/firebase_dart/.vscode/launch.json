@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "persistence_test",
+            "request": "launch",
+            "type": "dart",
+            "program": "test/database/persistence/persistence_test.dart",
+            "vmAdditionalArgs": [
+                "--optimization_counter_threshold=-1"
+            ],
+            "env": {
+                "DART_VM_OPTIONS": "--optimization_counter_threshold=-1"
+            }
+        },
+        {
+            "name": "random_synctree_test",
+            "request": "launch",
+            "type": "dart",
+            "program": "test/database/random_test.dart",
+            "vmAdditionalArgs": [
+                "--optimization_counter_threshold=-1"
+            ],
+            "env": {
+                "DART_VM_OPTIONS": "--optimization_counter_threshold=-1"
+            }
+        }
+    ]
+}

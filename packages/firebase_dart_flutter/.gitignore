@@ -2,6 +2,7 @@
 .packages
 .pub/
 build/
+packages
 pubspec.lock
 .dart_tool/
 
@@ -21,5 +22,5 @@ doc/api/
 *.ipr
 *.iws
 
-.vscode/
-*.code-workspace
+.flutter-plugins
+.flutter-plugins-dependencies
