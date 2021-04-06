@@ -108,16 +108,17 @@ class TestClient extends http.BaseClient {
 
         switch (body['grant_type']) {
           case 'refresh_token':
-            var uid =
+            var accessToken =
                 await authBackend.verifyRefreshToken(body['refresh_token']!);
 
-            var accessToken = await authBackend.generateRefreshToken(uid);
+            var refreshToken =
+                await authBackend.generateRefreshToken(accessToken);
             return http.Response(
                 json.encode({
                   'access_token': accessToken,
                   'id_token': accessToken,
                   'expires_in': 3600,
-                  'refresh_token': body['refresh_token']
+                  'refresh_token': refreshToken
                 }),
                 200);
           default:

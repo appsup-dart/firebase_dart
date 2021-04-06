@@ -32,7 +32,7 @@ class BackendConnection {
 
     var idToken =
         await backend.generateIdToken(uid: user.localId, providerId: provider);
-    var refreshToken = await backend.generateRefreshToken(user.localId);
+    var refreshToken = await backend.generateRefreshToken(idToken);
 
     return SignupNewUserResponse()
       ..expiresIn = '3600'
@@ -50,14 +50,16 @@ class BackendConnection {
     var user = await backend.getUserByEmail(email);
 
     if (user.rawPassword == request.password) {
-      var refreshToken = await backend.generateRefreshToken(user.localId);
+      var idToken = request.returnSecureToken == true
+          ? await backend.generateIdToken(
+              uid: user.localId, providerId: 'password')
+          : null;
+      var refreshToken =
+          idToken == null ? null : await backend.generateRefreshToken(idToken);
       return VerifyPasswordResponse()
         ..kind = 'identitytoolkit#VerifyPasswordResponse'
         ..localId = user.localId
-        ..idToken = request.returnSecureToken == true
-            ? await backend.generateIdToken(
-                uid: user.localId, providerId: 'password')
-            : null
+        ..idToken = idToken
         ..expiresIn = '3600'
         ..refreshToken = refreshToken;
     }
@@ -83,12 +85,13 @@ class BackendConnection {
       IdentitytoolkitRelyingpartyVerifyCustomTokenRequest request) async {
     var user = await _userFromIdToken(request.token!);
 
-    var refreshToken = await backend.generateRefreshToken(user.localId);
+    var idToken = request.returnSecureToken == true
+        ? await backend.generateIdToken(uid: user.localId, providerId: 'custom')
+        : null;
+    var refreshToken =
+        idToken == null ? null : await backend.generateRefreshToken(idToken);
     return VerifyCustomTokenResponse()
-      ..idToken = request.returnSecureToken == true
-          ? await backend.generateIdToken(
-              uid: user.localId, providerId: 'custom')
-          : null
+      ..idToken = idToken
       ..expiresIn = '3600'
       ..refreshToken = refreshToken;
   }
@@ -218,12 +221,14 @@ class BackendConnection {
     }
     var user = await backend.verifyPhoneNumber(sessionInfo, code);
 
+    var idToken = await backend.generateIdToken(
+        uid: user.localId, providerId: 'password');
+    var refreshToken = await backend.generateRefreshToken(idToken);
     return IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse()
       ..localId = user.localId
-      ..idToken = await backend.generateIdToken(
-          uid: user.localId, providerId: 'password')
+      ..idToken = idToken
       ..expiresIn = '3600'
-      ..refreshToken = await backend.generateRefreshToken(user.localId);
+      ..refreshToken = refreshToken;
   }
 
   Future<dynamic> _handle(String method, dynamic body) async {
@@ -309,7 +314,7 @@ abstract class AuthBackend {
   Future<String> generateIdToken(
       {required String uid, required String providerId});
 
-  Future<String> generateRefreshToken(String uid);
+  Future<String> generateRefreshToken(String idToken);
 
   Future<String> verifyRefreshToken(String token);
 
@@ -362,9 +367,9 @@ abstract class BaseBackend extends AuthBackend {
   }
 
   @override
-  Future<String> generateRefreshToken(String uid) async {
+  Future<String> generateRefreshToken(String idToken) async {
     var builder = JsonWebSignatureBuilder()
-      ..jsonContent = uid
+      ..jsonContent = idToken
       ..addRecipient(tokenSigningKey);
     return builder.build().toCompactSerialization();
   }

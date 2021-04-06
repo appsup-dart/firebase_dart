@@ -186,7 +186,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  Stream<User?> authStateChanges() => _currentUser.stream.cast();
+  Stream<User?> authStateChanges() =>
+      _currentUser.distinct((a, b) => a?.uid == b?.uid).cast();
 
   @override
   Future<void> sendPasswordResetEmail(
