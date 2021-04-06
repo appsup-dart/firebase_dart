@@ -458,7 +458,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   @override
   Stream<User?> userChanges() {
-    return authStateChanges().switchMap((value) =>
+    return idTokenChanges().switchMap((value) =>
         (value as FirebaseUserImpl?)?.userChanged ?? Stream.value(null));
   }
 

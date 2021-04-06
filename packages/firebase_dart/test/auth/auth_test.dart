@@ -361,6 +361,49 @@ void runAuthTests({bool isolated = false}) async {
         expect(values.single, null);
       });
     });
+    group('FirebaseAuth.userChanges', () {
+      test(
+          'FirebaseAuth.userChanges: should emit values when user signs in or out or id token changes or user data changes',
+          () async {
+        var values = <User?>[];
+        auth.userChanges().listen((v) => values.add(v));
+
+        // when not logged in, should emit null
+        await Future.microtask(() => null);
+        await Future.microtask(() => null);
+        await Future.microtask(() => null);
+        expect(values, [null]);
+        values.clear();
+
+        // when signing in, should emit a User instance
+        await auth.signInAnonymously();
+        expect(values.single, isA<User>());
+        values.clear();
+
+        // reload should emit event
+        await auth.currentUser!.reload();
+        expect(values.isEmpty, false);
+        values.clear();
+
+        // refresh id token should emit an event
+        await auth.currentUser!.getIdToken(true);
+        await Future.microtask(() => null);
+        expect(values.isEmpty, false);
+        values.clear();
+
+        // updating user data should emit an event
+        await auth.currentUser!.updateProfile(displayName: 'Jane Doe');
+        expect(values.isEmpty, false);
+        values.clear();
+
+        // signing out should emit event
+        await auth.signOut();
+        await Future.microtask(() => null);
+        await Future.microtask(() => null);
+        await Future.microtask(() => null);
+        expect(values.single, null);
+      });
+    });
   });
 
   if (!isolated) {
