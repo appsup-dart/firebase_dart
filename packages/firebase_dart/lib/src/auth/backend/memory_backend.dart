@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/implementation/isolate/store.dart';
 import 'package:jose/jose.dart';
+import 'package:openid_client/openid_client.dart';
 
 import 'backend.dart';
 
@@ -80,5 +81,37 @@ class StoreBackend extends BaseBackend {
       throw FirebaseAuthException.invalidCode();
     }
     return getUserByPhoneNumber(phoneNumber);
+  }
+
+  @override
+  Future<BackendUser> verifyAssertion(String providerId, String idToken) async {
+    var s = IdToken.unverified(idToken);
+    var rawId = s.claims.subject;
+    var email = s.claims['email'];
+    if (email != null) {
+      try {
+        var user = await getUserByEmail(email);
+        if ((user.providerUserInfo ?? [])
+            .any((v) => v.providerId == providerId && v.rawId == rawId)) {
+          return user;
+        } else {
+          throw FirebaseAuthException.needConfirmation();
+        }
+        // ignore: empty_catches
+      } on FirebaseAuthException catch (e) {
+        if (e.code != FirebaseAuthException.userDeleted().code) {
+          rethrow;
+        }
+      }
+    }
+    return getUserByProvider(providerId, rawId);
+  }
+
+  @override
+  Future<BackendUser> getUserByProvider(String providerId, String rawId) {
+    return users.values.firstWhere(
+        (user) => (user.providerUserInfo ?? [])
+            .any((v) => v.providerId == providerId && v.rawId == rawId),
+        orElse: () => throw FirebaseAuthException.userDeleted());
   }
 }

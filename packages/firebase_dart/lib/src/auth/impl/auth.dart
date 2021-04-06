@@ -253,6 +253,16 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       );
     }
 
+    if (credential is EmailAuthCredential) {
+      if (credential.password != null) {
+        return signInWithEmailAndPassword(
+            email: credential.email, password: credential.password);
+      } else {
+        return signInWithEmailLink(
+            email: credential.email, emailLink: credential.emailLink);
+      }
+    }
+
     throw UnimplementedError();
   }
 

@@ -231,6 +231,28 @@ class BackendConnection {
       ..refreshToken = refreshToken;
   }
 
+  Future<VerifyAssertionResponse> verifyAssertion(
+      IdentitytoolkitRelyingpartyVerifyAssertionRequest request) async {
+    var args = Uri.parse('?${request.postBody}').queryParameters;
+    try {
+      var user =
+          await backend.verifyAssertion(args['providerId']!, args['id_token']!);
+      var idToken = await backend.generateIdToken(
+          uid: user.localId, providerId: 'password');
+      var refreshToken = await backend.generateRefreshToken(idToken);
+      return VerifyAssertionResponse()
+        ..localId = user.localId
+        ..idToken = idToken
+        ..expiresIn = '3600'
+        ..refreshToken = refreshToken;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == FirebaseAuthException.needConfirmation().code) {
+        return VerifyAssertionResponse()..needConfirmation = true;
+      }
+      rethrow;
+    }
+  }
+
   Future<dynamic> _handle(String method, dynamic body) async {
     switch (method) {
       case 'signupNewUser':
@@ -277,6 +299,10 @@ class BackendConnection {
         var request =
             IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest.fromJson(body);
         return verifyPhoneNumber(request);
+      case 'verifyAssertion':
+        var request =
+            IdentitytoolkitRelyingpartyVerifyAssertionRequest.fromJson(body);
+        return verifyAssertion(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }
@@ -304,6 +330,8 @@ abstract class AuthBackend {
 
   Future<BackendUser> getUserByPhoneNumber(String phoneNumber);
 
+  Future<BackendUser> getUserByProvider(String providerId, String rawId);
+
   Future<BackendUser> createUser(
       {required String? email, required String? password});
 
@@ -321,6 +349,8 @@ abstract class AuthBackend {
   Future<String> sendVerificationCode(String phoneNumber);
 
   Future<BackendUser> verifyPhoneNumber(String sessionInfo, String code);
+
+  Future<BackendUser> verifyAssertion(String providerId, String idToken);
 
   Future<BackendUser> storeUser(BackendUser user);
 

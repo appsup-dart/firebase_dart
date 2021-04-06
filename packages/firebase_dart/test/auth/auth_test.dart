@@ -252,6 +252,8 @@ void runAuthTests({bool isolated = false}) async {
             email: expectedEmail, password: expectedNewPassword);
 
         expect(r.user!.email, expectedEmail);
+
+        await auth.confirmPasswordReset(expectedCode, 'password');
       });
 
       test('FirebaseAuth.confirmPasswordReset: error', () async {
@@ -404,6 +406,32 @@ void runAuthTests({bool isolated = false}) async {
         expect(values.single, null);
       });
     });
+
+    group('FirebaseAuth.signInWithCredential', () {
+      test('FirebaseAuth.signInWithCredential: success', () async {
+        var expectedGoogleCredential = GoogleAuthProvider.credential(
+            idToken: createMockGoogleIdToken(uid: 'google_user_1'),
+            accessToken: 'googleAccessToken');
+        var r = await auth.signInWithCredential(expectedGoogleCredential);
+
+        expect(r.user!.uid, 'user1');
+      });
+      test('FirebaseAuth.signInWithCredential: email/pass credential',
+          () async {
+        var r = await auth.signInWithCredential(EmailAuthProvider.credential(
+            email: 'user@example.com', password: 'password'));
+
+        expect(r.user!.uid, 'user1');
+      });
+      test('FirebaseAuth.signInWithCredential: error', () async {
+        var expectedGoogleCredential = GoogleAuthProvider.credential(
+            idToken: createMockGoogleIdToken(
+                uid: 'google_user_2', email: 'user@example.com'),
+            accessToken: 'googleAccessToken');
+        expect(auth.signInWithCredential(expectedGoogleCredential),
+            throwsA(FirebaseAuthException.needConfirmation()));
+      });
+    });
   });
 
   if (!isolated) {
@@ -525,7 +553,9 @@ class Tester {
       ..rawPassword = 'password'
       ..providerUserInfo = [
         UserInfoProviderUserInfo()..providerId = 'password',
-        UserInfoProviderUserInfo()..providerId = 'google.com',
+        UserInfoProviderUserInfo()
+          ..providerId = 'google.com'
+          ..rawId = 'google_user_1',
       ]);
 
     return Tester._(app, backend.authBackend);
