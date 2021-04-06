@@ -402,6 +402,7 @@ abstract class BaseBackend extends AuthBackend {
       'sub': uid,
       'iat': now,
       'exp': now + 3600,
+      'random': Random().nextDouble(),
       if (providerId == 'anonymous')
         'firebase': {'identities': {}, 'sign_in_provider': 'anonymous'}
     };

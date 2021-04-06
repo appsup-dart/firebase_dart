@@ -29,9 +29,10 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   bool get isDestroyed => _destroyed;
 
-  final BehaviorSubject<String?> _tokenUpdates = BehaviorSubject();
+  final BehaviorSubject<String?> _tokenUpdates = BehaviorSubject(sync: true);
 
-  late final BehaviorSubject<User> _updates = BehaviorSubject.seeded(this);
+  late final BehaviorSubject<User> _updates =
+      BehaviorSubject.seeded(this, sync: true);
 
   FirebaseUserImpl(this._auth, this._credential, [this._authDomain]);
 
@@ -74,7 +75,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     return user;
   }
 
-  Stream<String?> get accessTokenChanged => _tokenUpdates.stream.distinct();
+  Stream<String?> get accessTokenChanged => _tokenUpdates.distinct();
 
   Stream<User> get userChanged => _updates.stream;
 

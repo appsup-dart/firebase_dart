@@ -44,11 +44,11 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
     _storageManagerUserChangedSubscription =
         userStorageManager.onCurrentUserChanged.listen((user) {
-      if (_currentUser.value != user) {
+      if (_currentUser.value?.uid != user?.uid) {
         _currentUser.value?.destroy();
         user?.initializeProactiveRefresh();
+        _currentUser.add(user);
       }
-      _currentUser.add(user);
     });
   }
 
@@ -186,8 +186,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  Stream<User?> authStateChanges() =>
-      _currentUser.distinct((a, b) => a?.uid == b?.uid).cast();
+  Stream<User?> authStateChanges() => _currentUser.distinct().cast();
 
   @override
   Future<void> sendPasswordResetEmail(

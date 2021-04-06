@@ -104,7 +104,6 @@ void runAuthTests({bool isolated = false}) async {
         // All listeners should be called once with the saved anonymous user.
         var stateChanged = 0;
         var s = auth.authStateChanges().listen((user) {
-          print('auth state changes ${user?.uid}');
           stateChanged++;
           expect(stateChanged, 1);
           expect(user!.uid, uid);
@@ -323,6 +322,41 @@ void runAuthTests({bool isolated = false}) async {
 
         // signing out should emit event
         await auth.signOut();
+        await Future.microtask(() => null);
+        expect(values.single, null);
+      });
+    });
+
+    group('FirebaseAuth.idTokenChanges', () {
+      test(
+          'FirebaseAuth.idTokenChanges: should emit values when user signs in or out or id token changes',
+          () async {
+        var values = <User?>[];
+        auth.idTokenChanges().listen((v) => values.add(v));
+
+        // when not logged in, should emit null
+        await Future.microtask(() => null);
+        await Future.microtask(() => null);
+        expect(values, [null]);
+        values.clear();
+
+        // when signing in, should emit a User instance
+        await auth.signInAnonymously();
+        expect(values.single, isA<User>());
+        values.clear();
+
+        // reload should not emit event
+        await auth.currentUser!.reload();
+        expect(values.isEmpty, true);
+
+        // refresh id token should emit an event
+        await auth.currentUser!.getIdToken(true);
+        expect(values.isEmpty, false);
+        values.clear();
+
+        // signing out should emit event
+        await auth.signOut();
+        await Future.microtask(() => null);
         await Future.microtask(() => null);
         expect(values.single, null);
       });

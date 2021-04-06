@@ -17,6 +17,7 @@ import 'package:firebase_dart/src/util/proxy.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 import 'package:jose/jose.dart';
+import 'package:openid_client/openid_client.dart';
 
 export 'package:firebase_dart/src/auth/backend/backend.dart' show BackendUser;
 
@@ -105,11 +106,14 @@ class TestClient extends http.BaseClient {
         var authBackend = await client.getAuthBackend(apiKey);
 
         var body = request.bodyFields;
-
         switch (body['grant_type']) {
           case 'refresh_token':
-            var accessToken =
+            var oldIdToken =
                 await authBackend.verifyRefreshToken(body['refresh_token']!);
+            var claims = IdToken.unverified(oldIdToken).claims;
+
+            var accessToken = await authBackend.generateIdToken(
+                uid: claims.subject, providerId: claims['provider_id']);
 
             var refreshToken =
                 await authBackend.generateRefreshToken(accessToken);
