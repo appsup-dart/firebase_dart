@@ -487,6 +487,50 @@ void runAuthTests({bool isolated = false}) async {
         expect(auth.isSignInWithEmailLink(emailLink4), true);
       });
     });
+
+    group('FirebaseAuth.signInWithEmailLink', () {
+      test('FirebaseAuth.signInWithEmailLink: success', () async {
+        var expectedEmail = 'user@example.com';
+        var code = await tester.backend
+            .createActionCode('EMAIL_SIGNIN', expectedEmail);
+        var expectedLink =
+            'https://www.example.com?mode=signIn&oobCode=$code&apiKey=API_KEY';
+
+        var r = await auth.signInWithEmailLink(
+            email: expectedEmail, emailLink: expectedLink);
+
+        expect(r.additionalUserInfo!.providerId, 'password');
+        expect(r.additionalUserInfo!.isNewUser, false);
+        expect(r.user!.email, 'user@example.com');
+      });
+
+      test('FirebaseAuth.signInWithEmailLink: deep link success', () async {
+        var expectedEmail = 'user@example.com';
+        var code = await tester.backend
+            .createActionCode('EMAIL_SIGNIN', expectedEmail);
+        var deepLink =
+            'https://www.example.com?mode=signIn&oobCode=$code&apiKey=API_KEY';
+        var expectedLink =
+            'https://example.app.goo.gl/?link=' + Uri.encodeComponent(deepLink);
+
+        var r = await auth.signInWithEmailLink(
+            email: expectedEmail, emailLink: expectedLink);
+
+        expect(r.additionalUserInfo!.providerId, 'password');
+        expect(r.additionalUserInfo!.isNewUser, false);
+        expect(r.user!.email, 'user@example.com');
+      });
+      test('FirebaseAuth.signInWithEmailLink: invalid link error', () async {
+        var expectedEmail = 'user@example.com';
+        var expectedLink = 'https://www.example.com?mode=signIn';
+
+        expect(
+            () => auth.signInWithEmailLink(
+                email: expectedEmail, emailLink: expectedLink),
+            throwsA(
+                FirebaseAuthException.argumentError('Invalid email link!')));
+      });
+    });
   });
 
   if (!isolated) {

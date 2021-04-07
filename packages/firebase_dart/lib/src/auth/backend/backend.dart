@@ -268,6 +268,31 @@ class BackendConnection {
     }
   }
 
+  Future<EmailLinkSigninResponse> emailLinkSignin(
+      IdentitytoolkitRelyingpartyEmailLinkSigninRequest request) async {
+    var email = request.email;
+    if (email == null) {
+      throw ArgumentError('Invalid request: missing email');
+    }
+
+    var jwt = JsonWebToken.unverified(request.oobCode!);
+    var user = await backend.getUserById(jwt.claims['sub']);
+
+    var idToken = request.returnSecureToken == true
+        ? await backend.generateIdToken(
+            uid: user.localId, providerId: 'password')
+        : null;
+    var refreshToken =
+        idToken == null ? null : await backend.generateRefreshToken(idToken);
+    var tokenExpiresIn = await backend.getTokenExpiresIn();
+    return EmailLinkSigninResponse()
+      ..kind = 'identitytoolkit#EmailLinkSigninResponse'
+      ..localId = user.localId
+      ..idToken = idToken
+      ..expiresIn = '${tokenExpiresIn.inSeconds}'
+      ..refreshToken = refreshToken;
+  }
+
   Future<dynamic> _handle(String method, dynamic body) async {
     switch (method) {
       case 'signupNewUser':
@@ -318,6 +343,10 @@ class BackendConnection {
         var request =
             IdentitytoolkitRelyingpartyVerifyAssertionRequest.fromJson(body);
         return verifyAssertion(request);
+      case 'emailLinkSignin':
+        var request =
+            IdentitytoolkitRelyingpartyEmailLinkSigninRequest.fromJson(body);
+        return emailLinkSignin(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }

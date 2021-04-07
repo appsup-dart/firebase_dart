@@ -220,6 +220,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   @override
   Future<UserCredential> signInWithCredential(AuthCredential credential) async {
+    print('signInWithCredential $credential');
     await _onReady;
 
     if (credential is PhoneAuthCredential) {
@@ -414,9 +415,28 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   @override
   Future<UserCredential> signInWithEmailLink(
-      {String? email, String? emailLink}) {
-    // TODO: implement signInWithEmailLink
-    throw UnimplementedError();
+      {String? email, String? emailLink}) async {
+    if (emailLink == null) {
+      var platform = Platform.current;
+      if (platform is WebPlatform) {
+        emailLink = platform.currentUrl;
+      }
+    }
+    // Check if the tenant ID in the email link matches the tenant ID on Auth
+    // instance.
+    var actionCodeUrl = getActionCodeUrlFromSignInEmailLink(emailLink!);
+    if (actionCodeUrl == null) {
+      throw FirebaseAuthException.argumentError('Invalid email link!');
+    }
+/* TODO:    if (actionCodeUrl.tenantId != this.tenantId) {
+      throw FirebaseAuthException.tenantIdMismatch();
+    }
+ */
+    var r = await rpcHandler.emailLinkSignIn(email!, actionCodeUrl.code);
+    var result =
+        await _signInWithIdTokenProvider(openidCredential: r, isNewUser: false);
+
+    return result;
   }
 
   @override

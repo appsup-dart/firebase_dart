@@ -62,7 +62,7 @@ class EmailAuthCredential extends AuthCredential {
   @override
   Map<String, String?> asMap() {
     return {
-      ...super.asMap() as Map<String, String?>,
+      ...super.asMap().cast<String, String?>(),
       'email': email,
       'secret': password,
       'emailLink': emailLink,
