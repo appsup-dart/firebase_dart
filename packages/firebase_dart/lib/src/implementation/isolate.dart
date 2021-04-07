@@ -50,7 +50,8 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
       ..registerFunction(#launchUrl, launchUrl)
       ..registerFunction(#getAuthResult, getAuthResult);
 
-    var commander = await IsolateWorker.startWorkerInIsolate();
+    var commander =
+        await IsolateWorker.startWorkerInIsolate(debugName: 'firebase');
 
     await commander.execute(StaticFunctionCall(_setupInIsolate,
         [storagePath, platform, worker.commander, httpClient]));

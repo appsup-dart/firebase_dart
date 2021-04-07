@@ -29,10 +29,11 @@ class FirebaseTesting {
         var auth =
             BackendImpl.getAuthBackendByApiKey(projectId) as StoreBackend;
         return StoreBackend(
-            users: IsolateStore.forStore(auth.users),
-            smsCodes: IsolateStore.forStore(auth.smsCodes),
-            projectId: projectId,
-            tokenSigningKey: BackendImpl._tokenSigningKey);
+          users: IsolateStore.forStore(auth.users),
+          smsCodes: IsolateStore.forStore(auth.smsCodes),
+          settings: IsolateStore.forStore(auth.settings),
+          projectId: projectId,
+        );
       })
       ..registerFunction(#getStorageBackend, (bucket) {
         return BackendImpl.getStorageBackend(bucket);
@@ -121,7 +122,8 @@ class TestClient extends http.BaseClient {
                 json.encode({
                   'access_token': accessToken,
                   'id_token': accessToken,
-                  'expires_in': 3600,
+                  'expires_in':
+                      (await authBackend.getTokenExpiresIn()).inSeconds,
                   'refresh_token': refreshToken
                 }),
                 200);
@@ -193,8 +195,10 @@ class BackendImpl extends Backend {
   static auth.AuthBackend getAuthBackend(String projectId) =>
       _authBackends.putIfAbsent(
           projectId,
-          () => auth.StoreBackend(
-              tokenSigningKey: _tokenSigningKey, projectId: projectId));
+          () => auth.StoreBackend(projectId: projectId)
+            ..setTokenGenerationSettings(
+                tokenSigningKey: _tokenSigningKey,
+                tokenExpiresIn: Duration(hours: 1)));
 
   static storage.MemoryStorageBackend getStorageBackend(String bucket) =>
       _storageBackends.putIfAbsent(

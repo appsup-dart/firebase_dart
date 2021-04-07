@@ -34,8 +34,9 @@ class BackendConnection {
         await backend.generateIdToken(uid: user.localId, providerId: provider);
     var refreshToken = await backend.generateRefreshToken(idToken);
 
+    var tokenExpiresIn = await backend.getTokenExpiresIn();
     return SignupNewUserResponse()
-      ..expiresIn = '3600'
+      ..expiresIn = '${tokenExpiresIn.inSeconds}'
       ..kind = 'identitytoolkit#SignupNewUserResponse'
       ..idToken = idToken
       ..refreshToken = refreshToken;
@@ -56,11 +57,12 @@ class BackendConnection {
           : null;
       var refreshToken =
           idToken == null ? null : await backend.generateRefreshToken(idToken);
+      var tokenExpiresIn = await backend.getTokenExpiresIn();
       return VerifyPasswordResponse()
         ..kind = 'identitytoolkit#VerifyPasswordResponse'
         ..localId = user.localId
         ..idToken = idToken
-        ..expiresIn = '3600'
+        ..expiresIn = '${tokenExpiresIn.inSeconds}'
         ..refreshToken = refreshToken;
     }
 
@@ -90,9 +92,10 @@ class BackendConnection {
         : null;
     var refreshToken =
         idToken == null ? null : await backend.generateRefreshToken(idToken);
+    var tokenExpiresIn = await backend.getTokenExpiresIn();
     return VerifyCustomTokenResponse()
       ..idToken = idToken
-      ..expiresIn = '3600'
+      ..expiresIn = '${tokenExpiresIn.inSeconds}'
       ..refreshToken = refreshToken;
   }
 
@@ -224,10 +227,11 @@ class BackendConnection {
     var idToken = await backend.generateIdToken(
         uid: user.localId, providerId: 'password');
     var refreshToken = await backend.generateRefreshToken(idToken);
+    var tokenExpiresIn = await backend.getTokenExpiresIn();
     return IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse()
       ..localId = user.localId
       ..idToken = idToken
-      ..expiresIn = '3600'
+      ..expiresIn = '${tokenExpiresIn.inSeconds}'
       ..refreshToken = refreshToken;
   }
 
@@ -240,10 +244,11 @@ class BackendConnection {
       var idToken = await backend.generateIdToken(
           uid: user.localId, providerId: 'password');
       var refreshToken = await backend.generateRefreshToken(idToken);
+      var tokenExpiresIn = await backend.getTokenExpiresIn();
       return VerifyAssertionResponse()
         ..localId = user.localId
         ..idToken = idToken
-        ..expiresIn = '3600'
+        ..expiresIn = '${tokenExpiresIn.inSeconds}'
         ..refreshToken = refreshToken;
     } on FirebaseAuthException catch (e) {
       if (e.code == FirebaseAuthException.needConfirmation().code) {
@@ -355,14 +360,19 @@ abstract class AuthBackend {
   Future<BackendUser> storeUser(BackendUser user);
 
   Future<String?> receiveSmsCode(String phoneNumber);
+
+  Future<void> setTokenGenerationSettings(
+      {Duration? tokenExpiresIn, JsonWebKey? tokenSigningKey});
+
+  Future<JsonWebKey> getTokenSigningKey();
+
+  Future<Duration> getTokenExpiresIn();
 }
 
 abstract class BaseBackend extends AuthBackend {
-  final JsonWebKey tokenSigningKey;
+  final String projectId;
 
-  final String? projectId;
-
-  BaseBackend({required this.tokenSigningKey, required this.projectId});
+  BaseBackend({required this.projectId});
 
   @override
   Future<BackendUser> createUser(
@@ -390,14 +400,17 @@ abstract class BaseBackend extends AuthBackend {
   @override
   Future<String> generateIdToken(
       {required String uid, required String providerId}) async {
+    var tokenSigningKey = await getTokenSigningKey();
+    var user = await getUserById(uid);
     var builder = JsonWebSignatureBuilder()
-      ..jsonContent = _jwtPayloadFor(uid, providerId)
+      ..jsonContent = await _jwtPayloadFor(user, providerId)
       ..addRecipient(tokenSigningKey);
     return builder.build().toCompactSerialization();
   }
 
   @override
   Future<String> generateRefreshToken(String idToken) async {
+    var tokenSigningKey = await getTokenSigningKey();
     var builder = JsonWebSignatureBuilder()
       ..jsonContent = idToken
       ..addRecipient(tokenSigningKey);
@@ -406,6 +419,7 @@ abstract class BaseBackend extends AuthBackend {
 
   @override
   Future<String> verifyRefreshToken(String token) async {
+    var tokenSigningKey = await getTokenSigningKey();
     var store = JsonWebKeyStore()..addKey(tokenSigningKey);
     var jws = JsonWebSignature.fromCompactSerialization(token);
     var payload = await jws.getPayload(store);
@@ -422,19 +436,29 @@ abstract class BaseBackend extends AuthBackend {
         length, (i) => chars[_random.nextInt(chars.length)]).join();
   }
 
-  Map<String, dynamic> _jwtPayloadFor(String uid, String providerId) {
+  Future<Map<String, dynamic>> _jwtPayloadFor(
+      BackendUser user, String providerId) async {
     var now = clock.now().millisecondsSinceEpoch ~/ 1000;
+    var tokenExpiration = await getTokenExpiresIn();
     return {
       'iss': 'https://securetoken.google.com/$projectId',
       'provider_id': providerId,
       'aud': '$projectId',
       'auth_time': now,
-      'sub': uid,
+      'sub': user.localId,
       'iat': now,
-      'exp': now + 3600,
+      'exp': now + tokenExpiration.inSeconds,
       'random': Random().nextDouble(),
+      'email': user.email,
       if (providerId == 'anonymous')
-        'firebase': {'identities': {}, 'sign_in_provider': 'anonymous'}
+        'firebase': {'identities': {}, 'sign_in_provider': 'anonymous'},
+      if (providerId == 'password')
+        'firebase': {
+          'identities': {
+            'email': [user.email]
+          },
+          'sign_in_provider': 'password'
+        }
     };
   }
 }

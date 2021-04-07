@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
@@ -143,7 +144,7 @@ void runUserTests({bool isolated = false}) async {
       });
     });
 
-    group('unlinkFromProvider', () {
+    group('unlink', () {
       var email = 'me@example.com';
       var password = 'password';
 
@@ -175,25 +176,27 @@ void runUserTests({bool isolated = false}) async {
             }),
           ]);
       });
-      test('unlinkFromProvider: success', () async {
+      test('unlink: success', () async {
         var r = await auth.signInWithEmailAndPassword(
             email: email, password: password);
 
         var user = r.user!;
         var providerIds = user.providerData.map((v) => v.providerId).toSet();
-        expect(providerIds, ['providerId1', 'providerId2', 'phone']);
+        expect(
+            providerIds, ['providerId1', 'providerId2', 'phone', 'password']);
 
         await user.unlink('providerId2');
         providerIds = user.providerData.map((v) => v.providerId).toSet();
-        expect(providerIds, ['providerId1', 'phone']);
+        expect(providerIds, ['providerId1', 'phone', 'password']);
       });
-      test('unlinkFromProvider: already deleted', () async {
+      test('unlink: already deleted', () async {
         var r = await auth.signInWithEmailAndPassword(
             email: email, password: password);
 
         var user = r.user!;
         var providerIds = user.providerData.map((v) => v.providerId).toSet();
-        expect(providerIds, ['providerId1', 'providerId2', 'phone']);
+        expect(
+            providerIds, ['providerId1', 'providerId2', 'phone', 'password']);
 
         // User on server has only one federated provider linked despite the local
         // copy having three.
@@ -205,25 +208,26 @@ void runUserTests({bool isolated = false}) async {
         expect(() => user.unlink('providerId2'),
             throwsA(FirebaseAuthException.noSuchProvider()));
       });
-      test('unlinkFromProvider: phone', () async {
+      test('unlink: phone', () async {
         var r = await auth.signInWithEmailAndPassword(
             email: email, password: password);
 
         var user = r.user!;
         var providerIds = user.providerData.map((v) => v.providerId).toSet();
-        expect(providerIds, ['providerId1', 'providerId2', 'phone']);
+        expect(
+            providerIds, ['providerId1', 'providerId2', 'phone', 'password']);
 
         expect(user.phoneNumber, '+16505550101');
 
         await user.unlink('phone');
         providerIds = user.providerData.map((v) => v.providerId).toSet();
-        expect(providerIds, ['providerId1', 'providerId2']);
+        expect(providerIds, ['providerId1', 'providerId2', 'password']);
 
         expect(user.phoneNumber, isNull);
 
         await user.reload();
         providerIds = user.providerData.map((v) => v.providerId).toSet();
-        expect(providerIds, ['providerId1', 'providerId2']);
+        expect(providerIds, ['providerId1', 'providerId2', 'password']);
 
         expect(user.phoneNumber, isNull);
       });
@@ -261,7 +265,19 @@ void runUserTests({bool isolated = false}) async {
             displayName: 'Jack Smith',
             photoURL: 'http://www.example.com/photo/photo.png');
 
+        expect(user.displayName, 'Jack Smith');
+        expect(user.photoURL, 'http://www.example.com/photo/photo.png');
+
         var p = user.providerData
+            .firstWhere((element) => element.providerId == 'password');
+        expect(p.displayName, 'Jack Smith');
+        expect(p.photoURL, 'http://www.example.com/photo/photo.png');
+
+        await user.reload();
+        expect(user.displayName, 'Jack Smith');
+        expect(user.photoURL, 'http://www.example.com/photo/photo.png');
+
+        p = user.providerData
             .firstWhere((element) => element.providerId == 'password');
         expect(p.displayName, 'Jack Smith');
         expect(p.photoURL, 'http://www.example.com/photo/photo.png');
@@ -295,6 +311,8 @@ void runUserTests({bool isolated = false}) async {
 
         expect(user.email, newEmail);
         expect(user.emailVerified, isFalse);
+
+        await user.updateEmail('user@example.com');
       });
       test('updateEmail: user destroyed', () async {
         var u = await tester.backend.getUserById('user1');
@@ -334,6 +352,72 @@ void runUserTests({bool isolated = false}) async {
 
         expect(() => user!.updatePassword('newPassword'),
             throwsA(FirebaseAuthException.moduleDestroyed()));
+      });
+    });
+
+    group('getIdTokenResult', () {
+      test('getIdTokenResult: success', () async {
+        var r = await auth.signInWithEmailAndPassword(
+            email: 'user@example.com', password: 'password');
+
+        var user = r.user!;
+
+        var token = await user.getIdTokenResult();
+
+        expect(token.authTime!.millisecondsSinceEpoch,
+            closeTo(clock.now().millisecondsSinceEpoch, 5000));
+
+        expect(
+            token.expirationTime!.millisecondsSinceEpoch,
+            closeTo(clock.now().add(Duration(hours: 1)).millisecondsSinceEpoch,
+                5000));
+        expect(token.issuedAtTime!.millisecondsSinceEpoch,
+            closeTo(clock.now().millisecondsSinceEpoch, 5000));
+        expect(token.signInProvider, 'password');
+        expect(token.claims!['firebase'], {
+          'identities': {
+            'email': ['user@example.com']
+          },
+          'sign_in_provider': 'password'
+        });
+        expect(token.claims!['email'], 'user@example.com');
+        expect(token.claims!['sub'], user.uid);
+      });
+
+      test('getIdTokenResult: force refresh', () async {
+        var r = await auth.signInWithEmailAndPassword(
+            email: 'user@example.com', password: 'password');
+
+        var user = r.user!;
+
+        var token1 = await user.getIdTokenResult();
+        var token2 = await user.getIdTokenResult();
+
+        expect(token2, token1);
+
+        await Future.delayed(Duration(seconds: 1));
+        var token3 = await user.getIdTokenResult(true);
+
+        expect(token3, isNot(token1));
+        expect(token3.issuedAtTime!.isAfter(token1.issuedAtTime!), true);
+      });
+
+      test('getIdTokenResult: expired token', () async {
+        await tester.backend
+            .setTokenGenerationSettings(tokenExpiresIn: Duration(seconds: 1));
+        var r = await auth.signInWithEmailAndPassword(
+            email: 'user@example.com', password: 'password');
+
+        var user = r.user!;
+
+        var token1 = await user.getIdTokenResult();
+        await Future.delayed(Duration(seconds: 2));
+        expect(token1.expirationTime!.isBefore(clock.now()), true);
+        var token2 = await user.getIdTokenResult();
+
+        expect(token2, isNot(token1));
+        await tester.backend
+            .setTokenGenerationSettings(tokenExpiresIn: Duration(hours: 1));
       });
     });
   });

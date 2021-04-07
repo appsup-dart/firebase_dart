@@ -510,6 +510,12 @@ class IdTokenResultImpl extends IdTokenResult {
   @override
   String? get signInProvider =>
       (_idToken.claims['firebase'] ?? {})['sign_in_provider'];
+
+  @override
+  int get hashCode => token.hashCode;
+
+  @override
+  bool operator ==(other) => other is IdTokenResultImpl && other.token == token;
 }
 
 AdditionalUserInfo createAdditionalUserInfo(

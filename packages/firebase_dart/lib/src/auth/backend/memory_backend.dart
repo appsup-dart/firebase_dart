@@ -1,9 +1,12 @@
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:firebase_dart/src/auth/error.dart';
+import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:firebase_dart/src/implementation/isolate/store.dart';
 import 'package:jose/jose.dart';
 import 'package:openid_client/openid_client.dart';
+import 'package:collection/collection.dart';
 
 import 'backend.dart';
 
@@ -12,14 +15,17 @@ class StoreBackend extends BaseBackend {
 
   final Store<String, String> smsCodes;
 
+  final Store<String, dynamic> settings;
+
   StoreBackend(
-      {required JsonWebKey tokenSigningKey,
-      required String projectId,
+      {required String projectId,
       Store<String, BackendUser>? users,
-      Store<String, String>? smsCodes})
+      Store<String, String>? smsCodes,
+      Store<String, dynamic>? settings})
       : users = users ?? MemoryStore(),
         smsCodes = smsCodes ?? MemoryStore(),
-        super(tokenSigningKey: tokenSigningKey, projectId: projectId);
+        settings = settings ?? MemoryStore(),
+        super(projectId: projectId);
 
   @override
   Future<BackendUser> getUserById(String uid) async {
@@ -32,8 +38,24 @@ class StoreBackend extends BaseBackend {
   }
 
   @override
-  Future<BackendUser> storeUser(BackendUser user) async =>
-      await users.set(user.localId, user);
+  Future<BackendUser> storeUser(BackendUser user) async {
+    if (user.rawPassword != null) {
+      var providerUserInfo = user.providerUserInfo ??= [];
+      var info = providerUserInfo
+          .firstWhereOrNull((element) => element.providerId == 'password');
+
+      if (info == null) {
+        info = UserInfoProviderUserInfo()..providerId = 'password';
+        providerUserInfo.add(info);
+      }
+
+      info.displayName = user.displayName;
+      info.photoUrl = user.photoUrl;
+      info.email = user.email;
+      info.rawId = user.email;
+    }
+    return await users.set(user.localId, user);
+  }
 
   @override
   Future<BackendUser> getUserByEmail(String? email) async {
@@ -66,7 +88,7 @@ class StoreBackend extends BaseBackend {
     await smsCodes.set(phoneNumber, code);
     var builder = JsonWebSignatureBuilder()
       ..jsonContent = user.phoneNumber
-      ..addRecipient(tokenSigningKey);
+      ..addRecipient(await getTokenSigningKey());
     return builder.build().toCompactSerialization();
   }
 
@@ -113,5 +135,24 @@ class StoreBackend extends BaseBackend {
         (user) => (user.providerUserInfo ?? [])
             .any((v) => v.providerId == providerId && v.rawId == rawId),
         orElse: () => throw FirebaseAuthException.userDeleted());
+  }
+
+  @override
+  Future<Duration> getTokenExpiresIn() async =>
+      await settings.get('tokenExpiresIn');
+
+  @override
+  Future<JsonWebKey> getTokenSigningKey() async =>
+      await settings.get('tokenSigningKey');
+
+  @override
+  Future<void> setTokenGenerationSettings(
+      {Duration? tokenExpiresIn, JsonWebKey? tokenSigningKey}) async {
+    if (tokenExpiresIn != null) {
+      await settings.set('tokenExpiresIn', tokenExpiresIn);
+    }
+    if (tokenSigningKey != null) {
+      await settings.set('tokenSigningKey', tokenSigningKey);
+    }
   }
 }
