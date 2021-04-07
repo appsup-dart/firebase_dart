@@ -420,5 +420,33 @@ void runUserTests({bool isolated = false}) async {
             .setTokenGenerationSettings(tokenExpiresIn: Duration(hours: 1));
       });
     });
+
+    group('reload', () {
+      test('reload: success', () async {
+        var r = await auth.signInWithEmailAndPassword(
+            email: 'user@example.com', password: 'password');
+
+        expect(r.user!.email, 'user@example.com');
+        var backendUser =
+            await tester.backend.getUserByEmail('user@example.com');
+        backendUser.email = 'user@fake.com';
+        await tester.backend.storeUser(backendUser);
+
+        await r.user!.reload();
+        expect(r.user!.email, 'user@fake.com');
+
+        backendUser.email = 'user@example.com';
+        await tester.backend.storeUser(backendUser);
+      });
+
+      test('reload: user not found error', () async {
+        var r = await auth.signInAnonymously();
+
+        await tester.backend.deleteUser(r.user!.uid);
+
+        expect(() => r.user!.reload(),
+            throwsA(FirebaseAuthException.userDeleted()));
+      });
+    });
   });
 }
