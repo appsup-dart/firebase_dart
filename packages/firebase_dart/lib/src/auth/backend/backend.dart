@@ -134,16 +134,17 @@ class BackendConnection {
 
   Future<ResetPasswordResponse> resetPassword(
       IdentitytoolkitRelyingpartyResetPasswordRequest request) async {
-    BackendUser user;
     try {
-      user = await _userFromIdToken(request.oobCode!);
+      var jwt = JsonWebToken.unverified(request.oobCode!);
+      var user = await backend.getUserById(jwt.claims['sub']);
+      await backend.updateUser(user..rawPassword = request.newPassword);
+      return ResetPasswordResponse()
+        ..kind = 'identitytoolkit#ResetPasswordResponse'
+        ..requestType = jwt.claims['operation']
+        ..email = user.email;
     } on ArgumentError {
       throw FirebaseAuthException.invalidOobCode();
     }
-    await backend.updateUser(user..rawPassword = request.newPassword);
-    return ResetPasswordResponse()
-      ..kind = 'identitytoolkit#ResetPasswordResponse'
-      ..email = user.email;
   }
 
   Future<SetAccountInfoResponse> setAccountInfo(
@@ -367,6 +368,8 @@ abstract class AuthBackend {
   Future<JsonWebKey> getTokenSigningKey();
 
   Future<Duration> getTokenExpiresIn();
+
+  Future<String?> createActionCode(String operation, String email);
 }
 
 abstract class BaseBackend extends AuthBackend {
@@ -424,6 +427,17 @@ abstract class BaseBackend extends AuthBackend {
     var jws = JsonWebSignature.fromCompactSerialization(token);
     var payload = await jws.getPayload(store);
     return payload.jsonContent!;
+  }
+
+  @override
+  Future<String?> createActionCode(String operation, String email) async {
+    var user = await getUserByEmail(email);
+
+    var tokenSigningKey = await getTokenSigningKey();
+    var builder = JsonWebSignatureBuilder()
+      ..jsonContent = {'sub': user.localId, 'operation': operation}
+      ..addRecipient(tokenSigningKey);
+    return builder.build().toCompactSerialization();
   }
 
   static final _random = Random(DateTime.now().millisecondsSinceEpoch);

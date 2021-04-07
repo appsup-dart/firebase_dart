@@ -85,6 +85,21 @@ mixin _TenantIdProperty on _JsonSerializable {
   }
 }
 
+class ResetPasswordResponse extends it.ResetPasswordResponse {
+  /// The multi-factor info to unenroll for revert second factor addition action.
+  Map<String, dynamic>? mfaInfo;
+
+  ResetPasswordResponse();
+
+  ResetPasswordResponse.fromJson(Map _json)
+      : mfaInfo = _json['mfaInfo'],
+        super.fromJson(_json);
+
+  @override
+  Map<String, Object?> toJson() =>
+      {...super.toJson(), if (mfaInfo != null) 'mfaInfo': mfaInfo};
+}
+
 class SetAccountInfoResponse extends it.SetAccountInfoResponse
     with _JsonSerializable, IdTokenResponse {
   SetAccountInfoResponse();
@@ -395,6 +410,14 @@ class RelyingpartyResource extends it.RelyingpartyResource {
       {String? $fields}) async {
     return SetAccountInfoResponse.fromJson(
         await _do('setAccountInfo', request, $fields: $fields));
+  }
+
+  @override
+  Future<ResetPasswordResponse> resetPassword(
+      it.IdentitytoolkitRelyingpartyResetPasswordRequest request,
+      {String? $fields}) async {
+    return ResetPasswordResponse.fromJson(
+        await _do('resetPassword', request, $fields: $fields));
   }
 
   @override

@@ -95,7 +95,7 @@ This implementation does not yet support all functionalities of the firebase aut
 | ------ | ---------- |
 | FirebaseAuth.applyActionCode | ❌
 | FirebaseAuth.authStateChanges | ✅
-| FirebaseAuth.checkActionCode | ❌
+| FirebaseAuth.checkActionCode | ✅
 | FirebaseAuth.confirmPasswordReset | ✅
 | FirebaseAuth.createUserWithEmailAndPassword | ✅
 | FirebaseAuth.fetchSignInMethodsForEmail | ✅

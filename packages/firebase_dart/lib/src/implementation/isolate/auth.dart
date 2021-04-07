@@ -248,8 +248,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<ActionCodeInfo> checkActionCode(String code) async {
-    // TODO: implement checkActionCode
-    throw UnimplementedError();
+    return await invoke(#checkActionCode, [code]);
   }
 
   @override

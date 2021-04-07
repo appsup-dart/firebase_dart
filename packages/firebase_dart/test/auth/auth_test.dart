@@ -423,6 +423,22 @@ void runAuthTests({bool isolated = false}) async {
             throwsA(FirebaseAuthException.needConfirmation()));
       });
     });
+
+    group('FirebaseAuth.checkActionCode', () {
+      test('FirebaseAuth.checkActionCode: success', () async {
+        var code = await tester.backend
+            .createActionCode('PASSWORD_RESET', 'user@example.com');
+        var v = await auth.checkActionCode(code!);
+
+        expect(v.operation, ActionCodeInfoOperation.passwordReset);
+        expect(v.data['email'], 'user@example.com');
+      });
+
+      test('FirebaseAuth.checkActionCode: error', () async {
+        expect(() => auth.checkActionCode('PASSWORD_RESET_CODE'),
+            throwsA(FirebaseAuthException.invalidOobCode()));
+      });
+    });
   });
 
   if (!isolated) {

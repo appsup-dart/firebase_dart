@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:math';
 
@@ -321,9 +322,43 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  Future<ActionCodeInfo> checkActionCode(String code) {
-    // TODO: implement checkActionCode
-    throw UnimplementedError();
+  Future<ActionCodeInfo> checkActionCode(String code) async {
+    var response = await rpcHandler.checkActionCode(code);
+
+    var email = response.email;
+    var newEmail = response.newEmail;
+    var operation = ActionCodeInfoImpl.parseOperation(response.requestType);
+
+    // The multi-factor info for revert second factor addition.
+    var mfaInfo = response.mfaInfo;
+
+    // Email could be empty only if the request type is EMAIL_SIGNIN or
+    // VERIFY_AND_CHANGE_EMAIL.
+    // New email should not be empty if the request type is
+    // VERIFY_AND_CHANGE_EMAIL.
+    // Multi-factor info could not be empty if the request type is
+    // REVERT_SECOND_FACTOR_ADDITION.
+    if (operation == ActionCodeInfoOperation.unknown ||
+        (operation != ActionCodeInfoOperation.emailSignIn &&
+            operation != ActionCodeInfoOperation.verifyAndChangeEmail &&
+            email == null) ||
+        (operation == ActionCodeInfoOperation.verifyAndChangeEmail &&
+            newEmail == null) ||
+        (operation == ActionCodeInfoOperation.revertSecondFactorAddition &&
+            mfaInfo == null)) {
+      throw FirebaseAuthException.internalError(
+          'Invalid checkActionCode response!');
+    }
+
+    Map<String, dynamic> data;
+    if (operation == ActionCodeInfoOperation.verifyAndChangeEmail) {
+      data = {'fromEmail': email, 'previousEmail': email, 'email': newEmail};
+    } else {
+      data = {'fromEmail': newEmail, 'previousEmail': newEmail, 'email': email};
+    }
+    data['multiFactorInfo'] = mfaInfo;
+    return ActionCodeInfoImpl(
+        operation: operation, data: UnmodifiableMapView(data));
   }
 
   @override
@@ -514,4 +549,32 @@ class UserCredentialImpl extends UserCredential {
       required this.additionalUserInfo,
       required this.credential,
       required this.operationType});
+}
+
+class ActionCodeInfoImpl extends ActionCodeInfo {
+  @override
+  final Map<String, dynamic> data;
+
+  @override
+  final ActionCodeInfoOperation operation;
+
+  ActionCodeInfoImpl({required this.data, required this.operation});
+
+  static ActionCodeInfoOperation parseOperation(String? requestType) {
+    switch (requestType) {
+      case 'EMAIL_SIGNIN':
+        return ActionCodeInfoOperation.emailSignIn;
+      case 'PASSWORD_RESET':
+        return ActionCodeInfoOperation.passwordReset;
+      case 'RECOVER_EMAIL':
+        return ActionCodeInfoOperation.recoverEmail;
+      case 'REVERT_SECOND_FACTOR_ADDITION':
+        return ActionCodeInfoOperation.revertSecondFactorAddition;
+      case 'VERIFY_AND_CHANGE_EMAIL':
+        return ActionCodeInfoOperation.verifyAndChangeEmail;
+      case 'VERIFY_EMAIL':
+        return ActionCodeInfoOperation.verifyEmail;
+    }
+    return ActionCodeInfoOperation.unknown;
+  }
 }
