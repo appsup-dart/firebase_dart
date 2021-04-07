@@ -452,6 +452,41 @@ void runAuthTests({bool isolated = false}) async {
             throwsA(FirebaseAuthException.invalidOobCode()));
       });
     });
+
+    group('FirebaseAuth.isSignInWithEmailLink', () {
+      test('FirebaseAuth.isSignInWithEmailLink', () {
+        var emailLink1 = 'https://www.example.com/action?mode=signIn&' +
+            'oobCode=oobCode&apiKey=API_KEY';
+        var emailLink2 = 'https://www.example.com/action?mode=verifyEmail&' +
+            'oobCode=oobCode&apiKey=API_KEY';
+        var emailLink3 = 'https://www.example.com/action?mode=signIn';
+        expect(auth.isSignInWithEmailLink(emailLink1), true);
+        expect(auth.isSignInWithEmailLink(emailLink2), false);
+        expect(auth.isSignInWithEmailLink(emailLink3), false);
+      });
+      test('FirebaseAuth.isSignInWithEmailLink: deep link', () {
+        var deepLink1 =
+            'https://www.example.com/action?mode=signIn&oobCode=oobCode' +
+                '&apiKey=API_KEY';
+        var deepLink2 = 'https://www.example.com/action?mode=verifyEmail&' +
+            'oobCode=oobCode&apiKey=API_KEY';
+        var deepLink3 = 'https://www.example.com/action?mode=signIn';
+
+        var emailLink1 = 'https://example.app.goo.gl/?link=' +
+            Uri.encodeComponent(deepLink1);
+        var emailLink2 = 'https://example.app.goo.gl/?link=' +
+            Uri.encodeComponent(deepLink2);
+        var emailLink3 = 'https://example.app.goo.gl/?link=' +
+            Uri.encodeComponent(deepLink3);
+        var emailLink4 = 'comexampleiosurl://google/link?deep_link_id=' +
+            Uri.encodeComponent(deepLink1);
+
+        expect(auth.isSignInWithEmailLink(emailLink1), true);
+        expect(auth.isSignInWithEmailLink(emailLink2), false);
+        expect(auth.isSignInWithEmailLink(emailLink3), false);
+        expect(auth.isSignInWithEmailLink(emailLink4), true);
+      });
+    });
   });
 
   if (!isolated) {

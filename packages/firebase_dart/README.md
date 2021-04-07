@@ -101,7 +101,7 @@ This implementation does not yet support all functionalities of the firebase aut
 | FirebaseAuth.fetchSignInMethodsForEmail | ✅
 | FirebaseAuth.getRedirectResult | ❌
 | FirebaseAuth.idTokenChanges | ✅
-| FirebaseAuth.isSignInWithEmailLink | ❌
+| FirebaseAuth.isSignInWithEmailLink | ✅
 | FirebaseAuth.sendPasswordResetEmail | ✅
 | FirebaseAuth.sendSignInLinkToEmail | ✅
 | FirebaseAuth.setLanguageCode | ❌

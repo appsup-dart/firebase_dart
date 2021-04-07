@@ -182,8 +182,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   @override
   bool isSignInWithEmailLink(String link) {
-    // TODO: implement isSignInWithEmailLink
-    throw UnimplementedError();
+    return getActionCodeUrlFromSignInEmailLink(link) != null;
   }
 
   @override
@@ -575,5 +574,105 @@ class ActionCodeInfoImpl extends ActionCodeInfo {
         return ActionCodeInfoOperation.verifyEmail;
     }
     return ActionCodeInfoOperation.unknown;
+  }
+}
+
+ActionCodeURL? getActionCodeUrlFromSignInEmailLink(String emailLink) {
+  emailLink = DynamicLink.parseDeepLink(emailLink);
+  var actionCodeUrl = ActionCodeURL.parseLink(emailLink);
+  if (actionCodeUrl != null &&
+      (actionCodeUrl.operation == ActionCodeInfoOperation.emailSignIn)) {
+    return actionCodeUrl;
+  }
+  return null;
+}
+
+class ActionCodeURL {
+  /// Returns an ActionCodeURL instance if the link is valid, otherwise null.
+  static ActionCodeURL? parseLink(String actionLink) {
+    try {
+      var uri = Uri.parse(actionLink);
+      var apiKey = uri.queryParameters['apiKey'];
+      var code = uri.queryParameters['oobCode'];
+      var mode = uri.queryParameters['mode'];
+      var operation = getOperation(mode);
+      // Validate API key, code and mode.
+      if (apiKey == null ||
+          code == null ||
+          operation == ActionCodeInfoOperation.unknown) {
+        throw FirebaseAuthException.argumentError(
+            'apiKey, oobCode and mode are required in a valid action code URL.');
+      }
+      return ActionCodeURL(
+        apiKey: apiKey,
+        operation: operation,
+        code: code,
+        continueUrl: uri.queryParameters['continueUrl'],
+        languageCode: uri.queryParameters['languageCode'],
+        tenantId: uri.queryParameters['tenantId'],
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Maps the mode string in action code URL to Action Code Info operation.
+  static ActionCodeInfoOperation getOperation(String? mode) {
+    switch (mode) {
+      case 'recoverEmail':
+        return ActionCodeInfoOperation.recoverEmail;
+      case 'resetPassword':
+        return ActionCodeInfoOperation.passwordReset;
+      case 'revertSecondFactorAddition':
+        return ActionCodeInfoOperation.revertSecondFactorAddition;
+      case 'signIn':
+        return ActionCodeInfoOperation.emailSignIn;
+      case 'verifyAndChangeEmail':
+        return ActionCodeInfoOperation.verifyAndChangeEmail;
+      case 'verifyEmail':
+        return ActionCodeInfoOperation.verifyEmail;
+    }
+    return ActionCodeInfoOperation.unknown;
+  }
+
+  final String apiKey;
+
+  final ActionCodeInfoOperation operation;
+
+  final String code;
+
+  final String? continueUrl;
+
+  final String? languageCode;
+
+  final String? tenantId;
+
+  ActionCodeURL(
+      {required this.apiKey,
+      required this.operation,
+      required this.code,
+      this.continueUrl,
+      this.languageCode,
+      this.tenantId});
+}
+
+class DynamicLink {
+  static String parseDeepLink(String url) {
+    var uri = Uri.parse(url);
+    // iOS custom scheme links.
+    var iOSdeepLink = uri.queryParameters['deep_link_id'];
+    if (iOSdeepLink != null) {
+      var iOSDoubledeepLink = Uri.parse(iOSdeepLink).queryParameters['link'];
+      return iOSDoubledeepLink ?? iOSdeepLink;
+    }
+
+    var link = uri.queryParameters['link'];
+
+    if (link != null) {
+      // Double link case (automatic redirect).
+      var doubleDeepLink = Uri.parse(link).queryParameters['link'];
+      return doubleDeepLink ?? link;
+    }
+    return url;
   }
 }

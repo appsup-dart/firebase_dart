@@ -285,8 +285,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   bool isSignInWithEmailLink(String link) {
-    // TODO: implement isSignInWithEmailLink
-    throw UnimplementedError();
+    return getActionCodeUrlFromSignInEmailLink(link) != null;
   }
 
   String? _languageCode;
