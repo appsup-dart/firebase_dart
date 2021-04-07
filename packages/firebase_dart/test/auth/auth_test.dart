@@ -439,6 +439,19 @@ void runAuthTests({bool isolated = false}) async {
             throwsA(FirebaseAuthException.invalidOobCode()));
       });
     });
+
+    group('FirebaseAuth.applyActionCode', () {
+      test('FirebaseAuth.applyActionCode: success', () async {
+        var code = await tester.backend
+            .createActionCode('EMAIL_VERIFICATION_CODE', 'user@example.com');
+        await auth.applyActionCode(code!);
+      });
+
+      test('FirebaseAuth.applyActionCode: error', () async {
+        expect(() => auth.applyActionCode('EMAIL_VERIFICATION_CODE'),
+            throwsA(FirebaseAuthException.invalidOobCode()));
+      });
+    });
   });
 
   if (!isolated) {

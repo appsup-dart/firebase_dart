@@ -93,7 +93,7 @@ This implementation does not yet support all functionalities of the firebase aut
 
 | method | supported? |
 | ------ | ---------- |
-| FirebaseAuth.applyActionCode | ❌
+| FirebaseAuth.applyActionCode | ✅
 | FirebaseAuth.authStateChanges | ✅
 | FirebaseAuth.checkActionCode | ✅
 | FirebaseAuth.confirmPasswordReset | ✅

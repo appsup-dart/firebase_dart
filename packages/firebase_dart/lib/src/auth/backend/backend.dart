@@ -149,7 +149,15 @@ class BackendConnection {
 
   Future<SetAccountInfoResponse> setAccountInfo(
       IdentitytoolkitRelyingpartySetAccountInfoRequest request) async {
-    var user = await _userFromIdToken(request.idToken!);
+    BackendUser user;
+    try {
+      user = await _userFromIdToken(request.idToken ?? request.oobCode!);
+    } on ArgumentError {
+      if (request.oobCode != null) {
+        throw FirebaseAuthException.invalidOobCode();
+      }
+      rethrow;
+    }
     if (request.deleteProvider != null) {
       user.providerUserInfo!.removeWhere(
           (element) => request.deleteProvider!.contains(element.providerId));
@@ -186,6 +194,7 @@ class BackendConnection {
       ..kind = 'identitytoolkit#SetAccountInfoResponse'
       ..displayName = user.displayName
       ..photoUrl = user.photoUrl
+      ..email = user.email
       ..idToken = request.returnSecureToken == true
           ? await backend.generateIdToken(
               uid: user.localId, providerId: 'password')

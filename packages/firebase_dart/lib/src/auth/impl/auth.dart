@@ -316,9 +316,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  Future<void> applyActionCode(String code) {
-    // TODO: implement applyActionCode
-    throw UnimplementedError();
+  Future<void> applyActionCode(String code) async {
+    await rpcHandler.applyActionCode(code);
   }
 
   @override
