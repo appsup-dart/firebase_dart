@@ -220,7 +220,6 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   @override
   Future<UserCredential> signInWithCredential(AuthCredential credential) async {
-    print('signInWithCredential $credential');
     await _onReady;
 
     if (credential is PhoneAuthCredential) {
@@ -526,9 +525,9 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  Future<String> verifyPasswordResetCode(String code) {
-    // TODO: implement verifyPasswordResetCode
-    throw UnimplementedError();
+  Future<String> verifyPasswordResetCode(String code) async {
+    var info = await checkActionCode(code);
+    return info.data['email'];
   }
 
   @override

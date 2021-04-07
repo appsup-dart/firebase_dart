@@ -531,6 +531,17 @@ void runAuthTests({bool isolated = false}) async {
                 FirebaseAuthException.argumentError('Invalid email link!')));
       });
     });
+
+    group('FirebaseAuth.verifyPasswordResetCode', () {
+      test('FirebaseAuth.verifyPasswordResetCode: success', () async {
+        var expectedEmail = 'user@example.com';
+        var code = await tester.backend
+            .createActionCode('PASSWORD_RESET', expectedEmail);
+
+        var email = await auth.verifyPasswordResetCode(code!);
+        expect(email, expectedEmail);
+      });
+    });
   });
 
   if (!isolated) {

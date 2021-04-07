@@ -116,7 +116,7 @@ This implementation does not yet support all functionalities of the firebase aut
 | FirebaseAuth.signInWithRedirect | ❌
 | FirebaseAuth.signOut | ✅
 | FirebaseAuth.userChanges | ✅
-| FirebaseAuth.verifyPasswordResetCode | ❌
+| FirebaseAuth.verifyPasswordResetCode | ✅
 | FirebaseAuth.verifyPhoneNumber | ❌
 | User.delete | ✅
 | User.getIdToken | ✅
