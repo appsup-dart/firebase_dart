@@ -134,6 +134,7 @@ This implementation does not yet support all functionalities of the firebase aut
 | User.verifyBeforeUpdateEmail | ❌
 
 
+[Multi-tenancy](https://cloud.google.com/identity-platform/docs/multi-tenancy) is currently not supported.
 
 ## Realtime database
 
