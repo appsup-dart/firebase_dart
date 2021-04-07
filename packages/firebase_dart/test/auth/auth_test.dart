@@ -35,6 +35,7 @@ void runAuthTests({bool isolated = false}) async {
   group('FirebaseAuth', () {
     setUp(() async {
       await auth.signOut();
+      await Future.delayed(Duration(milliseconds: 1));
     });
     group('FirebaseAuth.signInAnonymously', () {
       test('FirebaseAuth.signInAnonymously: success', () async {
@@ -305,7 +306,7 @@ void runAuthTests({bool isolated = false}) async {
         auth.authStateChanges().listen((v) => values.add(v));
 
         // when not logged in, should emit null
-        await Future.microtask(() => null);
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values, [null]);
         values.clear();
 
@@ -324,7 +325,7 @@ void runAuthTests({bool isolated = false}) async {
 
         // signing out should emit event
         await auth.signOut();
-        await Future.microtask(() => null);
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.single, null);
       });
     });
@@ -337,8 +338,7 @@ void runAuthTests({bool isolated = false}) async {
         auth.idTokenChanges().listen((v) => values.add(v));
 
         // when not logged in, should emit null
-        await Future.microtask(() => null);
-        await Future.microtask(() => null);
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values, [null]);
         values.clear();
 
@@ -353,13 +353,13 @@ void runAuthTests({bool isolated = false}) async {
 
         // refresh id token should emit an event
         await auth.currentUser!.getIdToken(true);
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.isEmpty, false);
         values.clear();
 
         // signing out should emit event
         await auth.signOut();
-        await Future.microtask(() => null);
-        await Future.microtask(() => null);
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.single, null);
       });
     });
@@ -371,9 +371,7 @@ void runAuthTests({bool isolated = false}) async {
         auth.userChanges().listen((v) => values.add(v));
 
         // when not logged in, should emit null
-        await Future.microtask(() => null);
-        await Future.microtask(() => null);
-        await Future.microtask(() => null);
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values, [null]);
         values.clear();
 
@@ -382,14 +380,9 @@ void runAuthTests({bool isolated = false}) async {
         expect(values.single, isA<User>());
         values.clear();
 
-        // reload should emit event
-        await auth.currentUser!.reload();
-        expect(values.isEmpty, false);
-        values.clear();
-
         // refresh id token should emit an event
         await auth.currentUser!.getIdToken(true);
-        await Future.microtask(() => null);
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.isEmpty, false);
         values.clear();
 
@@ -400,9 +393,7 @@ void runAuthTests({bool isolated = false}) async {
 
         // signing out should emit event
         await auth.signOut();
-        await Future.microtask(() => null);
-        await Future.microtask(() => null);
-        await Future.microtask(() => null);
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.single, null);
       });
     });

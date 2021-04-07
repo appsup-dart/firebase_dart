@@ -218,7 +218,7 @@ class EncodeCall<T> extends BaseFunctionCall<Future> {
 
 class IsolateFirebaseAuth extends IsolateFirebaseService
     implements FirebaseAuth {
-  final BehaviorSubject<User?> _subject = BehaviorSubject();
+  final BehaviorSubject<User?> _subject = BehaviorSubject(sync: true);
 
   Future<T> invoke<T>(Symbol method,
       [List<dynamic>? positionalArguments,
@@ -278,7 +278,11 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  Stream<User?> idTokenChanges() => _subject.stream;
+  Stream<User?> idTokenChanges() => _subject
+      .cast<IsolateUser?>()
+      .map((v) => v?._json['credential']['token'])
+      .distinct(const DeepCollectionEquality().equals)
+      .map((_) => currentUser);
 
   @override
   bool isSignInWithEmailLink(String link) {
@@ -361,10 +365,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  Stream<User> userChanges() {
-    // TODO: implement userChanges
-    throw UnimplementedError();
-  }
+  Stream<User?> userChanges() => _subject.stream;
 
   @override
   Future<String> verifyPasswordResetCode(String code) async {
@@ -407,6 +408,9 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     var uid = json == null ? null : json['uid'];
     if (last?.uid != uid) {
       last = uid == null ? null : IsolateUser.fromJson(this, json!);
+    } else if (_subject.valueWrapper != null &&
+        const DeepCollectionEquality().equals(last?._json, json)) {
+      return last;
     }
     if (json != null) {
       last?._json = json;
