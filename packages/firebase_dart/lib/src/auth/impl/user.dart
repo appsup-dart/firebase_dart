@@ -304,8 +304,10 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       return _checkDestroyed();
     }
     var idToken = await getIdToken();
-    var response = await _rpcHandler.updateProfile(
-        idToken, {'displayName': displayName, 'photoUrl': photoURL});
+    var response = await _rpcHandler.updateProfile(idToken, {
+      if (displayName != null) 'displayName': displayName,
+      if (photoURL != null) 'photoUrl': photoURL
+    });
 
     // Calls to SetAccountInfo may invalidate old tokens.
     _updateTokensIfPresent(response);
