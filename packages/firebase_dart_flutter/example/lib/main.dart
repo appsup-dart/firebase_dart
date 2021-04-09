@@ -1,26 +1,17 @@
+import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
+import 'package:firebase_dart_flutter_example/src/core.dart';
 import 'package:flutter/material.dart';
 
-void main() {
+void main() async {
+  await FirebaseDartFlutter.setup(isolated: false);
   runApp(MyApp());
 }
 
-class MyApp extends StatefulWidget {
-  @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
-        body: Center(
-          child: Text(''),
-        ),
-      ),
+      home: AppListPage(),
     );
   }
 }

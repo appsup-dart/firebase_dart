@@ -11,6 +11,7 @@ import 'package:platform_info/platform_info.dart' as platform_info;
 import 'package:package_info/package_info.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:hive/hive.dart';
 
 class FirebaseDartFlutter {
   static const _channel = const MethodChannel('firebase_dart_flutter');
@@ -25,6 +26,9 @@ class FirebaseDartFlutter {
     if (!kIsWeb) {
       var appDir = await getApplicationDocumentsDirectory();
       path = appDir.path;
+      if (isolated) {
+        Hive.init(path);
+      }
     }
 
     FirebaseDart.setup(
@@ -44,15 +48,23 @@ class FirebaseDartFlutter {
         oauthSignIn: (provider) async {
           switch (provider.providerId) {
             case 'facebook.com':
-              var facebookLogin = FacebookAuth.instance;
-              var accessToken = (await facebookLogin.login()).accessToken!;
+              try {
+                var facebookLogin = FacebookAuth.instance;
+                var accessToken = (await facebookLogin.login()).accessToken!;
 
-              return FacebookAuthProvider.credential(accessToken.token);
+                return FacebookAuthProvider.credential(accessToken.token);
+              } on MissingPluginException {
+                return null;
+              }
             case 'google.com':
-              var account = await GoogleSignIn().signIn();
-              var auth = await account!.authentication;
-              return GoogleAuthProvider.credential(
-                  idToken: auth.idToken!, accessToken: auth.accessToken!);
+              try {
+                var account = await GoogleSignIn().signIn();
+                var auth = await account!.authentication;
+                return GoogleAuthProvider.credential(
+                    idToken: auth.idToken!, accessToken: auth.accessToken!);
+              } on MissingPluginException {
+                return null;
+              }
             case 'apple.com':
               if (!platform_info.Platform.instance.isIOS) {
                 return null;
