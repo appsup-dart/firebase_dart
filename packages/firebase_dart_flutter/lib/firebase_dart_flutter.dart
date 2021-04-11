@@ -55,6 +55,8 @@ class FirebaseDartFlutter {
                 return FacebookAuthProvider.credential(accessToken.token);
               } on MissingPluginException {
                 return null;
+              } catch (e) {
+                return null;
               }
             case 'google.com':
               try {
@@ -63,6 +65,9 @@ class FirebaseDartFlutter {
                 return GoogleAuthProvider.credential(
                     idToken: auth.idToken!, accessToken: auth.accessToken!);
               } on MissingPluginException {
+                return null;
+              } catch (e) {
+                print(e);
                 return null;
               }
             case 'apple.com':

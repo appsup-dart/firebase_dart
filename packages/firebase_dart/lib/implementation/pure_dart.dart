@@ -1,5 +1,6 @@
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/implementation/testing.dart';
+import 'package:firebase_dart/src/auth/iframeclient/auth_methods.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:firebase_dart/src/implementation.dart';
@@ -64,6 +65,11 @@ class FirebaseDart {
     getAuthResult ??= _defaultGetAuthResult;
     oauthSignIn ??= _defaultOauthSignIn;
     oauthSignOut ??= _defaultOauthSignOut;
+
+    if (_kIsWeb) {
+      getAuthResult = webGetAuthResult;
+      launchUrl = webLaunchUrl;
+    }
 
     if (isolated && !_kIsWeb) {
       FirebaseImplementation.install(IsolateFirebaseImplementation(

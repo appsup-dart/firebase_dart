@@ -383,7 +383,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       throw FirebaseAuthException(e['code'] ?? 'unknown', e['message']);
     }
     var box = await userStorageManager.storage;
-    var sessionId = box.get('redirect_session_id');
+    var sessionId = r['sessionId'] ?? box.get('redirect_session_id');
 
     var openidCredential = await rpcHandler.verifyAssertion(
         sessionId: sessionId, requestUri: r['link']);
