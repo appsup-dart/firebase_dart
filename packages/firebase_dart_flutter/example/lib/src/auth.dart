@@ -45,13 +45,13 @@ class AuthTab extends StatelessWidget {
                       }),
                   TextButton(
                       child: Text('sign in with google'),
-                      onPressed: () {
-                        auth.signInWithOAuthProvider('google.com');
+                      onPressed: () async {
+                        await auth.signInWithRedirect(GoogleAuthProvider());
                       }),
                   TextButton(
                       child: Text('sign in with facebook'),
-                      onPressed: () {
-                        auth.signInWithOAuthProvider('facebook.com');
+                      onPressed: () async {
+                        await auth.signInWithRedirect(FacebookAuthProvider());
                       }),
                   TextButton(
                     child: Text('send sign in link'),
@@ -73,7 +73,6 @@ class AuthTab extends StatelessWidget {
                                     url: 'http://localhost/'));
                             return email;
                           });
-                      print('email $email');
                       if (email == null) return;
                       await showEditFieldDialog(
                           context: context,
@@ -181,7 +180,6 @@ class UserInfo extends StatelessWidget {
                   obscureText: true,
                   onContinue: (v) async {
                     await user.updatePassword(v);
-                    print('password updated');
                   },
                   context: context,
                 );

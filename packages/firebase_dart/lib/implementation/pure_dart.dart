@@ -12,8 +12,13 @@ import 'package:http/http.dart' as http;
 import 'dart:io' as io;
 
 import 'package:jose/jose.dart';
+import 'package:meta/meta.dart';
+
+import '../core.dart';
 
 export 'package:firebase_dart/src/auth/utils.dart' show Platform;
+export 'package:firebase_dart/src/auth/authhandlers.dart'
+    show FirebaseAppAuthHandler;
 
 const bool _kIsWeb = identical(0, 0.0);
 
@@ -32,11 +37,16 @@ class FirebaseDart {
   /// other platforms or when not using these auth methods, the [platform]
   /// argument can be omitted.
   ///
-  /// For signing in with social auth providers, a number of platform specific
-  /// callbacks are required: [launchUrl], [getAuthResult], [oauthSignIn] and
-  /// [oauthSignOut]. When omitted, a default implementation will be used on web
-  /// and on other platforms, attempts to sign in with social auth providers
-  /// will throw errors.
+  /// An [authHandler] can be spedified to handle auth requests with
+  /// [FirebaseAuth.signInWithRedirect] and [FirebaseAuth.signInWithPopup]. When
+  /// omitted, a default implementation will be used in a web context. On other
+  /// platforms no default implementation is provided. On flutter, use the
+  /// `firebase_dart_flutter` package with `FirebaseDartFlutter.setup` instead.
+  ///
+  /// Several firebase methods might need to launch an external url. Set the
+  /// [launchUrl] parameter to handle these. When omitted, a default
+  /// implementation will be used in a web context. On flutter, use the
+  /// `firebase_dart_flutter` package with `FirebaseDartFlutter.setup` instead.
   ///
   /// When [isolated] is true, all operations will run in a separate isolate.
   /// Isolates are not supported on web.
@@ -48,10 +58,8 @@ class FirebaseDart {
       {String? storagePath,
       Platform? platform,
       bool isolated = false,
-      Function(Uri url)? launchUrl,
-      Future<Map<String, dynamic>> Function()? getAuthResult,
-      Future<OAuthCredential?> Function(OAuthProvider provider)? oauthSignIn,
-      Future<void> Function(String providerId)? oauthSignOut,
+      Function(Uri url, {bool popup})? launchUrl,
+      AuthHandler? authHandler,
       http.Client? httpClient}) {
     platform ??= _kIsWeb
         ? Platform.web(
@@ -62,23 +70,15 @@ class FirebaseDart {
         : Platform.linux(isOnline: true);
 
     launchUrl ??= _defaultLaunchUrl;
-    getAuthResult ??= _defaultGetAuthResult;
-    oauthSignIn ??= _defaultOauthSignIn;
-    oauthSignOut ??= _defaultOauthSignOut;
 
-    if (_kIsWeb) {
-      getAuthResult = webGetAuthResult;
-      launchUrl = webLaunchUrl;
-    }
+    authHandler ??= DefaultAuthHandler();
 
     if (isolated && !_kIsWeb) {
       FirebaseImplementation.install(IsolateFirebaseImplementation(
           storagePath: storagePath,
           platform: platform,
           launchUrl: launchUrl,
-          getAuthResult: getAuthResult,
-          oauthSignIn: oauthSignIn,
-          oauthSignOut: oauthSignOut,
+          authHandler: authHandler,
           httpClient: httpClient));
     } else {
       if (storagePath != null) {
@@ -94,28 +94,88 @@ class FirebaseDart {
 
       FirebaseImplementation.install(PureDartFirebaseImplementation(
           launchUrl: launchUrl,
-          getAuthResult: getAuthResult,
-          oauthSignIn: oauthSignIn,
-          oauthSignOut: oauthSignOut,
+          authHandler: authHandler,
           httpClient: httpClient));
     }
   }
 
-  static void _defaultLaunchUrl(Uri uri) {
-    if (_kIsWeb) throw UnimplementedError();
+  static void _defaultLaunchUrl(Uri uri, {bool popup = false}) {
+    if (_kIsWeb) webLaunchUrl(uri, popup: popup);
     throw UnsupportedError('Social sign in not supported on this platform.');
   }
+}
 
-  static Future<Map<String, dynamic>> _defaultGetAuthResult() async {
-    if (_kIsWeb) throw UnimplementedError();
-    throw UnsupportedError('Social sign in not supported on this platform.');
+abstract class AuthHandler {
+  const factory AuthHandler() = DefaultAuthHandler;
+
+  const factory AuthHandler.from(List<AuthHandler> handlers) = MultiAuthHandler;
+
+  Future<bool> signIn(FirebaseApp app, AuthProvider provider,
+      {bool isPopup = false});
+
+  Future<AuthCredential?> getSignInResult(FirebaseApp app);
+
+  Future<void> signOut(FirebaseApp app, User user);
+}
+
+abstract class DirectAuthHandler<T extends AuthProvider>
+    implements AuthHandler {
+  final String providerId;
+
+  final Map<String, AuthCredential> _authCredentials = {};
+
+  DirectAuthHandler(this.providerId);
+
+  @visibleForOverriding
+  Future<AuthCredential?> directSignIn(FirebaseApp app, T provider);
+
+  @override
+  Future<bool> signIn(FirebaseApp app, AuthProvider provider,
+      {bool isPopup = false}) async {
+    if (provider is! T) return false;
+    if (provider.providerId != providerId) return false;
+    var credential = await directSignIn(app, provider);
+    if (credential == null) return false;
+    _authCredentials[app.name] = credential;
+    return true;
   }
 
-  static Future<OAuthCredential> _defaultOauthSignIn(
-      OAuthProvider provider) async {
-    if (_kIsWeb) throw UnimplementedError();
-    throw UnsupportedError('Social sign in not supported on this platform.');
+  @override
+  Future<void> signOut(FirebaseApp app, User user);
+
+  @override
+  Future<AuthCredential?> getSignInResult(FirebaseApp app) async {
+    return _authCredentials.remove(app.name);
+  }
+}
+
+class MultiAuthHandler implements AuthHandler {
+  final List<AuthHandler> authHandlers;
+
+  const MultiAuthHandler(this.authHandlers);
+
+  @override
+  Future<AuthCredential?> getSignInResult(FirebaseApp app) async {
+    for (var h in authHandlers) {
+      var v = await h.getSignInResult(app);
+      if (v != null) return v;
+    }
+    return null;
   }
 
-  static Future<void> _defaultOauthSignOut(String providerId) async {}
+  @override
+  Future<bool> signIn(FirebaseApp app, AuthProvider provider,
+      {bool isPopup = false}) async {
+    for (var h in authHandlers) {
+      if (await h.signIn(app, provider, isPopup: isPopup)) return true;
+    }
+    return false;
+  }
+
+  @override
+  Future<void> signOut(FirebaseApp app, User user) async {
+    for (var h in authHandlers) {
+      await h.signOut(app, user);
+    }
+  }
 }

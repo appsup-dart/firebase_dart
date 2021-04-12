@@ -395,11 +395,6 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     });
   }
 
-  @override
-  Future<UserCredential> signInWithOAuthProvider(String providerId) {
-    return invoke(#signInWithOAuthProvider, [providerId]);
-  }
-
   IsolateUser? setUser(Map<String, dynamic>? json) {
     var last = currentUser as IsolateUser?;
 
@@ -512,8 +507,6 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
         return auth.signInAnonymously;
       case #signInWithCredential:
         return auth.signInWithCredential;
-      case #signInWithOAuthProvider:
-        return auth.signInWithOAuthProvider;
       case #signInWithCustomToken:
         return auth.signInWithCustomToken;
       case #signInWithEmailAndPassword:

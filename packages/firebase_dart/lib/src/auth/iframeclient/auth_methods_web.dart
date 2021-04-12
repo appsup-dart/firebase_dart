@@ -1,31 +1,49 @@
 import 'dart:async';
 import 'dart:html';
 
+import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/auth/auth_credential.dart';
 import 'package:firebase_dart/src/auth/iframeclient/url_builder.dart';
 import 'iframewrapper.dart';
 
 late final IfcHandler ifc = _createIfc(Firebase.apps.first);
 
-Future<Map<String, dynamic>> webGetAuthResult() async {
-  Completer<Map<String, dynamic>>? completer =
-      Completer<Map<String, dynamic>>();
-  ifc._authEventListeners.add((a) {
-    completer?.complete({
-      if (a['error'] != null) 'firebaseError': a['error'],
-      'link': a['urlResponse'],
-      'sessionId': a['sessionId'],
-    });
-    completer = null;
+class DefaultAuthHandler extends FirebaseAppAuthHandler {
+  const DefaultAuthHandler();
 
-    return true;
-  });
-  await ifc.initialize();
+  @override
+  Future<AuthCredential?> getSignInResult(FirebaseApp app) async {
+    var completer = Completer<AuthCredential?>();
+    var callback = (Map r) {
+      createCredential(
+        error: r['error'],
+        link: r['urlResponse'],
+        sessionId: r['sessionId'],
+        providerId: r['providerId'],
+        eventId: r['eventId'],
+      ).then((c) {
+        completer.complete(c);
+      }).catchError((e, tr) {
+        if (e is FirebaseAuthException &&
+            e.code == FirebaseAuthException.noAuthEvent().code) {
+          return;
+        }
+        completer.completeError(e, tr);
+      });
 
-  return completer!.future;
+      return true;
+    };
+    ifc._authEventListeners.add(callback);
+    await ifc.initialize();
+
+    return completer.future
+        .whenComplete(() => ifc._authEventListeners.remove(callback));
+  }
 }
 
-void webLaunchUrl(Uri uri) {
+void webLaunchUrl(Uri uri, {bool popup = false}) {
   var width = 500;
   var height = 600;
   var top = (window.screen!.available.height - height) / 2;
@@ -33,10 +51,12 @@ void webLaunchUrl(Uri uri) {
 
   window.open(
       uri.toString(),
-      '_blank',
-      'height=$height,width=$width,top=${top > 0 ? top : 0},'
-          'left=${left > 0 ? left : 0},location=true,resizable=true,'
-          'statusbar=true,toolbar=false');
+      popup ? '_blank' : '_self',
+      !popup
+          ? null
+          : 'height=$height,width=$width,top=${top > 0 ? top : 0},'
+              'left=${left > 0 ? left : 0},location=true,resizable=true,'
+              'statusbar=true,toolbar=false');
 }
 
 IfcHandler _createIfc(FirebaseApp app) {

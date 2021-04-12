@@ -1,4 +1,3 @@
-import 'dart:isolate';
 import 'dart:math';
 
 import 'package:firebase_dart/src/auth/error.dart';

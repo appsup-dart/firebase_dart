@@ -173,7 +173,6 @@ class QueryImpl extends Query {
     if (key == '[MIN_NAME]' && key == allowedSpecialName) return Name.min;
     if (key == '[MAX_NAME]' && key == allowedSpecialName) return Name.max;
     if (key == null) {
-      print(key);
       throw ArgumentError(
           'When ordering by key, the argument passed to startAt(), endAt(),or equalTo() must be a non null string.');
     }

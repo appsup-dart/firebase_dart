@@ -1,6 +1,6 @@
 name: firebase_dart
 description: A port of the Firebase database, auth and storage client to pure Dart code, usable on different platforms
-version: 1.0.0-dev.27
+version: 1.0.0-dev.28
 homepage: https://github.com/appsup-dart/firebase_dart
 
 environment:
@@ -28,6 +28,7 @@ dependencies:
   expressions: ^0.2.0
   uuid: ^3.0.1
   crypto: ^3.0.0
+  js: ^0.6.3
 
 dev_dependencies:
   test: ^1.16.5

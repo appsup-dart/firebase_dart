@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:convert';
-import 'dart:math';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
+import 'package:firebase_dart/src/auth/authhandlers.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/implementation/dart.dart';
@@ -13,7 +12,6 @@ import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:uuid/uuid.dart';
 
 import '../auth.dart';
 import '../rpc/rpc_handler.dart';
@@ -38,6 +36,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       : rpcHandler = RpcHandler(app.options.apiKey, httpClient: httpClient),
         super(app) {
     _onReady = _init();
+    getRedirectResult();
   }
 
   Future<void> _init() async {
@@ -263,6 +262,16 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       }
     }
 
+    if (credential is FirebaseAppAuthCredential) {
+      var openidCredential = await rpcHandler.verifyAssertion(
+          sessionId: credential.sessionId, requestUri: credential.link);
+
+      return _signInWithIdTokenProvider(
+        openidCredential: openidCredential,
+        isNewUser: false,
+      );
+    }
+
     throw UnimplementedError();
   }
 
@@ -286,8 +295,9 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     if (currentUser == null) {
       return;
     }
-    await PureDartFirebaseImplementation.installation
-        .oauthSignOut(currentUser!.providerId);
+    await PureDartFirebaseImplementation.installation.authHandler
+        .signOut(app, currentUser!);
+
     // Detach all event listeners.
     currentUser!.destroy();
     // Set current user to null.
@@ -359,40 +369,20 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
         operation: operation, data: UnmodifiableMapView(data));
   }
 
-  @override
-  Future<UserCredential> signInWithOAuthProvider(String providerId) async {
-    var provider = OAuthProvider(providerId);
+  late final Future<UserCredential> _redirectResult = Future(() async {
+    var credential = await PureDartFirebaseImplementation
+        .installation.authHandler
+        .getSignInResult(app);
 
-    var credential =
-        await PureDartFirebaseImplementation.installation.oauthSignIn(provider);
-
-    if (credential != null) {
-      return signInWithCredential(credential);
+    if (credential == null) {
+      return UserCredentialImpl();
     }
 
-    await signInWithRedirect(provider);
-    return getRedirectResult();
-  }
+    return signInWithCredential(credential);
+  });
 
   @override
-  Future<UserCredential> getRedirectResult() async {
-    var r = await PureDartFirebaseImplementation.installation.getAuthResult();
-
-    if (r.containsKey('firebaseError')) {
-      var e = json.decode(r['firebaseError']);
-      throw FirebaseAuthException(e['code'] ?? 'unknown', e['message']);
-    }
-    var box = await userStorageManager.storage;
-    var sessionId = r['sessionId'] ?? box.get('redirect_session_id');
-
-    var openidCredential = await rpcHandler.verifyAssertion(
-        sessionId: sessionId, requestUri: r['link']);
-
-    return _signInWithIdTokenProvider(
-      openidCredential: openidCredential,
-      isNewUser: false,
-    );
-  }
+  Future<UserCredential> getRedirectResult() => _redirectResult;
 
   @override
   Stream<User?> idTokenChanges() {
@@ -438,84 +428,25 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     return result;
   }
 
+  Future<void> _signIn(AuthProvider provider, bool isPopup) async {
+    var v = await PureDartFirebaseImplementation.installation.authHandler
+        .signIn(app, provider, isPopup: isPopup);
+
+    if (!v) {
+      throw FirebaseAuthException.internalError(
+          'Auth handler cannot handle provider $provider');
+    }
+  }
+
   @override
-  Future<UserCredential> signInWithPopup(AuthProvider provider) {
-    // TODO: implement signInWithPopup
-    throw UnimplementedError();
+  Future<UserCredential> signInWithPopup(AuthProvider provider) async {
+    await _signIn(provider, true);
+    return getRedirectResult();
   }
 
   @override
   Future<void> signInWithRedirect(AuthProvider provider) async {
-    if (provider is OAuthProvider) {
-      var eventId = Uuid().v4();
-
-      String _randomString([int length = 32]) {
-        assert(length > 0);
-        var charset =
-            '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
-
-        var random = Random.secure();
-        return Iterable.generate(
-            length, (_) => charset[random.nextInt(charset.length)]).join();
-      }
-
-      var sessionId = _randomString();
-
-      var box = await userStorageManager.storage;
-      await box.put('redirect_session_id', sessionId);
-
-      var platform = Platform.current;
-
-      var url = Uri(
-          scheme: 'https',
-          host: app.options.authDomain,
-          path: '__/auth/handler',
-          queryParameters: {
-            // TODO: version 'v': 'X$clientVersion',
-            'authType': 'signInWithRedirect',
-            'apiKey': app.options.apiKey,
-            'providerId': provider.providerId,
-            if (provider.scopes.isNotEmpty) 'scopes': provider.scopes.join(','),
-            if (provider.parameters != null)
-              'customParameters': json.encode(provider.parameters),
-            // TODO: if (tenantId != null) 'tid': tenantId
-
-            'eventId': eventId,
-
-            if (platform is AndroidPlatform) ...{
-              'eid': 'p',
-              'sessionId': sessionId,
-              'apn': platform.packageId,
-              'sha1Cert': platform.sha1Cert.replaceAll(':', '').toLowerCase(),
-              'publicKey':
-                  '...', // seems encryption is not used, but public key needs to be present to assemble the correct redirect url
-            },
-            if (platform is IOsPlatform) ...{
-              'sessionId': sessionId,
-              'ibi': platform.appId,
-              if (app.options.iosClientId != null)
-                'clientId': app.options.iosClientId
-              else
-                'appId': app.options.appId,
-            },
-            if (platform is MacOsPlatform) ...{
-              'sessionId': sessionId,
-              'ibi': platform.appId,
-              if (app.options.iosClientId != null)
-                'clientId': app.options.iosClientId
-              else
-                'appId': app.options.appId,
-            },
-            if (platform is WebPlatform) ...{
-              'redirectUrl': platform.currentUrl,
-              'appName': app.name,
-            }
-          });
-      await PureDartFirebaseImplementation.installation.launchUrl(url);
-      return;
-    }
-    // TODO: implement signInWithRedirect
-    throw UnimplementedError();
+    await _signIn(provider, false);
   }
 
   @override
@@ -553,7 +484,7 @@ class UserCredentialImpl extends UserCredential {
   final User? user;
 
   @override
-  final AdditionalUserInfo additionalUserInfo;
+  final AdditionalUserInfo? additionalUserInfo;
 
   @override
   final AuthCredential? credential;
@@ -562,10 +493,10 @@ class UserCredentialImpl extends UserCredential {
   final String? operationType;
 
   UserCredentialImpl(
-      {required this.user,
-      required this.additionalUserInfo,
-      required this.credential,
-      required this.operationType});
+      {this.user,
+      this.additionalUserInfo,
+      this.credential,
+      this.operationType});
 }
 
 class ActionCodeInfoImpl extends ActionCodeInfo {

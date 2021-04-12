@@ -20,13 +20,9 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
   final String? storagePath;
   final Platform platform;
 
-  final Function(Uri url) launchUrl;
+  final Function(Uri url, {bool popup}) launchUrl;
 
-  final Future<Map<String, dynamic>> Function() getAuthResult;
-
-  final Future<OAuthCredential?> Function(OAuthProvider provider) oauthSignIn;
-
-  final Future<void> Function(String providerId) oauthSignOut;
+  final AuthHandler authHandler;
 
   final http.Client? httpClient;
 
@@ -38,23 +34,16 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
       {required this.storagePath,
       required this.platform,
       required this.launchUrl,
-      required this.getAuthResult,
-      required this.oauthSignIn,
-      required this.oauthSignOut,
+      required this.authHandler,
       this.httpClient});
 
   Future<IsolateCommander> _setup() async {
-    var worker = IsolateWorker()
-      ..registerFunction(#oauthSignOut, oauthSignOut)
-      ..registerFunction(#oauthSignIn, oauthSignIn)
-      ..registerFunction(#launchUrl, launchUrl)
-      ..registerFunction(#getAuthResult, getAuthResult);
-
+    var worker = IsolateWorker()..registerFunction(#launchUrl, launchUrl);
     var commander =
         await IsolateWorker.startWorkerInIsolate(debugName: 'firebase');
 
     await commander.execute(StaticFunctionCall(_setupInIsolate,
-        [storagePath, platform, worker.commander, httpClient]));
+        [storagePath, platform, worker.commander, authHandler, httpClient]));
 
     return commander;
   }
@@ -74,25 +63,17 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
     String? storagePath,
     Platform? platform,
     IsolateCommander commander,
+    AuthHandler authHandler,
     http.Client? httpClient,
   ) async {
     _registerFunctions();
     FirebaseDart.setup(
         storagePath: storagePath,
         platform: platform,
-        oauthSignOut: (providerId) {
-          return commander
-              .execute(RegisteredFunctionCall(#oauthSignOut, [providerId]));
-        },
-        oauthSignIn: (providerId) {
-          return commander
-              .execute(RegisteredFunctionCall(#oauthSignIn, [providerId]));
-        },
-        launchUrl: (url) {
-          return commander.execute(RegisteredFunctionCall(#launchUrl, [url]));
-        },
-        getAuthResult: () {
-          return commander.execute(RegisteredFunctionCall(#getAuthResult));
+        authHandler: authHandler,
+        launchUrl: (url, {bool popup = false}) {
+          return commander.execute(
+              RegisteredFunctionCall(#launchUrl, [url], {#popup: popup}));
         },
         httpClient: httpClient);
   }

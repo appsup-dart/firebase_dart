@@ -43,8 +43,8 @@ void runAuthTests({bool isolated = false}) async {
 
         expect(result.user!.uid, hasLength(24));
         expect(result.credential, isNull);
-        expect(result.additionalUserInfo.providerId, isNull);
-        expect(result.additionalUserInfo.isNewUser, isTrue);
+        expect(result.additionalUserInfo!.providerId, isNull);
+        expect(result.additionalUserInfo!.isNewUser, isTrue);
         expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
 
         expect(result.user!.isAnonymous, isTrue);
@@ -143,8 +143,8 @@ void runAuthTests({bool isolated = false}) async {
 
         expect(result.user!.uid, 'user1');
         expect(result.credential, isNull);
-        expect(result.additionalUserInfo.providerId, 'password');
-        expect(result.additionalUserInfo.isNewUser, isFalse);
+        expect(result.additionalUserInfo!.providerId, 'password');
+        expect(result.additionalUserInfo!.isNewUser, isFalse);
         expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
 
         expect(result.user!.isAnonymous, isFalse);
@@ -455,9 +455,9 @@ void runAuthTests({bool isolated = false}) async {
 
     group('FirebaseAuth.isSignInWithEmailLink', () {
       test('FirebaseAuth.isSignInWithEmailLink', () {
-        var emailLink1 = 'https://www.example.com/action?mode=signIn&' +
+        var emailLink1 = 'https://www.example.com/action?mode=signIn&'
             'oobCode=oobCode&apiKey=API_KEY';
-        var emailLink2 = 'https://www.example.com/action?mode=verifyEmail&' +
+        var emailLink2 = 'https://www.example.com/action?mode=verifyEmail&'
             'oobCode=oobCode&apiKey=API_KEY';
         var emailLink3 = 'https://www.example.com/action?mode=signIn';
         expect(auth.isSignInWithEmailLink(emailLink1), true);
@@ -466,9 +466,9 @@ void runAuthTests({bool isolated = false}) async {
       });
       test('FirebaseAuth.isSignInWithEmailLink: deep link', () {
         var deepLink1 =
-            'https://www.example.com/action?mode=signIn&oobCode=oobCode' +
-                '&apiKey=API_KEY';
-        var deepLink2 = 'https://www.example.com/action?mode=verifyEmail&' +
+            'https://www.example.com/action?mode=signIn&oobCode=oobCode'
+            '&apiKey=API_KEY';
+        var deepLink2 = 'https://www.example.com/action?mode=verifyEmail&'
             'oobCode=oobCode&apiKey=API_KEY';
         var deepLink3 = 'https://www.example.com/action?mode=signIn';
 
