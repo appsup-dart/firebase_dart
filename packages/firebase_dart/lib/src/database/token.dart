@@ -1,8 +1,6 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-
-
 import 'dart:convert';
 
 import 'package:jose/jose.dart';
@@ -33,7 +31,7 @@ class _Decoder extends Converter<String, FirebaseToken> {
   @override
   FirebaseToken convert(String input) {
     return FirebaseToken.fromJson(
-        JsonWebToken.unverified(input).claims.toJson()!);
+        JsonWebToken.unverified(input).claims.toJson());
   }
 }
 

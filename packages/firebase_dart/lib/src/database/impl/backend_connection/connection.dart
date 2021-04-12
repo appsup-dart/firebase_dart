@@ -58,7 +58,7 @@ class BackendConnection {
           await backend.auth(Auth(
               uid: t.claims.subject ?? t.claims['d']['uid'],
               provider: t.claims['provider_id'] ?? t.claims['d']['provider'],
-              token: t.claims['d'] ?? t.claims.toJson()!));
+              token: t.claims['d'] ?? t.claims.toJson()));
           break;
         case DataMessage.actionUnauth:
           await backend.auth(null);
