@@ -369,20 +369,21 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
         operation: operation, data: UnmodifiableMapView(data));
   }
 
-  late final Future<UserCredential> _redirectResult = Future(() async {
-    var credential = await PureDartFirebaseImplementation
-        .installation.authHandler
-        .getSignInResult(app);
-
-    if (credential == null) {
-      return UserCredentialImpl();
-    }
-
-    return signInWithCredential(credential);
-  });
+  Future<UserCredential>? _redirectResult;
 
   @override
-  Future<UserCredential> getRedirectResult() => _redirectResult;
+  Future<UserCredential> getRedirectResult() =>
+      _redirectResult ??= Future(() async {
+        var credential = await PureDartFirebaseImplementation
+            .installation.authHandler
+            .getSignInResult(app);
+
+        if (credential == null) {
+          return UserCredentialImpl();
+        }
+
+        return signInWithCredential(credential);
+      });
 
   @override
   Stream<User?> idTokenChanges() {
