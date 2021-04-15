@@ -1,6 +1,6 @@
 name: firebase_dart_flutter
 description: A port of the Firebase database, auth and storage client to pure Dart code for use on flutter
-version: 1.0.0-dev.9
+version: 1.0.0-dev.10
 homepage: https://github.com/appsup-dart/firebase_dart
 
 environment:
