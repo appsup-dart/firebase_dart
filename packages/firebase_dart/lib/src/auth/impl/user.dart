@@ -96,15 +96,19 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   Future<IdTokenResult> getIdTokenResult([bool refresh = false]) async {
     _checkDestroyed();
 
-    var response = await _credential.getTokenResponse(refresh);
-
-    // Only if the access token is refreshed, notify Auth listeners.
-    if (response.accessToken != _lastAccessToken) {
-      _lastAccessToken = response.accessToken;
-      // Auth state change, notify listeners.
-      _tokenUpdates.add(response.accessToken);
+    try {
+      var response = await _credential.getTokenResponse(refresh);
+      // Only if the access token is refreshed, notify Auth listeners.
+      if (response.accessToken != _lastAccessToken) {
+        _lastAccessToken = response.accessToken;
+        // Auth state change, notify listeners.
+        _tokenUpdates.add(response.accessToken);
+      }
+      return IdTokenResultImpl(response.accessToken!);
+    } catch (e) {
+      await _auth.signOut();
+      rethrow;
     }
-    return IdTokenResultImpl(response.accessToken!);
   }
 
   void destroy() {

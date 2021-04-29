@@ -74,7 +74,14 @@ void runAuthTests({bool isolated = false}) async {
             'client_id': '',
             'client_secret': null,
             'nonce': null,
-            'token': <String, dynamic>{'accessToken': jwt}
+            'token': <String, dynamic>{
+              'access_token': jwt,
+              'expires_at': DateTime.now()
+                      .add(Duration(hours: 1))
+                      .millisecondsSinceEpoch ~/
+                  1000,
+              'expires_in': '3600'
+            }
           },
           'isAnonymous': true,
           'providerData': [
