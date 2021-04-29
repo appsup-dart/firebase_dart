@@ -85,18 +85,6 @@ void runCoreTests({bool isolated = false}) async {
 
         expect(service.isDeleted, isTrue);
       });
-
-      test('FirebaseApp.delete should call delete on services', () async {
-        var app = await Firebase.initializeApp(options: getOptions());
-
-        var service = FirebaseService(app);
-
-        expect(service.isDeleted, isFalse);
-
-        await app.delete();
-
-        expect(service.isDeleted, isTrue);
-      });
     });
   });
 
