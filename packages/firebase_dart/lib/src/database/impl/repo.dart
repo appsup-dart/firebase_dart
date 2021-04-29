@@ -96,8 +96,12 @@ class Repo {
     _updateInfo(dotInfoConnected, false);
     _authStateChangesSubscription = authStateChanges.listen((user) async {
       _updateInfo(dotInfoAuthenticated, user != null);
-      return _connection
-          .refreshAuthToken(user == null ? null : (await user.getIdToken()));
+      try {
+        return _connection
+            .refreshAuthToken(user == null ? null : (await user.getIdToken()));
+      } catch (e, tr) {
+        _logger.warning('Could not refresh auth token.', e, tr);
+      }
     });
 
     _transactions = TransactionsTree(this);
