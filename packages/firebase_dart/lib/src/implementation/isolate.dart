@@ -42,8 +42,13 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
     var commander =
         await IsolateWorker.startWorkerInIsolate(debugName: 'firebase');
 
-    await commander.execute(StaticFunctionCall(_setupInIsolate,
-        [storagePath, platform, worker.commander, authHandler, httpClient]));
+    await commander.execute(StaticFunctionCall(_setupInIsolate, [
+      storagePath,
+      platform,
+      worker.commander,
+      IsolateAuthHandler.from(authHandler),
+      httpClient
+    ]));
 
     return commander;
   }
@@ -133,4 +138,48 @@ abstract class IsolateFirebaseService extends FirebaseService {
 
   @override
   IsolateFirebaseApp get app => super.app as IsolateFirebaseApp;
+}
+
+class IsolateAuthHandler implements AuthHandler {
+  late final IsolateCommander _commander;
+
+  IsolateAuthHandler.from(AuthHandler authHandler) {
+    var worker = IsolateWorker()
+      ..registerFunction(#getSignInResult, (String appName) {
+        var app = Firebase.app(appName);
+        return authHandler.getSignInResult(app);
+      })
+      ..registerFunction(#signIn, (String appName, AuthProvider provider,
+          {bool isPopup = false}) {
+        var app = Firebase.app(appName);
+        return authHandler.signIn(app, provider, isPopup: isPopup);
+      })
+      ..registerFunction(#signOut, (String appName, String uid) {
+        var app = Firebase.app(appName);
+        var user = FirebaseAuth.instanceFor(app: app).currentUser;
+        assert(user?.uid == uid);
+        return authHandler.signOut(app, user!);
+      });
+
+    _commander = worker.commander;
+  }
+
+  @override
+  Future<AuthCredential?> getSignInResult(FirebaseApp app) {
+    return _commander
+        .execute(RegisteredFunctionCall(#getSignInResult, [app.name]));
+  }
+
+  @override
+  Future<bool> signIn(FirebaseApp app, AuthProvider provider,
+      {bool isPopup = false}) {
+    return _commander.execute(RegisteredFunctionCall(
+        #signIn, [app.name, provider], {#isPopup: isPopup}));
+  }
+
+  @override
+  Future<void> signOut(FirebaseApp app, User user) {
+    return _commander
+        .execute(RegisteredFunctionCall(#signOut, [app.name, user.uid]));
+  }
 }

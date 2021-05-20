@@ -9,6 +9,7 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
+import 'package:firebase_dart/src/implementation/isolate/util.dart';
 
 class FacebookAuthHandler extends DirectAuthHandler {
   FacebookAuthHandler() : super(FacebookAuthProvider.PROVIDER_ID);
@@ -52,7 +53,7 @@ class GoogleAuthHandler extends DirectAuthHandler {
       var account = await GoogleSignIn().signIn();
       var auth = await account!.authentication;
       return GoogleAuthProvider.credential(
-          idToken: auth.idToken!, accessToken: auth.accessToken!);
+          idToken: auth.idToken, accessToken: auth.accessToken);
     } on MissingPluginException {
       return null;
     } on AssertionError {
@@ -89,19 +90,24 @@ class AppleAuthHandler extends DirectAuthHandler<OAuthProvider> {
 class AndroidAuthHandler extends FirebaseAppAuthHandler {
   static const _channel = const MethodChannel('firebase_dart_flutter');
 
+  Future<AuthCredential?>? _result;
+
   @override
   Future<AuthCredential?> getSignInResult(FirebaseApp app) async {
     if (!kIsWeb && platform_info.Platform.instance.isAndroid) {
-      var v =
-          (await _channel.invokeMapMethod<String, dynamic>('getAuthResult'))!;
+      return _result ??= Future(() async {
+        var v =
+            (await _channel.invokeMapMethod<String, dynamic>('getAuthResult'))!;
 
-      return createCredential(
-          error: v['firebaseError'] == null
-              ? null
-              : json.decode(v['firebaseError']),
-          sessionId: v['sessionId'],
-          providerId: v['providerId'],
-          link: v['link']);
+        _result = null;
+        return createCredential(
+            error: v['firebaseError'] == null
+                ? null
+                : json.decode(v['firebaseError']),
+            sessionId: v['sessionId'],
+            providerId: v['providerId'],
+            link: v['link']);
+      });
     }
     return null;
   }

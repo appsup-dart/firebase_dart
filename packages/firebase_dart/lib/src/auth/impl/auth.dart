@@ -372,18 +372,23 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   Future<UserCredential>? _redirectResult;
 
   @override
-  Future<UserCredential> getRedirectResult() =>
-      _redirectResult ??= Future(() async {
-        var credential = await PureDartFirebaseImplementation
-            .installation.authHandler
-            .getSignInResult(app);
+  Future<UserCredential> getRedirectResult() {
+    if (_redirectResult != null) return _redirectResult!;
+    Future<UserCredential>? v;
+    v = Future(() async {
+      var credential = await PureDartFirebaseImplementation
+          .installation.authHandler
+          .getSignInResult(app);
 
-        if (credential == null) {
-          return UserCredentialImpl();
-        }
+      if (_redirectResult != v) return UserCredentialImpl();
+      if (credential == null) {
+        return UserCredentialImpl();
+      }
 
-        return signInWithCredential(credential);
-      });
+      return signInWithCredential(credential);
+    });
+    return _redirectResult = v;
+  }
 
   @override
   Stream<User?> idTokenChanges() {
@@ -430,6 +435,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   Future<void> _signIn(AuthProvider provider, bool isPopup) async {
+    _redirectResult = null;
     var v = await PureDartFirebaseImplementation.installation.authHandler
         .signIn(app, provider, isPopup: isPopup);
 

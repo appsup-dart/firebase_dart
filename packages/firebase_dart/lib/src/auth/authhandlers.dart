@@ -8,9 +8,11 @@ import 'package:firebase_dart/src/auth/auth_provider.dart';
 import 'package:firebase_dart/src/auth/auth_credential.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:firebase_dart/src/implementation/dart.dart';
+import 'package:firebase_dart/src/implementation/isolate.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../auth.dart';
+import '../implementation.dart';
 
 class FirebaseAppAuthCredential extends AuthCredential {
   final String sessionId;
@@ -124,8 +126,11 @@ abstract class FirebaseAppAuthHandler implements AuthHandler {
             'appName': app.name,
           }
         });
-    await PureDartFirebaseImplementation.installation
-        .launchUrl(url, popup: isPopup);
+    var installation = FirebaseImplementation.installation;
+    var launchUrl = installation is PureDartFirebaseImplementation
+        ? installation.launchUrl
+        : (installation as IsolateFirebaseImplementation).launchUrl;
+    launchUrl(url, popup: isPopup);
     return true;
   }
 

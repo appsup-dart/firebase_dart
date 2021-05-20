@@ -74,6 +74,7 @@ class FirebaseDart {
     authHandler ??= DefaultAuthHandler();
 
     if (isolated && !_kIsWeb) {
+      initPlatform(platform);
       FirebaseImplementation.install(IsolateFirebaseImplementation(
           storagePath: storagePath,
           platform: platform,
