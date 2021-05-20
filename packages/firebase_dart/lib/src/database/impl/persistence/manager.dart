@@ -1,5 +1,3 @@
-
-
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 
@@ -89,5 +87,54 @@ class NoopPersistenceManager implements PersistenceManager {
   void _verifyInsideTransaction() {
     assert(
         _insideTransaction, 'Transaction expected to already be in progress.');
+  }
+}
+
+class DelegatingPersistenceManager implements PersistenceManager {
+  final PersistenceManager Function() factory;
+
+  DelegatingPersistenceManager(this.factory);
+
+  late PersistenceManager delegateTo = factory();
+
+  @override
+  void removeUserOperation(int writeId) {
+    delegateTo.removeUserOperation(writeId);
+  }
+
+  @override
+  T runInTransaction<T>(T Function() callable) {
+    return delegateTo.runInTransaction(callable);
+  }
+
+  @override
+  void saveUserOperation(TreeOperation operation, int writeId) {
+    return delegateTo.saveUserOperation(operation, writeId);
+  }
+
+  @override
+  IncompleteData serverCache(Path<Name> path,
+      [QueryFilter filter = const QueryFilter()]) {
+    return delegateTo.serverCache(path, filter);
+  }
+
+  @override
+  void setQueryActive(Path<Name> path, QueryFilter filter) {
+    return delegateTo.setQueryActive(path, filter);
+  }
+
+  @override
+  void setQueryComplete(Path<Name> path, QueryFilter filter) {
+    return delegateTo.setQueryComplete(path, filter);
+  }
+
+  @override
+  void setQueryInactive(Path<Name> path, QueryFilter filter) {
+    return delegateTo.setQueryInactive(path, filter);
+  }
+
+  @override
+  void updateServerCache(TreeOperation operation, [QueryFilter? filter]) {
+    return delegateTo.updateServerCache(operation, filter);
   }
 }

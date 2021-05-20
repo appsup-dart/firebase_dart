@@ -43,28 +43,31 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
     repo.purgeOutstandingWrites();
   }
 
-  PersistenceManager? _persistenceManager;
+  bool _persistenceManagerInitialized = false;
+
+  late final PersistenceManager persistenceManager =
+      DelegatingPersistenceManager(() {
+    _persistenceManagerInitialized = true;
+    return _persistenceEnabled
+        ? DefaultPersistenceManager(
+            HivePersistenceStorageEngine(KeyValueDatabase(
+                Hive.box('firebase-db-persistence-storage-${app.name}'))),
+            LRUCachePolicy(_persistenceCacheSize))
+        : NoopPersistenceManager();
+  });
 
   int _persistenceCacheSize = 10 * 1024 * 1024;
 
   bool _persistenceEnabled = false;
 
-  PersistenceManager get persistenceManager =>
-      _persistenceManager ??= _persistenceEnabled
-          ? DefaultPersistenceManager(
-              HivePersistenceStorageEngine(KeyValueDatabase(
-                  Hive.box('firebase-db-persistence-storage-${app.name}'))),
-              LRUCachePolicy(_persistenceCacheSize))
-          : NoopPersistenceManager();
-
   @override
   Future<bool> setPersistenceEnabled(bool enabled) async {
-    if (_persistenceManager != null) return false;
+    if (_persistenceManagerInitialized) return false;
     if (_persistenceEnabled == enabled) return true;
     if (enabled) {
       await PersistenceStorage.openBox(
           'firebase-db-persistence-storage-${app.name}');
-      if (_persistenceManager != null) {
+      if (_persistenceManagerInitialized) {
         await Hive.box('firebase-db-persistence-storage-${app.name}').close();
         return false;
       }
@@ -113,7 +116,7 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
 
   @override
   Future<bool> setPersistenceCacheSizeBytes(int cacheSizeInBytes) async {
-    if (_persistenceManager != null) return false;
+    if (_persistenceManagerInitialized) return false;
     _persistenceCacheSize = cacheSizeInBytes;
     return true;
   }
