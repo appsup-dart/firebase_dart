@@ -100,7 +100,7 @@ abstract class PersistentConnection {
   // auth
 
   /// Authenticates with the token.
-  Future<void> refreshAuthToken(String? token);
+  Future<void> refreshAuthToken(FutureOr<String>? token);
 
   // listens
 

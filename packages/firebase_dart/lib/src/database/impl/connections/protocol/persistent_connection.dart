@@ -38,7 +38,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   Duration? _serverTimeDiff;
 
-  Request? _authRequest;
+  FutureOr<Request>? _authRequest;
 
   DateTime? _lastConnectionEstablishedTime;
 
@@ -247,9 +247,14 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<void> refreshAuthToken(String? token) async {
+  Future<void> refreshAuthToken(FutureOr<String>? token) async {
     _logger.fine('Auth token refreshed.');
-    _authRequest = token == null ? null : Request.auth(token);
+    _authRequest = token == null
+        ? null
+        : token is String
+            ? Request.auth(token)
+            : (token.then<Request>((v) => Request.auth(v))
+                as FutureOr<Request>?);
     if (_connected()) {
       if (token != null) {
         await _upgradeAuth();
@@ -447,7 +452,36 @@ class PersistentConnectionImpl extends PersistentConnection
   bool get _transportIsReady =>
       _connection != null && _connection!.state == ConnectionState.connected;
 
-  Future<MessageBody> _request(Request request) async {
+  final List<FutureOr<Request>> _requestQueue = [];
+  bool _requestInProgress = false;
+
+  Future<MessageBody> _request(FutureOr<Request> request) async {
+    _requestQueue.add(request);
+    if (!_requestInProgress) _handleNextRequest();
+    return Future.value(request)
+        .then((request) => request.response.then<MessageBody>((r) {
+              _outstandingRequests.remove(request);
+              if (r.message.body.status == MessageBody.statusOk) {
+                return r.message.body;
+              }
+              throw FirebaseDatabaseException(
+                  code: r.message.body.status ?? 'unknown',
+                  details: r.message.body.data);
+            }));
+  }
+
+  void _handleNextRequest() {
+    if (_requestInProgress || _requestQueue.isEmpty) return;
+    _requestInProgress = true;
+    var request = _requestQueue.removeAt(0);
+    Future.value(request).then((request) {
+      _doRequest(request);
+      _requestInProgress = false;
+      _handleNextRequest();
+    });
+  }
+
+  void _doRequest(Request request) {
     var message = request.message;
     if (message is DataMessage) {
       switch (message.action) {
@@ -465,15 +499,6 @@ class PersistentConnectionImpl extends PersistentConnection
     if (_transportIsReady) {
       _connection!.sendRequest(request);
     }
-    return request.response.then<MessageBody>((r) {
-      _outstandingRequests.remove(request);
-      if (r.message.body.status == MessageBody.statusOk) {
-        return r.message.body;
-      }
-      throw FirebaseDatabaseException(
-          code: r.message.body.status ?? 'unknown',
-          details: r.message.body.data);
-    });
   }
 
   // testing methods

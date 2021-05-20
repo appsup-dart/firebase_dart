@@ -98,7 +98,7 @@ class Repo {
       _updateInfo(dotInfoAuthenticated, user != null);
       try {
         return _connection
-            .refreshAuthToken(user == null ? null : (await user.getIdToken()));
+            .refreshAuthToken(user == null ? null : user.getIdToken());
       } catch (e, tr) {
         _logger.warning('Could not refresh auth token.', e, tr);
       }
