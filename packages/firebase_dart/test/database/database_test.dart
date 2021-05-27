@@ -14,12 +14,15 @@ import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/memory_backend.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/testing/database.dart';
+import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 import '../secrets.dart'
     if (dart.library.html) '../secrets.dart'
     if (dart.library.io) '../secrets_io.dart' as s;
 import '../util.dart';
+
+const enableLogging = false;
 
 void main() {
   return runDatabaseTests(isolated: false);
@@ -28,15 +31,17 @@ void main() {
 void runDatabaseTests({bool isolated = false}) async {
   await FirebaseTesting.setup(isolated: isolated);
 
-/*   StreamSubscription logSubscription;
-  setUp(() {
-    Logger.root.level = Level.ALL;
-    logSubscription = Logger.root.onRecord.listen(print);
-  });
-  tearDown(() async {
-    await logSubscription.cancel();
-  });
- */
+  if (enableLogging) {
+    late StreamSubscription logSubscription;
+    setUp(() {
+      Logger.root.level = Level.ALL;
+      logSubscription = Logger.root.onRecord.listen(print);
+    });
+    tearDown(() async {
+      await logSubscription.cancel();
+    });
+  }
+
   group('mem', () {
     testsWith({'host': 'mem://test/', 'secret': 'x'});
   });
