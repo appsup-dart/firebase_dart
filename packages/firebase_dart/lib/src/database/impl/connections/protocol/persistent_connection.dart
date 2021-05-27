@@ -211,7 +211,8 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  void purgeOutstandingWrites() {
+  void purgeOutstandingWrites() async {
+    await _flushRequests();
     for (var request in _outstandingRequests) {
       request._completer
           .completeError(FirebaseDatabaseException.writeCanceled());
@@ -453,11 +454,14 @@ class PersistentConnectionImpl extends PersistentConnection
       _connection != null && _connection!.state == ConnectionState.connected;
 
   final List<FutureOr<Request>> _requestQueue = [];
-  bool _requestInProgress = false;
+
+  void _queueRequest(FutureOr<Request> request) {
+    _requestQueue.add(request);
+    _flushRequests();
+  }
 
   Future<MessageBody> _request(FutureOr<Request> request) async {
-    _requestQueue.add(request);
-    if (!_requestInProgress) _handleNextRequest();
+    _queueRequest(request);
     return Future.value(request)
         .then((request) => request.response.then<MessageBody>((r) {
               _outstandingRequests.remove(request);
@@ -470,15 +474,31 @@ class PersistentConnectionImpl extends PersistentConnection
             }));
   }
 
-  void _handleNextRequest() {
-    if (_requestInProgress || _requestQueue.isEmpty) return;
-    _requestInProgress = true;
-    var request = _requestQueue.removeAt(0);
-    Future.value(request).then((request) {
-      _doRequest(request);
-      _requestInProgress = false;
-      _handleNextRequest();
-    });
+  Completer<void>? _requestFlush;
+
+  Future<void> _flushRequests() {
+    if (_requestFlush != null) return _requestFlush!.future;
+    if (_requestQueue.isEmpty) return Future.value();
+
+    _requestFlush = Completer();
+
+    void _handleNext() {
+      if (_requestQueue.isEmpty) {
+        _requestFlush?.complete();
+        _requestFlush = null;
+        return;
+      }
+
+      var request = _requestQueue.removeAt(0);
+      Future.value(request).then((request) {
+        _doRequest(request);
+        _handleNext();
+      });
+    }
+
+    _handleNext();
+
+    return _requestFlush!.future;
   }
 
   void _doRequest(Request request) {
