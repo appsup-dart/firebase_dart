@@ -375,7 +375,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   Future<UserCredential> getRedirectResult() {
     if (_redirectResult != null) return _redirectResult!;
     Future<UserCredential>? v;
-    v = Future(() async {
+    v = Future.microtask(() async {
       var credential = await PureDartFirebaseImplementation
           .installation.authHandler
           .getSignInResult(app);
