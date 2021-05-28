@@ -23,16 +23,19 @@ final _logger = Logger('firebase-synctree');
 class MasterView {
   QueryFilter masterFilter;
 
+  final String? debugName;
+
   ViewCache _data;
 
   final Map<QueryFilter, EventTarget> observers = {};
 
-  MasterView(this.masterFilter)
+  MasterView(this.masterFilter, {this.debugName})
       : _data = ViewCache(IncompleteData.empty(masterFilter),
             IncompleteData.empty(masterFilter));
 
   MasterView withFilter(QueryFilter filter) =>
-      MasterView(filter).._data = _data.withFilter(filter);
+      MasterView(filter, debugName: debugName)
+        .._data = _data.withFilter(filter);
 
   ViewCache get data => _data;
 
@@ -154,7 +157,7 @@ class MasterView {
 /// Represents a remote resource and holds local (partial) views and local
 /// changes of its value.
 class SyncPoint {
-  final String name;
+  final String debugName;
 
   final Map<QueryFilter, MasterView> views = {};
 
@@ -164,15 +167,15 @@ class SyncPoint {
 
   final Path<Name> path;
 
-  SyncPoint(this.name, this.path,
+  SyncPoint(this.debugName, this.path,
       {ViewCache? data, required this.persistenceManager}) {
     if (data == null) return;
     var q = QueryFilter();
-    views[q] = MasterView(q).._data = data;
+    views[q] = MasterView(q, debugName: debugName).._data = data;
   }
 
   SyncPoint child(Name child) {
-    var p = SyncPoint('$name/$child', path.child(child),
+    var p = SyncPoint('$debugName/$child', path.child(child),
         data: viewCacheForChild(child), persistenceManager: persistenceManager);
     p.isCompleteFromParent = isCompleteForChild(child);
     return p;
@@ -184,7 +187,8 @@ class SyncPoint {
     if (_isCompleteFromParent == v) return;
     _isCompleteFromParent = v;
     if (_isCompleteFromParent) {
-      views.putIfAbsent(QueryFilter(), () => MasterView(QueryFilter()));
+      views.putIfAbsent(
+          QueryFilter(), () => MasterView(QueryFilter(), debugName: debugName));
       _prunable = true;
     }
   }
@@ -326,7 +330,8 @@ class SyncPoint {
         persistenceManager.serverCache(path, filter).withFilter(filter);
     var cache = ViewCache(serverVersion, serverVersion);
     // TODO: apply user operations from persistence storage
-    return views[filter] = MasterView(filter).._data = cache;
+    return views[filter] = MasterView(filter, debugName: debugName)
+      .._data = cache;
   }
 
   bool _prunable = false;
@@ -382,7 +387,7 @@ class SyncPoint {
   }
 
   @override
-  String toString() => 'SyncPoint[$name]';
+  String toString() => 'SyncPoint[$debugName]';
 }
 
 abstract class RemoteListenerRegistrar {

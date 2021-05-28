@@ -89,7 +89,8 @@ class Repo {
         }, remoteUnregister: (path, filter) async {
           await _connection.unlisten(path.join('/'), query: filter);
         }, persistenceManager: persistenceManager),
-        _infoSyncTree = SyncTree(url.toString()) {
+        _infoSyncTree =
+            SyncTree(url.replace(pathSegments: ['.info']).toString()) {
     _infoSyncTree.addEventListener(
         'value', Path.from([]), QueryFilter(), (event) {});
     _updateInfo(dotInfoAuthenticated, false);
