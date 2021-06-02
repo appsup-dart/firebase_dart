@@ -209,12 +209,19 @@ class SyncPoint {
   final Set<QueryFilter> _lastMinimalSetOfQueries = {};
 
   Map<QueryFilter, EventTarget> _removeNewQueries() {
-    return {
-      for (var k in views.keys
-          .toList()
-          .where((k) => !_lastMinimalSetOfQueries.contains(k)))
-        ...views.remove(k)!.observers
-    };
+    var out = <QueryFilter, EventTarget>{};
+
+    var newViewsKeys =
+        views.keys.where((k) => !_lastMinimalSetOfQueries.contains(k)).toList();
+    var newViews = newViewsKeys.map((k) => views.remove(k)!).toList();
+
+    for (var v in newViews) {
+      assert(out.keys.toSet().intersection(v.observers.keys.toSet()).isEmpty);
+
+      out.addAll(v.observers);
+      v.observers.clear();
+    }
+    return out;
   }
 
   Iterable<QueryFilter> get minimalSetOfQueries {
@@ -253,6 +260,7 @@ class SyncPoint {
         for (var q in v[o]!.keys.toList()) {
           var view =
               views.values.firstWhereOrNull((element) => element.contains(q));
+          assert(view?.observers[q] == null);
           if (view != null) view.observers[q] = v[o]!.remove(q)!;
         }
 
@@ -310,16 +318,44 @@ class SyncPoint {
   /// [filter].
   void addEventListener(
       String type, QueryFilter filter, EventListener listener) {
-    if (views.values.any((m) => m.addEventListener(type, filter, listener))) {
-      return;
+    try {
+      getMasterViewForFilter(filter).addEventListener(type, filter, listener);
+    } finally {
+      // every filter should only be present once
+      assert(
+          views.values.expand((v) => v.observers.keys).length ==
+              views.values.expand((v) => v.observers.keys).toSet().length,
+          'a filter may only be present once in a SyncPoint');
+
+      // filter should be present
+      assert(views.values.expand((v) => v.observers.keys).contains(filter),
+          'filter should be present after addEventListener in a SyncPoint');
+    }
+  }
+
+  MasterView getMasterViewForFilter(QueryFilter filter) {
+    // first check if filter already in one of the master views
+    for (var v in views.values) {
+      if (v.masterFilter == filter || v.observers.containsKey(filter)) {
+        return v;
+      }
     }
 
-    createMasterViewForFilter(filter).addEventListener(type, filter, listener);
+    // secondly, check if filter might be contained by one of the master views
+    for (var v in views.values) {
+      if (v.contains(filter)) {
+        return v;
+      }
+    }
+
+    // lastly, create a new master view
+    return createMasterViewForFilter(filter);
   }
 
   MasterView createMasterViewForFilter(QueryFilter filter) {
     var unlimitedFilter = views.keys.firstWhereOrNull((q) => !q.limits);
     // TODO: do not create new master views when already an unlimited view exists
+    assert(views[filter] == null);
     if (unlimitedFilter != null) {
       filter =
           QueryFilter(ordering: filter.ordering as TreeStructuredDataOrdering);
@@ -363,14 +399,18 @@ class SyncPoint {
       for (var v in views.values.toList()) {
         var d = v.applyOperation(operation, source, writeId);
         for (var q in d.keys) {
-          createMasterViewForFilter(q).observers[q] = d[q]!;
+          var v = getMasterViewForFilter(q);
+          assert(!v.observers.containsKey(q));
+          v.observers[q] = d[q]!;
         }
       }
     } else {
       var d = views[filter]?.applyOperation(operation, source, writeId);
       if (d != null) {
         for (var q in d.keys) {
-          createMasterViewForFilter(q).observers[q] = d[q]!;
+          var v = getMasterViewForFilter(q);
+          assert(!v.observers.containsKey(q));
+          v.observers[q] = d[q]!;
         }
       }
     }
@@ -600,6 +640,7 @@ class SyncTree {
         FirebaseDatabaseException.permissionDenied()
             .replace(message: 'Access to ${path.join('/')} denied'),
         null))); // TODO is this always because of permission denied?
+    view.observers.clear();
   }
 
   /// Applies a user merge at [path] with [changedChildren]
@@ -656,6 +697,7 @@ class SyncTree {
         for (var o in v.observers.values) {
           o.dispatchEvent(CancelEvent(null, null));
         }
+        v.observers.clear();
       }
     });
   }
