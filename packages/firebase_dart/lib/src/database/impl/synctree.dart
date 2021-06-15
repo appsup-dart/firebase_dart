@@ -441,24 +441,24 @@ abstract class RemoteListenerRegistrar {
       {RemoteRegister? remoteRegister,
       RemoteUnregister? remoteUnregister}) = _RemoteListenerRegistrarImpl;
 
-  Future<Null> registerAll(Path<Name> path, Iterable<QueryFilter> filters,
-      String? Function(QueryFilter filter) hashFcn) async {
+  void registerAll(Path<Name> path, Iterable<QueryFilter> filters,
+      String? Function(QueryFilter filter) hashFcn) {
     var node = _queries.subtree(
         path, (parent, name) => TreeNode(<QueryFilter, Future<Null>>{}));
     for (var f in filters.toSet()) {
       if (node.value.containsKey(f)) continue;
       var hash = hashFcn(f);
-      await register(path, f, hash);
+      register(path, f, hash);
     }
     for (var f in node.value.keys.toSet().difference(filters.toSet())) {
-      await unregister(path, f);
+      unregister(path, f);
     }
   }
 
-  Future<Null> register(Path<Name> path, QueryFilter filter, String? hash) {
+  void register(Path<Name> path, QueryFilter filter, String? hash) {
     var node = _queries.subtree(
         path, (parent, name) => TreeNode(<QueryFilter, Future<Null>>{}));
-    return node.value.putIfAbsent(filter, () async {
+    node.value.putIfAbsent(filter, () async {
       try {
         await remoteRegister(path, filter, hash);
         persistenceManager.runInTransaction(() {
@@ -471,17 +471,17 @@ abstract class RemoteListenerRegistrar {
     });
   }
 
-  Future<Null> remoteRegister(
+  Future<void> remoteRegister(
       Path<Name> path, QueryFilter filter, String? hash);
 
-  Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter);
+  Future<void> remoteUnregister(Path<Name> path, QueryFilter filter);
 
-  Future<Null> unregister(Path<Name> path, QueryFilter filter) async {
+  void unregister(Path<Name> path, QueryFilter filter) {
     var node = _queries.subtree(
         path, (parent, name) => TreeNode(<QueryFilter, Future<Null>>{}));
     if (!node.value.containsKey(filter)) return;
-    node.value.remove(filter); // ignore: unawaited_futures
-    await remoteUnregister(path, filter);
+    node.value.remove(filter);
+    remoteUnregister(path, filter);
     persistenceManager.runInTransaction(() {
       persistenceManager.setQueryInactive(path, filter);
     });
@@ -548,9 +548,9 @@ class SyncTree {
     return TreeNode(parent.child(childName));
   }
 
-  final Map<SyncPoint, Future<Null>> _invalidPoints = {};
+  final Map<SyncPoint, Future<void>> _invalidPoints = {};
 
-  Future<Null> _invalidate(Path<Name> path) {
+  Future<void> _invalidate(Path<Name> path) {
     var node = root.subtree(path, _createNode);
     var point = node.value;
 
@@ -565,7 +565,7 @@ class SyncTree {
 
     return _invalidPoints.putIfAbsent(
         point,
-        () => Future<Null>.microtask(() {
+        () => Future<void>.microtask(() {
               _invalidPoints.remove(point);
               registrar.registerAll(
                   path,
@@ -576,23 +576,18 @@ class SyncTree {
             }));
   }
 
-  Future<Null> _doOnSyncPoint(
+  Future<void> _doOnSyncPoint(
       Path<Name> path, void Function(SyncPoint point) action) {
     var point = root.subtree(path, _createNode).value;
 
     action(point);
 
     return _invalidate(path);
-    /*_invalidPoints.putIfAbsent(point, ()=>Future<Null>.microtask(() {
-      _invalidPoints.remove(point);
-      registrar.registerAll(path, point.minimalSetOfQueries,
-              (f)=>point.views[f]?._data?.localVersion?.isComplete==true ? point.views[f]._data.localVersion.value.hash : null);
-    }));*/
   }
 
   /// Adds an event listener for events of [type] and for data at [path] and
   /// filtered by [filter].
-  Future<Null> addEventListener(String type, Path<Name> path,
+  Future<void> addEventListener(String type, Path<Name> path,
       QueryFilter filter, EventListener listener) {
     return _doOnSyncPoint(path, (point) {
       point.addEventListener(type, filter, listener);
@@ -601,7 +596,7 @@ class SyncTree {
 
   /// Removes an event listener for events of [type] and for data at [path] and
   /// filtered by [filter].
-  Future<Null> removeEventListener(String type, Path<Name> path,
+  Future<void> removeEventListener(String type, Path<Name> path,
       QueryFilter filter, EventListener listener) {
     return _doOnSyncPoint(path, (point) {
       point.removeEventListener(type, filter, listener);
