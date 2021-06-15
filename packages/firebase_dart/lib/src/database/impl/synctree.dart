@@ -417,7 +417,8 @@ class SyncPoint {
   }
 
   void prune() {
-    if (_prunable) return;
+    if (!_prunable) return;
+    _prunable = false;
     for (var e in views.entries.toList()) {
       var k = e.key;
       var v = e.value;
