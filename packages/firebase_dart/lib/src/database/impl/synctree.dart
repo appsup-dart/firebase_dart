@@ -93,8 +93,8 @@ class MasterView {
     if (!masterFilter.limits) return true;
     if (l.value.children.containsKey(child)) return true;
     if (masterFilter.ordering is KeyOrdering) {
-      if (l.value.children.completeInterval
-          .containsPoint(masterFilter.ordering.mapKeyValue(child, null))) {
+      if (l.value.children.completeInterval.containsPoint(
+          masterFilter.ordering.mapKeyValue(child, TreeStructuredData()))) {
         return true;
       }
     }
@@ -670,7 +670,10 @@ class SyncTree {
         if (childOp == null) continue;
         if (filter != null &&
             (childOp.nodeOperation is Overwrite) &&
-            (childOp.nodeOperation as Overwrite).value.isNil) continue;
+            (childOp.nodeOperation as Overwrite).value.isNil &&
+            !tree.value.isCompleteForChild(k)) {
+          continue;
+        }
         _applyOperationToSyncPoints(
             tree.children[k], null, childOp, type, writeId, path.child(k));
       }

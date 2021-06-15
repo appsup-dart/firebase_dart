@@ -182,7 +182,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
   FirebaseApp? app1, app2, appAlt1, appAlt2;
 
-  setUpAll(() async {
+  setUp(() async {
     var options = getOptions();
     app1 = await core.Firebase.initializeApp(name: 'app1', options: options);
     app2 = await core.Firebase.initializeApp(name: 'app2', options: options);
@@ -190,7 +190,7 @@ void testsWith(Map<String, dynamic> secrets) {
     appAlt2 = await core.Firebase.initializeApp(name: 'alt2', options: options);
   });
 
-  tearDownAll(() async {
+  tearDown(() async {
     await app1!.delete();
     await app2!.delete();
     await appAlt1!.delete();
