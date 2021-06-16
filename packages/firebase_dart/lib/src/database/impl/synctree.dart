@@ -481,10 +481,12 @@ abstract class RemoteListenerRegistrar {
     var node = _queries.subtree(
         path, (parent, name) => TreeNode(<QueryFilter, Future<Null>>{}));
     if (!node.value.containsKey(filter)) return;
-    node.value.remove(filter);
-    remoteUnregister(path, filter);
-    persistenceManager.runInTransaction(() {
-      persistenceManager.setQueryInactive(path, filter);
+    var f = node.value.remove(filter);
+    f?.then((_) async {
+      await remoteUnregister(path, filter);
+      persistenceManager.runInTransaction(() {
+        persistenceManager.setQueryInactive(path, filter);
+      });
     });
   }
 }
