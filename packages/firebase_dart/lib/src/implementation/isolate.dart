@@ -117,6 +117,11 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
             app, (s) => s.bucket == storageBucket) ??
         IsolateFirebaseStorage(app: app, storageBucket: storageBucket);
   }
+
+  @override
+  AuthTokenProvider createAuthTokenProvider(IsolateFirebaseApp app) {
+    return AuthTokenProvider.fromFirebaseAuth(createAuth(app));
+  }
 }
 
 class IsolateFirebaseApp extends FirebaseApp {

@@ -3,6 +3,7 @@ library firebase.connection;
 import 'dart:async';
 
 import 'package:firebase_dart/database.dart' show ServerValue;
+import 'package:firebase_dart/src/implementation.dart';
 
 import 'connections/protocol.dart';
 import 'operations/tree.dart';
@@ -62,7 +63,7 @@ class OperationEvent {
 /// outstanding writes.
 abstract class PersistentConnection {
   factory PersistentConnection(Uri uri,
-      {AuthTokenProvider? authTokenProvider}) {
+      {required AuthTokenProvider authTokenProvider}) {
     return PersistentConnectionImpl(uri, authTokenProvider: authTokenProvider);
   }
 
@@ -160,5 +161,3 @@ enum ConnectionState {
   authenticating,
   connected,
 }
-
-typedef AuthTokenProvider = Future<String?>? Function(bool forceRefresh);

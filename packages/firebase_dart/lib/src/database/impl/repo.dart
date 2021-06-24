@@ -4,10 +4,10 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/database.dart'
     show FirebaseDatabaseException, MutableData, TransactionHandler;
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
+import 'package:firebase_dart/src/implementation.dart';
 import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:sortedmap/sortedmap.dart';
@@ -61,23 +61,19 @@ class Repo {
     var url = Uri.parse(db.databaseURL);
 
     return _repos.putIfAbsent(db, () {
-      var auth = FirebaseAuth.instanceFor(app: db.app);
+      var authTokenProvider =
+          FirebaseImplementation.installation.createAuthTokenProvider(db.app);
 
       var connection =
-          PersistentConnection(url, authTokenProvider: (refresh) async {
-        var user = await auth.authStateChanges().first;
-        if (user == null) return null;
-        var token = await user.getIdToken(refresh);
-        return token;
-      })
+          PersistentConnection(url, authTokenProvider: authTokenProvider)
             ..initialize();
 
-      return Repo._(url, connection, auth.idTokenChanges(),
+      return Repo._(url, connection, authTokenProvider,
           (db as FirebaseDatabaseImpl).persistenceManager);
     });
   }
 
-  Repo._(this.url, this._connection, Stream<User?> authStateChanges,
+  Repo._(this.url, this._connection, AuthTokenProvider authTokenProvider,
       PersistenceManager persistenceManager)
       : _syncTree = SyncTree(url.toString(),
             remoteRegister: (path, filter, hash) async {
@@ -95,11 +91,11 @@ class Repo {
         'value', Path.from([]), QueryFilter(), (event) {});
     _updateInfo(dotInfoAuthenticated, false);
     _updateInfo(dotInfoConnected, false);
-    _authStateChangesSubscription = authStateChanges.listen((user) async {
-      _updateInfo(dotInfoAuthenticated, user != null);
+    _authStateChangesSubscription =
+        authTokenProvider.onTokenChanged.listen((token) async {
+      _updateInfo(dotInfoAuthenticated, token != null);
       try {
-        return _connection
-            .refreshAuthToken(user == null ? null : user.getIdToken());
+        return _connection.refreshAuthToken(token);
       } catch (e, tr) {
         _logger.warning('Could not refresh auth token.', e, tr);
       }

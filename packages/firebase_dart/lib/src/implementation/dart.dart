@@ -54,4 +54,9 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
             (s) => s.bucket == (storageBucket ?? app.options.storageBucket)) ??
         FirebaseStorageImpl(app, storageBucket, httpClient: _httpClient);
   }
+
+  @override
+  AuthTokenProvider createAuthTokenProvider(covariant FirebaseApp app) {
+    return AuthTokenProvider.fromFirebaseAuth(createAuth(app));
+  }
 }
