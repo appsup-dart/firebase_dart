@@ -97,7 +97,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     _checkDestroyed();
 
     try {
-      var response = await _credential.getTokenResponse(true);
+      var response = await _credential.getTokenResponse(refresh);
       // Only if the access token is refreshed, notify Auth listeners.
       if (response.accessToken != _lastAccessToken) {
         _lastAccessToken = response.accessToken;
