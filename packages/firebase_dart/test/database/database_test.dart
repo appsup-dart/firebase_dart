@@ -438,7 +438,7 @@ void testsWith(Map<String, dynamic> secrets) {
       });
 
       await ref.orderByKey().limitToFirst(3).get();
-      await Future.value();
+      await Future.delayed(Duration(milliseconds: 100));
       expect(childrenAdded, ['key-002', 'key-004']);
       expect(childrenRemoved, []);
 
