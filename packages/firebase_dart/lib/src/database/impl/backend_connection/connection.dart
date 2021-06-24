@@ -25,8 +25,13 @@ class BackendConnection {
         .asyncMap(_onMessage)
         .listen((_) => null, onDone: close);
 
-    sendMessage(HandshakeMessage(
-        HandshakeInfo(DateTime.now(), '5', host, '${nextSessionId++}')));
+    sendMessage(HandshakeMessage(HandshakeInfo(
+        DateTime.now().add(Duration(
+            milliseconds:
+                -2)), // add some artificial delay to mimic a realistic server
+        '5',
+        host,
+        '${nextSessionId++}')));
   }
 
   void close() {
