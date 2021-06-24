@@ -327,7 +327,7 @@ void testsWith(Map<String, dynamic> secrets) {
       var t = (FirebaseTokenCodec(null).decode(token));
       expect(t.data!['uid'], '33e75f24-1910-4b52-ad2c-cfdd0aac728b');
     });
-  });
+  }, skip: 'Authenticate needs refactoring');
 
   group('Snapshot', () {
     setUp(() {
