@@ -251,12 +251,13 @@ class PersistentConnectionImpl extends PersistentConnection
   @override
   Future<void> refreshAuthToken(FutureOr<String>? token) async {
     _logger.fine('Auth token refreshed.');
-    _authRequest = token == null
-        ? null
-        : token is String
-            ? Request.auth(token)
-            : (token.then<Request>((v) => Request.auth(v))
-                as FutureOr<Request>?);
+    if (token == null) {
+      _authRequest = null;
+    } else if (token is String) {
+      _authRequest = Request.auth(token);
+    } else {
+      _authRequest = token.then<Request>((v) => Request.auth(v));
+    }
     if (_connected()) {
       if (token != null) {
         await _upgradeAuth();

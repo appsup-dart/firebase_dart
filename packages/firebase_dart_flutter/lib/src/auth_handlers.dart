@@ -9,7 +9,6 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
-import 'package:firebase_dart/src/implementation/isolate/util.dart';
 
 class FacebookAuthHandler extends DirectAuthHandler {
   FacebookAuthHandler() : super(FacebookAuthProvider.PROVIDER_ID);
