@@ -21,7 +21,7 @@ dependencies:
   googleapis_auth: ^1.1.0
   openid_client: ^0.4.0
   hive: ^2.0.0
-  rxdart: ^0.26.0
+  rxdart: ^0.27.0
   http: ^0.13.0
   pedantic: ^1.11.0
   _discoveryapis_commons: ^1.0.0

@@ -264,7 +264,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  User? get currentUser => _subject.valueWrapper?.value;
+  User? get currentUser => _subject.valueOrNull;
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String email) async {
@@ -401,7 +401,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     var uid = json == null ? null : json['uid'];
     if (last?.uid != uid) {
       last = uid == null ? null : IsolateUser.fromJson(this, json!);
-    } else if (_subject.valueWrapper != null &&
+    } else if (_subject.hasValue &&
         const DeepCollectionEquality().equals(last?._json, json)) {
       return last;
     }

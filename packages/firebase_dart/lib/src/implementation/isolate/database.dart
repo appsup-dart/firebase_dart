@@ -52,7 +52,7 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
         method, app.name, databaseURL, positionalArguments, namedArguments));
   }
 
-  DateTime get serverTime => DateTime.now().add(_serverTime.value!);
+  DateTime get serverTime => DateTime.now().add(_serverTime.value);
 
   @override
   Future<void> goOffline() async {

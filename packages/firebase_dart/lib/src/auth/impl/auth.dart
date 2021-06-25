@@ -172,7 +172,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  FirebaseUserImpl? get currentUser => _currentUser.value;
+  FirebaseUserImpl? get currentUser => _currentUser.valueOrNull;
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String email) {
