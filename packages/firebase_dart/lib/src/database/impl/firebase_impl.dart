@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
@@ -7,6 +8,7 @@ import 'package:firebase_dart/src/database/impl/persistence/default_manager.dart
 import 'package:firebase_dart/src/database/impl/persistence/hive_engine.dart';
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
+import 'package:firebase_dart/src/implementation.dart';
 import 'package:hive/hive.dart';
 import 'package:quiver/core.dart' as quiver;
 
@@ -14,13 +16,8 @@ import '../../database.dart';
 import 'repo.dart';
 import 'treestructureddata.dart';
 
-class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
-  @override
-  final String databaseURL;
-
-  FirebaseDatabaseImpl({required FirebaseApp app, String? databaseURL})
-      : databaseURL = normalizeUrl(databaseURL ?? app.options.databaseURL),
-        super(app);
+mixin BaseFirebaseDatabase implements FirebaseDatabase {
+  AuthTokenProvider? get authTokenProvider;
 
   @override
   DatabaseReference reference() => ReferenceImpl(this, <String>[]);
@@ -45,13 +42,16 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
 
   bool _persistenceManagerInitialized = false;
 
+  String get _persistenceStorageName =>
+      'firebase-db-persistence-storage-${Uri.parse(databaseURL).host}';
+
   late final PersistenceManager persistenceManager =
       DelegatingPersistenceManager(() {
     _persistenceManagerInitialized = true;
     return _persistenceEnabled
         ? DefaultPersistenceManager(
-            HivePersistenceStorageEngine(KeyValueDatabase(
-                Hive.box('firebase-db-persistence-storage-${app.name}'))),
+            HivePersistenceStorageEngine(
+                KeyValueDatabase(Hive.box(_persistenceStorageName))),
             LRUCachePolicy(_persistenceCacheSize))
         : NoopPersistenceManager();
   });
@@ -65,14 +65,13 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
     if (_persistenceManagerInitialized) return false;
     if (_persistenceEnabled == enabled) return true;
     if (enabled) {
-      await PersistenceStorage.openBox(
-          'firebase-db-persistence-storage-${app.name}');
+      await PersistenceStorage.openBox(_persistenceStorageName);
       if (_persistenceManagerInitialized) {
-        await Hive.box('firebase-db-persistence-storage-${app.name}').close();
+        await Hive.box(_persistenceStorageName).close();
         return false;
       }
-    } else if (Hive.isBoxOpen('firebase-db-persistence-storage-${app.name}')) {
-      await Hive.box('firebase-db-persistence-storage-${app.name}').close();
+    } else if (Hive.isBoxOpen(_persistenceStorageName)) {
+      await Hive.box(_persistenceStorageName).close();
     }
     _persistenceEnabled = enabled;
     return true;
@@ -94,14 +93,37 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
     return Uri.parse(url).replace(path: '').toString();
   }
 
-  @override
-  Future<void> delete() async {
+  Future<void> _doDelete() async {
     if (Repo.hasInstance(this)) {
       await Repo(this).close();
     }
-    if (Hive.isBoxOpen('firebase-db-persistence-storage-${app.name}')) {
-      await Hive.box('firebase-db-persistence-storage-${app.name}').close();
+    if (Hive.isBoxOpen(_persistenceStorageName)) {
+      await Hive.box(_persistenceStorageName).close();
     }
+  }
+
+  @override
+  Future<bool> setPersistenceCacheSizeBytes(int cacheSizeInBytes) async {
+    if (_persistenceManagerInitialized) return false;
+    _persistenceCacheSize = cacheSizeInBytes;
+    return true;
+  }
+}
+
+class FirebaseDatabaseImpl extends FirebaseService
+    with BaseFirebaseDatabase
+    implements FirebaseDatabase {
+  @override
+  final String databaseURL;
+
+  FirebaseDatabaseImpl({required FirebaseApp app, String? databaseURL})
+      : databaseURL = BaseFirebaseDatabase.normalizeUrl(
+            databaseURL ?? app.options.databaseURL),
+        super(app);
+
+  @override
+  Future<void> delete() async {
+    await _doDelete();
     return super.delete();
   }
 
@@ -115,11 +137,39 @@ class FirebaseDatabaseImpl extends FirebaseService implements FirebaseDatabase {
       other.databaseURL == databaseURL;
 
   @override
-  Future<bool> setPersistenceCacheSizeBytes(int cacheSizeInBytes) async {
-    if (_persistenceManagerInitialized) return false;
-    _persistenceCacheSize = cacheSizeInBytes;
-    return true;
+  AuthTokenProvider get authTokenProvider =>
+      AuthTokenProvider.fromFirebaseAuth(FirebaseAuth.instanceFor(app: app));
+}
+
+class StandaloneFirebaseDatabase with BaseFirebaseDatabase {
+  @override
+  FirebaseApp get app => throw UnsupportedError(
+      'A stand-alone database does not have an associated app');
+
+  @override
+  final String databaseURL;
+
+  StandaloneFirebaseDatabase(String databaseURL)
+      : databaseURL = BaseFirebaseDatabase.normalizeUrl(databaseURL);
+
+  Future<void> delete() async {
+    await _doDelete();
   }
+
+  Future<void> authenticate(String token) async {
+    await Repo(this).auth(token);
+  }
+
+  Future<void> unauthenticate() async {
+    await Repo(this).unauth();
+  }
+
+  Stream<Map<String, dynamic>?> get onAuthChanged => Repo(this).onAuth;
+
+  Map<String, dynamic>? get currentAuth => Repo(this).authData;
+
+  @override
+  AuthTokenProvider? get authTokenProvider => null;
 }
 
 class DataSnapshotImpl extends DataSnapshot {
@@ -138,7 +188,7 @@ class DataSnapshotImpl extends DataSnapshot {
 class QueryImpl extends Query {
   final List<String> _pathSegments;
   final String _path;
-  final FirebaseDatabase db;
+  final BaseFirebaseDatabase db;
   final QueryFilter filter;
   final Repo _repo;
 
@@ -244,7 +294,7 @@ class QueryImpl extends Query {
 class ReferenceImpl extends QueryImpl with DatabaseReference {
   late OnDisconnect _onDisconnect;
 
-  ReferenceImpl(FirebaseDatabase db, List<String> path)
+  ReferenceImpl(BaseFirebaseDatabase db, List<String> path)
       : super._(db, path, const QueryFilter()) {
     _onDisconnect = DisconnectImpl(this);
   }

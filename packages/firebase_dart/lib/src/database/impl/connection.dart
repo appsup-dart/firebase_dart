@@ -63,7 +63,7 @@ class OperationEvent {
 /// outstanding writes.
 abstract class PersistentConnection {
   factory PersistentConnection(Uri uri,
-      {required AuthTokenProvider authTokenProvider}) {
+      {required AuthTokenProvider? authTokenProvider}) {
     return PersistentConnectionImpl(uri, authTokenProvider: authTokenProvider);
   }
 

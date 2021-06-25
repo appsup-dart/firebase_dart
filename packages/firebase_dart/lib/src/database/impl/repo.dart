@@ -57,23 +57,21 @@ class Repo {
 
   late StreamSubscription _authStateChangesSubscription;
 
-  factory Repo(firebase.FirebaseDatabase db) {
+  factory Repo(firebase.BaseFirebaseDatabase db) {
     var url = Uri.parse(db.databaseURL);
 
     return _repos.putIfAbsent(db, () {
-      var authTokenProvider =
-          FirebaseImplementation.installation.createAuthTokenProvider(db.app);
+      var authTokenProvider = db.authTokenProvider;
 
       var connection =
           PersistentConnection(url, authTokenProvider: authTokenProvider)
             ..initialize();
 
-      return Repo._(url, connection, authTokenProvider,
-          (db as FirebaseDatabaseImpl).persistenceManager);
+      return Repo._(url, connection, authTokenProvider, db.persistenceManager);
     });
   }
 
-  Repo._(this.url, this._connection, AuthTokenProvider authTokenProvider,
+  Repo._(this.url, this._connection, AuthTokenProvider? authTokenProvider,
       PersistenceManager persistenceManager)
       : _syncTree = SyncTree(url.toString(),
             remoteRegister: (path, filter, hash) async {
@@ -92,7 +90,8 @@ class Repo {
     _updateInfo(dotInfoAuthenticated, false);
     _updateInfo(dotInfoConnected, false);
     _authStateChangesSubscription =
-        authTokenProvider.onTokenChanged.listen((token) async {
+        (authTokenProvider?.onTokenChanged ?? Stream.empty())
+            .listen((token) async {
       _updateInfo(dotInfoAuthenticated, token != null);
       try {
         return _connection.refreshAuthToken(token);

@@ -103,7 +103,7 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
   @override
   FirebaseDatabase createDatabase(IsolateFirebaseApp app,
       {String? databaseURL}) {
-    databaseURL = FirebaseDatabaseImpl.normalizeUrl(
+    databaseURL = BaseFirebaseDatabase.normalizeUrl(
         databaseURL ?? app.options.databaseURL);
     return FirebaseService.findService<IsolateFirebaseDatabase>(
             app, (s) => s.databaseURL == databaseURL) ??
@@ -116,11 +116,6 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
     return FirebaseService.findService<IsolateFirebaseStorage>(
             app, (s) => s.bucket == storageBucket) ??
         IsolateFirebaseStorage(app: app, storageBucket: storageBucket);
-  }
-
-  @override
-  AuthTokenProvider createAuthTokenProvider(IsolateFirebaseApp app) {
-    return AuthTokenProvider.fromFirebaseAuth(createAuth(app));
   }
 }
 

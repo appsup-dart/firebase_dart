@@ -8,7 +8,7 @@ import '../../database.dart';
 @visibleForTesting
 abstract class FirebaseDatabaseTestingController {
   factory FirebaseDatabaseTestingController(FirebaseDatabase db) {
-    if (db is FirebaseDatabaseImpl) {
+    if (db is BaseFirebaseDatabase) {
       return FirebaseDatabaseImplTestingController(db);
     } else if (db is IsolateFirebaseDatabase) {
       return FirebaseDatabaseIsolateTestingController(db);
@@ -22,13 +22,6 @@ abstract class FirebaseDatabaseTestingController {
   void mockResetMessage();
 
   Future<void> triggerDisconnect();
-
-  Future<void> authenticate(String token);
-  Future<void> unauth();
-
-  Stream<Map<String, dynamic>?> get onAuth;
-
-  Map<String, dynamic>? get auth;
 }
 
 @visibleForTesting
@@ -45,12 +38,6 @@ class FirebaseDatabaseIsolateTestingController
   void mockResetMessage() => db.mockResetMessage();
 
   @override
-  Future<void> authenticate(String token) => db.auth(token);
-
-  @override
-  Future<void> unauth() => db.unauth();
-
-  @override
   Stream<Map<String, dynamic>?> get onAuth => db.onAuth;
 
   @override
@@ -65,24 +52,13 @@ class FirebaseDatabaseImplTestingController
     implements FirebaseDatabaseTestingController {
   final Repo repo;
 
-  FirebaseDatabaseImplTestingController(FirebaseDatabaseImpl db)
+  FirebaseDatabaseImplTestingController(BaseFirebaseDatabase db)
       : repo = Repo(db);
 
   @override
   void mockConnectionLost() => repo.mockConnectionLost();
   @override
   void mockResetMessage() => repo.mockResetMessage();
-
-  @override
-  Future<void> authenticate(String token) => repo.auth(token);
-  @override
-  Future<void> unauth() => repo.unauth();
-
-  @override
-  Stream<Map<String, dynamic>?> get onAuth => repo.onAuth;
-
-  @override
-  Map<String, dynamic>? get auth => repo.authData;
 
   @override
   Future<void> triggerDisconnect() => repo.triggerDisconnect();
@@ -105,19 +81,4 @@ extension QueryTestingX on Query {
   FirebaseDatabase get database => this is QueryImpl
       ? (this as QueryImpl).db
       : (this as IsolateQuery).database;
-}
-
-@visibleForTesting
-extension LegacyAuthExtension on DatabaseReference {
-  FirebaseDatabaseTestingController get _controller =>
-      FirebaseDatabaseTestingController(database);
-
-  Future<void> authWithCustomToken(String token) =>
-      _controller.authenticate(token);
-
-  Stream<Map<String, dynamic>?> get onAuth => _controller.onAuth;
-
-  Future<void> unauth() => _controller.unauth();
-
-  Map<String, dynamic>? get auth => _controller.auth;
 }

@@ -56,10 +56,10 @@ class PersistentConnectionImpl extends PersistentConnection
 
   int _currentGetTokenAttempt = 0;
 
-  final AuthTokenProvider _authTokenProvider;
+  final AuthTokenProvider? _authTokenProvider;
 
   PersistentConnectionImpl(Uri url,
-      {required AuthTokenProvider authTokenProvider})
+      {required AuthTokenProvider? authTokenProvider})
       : _url = url.replace(queryParameters: {
           'ns': url.host.split('.').first,
           ...url.queryParameters,
@@ -557,7 +557,7 @@ class PersistentConnectionImpl extends PersistentConnection
         final thisGetTokenAttempt = _currentGetTokenAttempt;
         var token;
         try {
-          token = await _authTokenProvider.getToken(forceRefresh);
+          token = await _authTokenProvider?.getToken(forceRefresh);
         } catch (error) {
           if (thisGetTokenAttempt == _currentGetTokenAttempt) {
             _connectionState = ConnectionState.disconnected;

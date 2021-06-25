@@ -14,6 +14,7 @@ import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/memory_backend.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/testing/database.dart';
+import 'package:firebase_dart/standalone_database.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
@@ -180,31 +181,28 @@ void testsWith(Map<String, dynamic> secrets) {
 
   late DatabaseReference ref, ref2;
 
-  FirebaseApp? app1, app2, appAlt1, appAlt2;
+  late StandaloneFirebaseDatabase db1, db2, dbAlt1, dbAlt2;
 
-  setUp(() async {
-    var options = getOptions();
-    app1 = await core.Firebase.initializeApp(name: 'app1', options: options);
-    app2 = await core.Firebase.initializeApp(name: 'app2', options: options);
-    appAlt1 = await core.Firebase.initializeApp(name: 'alt1', options: options);
-    appAlt2 = await core.Firebase.initializeApp(name: 'alt2', options: options);
+  setUp(() {
+    db1 = StandaloneFirebaseDatabase(testUrl);
+    db2 = StandaloneFirebaseDatabase(testUrl);
+    dbAlt1 = StandaloneFirebaseDatabase(testUrl);
+    dbAlt2 = StandaloneFirebaseDatabase(testUrl);
   });
 
   tearDown(() async {
-    await app1!.delete();
-    await app2!.delete();
-    await appAlt1!.delete();
-    await appAlt2!.delete();
+    await db1.delete();
+    await db2.delete();
+    await dbAlt1.delete();
+    await dbAlt2.delete();
   });
 
   group('Recover from connection loss', () {
     Future<void> connectionLostTests(
         FutureOr<void> Function(FirebaseDatabase db)
             connectionDestroyer) async {
-      var db = FirebaseDatabase(app: app1, databaseURL: testUrl);
-
       var connectionStates = <bool>[];
-      db
+      db1
           .reference()
           .child('.info/connected')
           .onValue
@@ -212,9 +210,8 @@ void testsWith(Map<String, dynamic> secrets) {
           .skipWhile((v) => !v)
           .take(2)
           .listen(connectionStates.add as void Function(dynamic)?);
-      var ref = db.reference().child('test');
+      var ref = db1.reference().child('test');
 
-      var db2 = FirebaseDatabase(app: app2, databaseURL: testUrl);
       var ref2 = db2.reference().child('test');
 
       await ref2.set('hello');
@@ -231,7 +228,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
       await wait(200);
 
-      await connectionDestroyer(db);
+      await connectionDestroyer(db1);
 
       await wait(200);
       expect(connectionStates, [true, false]);
@@ -249,7 +246,9 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Reference location', () {
     setUp(() {
-      ref = FirebaseDatabase(app: app1, databaseURL: testUrl).reference();
+      ref = db1.reference().child('test');
+      ref2 = db2.reference().child('test');
+      ref = db1.reference();
       ref2 = ref.child('test');
     });
 
@@ -287,24 +286,24 @@ void testsWith(Map<String, dynamic> secrets) {
       var codec = FirebaseTokenCodec(secret);
       token = codec.encode(FirebaseToken(authData));
 
-      ref = FirebaseDatabase(app: app1, databaseURL: host).reference();
+      ref = db1.reference();
     });
 
     test('auth/unauth', () async {
       await ref.child('test').get();
-      var fromStream = ref.onAuth.where((v) => v != null).first;
-      await ref.authWithCustomToken(token);
+      var fromStream = db1.onAuthChanged.where((v) => v != null).first;
+      await db1.authenticate(token);
 
       expect((await fromStream)!['uid'], uid);
-      expect(ref.auth!['uid'], uid);
+      expect(db1.currentAuth!['uid'], uid);
 
-      var current = ref.auth;
-      fromStream = ref.onAuth.where((v) => v != current).first;
+      var current = db1.currentAuth;
+      fromStream = db1.onAuthChanged.where((v) => v != current).first;
 
-      await ref.unauth();
+      await db1.unauthenticate();
 
       expect((await fromStream), isNull);
-      expect(ref.auth, isNull);
+      expect(db1.currentAuth, isNull);
     });
 
     test('permission denied', () async {
@@ -314,10 +313,10 @@ void testsWith(Map<String, dynamic> secrets) {
       }
       ref = ref.child('test-protected');
       ref.onValue.listen((e) => null);
-      await ref.authWithCustomToken(token);
+      await db1.authenticate(token);
       await ref.set('hello world');
       expect(await ref.get(), 'hello world');
-      await ref.unauth();
+      await db1.unauthenticate();
       await expectLater(() => ref.set('hello all'), throwsException);
       expect(await ref.get(), 'hello world');
     });
@@ -327,14 +326,11 @@ void testsWith(Map<String, dynamic> secrets) {
       var t = (FirebaseTokenCodec(null).decode(token));
       expect(t.data!['uid'], '33e75f24-1910-4b52-ad2c-cfdd0aac728b');
     });
-  }, skip: 'Authenticate needs refactoring');
+  });
 
   group('Snapshot', () {
     setUp(() {
-      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test')
-          .child('snapshot');
+      ref = db1.reference().child('test').child('snapshot');
     });
 
     test('Child', () async {
@@ -350,10 +346,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Listen', () {
     setUp(() {
-      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test')
-          .child('listen');
+      ref = db1.reference().child('test').child('listen');
     });
 
     test('Initial value', () async {
@@ -511,10 +504,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Push/Merge/Remove', () {
     setUp(() {
-      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test')
-          .child('push-merge-remove');
+      ref = db1.reference().child('test').child('push-merge-remove');
     });
 
     test('Remove', () async {
@@ -556,10 +546,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Special characters', () {
     setUp(() {
-      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test')
-          .child('special-chars');
+      ref = db1.reference().child('test').child('special-chars');
     });
 
     test('colon', () async {
@@ -584,9 +571,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('ServerValue', () {
     test('timestamp', () async {
-      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/server-values/timestamp');
+      var ref = db1.reference().child('test/server-values/timestamp');
       await ref.set(null);
       var events = <Event>[];
       ref.onValue.listen(events.add);
@@ -611,9 +596,7 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('transaction', () async {
-      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/server-values/transaction');
+      var ref = db1.reference().child('test/server-values/transaction');
       await ref.set('hello');
 
       await Stream.periodic(Duration(milliseconds: 10)).take(10).forEach((_) {
@@ -630,9 +613,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Transaction', () {
     setUp(() {
-      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/transactions');
+      ref = db1.reference().child('test/transactions');
     });
 
     test('Counter', () async {
@@ -727,7 +708,7 @@ void testsWith(Map<String, dynamic> secrets) {
   group('OnDisconnect', () {
     late FirebaseDatabase db;
     setUp(() {
-      db = FirebaseDatabase(app: app1, databaseURL: testUrl);
+      db = db1;
       ref = db.reference().child('test/disconnect');
     });
 
@@ -771,9 +752,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('Query', () {
     setUp(() {
-      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/query');
+      ref = db1.reference().child('test/query');
     });
 
     test('Limit', () async {
@@ -814,9 +793,7 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('Order by key', () async {
-      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/query-key');
+      var ref = db1.reference().child('test/query-key');
       await ref.set({'text2': 'b', 'text1': 'c', 'text3': 'a'});
 
       var q = ref.orderByKey();
@@ -920,9 +897,7 @@ void testsWith(Map<String, dynamic> secrets) {
       });
     });
     test('Order after remove', () async {
-      var iref = FirebaseDatabase(app: appAlt2, databaseURL: testUrl)
-          .reference()
-          .child(ref.url.path);
+      var iref = dbAlt1.reference().child(ref.url.path);
 
       await iref.set({
         'text2': {'order': 'b'},
@@ -1071,9 +1046,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
   group('multiple frames', () {
     setUp(() {
-      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/frames');
+      ref = db1.reference().child('test/frames');
     });
 
     test('Receive large value', () async {
@@ -1099,12 +1072,8 @@ void testsWith(Map<String, dynamic> secrets) {
   group('Complex operations', () {
     late DatabaseReference iref;
     setUp(() async {
-      ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/complex');
-      iref = FirebaseDatabase(app: appAlt1, databaseURL: testUrl)
-          .reference()
-          .child('test/complex');
+      ref = db1.reference().child('test/complex');
+      iref = dbAlt1.reference().child('test/complex');
     });
 
     test('Remove out of view', () async {
@@ -1273,9 +1242,7 @@ void testsWith(Map<String, dynamic> secrets) {
 
     test('Listen, set parent and get child', () async {
       var testUrl = '${s.secrets['host']}';
-      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test');
+      var ref = db1.reference().child('test');
       ref.child('cars').onValue.listen((e) => null);
 
       var data = {
@@ -1290,10 +1257,7 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('Bugfix: crash when receiving merge', () async {
-      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test')
-          .child('some/path');
+      var ref = db1.reference().child('test').child('some/path');
 
       ref.parent()!.orderByKey().equalTo('path').onValue.listen((_) => null);
       ref.child('child1').onValue.listen((_) => null);
@@ -1306,9 +1270,7 @@ void testsWith(Map<String, dynamic> secrets) {
   group('Bugs', () {
     test('Initial events should not be dispatched to existing observers',
         () async {
-      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/bugs/duplicate-events');
+      var ref = db1.reference().child('test/bugs/duplicate-events');
 
       await ref.set('hello');
       var completer = Completer();
@@ -1328,14 +1290,12 @@ void testsWith(Map<String, dynamic> secrets) {
 
     test('Server values should resolve once', () async {
       // create a reference with a dedicated connection
-      var ref1 = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/bugs/duplicate-server-values-write');
+      var ref1 =
+          db1.reference().child('test/bugs/duplicate-server-values-write');
 
       // create another reference with another connection
-      var ref2 = FirebaseDatabase(app: app2, databaseURL: testUrl)
-          .reference()
-          .child('test/bugs/duplicate-server-values-write');
+      var ref2 =
+          db2.reference().child('test/bugs/duplicate-server-values-write');
 
       // set a server value
       await ref1.set(ServerValue.timestamp);
@@ -1346,23 +1306,18 @@ void testsWith(Map<String, dynamic> secrets) {
       expect(v1, v2);
 
       // a third connection should also have the same value
-      var ref3 = FirebaseDatabase(app: appAlt1, databaseURL: testUrl)
-          .reference()
-          .child('test/bugs/duplicate-server-values-write');
+      var ref3 =
+          dbAlt1.reference().child('test/bugs/duplicate-server-values-write');
       var v3 = await ref3.get();
       expect(v3, v1);
     });
 
     test('merge in mem', () async {
       // create a reference with a dedicated connection
-      var ref1 = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/bugs/merge');
+      var ref1 = db1.reference().child('test/bugs/merge');
 
       // create another reference with another connection
-      var ref2 = FirebaseDatabase(app: app2, databaseURL: testUrl)
-          .reference()
-          .child('test/bugs/merge');
+      var ref2 = db2.reference().child('test/bugs/merge');
 
       var v = {'hello': 'world', 'hi': 'everyone'};
       await ref1.update(v);
@@ -1371,17 +1326,13 @@ void testsWith(Map<String, dynamic> secrets) {
       expect(await ref2.get(), v);
 
       // a third connection should also have the same value
-      var ref3 = FirebaseDatabase(app: appAlt1, databaseURL: testUrl)
-          .reference()
-          .child('test/bugs/merge');
+      var ref3 = dbAlt1.reference().child('test/bugs/merge');
       var v3 = await ref3.get();
       expect(v3, v);
     });
 
     test('Should receive server value then ack', () async {
-      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/bugs/ack');
+      var ref = db1.reference().child('test/bugs/ack');
 
       await ref.set(null);
 
@@ -1396,9 +1347,7 @@ void testsWith(Map<String, dynamic> secrets) {
       await s.cancel();
     });
     test('Should receive server value then ack: bis', () async {
-      var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-          .reference()
-          .child('test/bugs/ack');
+      var ref = db1.reference().child('test/bugs/ack');
       await ref.set(null);
 
       var events = <String>[];
@@ -1453,9 +1402,7 @@ void testsWith(Map<String, dynamic> secrets) {
             throwsArgumentError);
       });
       test('reference equality for database', () async {
-        var db1 = FirebaseDatabase(app: app1, databaseURL: testUrl);
-        var db2 = FirebaseDatabase(app: app2, databaseURL: testUrl);
-        var altDb = FirebaseDatabase(app: appAlt1, databaseURL: testUrl);
+        var altDb = dbAlt1;
 
         var testRef1 = db1.reference();
         var testRef2 = db1.reference().child('foo');
@@ -1475,7 +1422,7 @@ void testsWith(Map<String, dynamic> secrets) {
       });
 
       test('purgeOutstandingWrites purges all writes', () async {
-        var db = FirebaseDatabase(app: app1, databaseURL: testUrl);
+        var db = db1;
         var ref = db.reference().child('test/purge');
 
         await ref.set(null);
@@ -1517,7 +1464,7 @@ void testsWith(Map<String, dynamic> secrets) {
       });
 
       test('purgeOutstandingWrites cancels transactions', () async {
-        var db = FirebaseDatabase(app: app1, databaseURL: testUrl);
+        var db = db1;
         var ref = db.reference().child('test/purge');
 
         var events = <String>[];
@@ -1560,9 +1507,7 @@ void testsWith(Map<String, dynamic> secrets) {
     });
     group('Transaction', () {
       test('new value is immediately visible', () async {
-        var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-            .reference()
-            .child('test/transaction/foo');
+        var ref = db1.reference().child('test/transaction/foo');
 
         var r = await ref.runTransaction((currentData) async {
           return currentData..value = 42;
@@ -1575,9 +1520,7 @@ void testsWith(Map<String, dynamic> secrets) {
       });
 
       test('event is raised for new value', () async {
-        var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-            .reference()
-            .child('test/transaction/foo2');
+        var ref = db1.reference().child('test/transaction/foo2');
 
         await ref.set(null);
 
@@ -1595,9 +1538,7 @@ void testsWith(Map<String, dynamic> secrets) {
         await s.cancel();
       });
       test('aborted transaction sets commited to false', () async {
-        var ref = FirebaseDatabase(app: app1, databaseURL: testUrl)
-            .reference()
-            .child('test/transaction/foo3');
+        var ref = db1.reference().child('test/transaction/foo3');
         await ref.set(null);
         var r = await ref.runTransaction((currentData) => null);
 

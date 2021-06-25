@@ -32,7 +32,7 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
             app,
             (s) =>
                 s.databaseURL ==
-                FirebaseDatabaseImpl.normalizeUrl(
+                BaseFirebaseDatabase.normalizeUrl(
                     databaseURL ?? app.options.databaseURL)) ??
         FirebaseDatabaseImpl(app: app, databaseURL: databaseURL);
   }
@@ -53,10 +53,5 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
     return FirebaseService.findService<FirebaseStorageImpl>(app,
             (s) => s.bucket == (storageBucket ?? app.options.storageBucket)) ??
         FirebaseStorageImpl(app, storageBucket, httpClient: _httpClient);
-  }
-
-  @override
-  AuthTokenProvider createAuthTokenProvider(covariant FirebaseApp app) {
-    return AuthTokenProvider.fromFirebaseAuth(createAuth(app));
   }
 }

@@ -30,19 +30,12 @@ abstract class FirebaseImplementation {
 
   FirebaseStorage createStorage(covariant FirebaseApp app,
       {String? storageBucket});
-
-  AuthTokenProvider createAuthTokenProvider(covariant FirebaseApp app);
 }
 
 abstract class AuthTokenProvider {
   Future<String?> getToken([bool fordeRefresh = false]);
 
   Stream<String?> get onTokenChanged;
-
-  factory AuthTokenProvider.instanceFor({FirebaseApp? app}) {
-    return FirebaseImplementation.installation
-        .createAuthTokenProvider(app ?? Firebase.app());
-  }
 
   factory AuthTokenProvider.fromFirebaseAuth(FirebaseAuth auth) =>
       _AuthTokenProviderFromFirebaseAuth(auth);
