@@ -1241,7 +1241,6 @@ void testsWith(Map<String, dynamic> secrets) {
     });
 
     test('Listen, set parent and get child', () async {
-      var testUrl = '${s.secrets['host']}';
       var ref = db1.reference().child('test');
       ref.child('cars').onValue.listen((e) => null);
 

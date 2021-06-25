@@ -19,7 +19,6 @@ import 'events/cancel.dart';
 import 'events/child.dart';
 import 'events/value.dart';
 import 'firebase_impl.dart' as firebase;
-import 'firebase_impl.dart';
 import 'operations/tree.dart';
 import 'synctree.dart';
 import 'tree.dart';

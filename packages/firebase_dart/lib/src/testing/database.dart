@@ -38,12 +38,6 @@ class FirebaseDatabaseIsolateTestingController
   void mockResetMessage() => db.mockResetMessage();
 
   @override
-  Stream<Map<String, dynamic>?> get onAuth => db.onAuth;
-
-  @override
-  Map<String, dynamic>? get auth => db.currentAuthData;
-
-  @override
   Future<void> triggerDisconnect() => db.triggerDisconnect();
 }
 
