@@ -147,7 +147,7 @@ abstract class StandaloneFirebaseDatabase implements FirebaseDatabase {
 
   Future<void> delete();
 
-  Future<void> authenticate(String token);
+  Future<void> authenticate(FutureOr<String> token);
 
   Future<void> unauthenticate();
 
@@ -175,7 +175,7 @@ class StandaloneFirebaseDatabaseImpl
   }
 
   @override
-  Future<void> authenticate(String token) async {
+  Future<void> authenticate(FutureOr<String> token) async {
     await Repo(this).auth(token);
   }
 

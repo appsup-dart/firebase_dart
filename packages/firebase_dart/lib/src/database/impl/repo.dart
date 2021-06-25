@@ -161,7 +161,7 @@ class Repo {
   ///
   /// Returns a future that completes with the auth data on success, or fails
   /// otherwise.
-  Future<void> auth(String token) async {
+  Future<void> auth(FutureOr<String> token) async {
     await _connection.refreshAuthToken(token);
   }
 
