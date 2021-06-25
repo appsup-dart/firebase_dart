@@ -1,5 +1,3 @@
-
-
 part of firebase_dart;
 
 /// The entry point for accessing a Firebase Database.

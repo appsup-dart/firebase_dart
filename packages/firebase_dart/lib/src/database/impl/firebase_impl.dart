@@ -141,7 +141,24 @@ class FirebaseDatabaseImpl extends FirebaseService
       AuthTokenProvider.fromFirebaseAuth(FirebaseAuth.instanceFor(app: app));
 }
 
-class StandaloneFirebaseDatabase with BaseFirebaseDatabase {
+abstract class StandaloneFirebaseDatabase implements FirebaseDatabase {
+  factory StandaloneFirebaseDatabase(String databaseURL) =>
+      StandaloneFirebaseDatabaseImpl(databaseURL);
+
+  Future<void> delete();
+
+  Future<void> authenticate(String token);
+
+  Future<void> unauthenticate();
+
+  Stream<Map<String, dynamic>?> get onAuthChanged;
+
+  Map<String, dynamic>? get currentAuth;
+}
+
+class StandaloneFirebaseDatabaseImpl
+    with BaseFirebaseDatabase
+    implements StandaloneFirebaseDatabase {
   @override
   FirebaseApp get app => throw UnsupportedError(
       'A stand-alone database does not have an associated app');
@@ -149,23 +166,28 @@ class StandaloneFirebaseDatabase with BaseFirebaseDatabase {
   @override
   final String databaseURL;
 
-  StandaloneFirebaseDatabase(String databaseURL)
+  StandaloneFirebaseDatabaseImpl(String databaseURL)
       : databaseURL = BaseFirebaseDatabase.normalizeUrl(databaseURL);
 
+  @override
   Future<void> delete() async {
     await _doDelete();
   }
 
+  @override
   Future<void> authenticate(String token) async {
     await Repo(this).auth(token);
   }
 
+  @override
   Future<void> unauthenticate() async {
     await Repo(this).unauth();
   }
 
+  @override
   Stream<Map<String, dynamic>?> get onAuthChanged => Repo(this).onAuth;
 
+  @override
   Map<String, dynamic>? get currentAuth => Repo(this).authData;
 
   @override
