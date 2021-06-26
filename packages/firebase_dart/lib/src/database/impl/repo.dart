@@ -89,15 +89,15 @@ class Repo {
     _updateInfo(dotInfoAuthenticated, false);
     _updateInfo(dotInfoConnected, false);
     _authStateChangesSubscription =
-        (authTokenProvider?.onTokenChanged ?? Stream.empty())
-            .listen((token) async {
+        (authTokenProvider?.onTokenChanged ?? Stream.empty()).listen(
+            (token) async {
       _updateInfo(dotInfoAuthenticated, token != null);
       try {
         return _connection.refreshAuthToken(token);
       } catch (e, tr) {
         _logger.warning('Could not refresh auth token.', e, tr);
       }
-    });
+    }, cancelOnError: true);
 
     _transactions = TransactionsTree(this);
     _connection.onConnect.listen((v) {
