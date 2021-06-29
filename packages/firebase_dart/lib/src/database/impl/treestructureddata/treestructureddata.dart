@@ -56,8 +56,7 @@ class TreeStructuredData extends TreeNode<Name, Value?> {
     }
 
     if (json is List) {
-      json = json.asMap() as List<dynamic>
-        ..removeWhere(((k, v) => v == null) as bool Function(dynamic));
+      json = <int, dynamic>{...json.asMap()}..removeWhere((k, v) => v == null);
     }
     if (json is! Map || json.containsKey('.sv')) {
       var value = Value(json);
