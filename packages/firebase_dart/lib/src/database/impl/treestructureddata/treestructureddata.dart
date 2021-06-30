@@ -43,6 +43,11 @@ class TreeStructuredData extends TreeNode<Name, Value?> {
         json = json.asMap();
       } on NoSuchMethodError {
         // ignore
+        try {
+          json = json.toJson();
+        } on NoSuchMethodError {
+          // ignore
+        }
       }
     }
 
