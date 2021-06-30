@@ -40,7 +40,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   Future<void> _init() async {
-    _currentUser.add(await userStorageManager.getCurrentUser());
+    _currentUser.add((await userStorageManager.getCurrentUser())
+      ?..initializeProactiveRefresh());
 
     _storageManagerUserChangedSubscription =
         userStorageManager.onCurrentUserChanged.listen((user) {
