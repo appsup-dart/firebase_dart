@@ -324,19 +324,17 @@ class SyncPoint {
   /// [filter].
   void addEventListener(
       String type, QueryFilter filter, EventListener listener) {
-    try {
-      getMasterViewForFilter(filter).addEventListener(type, filter, listener);
-    } finally {
-      // every filter should only be present once
-      assert(
-          views.values.expand((v) => v.observers.keys).length ==
-              views.values.expand((v) => v.observers.keys).toSet().length,
-          'a filter may only be present once in a SyncPoint');
+    getMasterViewForFilter(filter).addEventListener(type, filter, listener);
 
-      // filter should be present
-      assert(views.values.expand((v) => v.observers.keys).contains(filter),
-          'filter should be present after addEventListener in a SyncPoint');
-    }
+    // every filter should only be present once
+    assert(
+        views.values.expand((v) => v.observers.keys).length ==
+            views.values.expand((v) => v.observers.keys).toSet().length,
+        'a filter may only be present once in a SyncPoint');
+
+    // filter should be present
+    assert(views.values.expand((v) => v.observers.keys).contains(filter),
+        'filter should be present after addEventListener in a SyncPoint');
   }
 
   MasterView getMasterViewForFilter(QueryFilter filter) {
