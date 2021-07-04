@@ -118,6 +118,12 @@ class MasterView {
     return true;
   }
 
+  void adoptEventTarget(QueryFilter filter, EventTarget target) {
+    assert(observers[filter] == null);
+    observers[filter] = target;
+    target.notifyDataChanged(_data.valueForFilter(filter));
+  }
+
   /// Removes the event listener.
   void removeEventListener(
       String type, QueryFilter filter, EventListener listener) {
@@ -277,7 +283,7 @@ class SyncPoint {
           for (var q in forwardLimitingQueries.toList()) {
             if (view.contains(q)) {
               forwardLimitingQueries.remove(q);
-              view.observers[q] = v[o]!.remove(q)!;
+              view.adoptEventTarget(q, v[o]!.remove(q)!);
             }
           }
         }
@@ -295,7 +301,7 @@ class SyncPoint {
           for (var q in backwardLimitingQueries.toList()) {
             if (view.contains(q)) {
               backwardLimitingQueries.remove(q);
-              view.observers[q] = v[o]!.remove(q)!;
+              view.adoptEventTarget(q, v[o]!.remove(q)!);
             }
           }
         }

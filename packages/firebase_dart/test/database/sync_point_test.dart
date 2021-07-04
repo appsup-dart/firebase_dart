@@ -1,5 +1,4 @@
-
-
+import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
@@ -175,6 +174,35 @@ void main() {
     });
   });
   group('SyncPoint', () {
+    test('adopt observers', () {
+      var p = SyncPoint('test', Path(),
+          persistenceManager: TestPersistenceManager((filter) {
+        if (filter.reversed) {
+          return IncompleteData.complete(
+              TreeStructuredData.fromJson('last value'));
+        }
+        return IncompleteData.empty();
+      }));
+
+      var event1, event2;
+      p.addEventListener('value', QueryFilter(limit: 1), (event) {
+        event1 = event;
+      });
+      p.addEventListener('value', QueryFilter(limit: 1, reversed: true),
+          (event) {
+        event2 = event;
+      });
+
+      expect(p.views.length, 1);
+
+      expect(p.minimalSetOfQueries.length, 2);
+
+      expect(p.views.length, 2);
+
+      expect(event1, null);
+      expect(event2, isNotNull);
+    });
+
     group('SyncPoint.minimalSetOfQueries', () {
       var i = KeyValueInterval(Name('key-001'), empty, Name('key-100'), empty);
       var o = TreeStructuredDataOrdering.byKey();
@@ -456,4 +484,16 @@ void main() {
       });
     });
   });
+}
+
+class TestPersistenceManager extends NoopPersistenceManager {
+  final IncompleteData Function(QueryFilter filter) getServerCache;
+
+  TestPersistenceManager(this.getServerCache);
+
+  @override
+  IncompleteData serverCache(Path<Name> path,
+      [QueryFilter filter = const QueryFilter()]) {
+    return getServerCache(filter);
+  }
 }
