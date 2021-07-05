@@ -42,7 +42,7 @@ class GoogleAuthHandler extends DirectAuthHandler {
   Future<void> signOut(FirebaseApp app, User user) async {
     try {
       await GoogleSignIn().signOut();
-    } on AssertionError {}
+    } on AssertionError {} on MissingPluginException {}
   }
 
   @override
