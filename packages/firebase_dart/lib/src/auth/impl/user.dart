@@ -407,11 +407,19 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     if (duration == Duration()) return Future.microtask(() => null);
     var completer = Completer<void>();
     late Function() callback;
-    var timer = Timer(duration, () async {
-      callback();
+
+    // When a device goes in stand by for x minutes, a regular timer will fire x
+    // minutes later than foreseen. Therefore, we check every 5 seconds if time
+    // to fire has passed instead.
+    var timeToFire = clock.now().add(duration);
+    var timer = Timer.periodic(Duration(seconds: 5), (timer) async {
+      if (clock.now().isAfter(timeToFire)) {
+        callback();
+      }
     });
     _timers.add(timer);
     callback = () {
+      timer.cancel();
       _timers.remove(timer);
       completer.complete();
     };
