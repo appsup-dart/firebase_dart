@@ -202,8 +202,8 @@ The following methods are supported:
 | Reference.getMetadata | ✅
 | Reference.list | ❌
 | Reference.listAll | ❌
-| Reference.putData | ❌
-| Reference.putString | ❌
+| Reference.putData | ✅
+| Reference.putString | ✅
 | Reference.updateMetadata | ❌
 
 

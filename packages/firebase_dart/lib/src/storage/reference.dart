@@ -1,11 +1,12 @@
-
-
+import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/storage.dart';
 
 import 'impl/location.dart';
 import 'impl/resource_client.dart';
+import 'impl/task.dart';
 import 'service.dart';
 
 /// Provides methods to interact with a bucket in the Firebase Storage service.
@@ -104,16 +105,9 @@ class ReferenceImpl implements Reference {
 
   @override
   UploadTask putData(Uint8List data, [SettableMetadata? metadata]) {
-    // TODO: implement putData
-/*
-    args.validate(
-        'put', [args.uploadDataSpec(), args.metadataSpec(true)], arguments);
-    this._throwIfRoot('put');
-    return new UploadTask(this, this.authWrapper, this.location,
-        this.mappings(), new FbsBlob(data), metadata);
-*/
+    _throwIfRoot('uploadBytes');
 
-    throw UnimplementedError();
+    return UploadTaskImpl(this, data, metadata);
   }
 
   @override
@@ -151,7 +145,31 @@ class ReferenceImpl implements Reference {
   UploadTask putString(String data,
       {PutStringFormat format = PutStringFormat.raw,
       SettableMetadata? metadata}) {
-    // TODO: implement putString
-    throw UnimplementedError();
+    _throwIfRoot('putString');
+
+    var d = _dataFromString(format, data);
+    if (metadata?.contentType == null) {
+      metadata = SettableMetadata(
+          cacheControl: metadata?.cacheControl,
+          contentDisposition: metadata?.contentDisposition,
+          contentEncoding: metadata?.contentEncoding,
+          contentLanguage: metadata?.contentLanguage,
+          customMetadata: metadata?.customMetadata,
+          contentType: d.mimeType);
+    }
+    return putData(d.contentAsBytes(), metadata);
+  }
+
+  static UriData _dataFromString(PutStringFormat format, String stringData) {
+    switch (format) {
+      case PutStringFormat.raw:
+        return UriData.fromString(stringData);
+      case PutStringFormat.base64:
+        return UriData.fromBytes(base64.decode(stringData));
+      case PutStringFormat.base64Url:
+        return UriData.fromBytes(base64Url.decode(stringData));
+      case PutStringFormat.dataUrl:
+        return UriData.fromUri(Uri.parse(stringData));
+    }
   }
 }

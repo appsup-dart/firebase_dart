@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
@@ -33,11 +34,19 @@ void main() async {
 
   var ref = storage.ref().child('test.txt');
 
+  await ref.putString('hello world!',
+      metadata: SettableMetadata(contentType: 'text/plain'));
+
   var m = await ref.getMetadata();
   print('content type of file test.txt: ${m.contentType}');
 
   var v = utf8.decode((await ref.getData(m.size))!);
   print('content of file test.txt: $v');
+
+  ref = storage.ref().child('test.bin');
+
+  var task = await ref.putData(Uint8List(1024 * 1024));
+  print('upladed ${task.bytesTransferred} to test.bin: state = ${task.state}');
 
   var database = FirebaseDatabase(app: app);
 

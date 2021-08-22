@@ -125,10 +125,10 @@ enum TaskState {
 }
 
 /// A class which indicates an on-going download task.
-abstract class DownloadTask {}
+abstract class DownloadTask extends Task {}
 
 /// A class which indicates an on-going upload task.
-abstract class UploadTask {}
+abstract class UploadTask extends Task {}
 
 /// A [TaskSnapshot] is returned as the result or on-going process of a [Task].
 class TaskSnapshot {
