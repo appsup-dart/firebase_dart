@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
@@ -8,6 +10,29 @@ import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('RemoteListenerRegistrar', () {
+    test('RemoteListenerRegistrar should register and unregister in order',
+        () async {
+      var c = StreamController();
+      var registrar = RemoteListenerRegistrar.fromCallbacks(
+          NoopPersistenceManager(), remoteRegister: (path, filter, hash) async {
+        c.add('register');
+      }, remoteUnregister: (path, filter) async {
+        c.add('unregister');
+      });
+
+      var l = c.stream.take(3).toList();
+
+      registrar.registerAll(Name.parsePath('/test'), [QueryFilter()],
+          (filter) => filter.hashCode.toString());
+      registrar.registerAll(
+          Name.parsePath('/test'), [], (filter) => filter.hashCode.toString());
+      registrar.registerAll(Name.parsePath('/test'), [QueryFilter()],
+          (filter) => filter.hashCode.toString());
+
+      expect(await l, ['register', 'unregister', 'register']);
+    });
+  });
   group('SyncTree', () {
     group('Completeness on user operation', () {
       late SyncTree syncTree;

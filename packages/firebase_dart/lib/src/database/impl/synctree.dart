@@ -18,6 +18,8 @@ import 'tree.dart';
 import 'treestructureddata.dart';
 import 'view.dart';
 
+import 'package:synchronized/extension.dart';
+
 final _logger = Logger('firebase-synctree');
 
 class MasterView {
@@ -450,20 +452,22 @@ abstract class RemoteListenerRegistrar {
       String? Function(QueryFilter filter) hashFcn) {
     var node = _queries.subtree(
         path, (parent, name) => TreeNode(<QueryFilter, Future<Null>>{}));
-    for (var f in filters.toSet()) {
-      if (node.value.containsKey(f)) continue;
-      var hash = hashFcn(f);
-      register(path, f, hash);
-    }
-    for (var f in node.value.keys.toSet().difference(filters.toSet())) {
-      unregister(path, f);
-    }
+    node.synchronized(() async {
+      for (var f in filters.toSet()) {
+        if (node.value.containsKey(f)) continue;
+        var hash = hashFcn(f);
+        await register(path, f, hash);
+      }
+      for (var f in node.value.keys.toSet().difference(filters.toSet())) {
+        await unregister(path, f);
+      }
+    });
   }
 
-  void register(Path<Name> path, QueryFilter filter, String? hash) {
+  Future<void> register(Path<Name> path, QueryFilter filter, String? hash) {
     var node = _queries.subtree(
         path, (parent, name) => TreeNode(<QueryFilter, Future<Null>>{}));
-    node.value.putIfAbsent(filter, () async {
+    return node.value.putIfAbsent(filter, () async {
       try {
         await remoteRegister(path, filter, hash);
         persistenceManager.runInTransaction(() {
@@ -481,12 +485,12 @@ abstract class RemoteListenerRegistrar {
 
   Future<void> remoteUnregister(Path<Name> path, QueryFilter filter);
 
-  void unregister(Path<Name> path, QueryFilter filter) {
+  Future<void> unregister(Path<Name> path, QueryFilter filter) async {
     var node = _queries.subtree(
         path, (parent, name) => TreeNode(<QueryFilter, Future<Null>>{}));
     if (!node.value.containsKey(filter)) return;
     var f = node.value.remove(filter);
-    f?.then((_) async {
+    await f?.then((_) async {
       await remoteUnregister(path, filter);
       persistenceManager.runInTransaction(() {
         persistenceManager.setQueryInactive(path, filter);
