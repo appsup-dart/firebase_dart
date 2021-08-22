@@ -191,7 +191,7 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<Null> unlisten(String path, {QueryFilter? query}) async {
+  Future<void> unlisten(String path, {QueryFilter? query}) async {
     var def = QueryDef(path, query);
     var tag = _tagToQuery.inverse.remove(def);
     var r = Request.unlisten(path, query: query, tag: tag);

@@ -112,7 +112,7 @@ abstract class PersistentConnection {
       {QueryFilter? query, String? hash});
 
   /// Unregisters a listener
-  Future<Null> unlisten(String path, {QueryFilter? query});
+  Future<void> unlisten(String path, {QueryFilter? query});
 
   // writes
 
