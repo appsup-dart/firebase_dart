@@ -196,6 +196,46 @@ void runStorageTests({bool isolated = false}) async {
         expect(result.metadata!.size, 1);
       });
     });
+
+    group('Argument verification', () {
+      group('StorageReference.list', () {
+        test('throws on invalid maxResults', () async {
+          expect(() => child.list(ListOptions(maxResults: 0)),
+              throwsArgumentError);
+          expect(() => child.list(ListOptions(maxResults: -4)),
+              throwsArgumentError);
+          expect(() => child.list(ListOptions(maxResults: 1001)),
+              throwsArgumentError);
+        });
+      });
+    });
+
+    group('root operations', () {
+      test('StorageReference.putData throws', () {
+        expect(() => root.putData(Uint8List(0)),
+            throwsA(StorageException.invalidRootOperation('putData')));
+      });
+      test('StorageReference.putString throws', () {
+        expect(() => root.putString('raw'),
+            throwsA(StorageException.invalidRootOperation('putString')));
+      });
+      test('StorageReference.delete throws', () {
+        expect(() => root.delete(),
+            throwsA(StorageException.invalidRootOperation('delete')));
+      });
+      test('StorageReference.getMetadata throws', () {
+        expect(() => root.getMetadata(),
+            throwsA(StorageException.invalidRootOperation('getMetadata')));
+      });
+      test('StorageReference.updateMetadata throws', () {
+        expect(() => root.updateMetadata(SettableMetadata()),
+            throwsA(StorageException.invalidRootOperation('updateMetadata')));
+      });
+      test('StorageReference.getDownloadURL throws', () {
+        expect(() => root.getDownloadURL(),
+            throwsA(StorageException.invalidRootOperation('getDownloadURL')));
+      });
+    });
   });
 }
 

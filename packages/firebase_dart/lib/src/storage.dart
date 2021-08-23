@@ -407,7 +407,12 @@ class ListOptions {
   /// If provided, listing is resumed from the previous position.
   final String? pageToken;
 
-  ListOptions({this.maxResults, this.pageToken});
+  ListOptions({this.maxResults, this.pageToken}) {
+    if (maxResults != null && maxResults! <= 0 || maxResults! > 1000) {
+      throw ArgumentError.value(
+          maxResults, 'maxResults', 'Should be a value between 1 and 1000');
+    }
+  }
 }
 
 /// Class returned as a result of calling a list method (`list` or `listAll`) on

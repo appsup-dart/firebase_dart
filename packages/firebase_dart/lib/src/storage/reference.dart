@@ -98,7 +98,7 @@ class ReferenceImpl implements Reference {
 
   @override
   UploadTask putData(Uint8List data, [SettableMetadata? metadata]) {
-    _throwIfRoot('uploadBytes');
+    _throwIfRoot('putData');
 
     return UploadTaskImpl(this, data, metadata);
   }
