@@ -64,17 +64,10 @@ class ReferenceImpl implements Reference {
   }
 
   @override
-  Future<void> delete() {
+  Future<void> delete() async {
     _throwIfRoot('delete');
 
-/*
-    return this.authWrapper.getAuthToken().then((authToken) {
-      var requestInfo = requests.deleteObject(self.authWrapper, self.location);
-      return self.authWrapper.makeRequest(requestInfo, authToken).getFuture();
-    });
-*/
-    // TODO: implement delete
-    throw UnimplementedError();
+    await requests.deleteObject();
   }
 
   @override

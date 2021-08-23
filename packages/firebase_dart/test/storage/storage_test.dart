@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/storage.dart';
@@ -134,21 +136,64 @@ void runStorageTests({bool isolated = false}) async {
     });
     group('StorageReference.getDownloadUrl', () {
       var ref = child.child('world.txt');
-      tester.backend.metadata[Location.fromUrl(ref.toString())] =
-          FullMetadataImpl(
-              bucket: ref.storage.bucket,
-              fullPath: ref.fullPath,
-              downloadTokens: ['a,b,c']);
+      tester.backend.putData(
+          Location.fromUrl(ref.toString()), Uint8List(0), SettableMetadata());
 
       test('StorageReference.getDownloadUrl: file exists', () async {
         var url = await ref.getDownloadURL();
-        expect(url,
-            'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/hello%2Fworld.txt?alt=media&token=a');
+        var token = Uri.parse(url).queryParameters['token'];
+        expect(url.toString(),
+            'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/hello%2Fworld.txt?alt=media&token=$token');
       });
       test('StorageReference.getDownloadUrl: file does not exist', () async {
         var ref = child.child('everyone.txt');
         expect(() => ref.getDownloadURL(),
             throwsA(StorageException.objectNotFound(ref.fullPath)));
+      });
+    });
+
+    group('StorageReference.putString', () {
+      test('Uses metadata.contentType for RAW format', () async {
+        var t = await child.child('hello.txt').putString('hello',
+            format: PutStringFormat.raw,
+            metadata: SettableMetadata(contentType: 'lol/wut'));
+        expect(t.metadata!.contentType, 'lol/wut');
+      });
+
+      test('Uses embedded content type in DATA_URL format', () async {
+        var t = await child.child('hello.txt').putString(
+            'data:lol/wat;base64,aaaa',
+            format: PutStringFormat.dataUrl);
+        expect(t.metadata!.contentType, 'lol/wat');
+      });
+
+      test(
+          'Lets metadata.contentType override embedded content type in DATA_URL format',
+          () async {
+        var t = await child.child('hello.txt').putString(
+            'data:ignore/me;base64,aaaa',
+            format: PutStringFormat.dataUrl,
+            metadata: SettableMetadata(contentType: 'tomato/soup'));
+
+        expect(t.metadata!.contentType, 'tomato/soup');
+      });
+    });
+
+    group('StorageReference.putData', () {
+      test('Uses metadata.contentType', () async {
+        var t = await child
+            .child('hello.bin')
+            .putData(Uint8List(0), SettableMetadata(contentType: 'lol/wut'));
+        expect(t.metadata!.contentType, 'lol/wut');
+      });
+
+      test('uploads without error', () async {
+        var blob = Uint8List.fromList([97]);
+        var ref = child.child('hello.bin');
+        var result = await ref.putData(blob);
+        expect(result.ref, ref);
+        expect(result.metadata!.contentType, 'application/octet-stream');
+        expect(result.metadata!.size, 1);
       });
     });
   });

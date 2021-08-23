@@ -308,8 +308,8 @@ class UploadTaskImpl extends DelegatingFuture<TaskSnapshot>
   }
 
   void _notifyObservers() {
-    _finishWhenDone();
     _subject.add(snapshot);
+    _finishWhenDone();
   }
 
   void _finishWhenDone() {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:firebase_dart/src/storage/metadata.dart';
 import 'package:http/http.dart' as http;
@@ -16,23 +17,68 @@ class BackendConnection {
     }
 
     var bucket = request.url.pathSegments[2];
-    var path = Uri.decodeComponent(request.url.pathSegments[4]);
 
-    var location = Location(bucket, path.split('/'));
-    switch (request.method) {
-      case 'GET':
-        var metadata = await backend.getMetadata(location);
-        if (metadata == null) {
-          return http.Response('Not found', 404);
-        }
-        return http.Response(json.encode(metadata), 200);
-      default:
-        throw UnimplementedError(
-            '${request.method} requests to ${request.url}');
+    if (request.url.pathSegments.length == 4) {
+      switch (request.method) {
+        case 'POST':
+          switch (request.headers['X-Goog-Upload-Protocol']) {
+            case 'multipart':
+              var boundary = '--' +
+                  RegExp(r'multipart/related; boundary=(\d*)')
+                      .firstMatch(request.headers['Content-Type']!)!
+                      .group(1)!;
+
+              var parts =
+                  String.fromCharCodes(request.bodyBytes).split(boundary);
+
+              var re = RegExp(r'^\r\nContent-Type: ([^\r\n]*)\r\n\r\n(.*)\r\n');
+              var m = re.firstMatch(parts[1])!;
+              var metadata = json.decode(m.group(2)!);
+
+              m = re.firstMatch(parts[2])!;
+              var contentType = m.group(1)!;
+              var content = m.group(2)!.codeUnits;
+
+              var location =
+                  Location(bucket, (metadata['fullPath'] as String).split('/'));
+
+              await backend.putData(
+                location,
+                Uint8List.fromList(content),
+                SettableMetadata(
+                    cacheControl: metadata['cacheControl'],
+                    contentDisposition: metadata['contentDisposition'],
+                    contentEncoding: metadata['contentEncoding'],
+                    contentLanguage: metadata['contentLanguage'],
+                    contentType: metadata['contentType'] ?? contentType,
+                    customMetadata: metadata['customMetadata']),
+              );
+
+              var fullMetadata = await backend.getMetadata(location);
+              return http.Response(json.encode(fullMetadata), 200);
+            case 'resumable':
+          }
+      }
+    } else if (request.url.pathSegments.length == 5) {
+      var path = Uri.decodeComponent(request.url.pathSegments[4]);
+
+      var location = Location(bucket, path.split('/'));
+      switch (request.method) {
+        case 'GET':
+          var metadata = await backend.getMetadata(location);
+          if (metadata == null) {
+            return http.Response('Not found', 404);
+          }
+          return http.Response(json.encode(metadata), 200);
+      }
     }
+    throw UnimplementedError('${request.method} requests to ${request.url}');
   }
 }
 
 abstract class StorageBackend {
   Future<FullMetadataImpl?> getMetadata(Location location);
+
+  Future<void> putData(
+      Location location, Uint8List data, SettableMetadata metadata);
 }
