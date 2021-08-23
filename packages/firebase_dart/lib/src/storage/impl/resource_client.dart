@@ -223,7 +223,9 @@ class ResourceClient {
   dynamic _handleResponse(http.Response response) {
     switch (response.statusCode) {
       case 200:
-        if (response.headers['content-type']!.split(';').first ==
+        if ((response.headers['Content-type'] ?? 'application/json')
+                .split(';')
+                .first ==
             'application/json') {
           return json.decode(response.body);
         }
