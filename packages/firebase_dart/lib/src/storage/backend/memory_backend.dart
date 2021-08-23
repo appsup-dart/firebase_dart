@@ -5,6 +5,7 @@ import 'package:firebase_dart/src/storage.dart';
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/storage/impl/location.dart';
+import 'package:firebase_dart/src/storage/impl/resource_client.dart';
 
 import 'package:firebase_dart/src/storage/metadata.dart';
 
@@ -75,5 +76,23 @@ class MemoryStorageBackend extends StorageBackend {
 
     await items.set(location, updated);
     return updated.key;
+  }
+
+  @override
+  Future<Map<String, dynamic>> list(
+      Location location, ListOptions listOptions) async {
+    // TODO: implement maxResults and pageToken
+    var list = await items.keys.toList();
+
+    var allItems = list
+        .where((v) => v.path.startsWith(location.path))
+        .map((v) => v.path.substring(location.path.length));
+
+    return {
+      'items': [
+        ...allItems.where((v) => !v.contains('/')).map((v) => {'name': v})
+      ],
+      'prefixes': [...allItems.where((v) => v.contains('/'))],
+    };
   }
 }

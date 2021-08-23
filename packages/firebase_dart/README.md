@@ -200,8 +200,8 @@ The following methods are supported:
 | Reference.getData | ✅
 | Reference.getDownloadURL | ✅
 | Reference.getMetadata | ✅
-| Reference.list | ❌
-| Reference.listAll | ❌
+| Reference.list | ✅
+| Reference.listAll | ✅
 | Reference.putData | ✅
 | Reference.putString | ✅
 | Reference.updateMetadata | ✅

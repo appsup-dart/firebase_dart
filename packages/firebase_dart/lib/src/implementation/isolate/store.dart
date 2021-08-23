@@ -7,6 +7,8 @@ abstract class Store<K, V> {
 
   Stream<V> get values;
 
+  Stream<K> get keys;
+
   Future<V?> remove(K key);
 }
 
@@ -24,6 +26,9 @@ class MemoryStore<K, V> extends Store<K, V> {
 
   @override
   Future<V?> remove(K key) async => _memory.remove(key);
+
+  @override
+  Stream<K> get keys => Stream.fromIterable(_memory.keys);
 }
 
 class IsolateStore<K, V> extends Store<K, V> {
@@ -36,7 +41,8 @@ class IsolateStore<K, V> extends Store<K, V> {
       ..registerFunction(#get, store.get)
       ..registerFunction(#set, store.set)
       ..registerFunction(#remove, store.remove)
-      ..registerFunction(#values, () => store.values.toList());
+      ..registerFunction(#values, () => store.values.toList())
+      ..registerFunction(#keys, () => store.keys.toList());
     return IsolateStore(worker.commander);
   }
 
@@ -59,5 +65,11 @@ class IsolateStore<K, V> extends Store<K, V> {
   Stream<V> get values async* {
     yield* Stream.fromIterable(
         await commander.execute(RegisteredFunctionCall(#values, [])));
+  }
+
+  @override
+  Stream<K> get keys async* {
+    yield* Stream.fromIterable(
+        await commander.execute(RegisteredFunctionCall(#keys, [])));
   }
 }

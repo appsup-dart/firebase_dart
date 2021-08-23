@@ -230,6 +230,18 @@ void runStorageTests({bool isolated = false}) async {
       });
     });
 
+    group('StorageReference.list', () {
+      test('should contain newly created items', () async {
+        await child.child('hello1.bin').putData(Uint8List(0));
+        await child.child('hello2.bin').putData(Uint8List(0));
+
+        var r = await child.listAll();
+
+        expect(r.items.map((v) => v.name),
+            containsAll(['hello1.bin', 'hello2.bin']));
+      });
+    });
+
     group('Argument verification', () {
       group('StorageReference.list', () {
         test('throws on invalid maxResults', () async {

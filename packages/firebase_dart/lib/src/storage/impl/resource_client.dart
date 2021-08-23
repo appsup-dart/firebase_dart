@@ -277,8 +277,9 @@ class ListResultImpl extends ListResult {
                 .map((v) => reference.child(v['name']))
                 .toList(),
             nextPageToken: json['nextPageToken'],
-            prefixes: (json['prefixes'] as List).map((v) => reference.child(v))
-                as List<Reference>);
+            prefixes: (json['prefixes'] as List)
+                .map((v) => reference.child(v))
+                .toList());
 }
 
 class ResumableUploadStatus {

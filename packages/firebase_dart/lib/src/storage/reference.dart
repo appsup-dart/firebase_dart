@@ -118,15 +118,27 @@ class ReferenceImpl implements Reference {
   int get hashCode => location.hashCode;
 
   @override
-  Future<ListResult> list([ListOptions? options]) {
-    // TODO: implement list
-    throw UnimplementedError();
+  Future<ListResult> list([ListOptions? options]) async {
+    var v = await requests.getList(
+        delimiter: '/',
+        maxResults: options?.maxResults,
+        pageToken: options?.pageToken);
+
+    return ListResultImpl.fromJson(this, v!);
   }
 
   @override
-  Future<ListResult> listAll() {
-    // TODO: implement listAll
-    throw UnimplementedError();
+  Future<ListResult> listAll() async {
+    var v = await list();
+    var items = [...v.items];
+    var prefixes = [...v.prefixes];
+    while (v.nextPageToken != null) {
+      v = await list(ListOptions(pageToken: v.nextPageToken));
+      items.addAll(v.items);
+      prefixes.addAll(v.prefixes);
+    }
+
+    return ListResultImpl(storage, items: items, prefixes: prefixes);
   }
 
   @override

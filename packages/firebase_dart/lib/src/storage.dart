@@ -408,7 +408,7 @@ class ListOptions {
   final String? pageToken;
 
   ListOptions({this.maxResults, this.pageToken}) {
-    if (maxResults != null && maxResults! <= 0 || maxResults! > 1000) {
+    if (maxResults != null && (maxResults! <= 0 || maxResults! > 1000)) {
       throw ArgumentError.value(
           maxResults, 'maxResults', 'Should be a value between 1 and 1000');
     }

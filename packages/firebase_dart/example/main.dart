@@ -48,6 +48,15 @@ void main() async {
   var task = await ref.putData(Uint8List(1024 * 1024));
   print('upladed ${task.bytesTransferred} to test.bin: state = ${task.state}');
 
+  var l = await storage.ref().listAll();
+
+  for (var i in l.prefixes) {
+    print('root contains directory ${i.fullPath}');
+  }
+  for (var i in l.items) {
+    print('root contains file ${i.fullPath}');
+  }
+
   var database = FirebaseDatabase(app: app);
 
   var dbRef = database.reference().child('test');

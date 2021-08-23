@@ -20,6 +20,21 @@ class BackendConnection {
 
     if (request.url.pathSegments.length == 4) {
       switch (request.method) {
+        case 'GET':
+          var path = request.url.queryParameters['prefix']!;
+          var location = Location(bucket, path.split('/'));
+          var pageToken = request.url.queryParameters['pageToken'];
+          var maxResults = request.url.queryParameters['maxResults'];
+
+          var v = await backend.list(
+              location,
+              ListOptions(
+                  pageToken: pageToken,
+                  maxResults:
+                      maxResults != null ? int.parse(maxResults) : null));
+
+          return http.Response(json.encode(v), 200);
+
         case 'POST':
           switch (request.headers['X-Goog-Upload-Protocol']) {
             case 'multipart':
@@ -100,4 +115,6 @@ abstract class StorageBackend {
 
   Future<void> putData(
       Location location, Uint8List data, SettableMetadata metadata);
+
+  Future<Map<String, dynamic>> list(Location location, ListOptions listOptions);
 }
