@@ -196,7 +196,7 @@ The following methods are supported:
 | FirebaseStorage.setMaxDownloadRetryTime | ❌
 | FirebaseStorage.setMaxOperationRetryTime | ❌
 | FirebaseStorage.setMaxOperationRetryTime | ❌
-| Reference.delete | ❌
+| Reference.delete | ✅
 | Reference.getData | ✅
 | Reference.getDownloadURL | ✅
 | Reference.getMetadata | ✅

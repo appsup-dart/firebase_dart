@@ -101,6 +101,11 @@ class BackendConnection {
             return http.Response('Not found', 404);
           }
           return http.Response(json.encode(metadata), 200);
+        case 'DELETE':
+          await backend.delete(location);
+
+          return http.Response('', 200,
+              headers: {'Content-Type': 'text/plain'});
       }
     }
     throw UnimplementedError('${request.method} requests to ${request.url}');
@@ -117,4 +122,6 @@ abstract class StorageBackend {
       Location location, Uint8List data, SettableMetadata metadata);
 
   Future<Map<String, dynamic>> list(Location location, ListOptions listOptions);
+
+  Future<bool> delete(Location location);
 }

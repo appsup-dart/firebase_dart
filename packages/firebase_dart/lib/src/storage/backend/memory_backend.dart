@@ -5,7 +5,6 @@ import 'package:firebase_dart/src/storage.dart';
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/storage/impl/location.dart';
-import 'package:firebase_dart/src/storage/impl/resource_client.dart';
 
 import 'package:firebase_dart/src/storage/metadata.dart';
 
@@ -94,5 +93,11 @@ class MemoryStorageBackend extends StorageBackend {
       ],
       'prefixes': [...allItems.where((v) => v.contains('/'))],
     };
+  }
+
+  @override
+  Future<bool> delete(Location location) async {
+    var v = await items.remove(location);
+    return v != null;
   }
 }

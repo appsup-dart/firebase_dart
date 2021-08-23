@@ -5,7 +5,6 @@ import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:firebase_dart/src/storage/backend/memory_backend.dart';
 import 'package:firebase_dart/src/storage/impl/location.dart';
-import 'package:firebase_dart/src/storage/metadata.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -239,6 +238,17 @@ void runStorageTests({bool isolated = false}) async {
 
         expect(r.items.map((v) => v.name),
             containsAll(['hello1.bin', 'hello2.bin']));
+      });
+    });
+    group('StorageReference.delete', () {
+      test('should delete item', () async {
+        var ref = child.child('hello.bin');
+        await ref.putData(Uint8List(0));
+
+        await ref.delete();
+
+        expect(() => ref.getMetadata(),
+            throwsA(StorageException.objectNotFound(ref.fullPath)));
       });
     });
 
