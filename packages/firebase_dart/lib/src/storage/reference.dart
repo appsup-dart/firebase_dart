@@ -107,12 +107,7 @@ class ReferenceImpl implements Reference {
   Future<FullMetadata> updateMetadata(SettableMetadata metadata) async {
     _throwIfRoot('updateMetadata');
 
-/* TODO
-    var requestInfo = requests.updateMetadata(
-        self.authWrapper, self.location, metadata, self.mappings());
-    return self.authWrapper.makeRequest(requestInfo, authToken).getFuture();
-*/
-    throw UnimplementedError();
+    return await requests.updateMetadata(metadata);
   }
 
   @override

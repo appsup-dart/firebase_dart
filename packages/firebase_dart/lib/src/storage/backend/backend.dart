@@ -70,6 +70,22 @@ class BackendConnection {
             return http.Response('Not found', 404);
           }
           return http.Response(json.encode(metadata), 200);
+        case 'PATCH':
+          var map = json.decode(request.body);
+
+          var metadata = await backend.updateMetadata(
+              location,
+              SettableMetadata(
+                  cacheControl: map['cacheControl'],
+                  contentDisposition: map['contentDisposition'],
+                  contentEncoding: map['contentEncoding'],
+                  contentLanguage: map['contentLanguage'],
+                  contentType: map['contentType'],
+                  customMetadata: (map['metadata'] as Map?)?.cast()));
+          if (metadata == null) {
+            return http.Response('Not found', 404);
+          }
+          return http.Response(json.encode(metadata), 200);
       }
     }
     throw UnimplementedError('${request.method} requests to ${request.url}');
@@ -78,6 +94,9 @@ class BackendConnection {
 
 abstract class StorageBackend {
   Future<FullMetadataImpl?> getMetadata(Location location);
+
+  Future<FullMetadataImpl?> updateMetadata(
+      Location location, SettableMetadata metadata);
 
   Future<void> putData(
       Location location, Uint8List data, SettableMetadata metadata);

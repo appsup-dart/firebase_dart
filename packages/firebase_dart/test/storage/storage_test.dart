@@ -197,6 +197,39 @@ void runStorageTests({bool isolated = false}) async {
       });
     });
 
+    group('StorageReference.updateMetadata', () {
+      test('should update content type', () async {
+        var ref = child.child('hello.bin');
+        var t = await ref.putData(
+            Uint8List(0), SettableMetadata(contentType: 'lol/wut'));
+        expect(t.metadata!.contentType, 'lol/wut');
+
+        var m =
+            await ref.updateMetadata(SettableMetadata(contentType: 'lol/wat'));
+        expect(m.contentType, 'lol/wat');
+      });
+
+      test('should update content language', () async {
+        var ref = child.child('hello.bin');
+        var t = await ref.putData(Uint8List(0));
+        expect(t.metadata!.contentLanguage, null);
+
+        var m =
+            await ref.updateMetadata(SettableMetadata(contentLanguage: 'nl'));
+        expect(m.contentLanguage, 'nl');
+      });
+
+      test('should update custom metadata', () async {
+        var ref = child.child('hello.bin');
+        var t = await ref.putData(Uint8List(0));
+        expect(t.metadata!.customMetadata, null);
+
+        var m = await ref
+            .updateMetadata(SettableMetadata(customMetadata: {'x': '1'}));
+        expect(m.customMetadata, {'x': '1'});
+      });
+    });
+
     group('Argument verification', () {
       group('StorageReference.list', () {
         test('throws on invalid maxResults', () async {

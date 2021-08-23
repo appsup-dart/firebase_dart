@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:firebase_dart/src/implementation/isolate/store.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'dart:typed_data';
 
@@ -10,11 +11,15 @@ import 'package:firebase_dart/src/storage/metadata.dart';
 import 'backend.dart';
 
 class MemoryStorageBackend extends StorageBackend {
-  Map<Location, MapEntry<FullMetadataImpl, Uint8List>> items = {};
+  final Store<Location, MapEntry<FullMetadataImpl, Uint8List>> items;
+
+  MemoryStorageBackend(
+      {Store<Location, MapEntry<FullMetadataImpl, Uint8List>>? items})
+      : items = items ?? MemoryStore();
 
   @override
   Future<FullMetadataImpl?> getMetadata(Location location) async {
-    return items[location]?.key;
+    return (await items.get(location))?.key;
   }
 
   static final _random = Random(DateTime.now().millisecondsSinceEpoch);
@@ -30,7 +35,31 @@ class MemoryStorageBackend extends StorageBackend {
   @override
   Future<void> putData(
       Location location, Uint8List data, SettableMetadata metadata) async {
-    items[location] = MapEntry(
+    await items.set(
+        location,
+        MapEntry(
+            FullMetadataImpl(
+                bucket: location.bucket,
+                fullPath: location.path,
+                cacheControl: metadata.cacheControl,
+                contentDisposition: metadata.contentDisposition,
+                contentEncoding: metadata.contentEncoding,
+                contentLanguage: metadata.contentLanguage,
+                contentType: metadata.contentType,
+                customMetadata: metadata.customMetadata,
+                size: data.length,
+                downloadTokens: [_generateRandomString(16)]),
+            data));
+  }
+
+  @override
+  Future<FullMetadataImpl?> updateMetadata(
+      Location location, SettableMetadata metadata) async {
+    var current = await items.get(location);
+
+    if (current == null) return null;
+
+    var updated = MapEntry(
         FullMetadataImpl(
             bucket: location.bucket,
             fullPath: location.path,
@@ -40,8 +69,11 @@ class MemoryStorageBackend extends StorageBackend {
             contentLanguage: metadata.contentLanguage,
             contentType: metadata.contentType,
             customMetadata: metadata.customMetadata,
-            size: data.length,
-            downloadTokens: [_generateRandomString(16)]),
-        data);
+            size: current.key.size,
+            downloadTokens: current.key.downloadTokens),
+        current.value);
+
+    await items.set(location, updated);
+    return updated.key;
   }
 }

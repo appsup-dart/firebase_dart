@@ -73,6 +73,8 @@ class ResourceClient {
           if (metadata.contentEncoding != null)
             'contentEncoding': metadata.contentEncoding,
           if (metadata.contentType != null) 'contentType': metadata.contentType,
+          if (metadata.contentLanguage != null)
+            'contentLanguage': metadata.contentLanguage,
           if (metadata.customMetadata != null)
             'metadata': metadata.customMetadata
         }),

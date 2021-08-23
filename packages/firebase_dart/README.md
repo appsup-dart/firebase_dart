@@ -204,7 +204,7 @@ The following methods are supported:
 | Reference.listAll | ❌
 | Reference.putData | ✅
 | Reference.putString | ✅
-| Reference.updateMetadata | ❌
+| Reference.updateMetadata | ✅
 
 
 ## Features and bugs

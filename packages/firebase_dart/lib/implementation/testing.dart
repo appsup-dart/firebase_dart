@@ -13,6 +13,7 @@ import 'package:firebase_dart/src/implementation/isolate/util.dart';
 import 'package:firebase_dart/src/storage/backend/backend.dart' as storage;
 import 'package:firebase_dart/src/storage/backend/memory_backend.dart'
     as storage;
+import 'package:firebase_dart/src/storage/backend/memory_backend.dart';
 import 'package:firebase_dart/src/util/proxy.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
@@ -36,7 +37,10 @@ class FirebaseTesting {
         );
       })
       ..registerFunction(#getStorageBackend, (bucket) {
-        return BackendImpl.getStorageBackend(bucket);
+        var storage = BackendImpl.getStorageBackend(bucket);
+
+        return MemoryStorageBackend(
+            items: IsolateStore.forStore(storage.items));
       })
       ..registerFunction(
           #getTokenSigningKey, () => BackendImpl._tokenSigningKey);
