@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:async/async.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/storage/impl/location.dart';
+import 'package:firebase_dart/src/storage/impl/resource_client.dart';
 import 'package:firebase_dart/storage.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../isolate.dart';
 import 'util.dart';
@@ -25,6 +29,8 @@ class StorageReferenceFunctionCall<T> extends BaseFunctionCall<T> {
 
   Reference getRef() => storage.ref().child(path);
 
+  static final Map<int, Task> _tasks = {};
+
   @override
   Function? get function {
     switch (functionName) {
@@ -37,12 +43,52 @@ class StorageReferenceFunctionCall<T> extends BaseFunctionCall<T> {
       case #getMetadata:
         return getRef().getMetadata;
       case #putData:
-        throw UnimplementedError();
+        return (SendPort sendPort, int id, Uint8List data,
+            SettableMetadata? metadata) async {
+          var task = _tasks[id] = getRef().putData(data, metadata);
+          task.snapshotEvents.map(encodeTaskSnapshot).listen(sendPort.send);
+          return encodeTaskSnapshot(await task.whenComplete(() {
+            _tasks.remove(id);
+          }));
+        };
+      case #putString:
+        return (SendPort sendPort, int id, String data,
+            {PutStringFormat format = PutStringFormat.raw,
+            SettableMetadata? metadata}) async {
+          var task = _tasks[id] =
+              getRef().putString(data, format: format, metadata: metadata);
+
+          task.snapshotEvents.map(encodeTaskSnapshot).listen(sendPort.send);
+          return encodeTaskSnapshot(await task.whenComplete(() {
+            _tasks.remove(id);
+          }));
+        };
+      case #list:
+        return (ListOptions? options) =>
+            getRef().list(options).then(encodeListResult);
+      case #listAll:
+        return () => getRef().listAll().then(encodeListResult);
       case #updateMetadata:
         return getRef().updateMetadata;
+      case #UploadTask.pause:
+        return (int id) async => await _tasks[id]?.pause() ?? false;
+      case #UploadTask.resume:
+        return (int id) async => await _tasks[id]?.resume() ?? false;
+      case #UploadTask.cancel:
+        return (int id) async => await _tasks[id]?.cancel() ?? false;
     }
     return null;
   }
+
+  static Map<Symbol, dynamic> encodeTaskSnapshot(TaskSnapshot v) => {
+        #bytesTransferred: v.bytesTransferred,
+        #metadata: v.metadata,
+        #state: v.state,
+        #totalBytes: v.totalBytes
+      };
+
+  static Map<String, dynamic> encodeListResult(ListResult v) =>
+      (v as ListResultImpl).toJson();
 }
 
 class IsolateFirebaseStorage extends IsolateFirebaseService
@@ -170,9 +216,23 @@ class IsolateStorageReference extends Reference {
 
   @override
   UploadTask putData(Uint8List data, [SettableMetadata? metadata]) {
-    // TODO: implement putData
-    throw UnimplementedError();
+    var receivePort = ReceivePort();
+    var id = DateTime.now().microsecondsSinceEpoch;
+    var future = invoke<Map<Symbol, dynamic>>(
+        #putData, [receivePort.sendPort, id, data, metadata]);
+    return IsolateUploadTask(this, id, future.then(_decodeTaskSnapshot),
+        receivePort.cast<Map<Symbol, dynamic>>().map(_decodeTaskSnapshot));
   }
+
+  TaskSnapshot _decodeTaskSnapshot(Map<Symbol, dynamic> v) => TaskSnapshot(
+      ref: this,
+      bytesTransferred: v[#bytesTransferred],
+      state: v[#state],
+      totalBytes: v[#totalBytes],
+      metadata: v[#metadata]);
+
+  ListResult _decodeListResult(Map<String, dynamic> json) =>
+      ListResultImpl.fromJson(this, json);
 
   @override
   Future<FullMetadata> updateMetadata(SettableMetadata metadata) async {
@@ -180,21 +240,27 @@ class IsolateStorageReference extends Reference {
   }
 
   @override
-  Future<ListResult> list([ListOptions? options]) {
-    return invoke(#list, [options]);
+  Future<ListResult> list([ListOptions? options]) async {
+    return _decodeListResult(await invoke(#list, [options]));
   }
 
   @override
-  Future<ListResult> listAll() {
-    return invoke(#listAll);
+  Future<ListResult> listAll() async {
+    return _decodeListResult(await invoke(#listAll));
   }
 
   @override
   UploadTask putString(String data,
       {PutStringFormat format = PutStringFormat.raw,
       SettableMetadata? metadata}) {
-    // TODO: implement putString
-    throw UnimplementedError();
+    var receivePort = ReceivePort();
+    var id = DateTime.now().microsecondsSinceEpoch;
+    var future = invoke<Map<Symbol, dynamic>>(
+        #putString,
+        [receivePort.sendPort, id, data],
+        {#format: format, #metadata: metadata});
+    return IsolateUploadTask(this, id, future.then(_decodeTaskSnapshot),
+        receivePort.cast<Map<Symbol, dynamic>>().map(_decodeTaskSnapshot));
   }
 
   @override
@@ -206,4 +272,43 @@ class IsolateStorageReference extends Reference {
 
   @override
   int get hashCode => location.hashCode;
+}
+
+class IsolateUploadTask extends DelegatingFuture<TaskSnapshot>
+    implements UploadTask {
+  final int id;
+
+  final IsolateStorageReference _ref;
+
+  final BehaviorSubject<TaskSnapshot> _subject = BehaviorSubject();
+
+  IsolateUploadTask(this._ref, this.id, Future<TaskSnapshot> future,
+      Stream<TaskSnapshot> events)
+      : super(future) {
+    events.pipe(_subject);
+  }
+
+  @override
+  Future<bool> cancel() {
+    return _ref.invoke(#UploadTask.cancel, [id]);
+  }
+
+  @override
+  Future<bool> pause() {
+    return _ref.invoke(#UploadTask.pause, [id]);
+  }
+
+  @override
+  Future<bool> resume() {
+    return _ref.invoke(#UploadTask.resume, [id]);
+  }
+
+  @override
+  TaskSnapshot get snapshot => _subject.value;
+
+  @override
+  Stream<TaskSnapshot> get snapshotEvents => _subject.stream;
+
+  @override
+  IsolateFirebaseStorage get storage => _ref.storage;
 }

@@ -265,14 +265,13 @@ class ListResultImpl extends ListResult {
   @override
   final List<Reference> prefixes;
 
-  @override
-  final FirebaseStorage storage;
+  final Reference reference;
 
-  ListResultImpl(this.storage,
+  ListResultImpl(this.reference,
       {required this.items, this.nextPageToken, required this.prefixes});
 
   ListResultImpl.fromJson(Reference reference, Map<String, dynamic> json)
-      : this(reference.storage,
+      : this(reference,
             items: (json['items'] as List)
                 .map((v) => reference.child(v['name']))
                 .toList(),
@@ -280,6 +279,20 @@ class ListResultImpl extends ListResult {
             prefixes: (json['prefixes'] as List)
                 .map((v) => reference.child(v))
                 .toList());
+
+  Map<String, dynamic> toJson() => {
+        'items': [
+          ...items.map(
+              (v) => {'name': v.fullPath.substring(reference.fullPath.length)})
+        ],
+        'prefixes': [
+          ...items.map((v) => v.fullPath.substring(reference.fullPath.length))
+        ],
+        'nextPageToken': nextPageToken
+      };
+
+  @override
+  FirebaseStorage get storage => reference.storage;
 }
 
 class ResumableUploadStatus {

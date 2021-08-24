@@ -6,7 +6,6 @@ import 'package:firebase_dart/src/storage.dart';
 import 'package:firebase_dart/src/storage/impl/http_client.dart';
 import 'package:firebase_dart/src/storage/impl/location.dart';
 import 'package:firebase_dart/src/storage/impl/resource_client.dart';
-import 'package:googleapis/trafficdirector/v2.dart';
 import 'package:http/http.dart';
 import 'package:http/testing.dart';
 import 'package:test/test.dart';

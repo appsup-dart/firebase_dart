@@ -138,7 +138,7 @@ class ReferenceImpl implements Reference {
       prefixes.addAll(v.prefixes);
     }
 
-    return ListResultImpl(storage, items: items, prefixes: prefixes);
+    return ListResultImpl(this, items: items, prefixes: prefixes);
   }
 
   @override
