@@ -99,10 +99,17 @@ class AndroidAuthHandler extends FirebaseAppAuthHandler {
             (await _channel.invokeMapMethod<String, dynamic>('getAuthResult'))!;
 
         _result = null;
+
+        Map<String, dynamic>? error =
+            v['firebaseError'] == null ? null : json.decode(v['firebaseError']);
+        if (error != null) {
+          var code = error['code'];
+          if (code.startsWith('auth/')) {
+            code = code.substring('auth/'.length);
+          }
+          throw FirebaseAuthException(code, error['message']);
+        }
         return createCredential(
-            error: v['firebaseError'] == null
-                ? null
-                : json.decode(v['firebaseError']),
             sessionId: v['sessionId'],
             providerId: v['providerId'],
             link: v['link']);

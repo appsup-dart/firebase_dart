@@ -5,6 +5,7 @@ import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/auth/auth_credential.dart';
+import 'package:firebase_dart/src/auth/iframeclient/gapi_iframes.dart';
 import 'package:firebase_dart/src/auth/iframeclient/url_builder.dart';
 import 'iframewrapper.dart';
 
@@ -16,13 +17,21 @@ class DefaultAuthHandler extends FirebaseAppAuthHandler {
   @override
   Future<AuthCredential?> getSignInResult(FirebaseApp app) async {
     var completer = Completer<AuthCredential?>();
-    var callback = (Map r) {
+    var callback = (IframeAuthEvent r) {
+      var error = r.error;
+      if (error != null) {
+        var code = error.code;
+        if (code.startsWith('auth/')) {
+          code = code.substring('auth/'.length);
+        }
+        if (code == 'no-auth-event') return false;
+        throw FirebaseAuthException(code, error.message);
+      }
       createCredential(
-        error: r['error'],
-        link: r['urlResponse'],
-        sessionId: r['sessionId'],
-        providerId: r['providerId'],
-        eventId: r['eventId'],
+        link: r.urlResponse,
+        sessionId: r.sessionId,
+        providerId: r.providerId,
+        eventId: r.eventId,
       ).then((c) {
         completer.complete(c);
       }).catchError((e, tr) {
@@ -102,7 +111,7 @@ class IfcHandler {
   late final IframeWrapper _iframeWrapper = IframeWrapper(iframeUrl);
 
   /// The Auth event listeners.
-  final List<bool Function(Map)> _authEventListeners = [];
+  final List<bool Function(IframeAuthEvent)> _authEventListeners = [];
 
   IfcHandler({
     required this.authDomain,
@@ -138,23 +147,19 @@ class IfcHandler {
   void _registerEvents() {
     // Listen to Auth change events emitted from iframe.
     _iframeWrapper.registerEvent('authEvent', (response) {
-      var resolveResponse = {};
-      if (response is Map && response['authEvent'] is Map) {
+      // Get Auth event
+      var authEvent = response.authEvent;
+      if (authEvent != null) {
         var isHandled = false;
-        // Get Auth event (plain object).
-        var authEvent = response['authEvent'];
         // Trigger Auth change on all listeners.
         for (var i = 0; i < _authEventListeners.length; i++) {
           isHandled = _authEventListeners[i](authEvent) || isHandled;
         }
         // Return ack response to notify sender of success.
-        resolveResponse = {};
-        resolveResponse['status'] = isHandled ? 'ACK' : 'ERROR';
-        return resolveResponse;
+        return IframeEventHandlerResponse(status: isHandled ? 'ACK' : 'ERROR');
       }
       // Return error status if the response is invalid.
-      resolveResponse['status'] = 'ERROR';
-      return resolveResponse;
+      return IframeEventHandlerResponse(status: 'ERROR');
     });
   }
 }

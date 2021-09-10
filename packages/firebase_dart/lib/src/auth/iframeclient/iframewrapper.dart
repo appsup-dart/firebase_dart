@@ -4,13 +4,13 @@ library iframewrapper;
 import 'package:js/js.dart';
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:html';
 import 'dart:js';
 import 'dart:js_util';
 import 'dart:math';
 import 'gapi.dart' as gapi;
 import 'gapi_iframes.dart' as gapi;
+import 'gapi_iframes.dart';
 import 'util.dart' as util;
 
 /// Defines the hidden iframe wrapper for cross origin communications.
@@ -40,21 +40,18 @@ class IframeWrapper {
               where: container,
               url: url,
               messageHandlersFilter: gapi.CROSS_ORIGIN_IFRAMES_FILTER,
-              attributes: {
-                'style': {
-                  'position': 'absolute',
-                  'top': '-100px',
-                  'width': '1px',
-                  'height': '1px'
-                }
-              },
+              attributes: gapi.IframeAttributes(
+                  style: CssStyleDeclaration()
+                    ..position = 'absolute'
+                    ..top = '-100px'
+                    ..width = '1px'
+                    ..height = '1px'),
               dontclear: true), allowInterop(
         (iframe) {
           _iframe = iframe;
-          _iframe.restyle({
-            // Prevent iframe from closing on mouse out.
-            'setHideOnLeave': false
-          });
+          _iframe.restyle(gapi.IframeRestyleOptions(
+              // Prevent iframe from closing on mouse out.
+              setHideOnLeave: false));
 
           // This returns an IThenable. However the reject part does not call
           // when the iframe is not loaded.
@@ -67,7 +64,7 @@ class IframeWrapper {
           });
         },
       ));
-      return completer.future;
+      return completer.future.then((_) => print('completed'));
     });
   }
 
@@ -82,21 +79,18 @@ class IframeWrapper {
   }
 
   /// Registers a listener to a post message.
-  void registerEvent(String eventName, Function(dynamic) handler) {
+  void registerEvent(String eventName,
+      IframeEventHandlerResponse Function(IframeEvent) handler) {
     _onIframeOpen.then((_) {
-      var h = _handlers[handler] ??= (a, b) {
-        window.console.log(a);
-        window.console.log(b);
-
-        var map = json.decode(jsonStringify(a));
-        return handler(map);
+      var h = _handlers[handler] ??= (event, iframe) {
+        return handler(event);
       };
       _iframe.register(
           eventName, allowInterop(h), gapi.CROSS_ORIGIN_IFRAMES_FILTER);
     });
   }
 
-  final Expando<Function(dynamic, dynamic)> _handlers = Expando();
+  final Expando<IframeEventHandler> _handlers = Expando();
 
   /// Unregisters a listener to a post message.
   void unregisterEvent(String eventName, Function(dynamic) handler) {
@@ -199,6 +193,3 @@ class Message {
 
   Message({required this.type});
 }
-
-@JS('JSON.stringify')
-external String jsonStringify(Object obj);

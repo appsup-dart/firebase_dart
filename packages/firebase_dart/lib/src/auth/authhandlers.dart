@@ -28,18 +28,10 @@ class FirebaseAppAuthCredential extends AuthCredential {
 abstract class FirebaseAppAuthHandler implements AuthHandler {
   const FirebaseAppAuthHandler();
   Future<FirebaseAppAuthCredential> createCredential(
-      {Map<String, dynamic>? error,
-      String? eventId,
+      {String? eventId,
       String? sessionId,
       String? providerId,
       String? link}) async {
-    if (error != null) {
-      String? code = error['code'];
-      if (code != null && code.startsWith('auth/')) {
-        code = code.substring('auth/'.length);
-      }
-      throw FirebaseAuthException(code ?? 'unknown', error['message']);
-    }
     var box = await PersistenceStorage.openBox('firebase_auth');
     sessionId = sessionId ?? box.get('redirect_session_id');
 
