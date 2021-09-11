@@ -411,6 +411,17 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     _subject.add(last);
     return last;
   }
+
+  @override
+  Future<UserCredential?> trySignInWithEmailLink(
+      {Future<String?> Function()? askUserForEmail}) {
+    var worker = askUserForEmail == null
+        ? null
+        : (IsolateWorker()
+          ..registerFunction(#askUserForEmail, askUserForEmail));
+
+    return invoke(#trySignInWithEmailLink, [worker?.commander]);
+  }
 }
 
 class CurrentUserFunctionCall<T> extends BaseFunctionCall<T> {
@@ -546,6 +557,17 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
       case #userChanges:
         return () =>
             auth.userChanges().map<Map<String, dynamic>?>((v) => v?.toJson());
+
+      case #trySignInWithEmailLink:
+        return (IsolateCommander? commander) {
+          auth.trySignInWithEmailLink(
+              askUserForEmail: commander == null
+                  ? null
+                  : () {
+                      return commander
+                          .execute(RegisteredFunctionCall(#askUserForEmail));
+                    });
+        };
     }
     throw UnsupportedError(
         'FirebaseAuthFunctionCall with reference $functionName not supported');

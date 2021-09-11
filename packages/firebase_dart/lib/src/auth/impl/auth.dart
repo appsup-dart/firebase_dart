@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/authhandlers.dart';
 import 'package:firebase_dart/src/auth/error.dart';
@@ -208,8 +209,28 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
           'handleCodeInApp true when sending sign in link to email.');
     }
 
+    var box = await userStorageManager.storage;
+    await box.put('emailForSignIn', email);
+
     await rpcHandler.sendSignInLinkToEmail(
         email: email, actionCodeSettings: actionCodeSettings);
+  }
+
+  @override
+  Future<UserCredential?> trySignInWithEmailLink(
+      {Future<String?> Function()? askUserForEmail}) async {
+    var url = FirebaseDart.baseUrl;
+    if (!isSignInWithEmailLink(url.toString())) {
+      return null;
+    }
+    var email = url.queryParameters['email'] ??
+        (await userStorageManager.storage).get('emailForSignIn');
+    if (email == null && askUserForEmail != null) {
+      email = await askUserForEmail();
+    }
+    if (email == null) return null;
+
+    return signInWithEmailLink(email: email, emailLink: url.toString());
   }
 
   @override

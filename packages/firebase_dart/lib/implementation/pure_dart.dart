@@ -69,6 +69,8 @@ class FirebaseDart {
           )
         : Platform.linux(isOnline: true);
 
+    baseUrl = Uri.base;
+
     launchUrl ??= _defaultLaunchUrl;
 
     authHandler ??= DefaultAuthHandler();
@@ -84,7 +86,9 @@ class FirebaseDart {
     } else {
       if (storagePath != null) {
         Hive.init(storagePath);
-      } else if (!_kIsWeb) PersistenceStorage.setupMemoryStorage();
+      } else if (!_kIsWeb) {
+        PersistenceStorage.setupMemoryStorage();
+      }
 
       initPlatform(platform);
       if (httpClient is TestClient) {
@@ -104,6 +108,8 @@ class FirebaseDart {
     if (_kIsWeb) webLaunchUrl(uri, popup: popup);
     throw UnsupportedError('Social sign in not supported on this platform.');
   }
+
+  static late final Uri baseUrl;
 }
 
 abstract class AuthHandler {

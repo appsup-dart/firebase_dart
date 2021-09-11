@@ -70,7 +70,7 @@ class AuthTab extends StatelessWidget {
                                     iOSBundleId: 'com.example.example',
                                     handleCodeInApp: true,
                                     androidInstallApp: true,
-                                    url: 'http://localhost/'));
+                                    url: Uri.base.toString()));
                             return email;
                           });
                       if (email == null) return;

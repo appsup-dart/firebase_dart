@@ -237,36 +237,68 @@ class AppPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<FirebaseApp>(
-        future: app,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return Column(
-              children: [CircularProgressIndicator()],
-              mainAxisAlignment: MainAxisAlignment.center,
-            );
-          }
-          return DefaultTabController(
-              length: 3,
-              child: Scaffold(
-                appBar: AppBar(
-                  title: Text(firebaseOptions.projectId),
-                  bottom: TabBar(
-                    tabs: [
-                      Text('auth'),
-                      Text('database'),
-                      Text('storage'),
-                    ],
-                  ),
-                ),
-                body: TabBarView(
+    return FutureBuilder<FirebaseApp>(future: app.then((app) async {
+      await FirebaseAuth.instanceFor(app: app).trySignInWithEmailLink(
+          askUserForEmail: () async {
+        var email = TextEditingController();
+        return showDialog<String>(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: Text('Please provide your email'),
+                content: Column(
                   children: [
-                    AuthTab(app: snapshot.data!),
-                    Text('database'),
-                    Text('storage'),
+                    TextFormField(
+                      controller: email,
+                    )
                   ],
                 ),
-              ));
-        });
+                actions: [
+                  TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Text(
+                          MaterialLocalizations.of(context).cancelButtonLabel)),
+                  TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(email.text);
+                      },
+                      child: Text(
+                          MaterialLocalizations.of(context).okButtonLabel)),
+                ],
+              );
+            });
+      });
+      return app;
+    }), builder: (context, snapshot) {
+      if (!snapshot.hasData) {
+        return Column(
+          children: [CircularProgressIndicator()],
+          mainAxisAlignment: MainAxisAlignment.center,
+        );
+      }
+      return DefaultTabController(
+          length: 3,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(firebaseOptions.projectId),
+              bottom: TabBar(
+                tabs: [
+                  Text('auth'),
+                  Text('database'),
+                  Text('storage'),
+                ],
+              ),
+            ),
+            body: TabBarView(
+              children: [
+                AuthTab(app: snapshot.data!),
+                Text('database'),
+                Text('storage'),
+              ],
+            ),
+          ));
+    });
   }
 }

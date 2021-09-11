@@ -433,6 +433,9 @@ abstract class FirebaseAuth {
   ///
   /// This is only supported on web based platforms.
   Future<void> setPersistence(Persistence persistence);
+
+  Future<UserCredential?> trySignInWithEmailLink(
+      {Future<String?> Function()? askUserForEmail});
 }
 
 /// A UserCredential is returned from authentication requests such as
