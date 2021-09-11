@@ -38,10 +38,6 @@ class AuthTab extends StatelessWidget {
                             context: context,
                             builder: (context) =>
                                 SignInWithEmailAndPasswordDialog(auth: auth));
-                        auth.signInWithEmailAndPassword(
-                          email: email.text,
-                          password: password.text,
-                        );
                       }),
                   TextButton(
                       child: Text('sign in with google'),
