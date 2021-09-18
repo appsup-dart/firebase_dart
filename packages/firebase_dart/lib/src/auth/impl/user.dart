@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
+import 'package:firebase_dart/src/auth/rpc/error.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
     show SetAccountInfoResponse;
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
@@ -107,6 +108,13 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       return IdTokenResultImpl(response.accessToken!);
     } on openid.OpenIdException {
       await _auth.signOut();
+      rethrow;
+    } on openid.HttpRequestException catch (e) {
+      await _auth.signOut();
+      if (e.body is Map && e.body['error'] is Map) {
+        var error = authErrorFromServerErrorCode(e.body['error']['message']);
+        if (error != null) throw error;
+      }
       rethrow;
     }
   }
