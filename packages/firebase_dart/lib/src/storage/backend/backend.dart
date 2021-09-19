@@ -33,7 +33,8 @@ class BackendConnection {
                   maxResults:
                       maxResults != null ? int.parse(maxResults) : null));
 
-          return http.Response(json.encode(v), 200);
+          return http.Response(json.encode(v), 200,
+              headers: {'Content-Type': 'application/json'});
 
         case 'POST':
           switch (request.headers['X-Goog-Upload-Protocol']) {
@@ -70,7 +71,8 @@ class BackendConnection {
               );
 
               var fullMetadata = await backend.getMetadata(location);
-              return http.Response(json.encode(fullMetadata), 200);
+              return http.Response(json.encode(fullMetadata), 200,
+                  headers: {'Content-Type': 'application/json'});
             case 'resumable':
           }
       }
@@ -84,7 +86,8 @@ class BackendConnection {
           if (metadata == null) {
             return http.Response('Not found', 404);
           }
-          return http.Response(json.encode(metadata), 200);
+          return http.Response(json.encode(metadata), 200,
+              headers: {'Content-Type': 'application/json'});
         case 'PATCH':
           var map = json.decode(request.body);
 
