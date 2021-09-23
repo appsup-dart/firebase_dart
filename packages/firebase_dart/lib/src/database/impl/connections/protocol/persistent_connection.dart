@@ -600,7 +600,9 @@ class PersistentConnectionImpl extends PersistentConnection
     if (token == null) {
       _setAuthData(null);
     }
-    _authRequest = token == null ? null : Request.auth(token);
+    if (_authTokenProvider != null) {
+      _authRequest = token == null ? null : Request.auth(token);
+    }
     _connectionState = ConnectionState.connecting;
     _connection = Connection(url: _url, delegate: this)..open();
   }
