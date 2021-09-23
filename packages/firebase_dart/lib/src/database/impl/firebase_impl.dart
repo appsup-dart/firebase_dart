@@ -142,8 +142,10 @@ class FirebaseDatabaseImpl extends FirebaseService
 }
 
 abstract class StandaloneFirebaseDatabase implements FirebaseDatabase {
-  factory StandaloneFirebaseDatabase(String databaseURL) =>
-      StandaloneFirebaseDatabaseImpl(databaseURL);
+  factory StandaloneFirebaseDatabase(String databaseURL,
+          {AuthTokenProvider? authTokenProvider}) =>
+      StandaloneFirebaseDatabaseImpl(databaseURL,
+          authTokenProvider: authTokenProvider);
 
   Future<void> delete();
 
@@ -160,13 +162,16 @@ class StandaloneFirebaseDatabaseImpl
     with BaseFirebaseDatabase
     implements StandaloneFirebaseDatabase {
   @override
+  final AuthTokenProvider? authTokenProvider;
+
+  @override
   FirebaseApp get app => throw UnsupportedError(
       'A stand-alone database does not have an associated app');
 
   @override
   final String databaseURL;
 
-  StandaloneFirebaseDatabaseImpl(String databaseURL)
+  StandaloneFirebaseDatabaseImpl(String databaseURL, {this.authTokenProvider})
       : databaseURL = BaseFirebaseDatabase.normalizeUrl(databaseURL);
 
   @override
@@ -189,9 +194,6 @@ class StandaloneFirebaseDatabaseImpl
 
   @override
   Map<String, dynamic>? get currentAuth => Repo(this).authData;
-
-  @override
-  AuthTokenProvider? get authTokenProvider => null;
 }
 
 class DataSnapshotImpl extends DataSnapshot {
