@@ -1,4 +1,4 @@
-## 1.0.0-dev.14
+## 1.0.0
 
 * Sign in with apple, facebook and google
 * Null safety
