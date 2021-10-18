@@ -4,10 +4,10 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/database.dart'
     show FirebaseDatabaseException, MutableData, TransactionHandler;
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
+import 'package:firebase_dart/src/implementation.dart';
 import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:sortedmap/sortedmap.dart';
@@ -19,7 +19,6 @@ import 'events/cancel.dart';
 import 'events/child.dart';
 import 'events/value.dart';
 import 'firebase_impl.dart' as firebase;
-import 'firebase_impl.dart';
 import 'operations/tree.dart';
 import 'synctree.dart';
 import 'tree.dart';
@@ -57,27 +56,21 @@ class Repo {
 
   late StreamSubscription _authStateChangesSubscription;
 
-  factory Repo(firebase.FirebaseDatabase db) {
+  factory Repo(firebase.BaseFirebaseDatabase db) {
     var url = Uri.parse(db.databaseURL);
 
     return _repos.putIfAbsent(db, () {
-      var auth = FirebaseAuth.instanceFor(app: db.app);
+      var authTokenProvider = db.authTokenProvider;
 
       var connection =
-          PersistentConnection(url, authTokenProvider: (refresh) async {
-        var user = await auth.authStateChanges().first;
-        if (user == null) return null;
-        var token = await user.getIdToken(refresh);
-        return token;
-      })
+          PersistentConnection(url, authTokenProvider: authTokenProvider)
             ..initialize();
 
-      return Repo._(url, connection, auth.idTokenChanges(),
-          (db as FirebaseDatabaseImpl).persistenceManager);
+      return Repo._(url, connection, authTokenProvider, db.persistenceManager);
     });
   }
 
-  Repo._(this.url, this._connection, Stream<User?> authStateChanges,
+  Repo._(this.url, this._connection, AuthTokenProvider? authTokenProvider,
       PersistenceManager persistenceManager)
       : _syncTree = SyncTree(url.toString(),
             remoteRegister: (path, filter, hash) async {
@@ -89,16 +82,30 @@ class Repo {
         }, remoteUnregister: (path, filter) async {
           await _connection.unlisten(path.join('/'), query: filter);
         }, persistenceManager: persistenceManager),
-        _infoSyncTree = SyncTree(url.toString()) {
+        _infoSyncTree =
+            SyncTree(url.replace(pathSegments: ['.info']).toString()) {
     _infoSyncTree.addEventListener(
         'value', Path.from([]), QueryFilter(), (event) {});
     _updateInfo(dotInfoAuthenticated, false);
     _updateInfo(dotInfoConnected, false);
-    _authStateChangesSubscription = authStateChanges.listen((user) async {
-      _updateInfo(dotInfoAuthenticated, user != null);
-      return _connection
-          .refreshAuthToken(user == null ? null : (await user.getIdToken()));
-    });
+    _authStateChangesSubscription =
+        (authTokenProvider?.onTokenChanged ?? Stream.empty()).listen(
+            (token) async {
+              _updateInfo(dotInfoAuthenticated, token != null);
+
+              try {
+                return _connection.refreshAuthToken(token);
+              } catch (e, tr) {
+                _logger.warning('Could not refresh auth token.', e, tr);
+              }
+            },
+            cancelOnError: true,
+            onDone: () {
+              _logger.warning('Stopped listening to auth token changes');
+            },
+            onError: (e, tr) {
+              _logger.warning('Error in auth token changed stream', e, tr);
+            });
 
     _transactions = TransactionsTree(this);
     _connection.onConnect.listen((v) {
@@ -161,7 +168,7 @@ class Repo {
   ///
   /// Returns a future that completes with the auth data on success, or fails
   /// otherwise.
-  Future<void> auth(String token) async {
+  Future<void> auth(FutureOr<String> token) async {
     await _connection.refreshAuthToken(token);
   }
 

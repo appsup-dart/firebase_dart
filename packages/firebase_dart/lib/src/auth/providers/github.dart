@@ -29,7 +29,7 @@ import 'oauth.dart';
 /// FirebaseAuth.instance.signInWithCredential(githubAuthCredential)
 ///   .then(...);
 /// ```
-class GithubAuthProvider extends AuthProvider {
+class GithubAuthProvider extends OAuthProvider {
   /// Creates a new instance.
   GithubAuthProvider() : super(PROVIDER_ID);
 
@@ -37,33 +37,6 @@ class GithubAuthProvider extends AuthProvider {
 
   /// This corresponds to the sign-in method identifier.
   static String get GITHUB_SIGN_IN_METHOD => PROVIDER_ID;
-
-  final List<String> _scopes = [];
-  Map<dynamic, dynamic> _parameters = {};
-
-  /// Returns the currently assigned scopes to this provider instance.
-  List<String> get scopes {
-    return _scopes;
-  }
-
-  /// Returns the parameters for this provider instance.
-  Map<dynamic, dynamic> get parameters {
-    return _parameters;
-  }
-
-  /// Adds GitHub OAuth scope.
-  GithubAuthProvider addScope(String scope) {
-    _scopes.add(scope);
-    return this;
-  }
-
-  /// Sets the OAuth custom parameters to pass in a GitHub OAuth
-  /// request for popup and redirect sign-in operations.
-  GithubAuthProvider setCustomParameters(
-      Map<dynamic, dynamic> customOAuthParameters) {
-    _parameters = customOAuthParameters;
-    return this;
-  }
 
   /// Create a new [GithubAuthCredential] from a provided [accessToken];
   static OAuthCredential credential(String accessToken) {

@@ -47,8 +47,11 @@ class OAuthProvider extends AuthProvider {
   }
 
   /// Create a new [OAuthCredential] from a provided [accessToken];
-  OAuthCredential credential(
-      {String? accessToken, String? idToken, String? rawNonce}) {
+  static OAuthCredential credential(
+      {required String providerId,
+      String? accessToken,
+      String? idToken,
+      String? rawNonce}) {
     return OAuthCredential(
       providerId: providerId,
       signInMethod: 'oauth',

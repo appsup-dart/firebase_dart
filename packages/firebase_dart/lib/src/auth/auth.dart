@@ -259,8 +259,6 @@ abstract class FirebaseAuth {
   ///    verification ID of the credential is not valid.id.
   Future<UserCredential> signInWithCredential(AuthCredential credential);
 
-  Future<UserCredential> signInWithOAuthProvider(String providerId);
-
   /// Authenticates a Firebase client using a popup-based OAuth authentication
   /// flow.
   ///
@@ -435,6 +433,9 @@ abstract class FirebaseAuth {
   ///
   /// This is only supported on web based platforms.
   Future<void> setPersistence(Persistence persistence);
+
+  Future<UserCredential?> trySignInWithEmailLink(
+      {Future<String?> Function()? askUserForEmail});
 }
 
 /// A UserCredential is returned from authentication requests such as

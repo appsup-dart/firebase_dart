@@ -28,7 +28,7 @@ import 'oauth.dart';
 /// FirebaseAuth.instance.signInWithCredential(googleAuthCredential)
 ///   .then(...);
 /// ```
-class GoogleAuthProvider extends AuthProvider {
+class GoogleAuthProvider extends OAuthProvider {
   /// Creates a new instance.
   GoogleAuthProvider() : super(PROVIDER_ID);
 
@@ -36,33 +36,6 @@ class GoogleAuthProvider extends AuthProvider {
   static String get GOOGLE_SIGN_IN_METHOD => PROVIDER_ID;
 
   static const String PROVIDER_ID = 'google.com';
-
-  final List<String> _scopes = [];
-  Map<dynamic, dynamic> _parameters = {};
-
-  /// Returns the currently assigned scopes to this provider instance.
-  List<String> get scopes {
-    return _scopes;
-  }
-
-  /// Returns the parameters for this provider instance.
-  Map<dynamic, dynamic> get parameters {
-    return _parameters;
-  }
-
-  /// Adds Google OAuth scope.
-  GoogleAuthProvider addScope(String scope) {
-    _scopes.add(scope);
-    return this;
-  }
-
-  /// Sets the OAuth custom parameters to pass in a Google OAuth
-  /// request for popup and redirect sign-in operations.
-  GoogleAuthProvider setCustomParameters(
-      Map<dynamic, dynamic> customOAuthParameters) {
-    _parameters = customOAuthParameters;
-    return this;
-  }
 
   /// Create a new [GoogleAuthCredential] from a provided [accessToken].
   static OAuthCredential credential({String? idToken, String? accessToken}) {

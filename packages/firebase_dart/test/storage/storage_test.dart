@@ -1,9 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:firebase_dart/src/storage/backend/memory_backend.dart';
 import 'package:firebase_dart/src/storage/impl/location.dart';
-import 'package:firebase_dart/src/storage/metadata.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -134,21 +135,160 @@ void runStorageTests({bool isolated = false}) async {
     });
     group('StorageReference.getDownloadUrl', () {
       var ref = child.child('world.txt');
-      tester.backend.metadata[Location.fromUrl(ref.toString())] =
-          FullMetadataImpl(
-              bucket: ref.storage.bucket,
-              fullPath: ref.fullPath,
-              downloadTokens: ['a,b,c']);
+      tester.backend.putData(
+          Location.fromUrl(ref.toString()), Uint8List(0), SettableMetadata());
 
       test('StorageReference.getDownloadUrl: file exists', () async {
         var url = await ref.getDownloadURL();
-        expect(url,
-            'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/hello%2Fworld.txt?alt=media&token=a');
+        var token = Uri.parse(url).queryParameters['token'];
+        expect(url.toString(),
+            'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/hello%2Fworld.txt?alt=media&token=$token');
       });
       test('StorageReference.getDownloadUrl: file does not exist', () async {
         var ref = child.child('everyone.txt');
         expect(() => ref.getDownloadURL(),
             throwsA(StorageException.objectNotFound(ref.fullPath)));
+      });
+    });
+
+    group('StorageReference.putString', () {
+      test('Uses metadata.contentType for RAW format', () async {
+        var t = await child.child('hello.txt').putString('hello',
+            format: PutStringFormat.raw,
+            metadata: SettableMetadata(contentType: 'lol/wut'));
+        expect(t.metadata!.contentType, 'lol/wut');
+      });
+
+      test('Uses embedded content type in DATA_URL format', () async {
+        var t = await child.child('hello.txt').putString(
+            'data:lol/wat;base64,aaaa',
+            format: PutStringFormat.dataUrl);
+        expect(t.metadata!.contentType, 'lol/wat');
+      });
+
+      test(
+          'Lets metadata.contentType override embedded content type in DATA_URL format',
+          () async {
+        var t = await child.child('hello.txt').putString(
+            'data:ignore/me;base64,aaaa',
+            format: PutStringFormat.dataUrl,
+            metadata: SettableMetadata(contentType: 'tomato/soup'));
+
+        expect(t.metadata!.contentType, 'tomato/soup');
+      });
+    });
+
+    group('StorageReference.putData', () {
+      test('Uses metadata.contentType', () async {
+        var t = await child
+            .child('hello.bin')
+            .putData(Uint8List(0), SettableMetadata(contentType: 'lol/wut'));
+        expect(t.metadata!.contentType, 'lol/wut');
+      });
+
+      test('uploads without error', () async {
+        var blob = Uint8List.fromList([97]);
+        var ref = child.child('hello.bin');
+        var result = await ref.putData(blob);
+        expect(result.ref, ref);
+        expect(result.metadata!.contentType, 'application/octet-stream');
+        expect(result.metadata!.size, 1);
+      });
+    });
+
+    group('StorageReference.updateMetadata', () {
+      test('should update content type', () async {
+        var ref = child.child('hello.bin');
+        var t = await ref.putData(
+            Uint8List(0), SettableMetadata(contentType: 'lol/wut'));
+        expect(t.metadata!.contentType, 'lol/wut');
+
+        var m =
+            await ref.updateMetadata(SettableMetadata(contentType: 'lol/wat'));
+        expect(m.contentType, 'lol/wat');
+      });
+
+      test('should update content language', () async {
+        var ref = child.child('hello.bin');
+        var t = await ref.putData(Uint8List(0));
+        expect(t.metadata!.contentLanguage, null);
+
+        var m =
+            await ref.updateMetadata(SettableMetadata(contentLanguage: 'nl'));
+        expect(m.contentLanguage, 'nl');
+      });
+
+      test('should update custom metadata', () async {
+        var ref = child.child('hello.bin');
+        var t = await ref.putData(Uint8List(0));
+        expect(t.metadata!.customMetadata, null);
+
+        var m = await ref
+            .updateMetadata(SettableMetadata(customMetadata: {'x': '1'}));
+        expect(m.customMetadata, {'x': '1'});
+      });
+    });
+
+    group('StorageReference.list', () {
+      test('should contain newly created items', () async {
+        await child.child('hello1.bin').putData(Uint8List(0));
+        await child.child('hello2.bin').putData(Uint8List(0));
+
+        var r = await child.listAll();
+
+        expect(r.items.map((v) => v.name),
+            containsAll(['hello1.bin', 'hello2.bin']));
+      });
+    });
+    group('StorageReference.delete', () {
+      test('should delete item', () async {
+        var ref = child.child('hello.bin');
+        await ref.putData(Uint8List(0));
+
+        await ref.delete();
+
+        expect(() => ref.getMetadata(),
+            throwsA(StorageException.objectNotFound(ref.fullPath)));
+      });
+    });
+
+    group('Argument verification', () {
+      group('StorageReference.list', () {
+        test('throws on invalid maxResults', () async {
+          expect(() => child.list(ListOptions(maxResults: 0)),
+              throwsArgumentError);
+          expect(() => child.list(ListOptions(maxResults: -4)),
+              throwsArgumentError);
+          expect(() => child.list(ListOptions(maxResults: 1001)),
+              throwsArgumentError);
+        });
+      });
+    });
+
+    group('root operations', () {
+      test('StorageReference.putData throws', () {
+        expect(() => root.putData(Uint8List(0)),
+            throwsA(StorageException.invalidRootOperation('putData')));
+      });
+      test('StorageReference.putString throws', () {
+        expect(() => root.putString('raw'),
+            throwsA(StorageException.invalidRootOperation('putString')));
+      });
+      test('StorageReference.delete throws', () {
+        expect(() => root.delete(),
+            throwsA(StorageException.invalidRootOperation('delete')));
+      });
+      test('StorageReference.getMetadata throws', () {
+        expect(() => root.getMetadata(),
+            throwsA(StorageException.invalidRootOperation('getMetadata')));
+      });
+      test('StorageReference.updateMetadata throws', () {
+        expect(() => root.updateMetadata(SettableMetadata()),
+            throwsA(StorageException.invalidRootOperation('updateMetadata')));
+      });
+      test('StorageReference.getDownloadURL throws', () {
+        expect(() => root.getDownloadURL(),
+            throwsA(StorageException.invalidRootOperation('getDownloadURL')));
       });
     });
   });

@@ -43,7 +43,8 @@ class RpcHandler {
                   'subject_types_supported': ['public'],
                   'id_token_signing_alg_values_supported': ['RS256']
                 }),
-                200);
+                200,
+                headers: {'Content-Type': 'application/json'});
           }),
           RegExp('.*'): httpClient ?? http.Client(),
         }),
@@ -905,7 +906,8 @@ class RpcHandler {
                     accessToken: response.oauthAccessToken);
               }
             }
-            return OAuthProvider(providerId).credential(
+            return OAuthProvider.credential(
+                providerId: providerId,
                 idToken: response.oauthIdToken,
                 accessToken: response.oauthAccessToken,
                 rawNonce: response.nonce);

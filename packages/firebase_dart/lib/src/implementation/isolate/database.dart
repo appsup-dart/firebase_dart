@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:rxdart/rxdart.dart';
@@ -51,7 +52,7 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
         method, app.name, databaseURL, positionalArguments, namedArguments));
   }
 
-  DateTime get serverTime => DateTime.now().add(_serverTime.value!);
+  DateTime get serverTime => DateTime.now().add(_serverTime.value);
 
   @override
   Future<void> goOffline() async {
@@ -125,8 +126,9 @@ class DatabaseFunctionCall<T> extends BaseFunctionCall<T> {
       Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
-  FirebaseDatabase get database =>
-      FirebaseDatabase(app: Firebase.app(appName), databaseURL: databaseURL);
+  BaseFirebaseDatabase get database =>
+      FirebaseDatabase(app: Firebase.app(appName), databaseURL: databaseURL)
+          as BaseFirebaseDatabase;
 
   @override
   Function? get function {

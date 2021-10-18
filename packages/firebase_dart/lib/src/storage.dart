@@ -125,10 +125,10 @@ enum TaskState {
 }
 
 /// A class which indicates an on-going download task.
-abstract class DownloadTask {}
+abstract class DownloadTask extends Task {}
 
 /// A class which indicates an on-going upload task.
-abstract class UploadTask {}
+abstract class UploadTask extends Task {}
 
 /// A [TaskSnapshot] is returned as the result or on-going process of a [Task].
 class TaskSnapshot {
@@ -407,7 +407,12 @@ class ListOptions {
   /// If provided, listing is resumed from the previous position.
   final String? pageToken;
 
-  ListOptions({this.maxResults, this.pageToken});
+  ListOptions({this.maxResults, this.pageToken}) {
+    if (maxResults != null && (maxResults! <= 0 || maxResults! > 1000)) {
+      throw ArgumentError.value(
+          maxResults, 'maxResults', 'Should be a value between 1 and 1000');
+    }
+  }
 }
 
 /// Class returned as a result of calling a list method (`list` or `listAll`) on

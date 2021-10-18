@@ -218,7 +218,7 @@ class EncodeCall<T> extends BaseFunctionCall<Future> {
 
 class IsolateFirebaseAuth extends IsolateFirebaseService
     implements FirebaseAuth {
-  final BehaviorSubject<User?> _subject = BehaviorSubject();
+  final BehaviorSubject<User?> _subject = BehaviorSubject(sync: true);
 
   Future<T> invoke<T>(Symbol method,
       [List<dynamic>? positionalArguments,
@@ -248,8 +248,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
 
   @override
   Future<ActionCodeInfo> checkActionCode(String code) async {
-    // TODO: implement checkActionCode
-    throw UnimplementedError();
+    return await invoke(#checkActionCode, [code]);
   }
 
   @override
@@ -265,7 +264,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  User? get currentUser => _subject.valueWrapper?.value;
+  User? get currentUser => _subject.valueOrNull;
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String email) async {
@@ -278,12 +277,15 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  Stream<User?> idTokenChanges() => _subject.stream;
+  Stream<User?> idTokenChanges() => _subject
+      .cast<IsolateUser?>()
+      .map((v) => v?._json['credential']['token'])
+      .distinct(const DeepCollectionEquality().equals)
+      .map((_) => currentUser);
 
   @override
   bool isSignInWithEmailLink(String link) {
-    // TODO: implement isSignInWithEmailLink
-    throw UnimplementedError();
+    return getActionCodeUrlFromSignInEmailLink(link) != null;
   }
 
   String? _languageCode;
@@ -361,10 +363,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  Stream<User> userChanges() {
-    // TODO: implement userChanges
-    throw UnimplementedError();
-  }
+  Stream<User?> userChanges() => _subject.stream;
 
   @override
   Future<String> verifyPasswordResetCode(String code) async {
@@ -396,23 +395,32 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     });
   }
 
-  @override
-  Future<UserCredential> signInWithOAuthProvider(String providerId) {
-    return invoke(#signInWithOAuthProvider, [providerId]);
-  }
-
   IsolateUser? setUser(Map<String, dynamic>? json) {
     var last = currentUser as IsolateUser?;
 
     var uid = json == null ? null : json['uid'];
     if (last?.uid != uid) {
       last = uid == null ? null : IsolateUser.fromJson(this, json!);
+    } else if (_subject.hasValue &&
+        const DeepCollectionEquality().equals(last?._json, json)) {
+      return last;
     }
     if (json != null) {
       last?._json = json;
     }
     _subject.add(last);
     return last;
+  }
+
+  @override
+  Future<UserCredential?> trySignInWithEmailLink(
+      {Future<String?> Function()? askUserForEmail}) {
+    var worker = askUserForEmail == null
+        ? null
+        : (IsolateWorker()
+          ..registerFunction(#askUserForEmail, askUserForEmail));
+
+    return invoke(#trySignInWithEmailLink, [worker?.commander]);
   }
 }
 
@@ -510,8 +518,6 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
         return auth.signInAnonymously;
       case #signInWithCredential:
         return auth.signInWithCredential;
-      case #signInWithOAuthProvider:
-        return auth.signInWithOAuthProvider;
       case #signInWithCustomToken:
         return auth.signInWithCustomToken;
       case #signInWithEmailAndPassword:
@@ -551,6 +557,17 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
       case #userChanges:
         return () =>
             auth.userChanges().map<Map<String, dynamic>?>((v) => v?.toJson());
+
+      case #trySignInWithEmailLink:
+        return (IsolateCommander? commander) {
+          auth.trySignInWithEmailLink(
+              askUserForEmail: commander == null
+                  ? null
+                  : () {
+                      return commander
+                          .execute(RegisteredFunctionCall(#askUserForEmail));
+                    });
+        };
     }
     throw UnsupportedError(
         'FirebaseAuthFunctionCall with reference $functionName not supported');

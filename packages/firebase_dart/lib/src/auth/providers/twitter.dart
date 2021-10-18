@@ -30,7 +30,7 @@ import 'oauth.dart';
 /// FirebaseAuth.instance.signInWithCredential(twitterAuthCredential)
 ///   .then(...);
 /// ```
-class TwitterAuthProvider extends AuthProvider {
+class TwitterAuthProvider extends OAuthProvider {
   /// Creates a new instance.
   TwitterAuthProvider() : super(PROVIDER_ID);
 
@@ -38,21 +38,6 @@ class TwitterAuthProvider extends AuthProvider {
 
   /// This corresponds to the sign-in method identifier.
   static String get TWITTER_SIGN_IN_METHOD => PROVIDER_ID;
-
-  Map<dynamic, dynamic> _parameters = {};
-
-  /// Returns the parameters for this provider instance.
-  Map<dynamic, dynamic> get parameters {
-    return _parameters;
-  }
-
-  /// Sets the OAuth custom parameters to pass in a Twitter OAuth request for
-  /// popup and redirect sign-in operations.
-  TwitterAuthProvider setCustomParameters(
-      Map<dynamic, dynamic> customOAuthParameters) {
-    _parameters = customOAuthParameters;
-    return this;
-  }
 
   /// Create a new [TwitterAuthCredential] from a provided [accessToken] and
   /// [secret];

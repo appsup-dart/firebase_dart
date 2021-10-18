@@ -1,11 +1,12 @@
-
-
+import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/storage.dart';
 
 import 'impl/location.dart';
 import 'impl/resource_client.dart';
+import 'impl/task.dart';
 import 'service.dart';
 
 /// Provides methods to interact with a bucket in the Firebase Storage service.
@@ -63,17 +64,10 @@ class ReferenceImpl implements Reference {
   }
 
   @override
-  Future<void> delete() {
+  Future<void> delete() async {
     _throwIfRoot('delete');
 
-/*
-    return this.authWrapper.getAuthToken().then((authToken) {
-      var requestInfo = requests.deleteObject(self.authWrapper, self.location);
-      return self.authWrapper.makeRequest(requestInfo, authToken).getFuture();
-    });
-*/
-    // TODO: implement delete
-    throw UnimplementedError();
+    await requests.deleteObject();
   }
 
   @override
@@ -104,28 +98,16 @@ class ReferenceImpl implements Reference {
 
   @override
   UploadTask putData(Uint8List data, [SettableMetadata? metadata]) {
-    // TODO: implement putData
-/*
-    args.validate(
-        'put', [args.uploadDataSpec(), args.metadataSpec(true)], arguments);
-    this._throwIfRoot('put');
-    return new UploadTask(this, this.authWrapper, this.location,
-        this.mappings(), new FbsBlob(data), metadata);
-*/
+    _throwIfRoot('putData');
 
-    throw UnimplementedError();
+    return UploadTaskImpl(this, data, metadata);
   }
 
   @override
   Future<FullMetadata> updateMetadata(SettableMetadata metadata) async {
     _throwIfRoot('updateMetadata');
 
-/* TODO
-    var requestInfo = requests.updateMetadata(
-        self.authWrapper, self.location, metadata, self.mappings());
-    return self.authWrapper.makeRequest(requestInfo, authToken).getFuture();
-*/
-    throw UnimplementedError();
+    return await requests.updateMetadata(metadata);
   }
 
   @override
@@ -136,22 +118,58 @@ class ReferenceImpl implements Reference {
   int get hashCode => location.hashCode;
 
   @override
-  Future<ListResult> list([ListOptions? options]) {
-    // TODO: implement list
-    throw UnimplementedError();
+  Future<ListResult> list([ListOptions? options]) async {
+    var v = await requests.getList(
+        delimiter: '/',
+        maxResults: options?.maxResults,
+        pageToken: options?.pageToken);
+
+    return ListResultImpl.fromJson(this, v!);
   }
 
   @override
-  Future<ListResult> listAll() {
-    // TODO: implement listAll
-    throw UnimplementedError();
+  Future<ListResult> listAll() async {
+    var v = await list();
+    var items = [...v.items];
+    var prefixes = [...v.prefixes];
+    while (v.nextPageToken != null) {
+      v = await list(ListOptions(pageToken: v.nextPageToken));
+      items.addAll(v.items);
+      prefixes.addAll(v.prefixes);
+    }
+
+    return ListResultImpl(this, items: items, prefixes: prefixes);
   }
 
   @override
   UploadTask putString(String data,
       {PutStringFormat format = PutStringFormat.raw,
       SettableMetadata? metadata}) {
-    // TODO: implement putString
-    throw UnimplementedError();
+    _throwIfRoot('putString');
+
+    var d = _dataFromString(format, data);
+    if (metadata?.contentType == null) {
+      metadata = SettableMetadata(
+          cacheControl: metadata?.cacheControl,
+          contentDisposition: metadata?.contentDisposition,
+          contentEncoding: metadata?.contentEncoding,
+          contentLanguage: metadata?.contentLanguage,
+          customMetadata: metadata?.customMetadata,
+          contentType: d.mimeType);
+    }
+    return putData(d.contentAsBytes(), metadata);
+  }
+
+  static UriData _dataFromString(PutStringFormat format, String stringData) {
+    switch (format) {
+      case PutStringFormat.raw:
+        return UriData.fromString(stringData);
+      case PutStringFormat.base64:
+        return UriData.fromBytes(base64.decode(stringData));
+      case PutStringFormat.base64Url:
+        return UriData.fromBytes(base64Url.decode(stringData));
+      case PutStringFormat.dataUrl:
+        return UriData.fromUri(Uri.parse(stringData));
+    }
   }
 }

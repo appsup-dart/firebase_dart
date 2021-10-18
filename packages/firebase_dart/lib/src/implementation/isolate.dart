@@ -20,13 +20,9 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
   final String? storagePath;
   final Platform platform;
 
-  final Function(Uri url) launchUrl;
+  final Function(Uri url, {bool popup}) launchUrl;
 
-  final Future<Map<String, dynamic>> Function() getAuthResult;
-
-  final Future<OAuthCredential?> Function(OAuthProvider provider) oauthSignIn;
-
-  final Future<void> Function(String providerId) oauthSignOut;
+  final AuthHandler authHandler;
 
   final http.Client? httpClient;
 
@@ -38,22 +34,21 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
       {required this.storagePath,
       required this.platform,
       required this.launchUrl,
-      required this.getAuthResult,
-      required this.oauthSignIn,
-      required this.oauthSignOut,
+      required this.authHandler,
       this.httpClient});
 
   Future<IsolateCommander> _setup() async {
-    var worker = IsolateWorker()
-      ..registerFunction(#oauthSignOut, oauthSignOut)
-      ..registerFunction(#oauthSignIn, oauthSignIn)
-      ..registerFunction(#launchUrl, launchUrl)
-      ..registerFunction(#getAuthResult, getAuthResult);
+    var worker = IsolateWorker()..registerFunction(#launchUrl, launchUrl);
+    var commander =
+        await IsolateWorker.startWorkerInIsolate(debugName: 'firebase');
 
-    var commander = await IsolateWorker.startWorkerInIsolate();
-
-    await commander.execute(StaticFunctionCall(_setupInIsolate,
-        [storagePath, platform, worker.commander, httpClient]));
+    await commander.execute(StaticFunctionCall(_setupInIsolate, [
+      storagePath,
+      platform,
+      worker.commander,
+      IsolateAuthHandler.from(authHandler),
+      httpClient
+    ]));
 
     return commander;
   }
@@ -73,25 +68,17 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
     String? storagePath,
     Platform? platform,
     IsolateCommander commander,
+    AuthHandler authHandler,
     http.Client? httpClient,
   ) async {
     _registerFunctions();
     FirebaseDart.setup(
         storagePath: storagePath,
         platform: platform,
-        oauthSignOut: (providerId) {
-          return commander
-              .execute(RegisteredFunctionCall(#oauthSignOut, [providerId]));
-        },
-        oauthSignIn: (providerId) {
-          return commander
-              .execute(RegisteredFunctionCall(#oauthSignIn, [providerId]));
-        },
-        launchUrl: (url) {
-          return commander.execute(RegisteredFunctionCall(#launchUrl, [url]));
-        },
-        getAuthResult: () {
-          return commander.execute(RegisteredFunctionCall(#getAuthResult));
+        authHandler: authHandler,
+        launchUrl: (url, {bool popup = false}) {
+          return commander.execute(
+              RegisteredFunctionCall(#launchUrl, [url], {#popup: popup}));
         },
         httpClient: httpClient);
   }
@@ -116,7 +103,7 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
   @override
   FirebaseDatabase createDatabase(IsolateFirebaseApp app,
       {String? databaseURL}) {
-    databaseURL = FirebaseDatabaseImpl.normalizeUrl(
+    databaseURL = BaseFirebaseDatabase.normalizeUrl(
         databaseURL ?? app.options.databaseURL);
     return FirebaseService.findService<IsolateFirebaseDatabase>(
             app, (s) => s.databaseURL == databaseURL) ??
@@ -151,4 +138,48 @@ abstract class IsolateFirebaseService extends FirebaseService {
 
   @override
   IsolateFirebaseApp get app => super.app as IsolateFirebaseApp;
+}
+
+class IsolateAuthHandler implements AuthHandler {
+  late final IsolateCommander _commander;
+
+  IsolateAuthHandler.from(AuthHandler authHandler) {
+    var worker = IsolateWorker()
+      ..registerFunction(#getSignInResult, (String appName) {
+        var app = Firebase.app(appName);
+        return authHandler.getSignInResult(app);
+      })
+      ..registerFunction(#signIn, (String appName, AuthProvider provider,
+          {bool isPopup = false}) {
+        var app = Firebase.app(appName);
+        return authHandler.signIn(app, provider, isPopup: isPopup);
+      })
+      ..registerFunction(#signOut, (String appName, String uid) {
+        var app = Firebase.app(appName);
+        var user = FirebaseAuth.instanceFor(app: app).currentUser;
+        assert(user?.uid == uid);
+        return authHandler.signOut(app, user!);
+      });
+
+    _commander = worker.commander;
+  }
+
+  @override
+  Future<AuthCredential?> getSignInResult(FirebaseApp app) {
+    return _commander
+        .execute(RegisteredFunctionCall(#getSignInResult, [app.name]));
+  }
+
+  @override
+  Future<bool> signIn(FirebaseApp app, AuthProvider provider,
+      {bool isPopup = false}) {
+    return _commander.execute(RegisteredFunctionCall(
+        #signIn, [app.name, provider], {#isPopup: isPopup}));
+  }
+
+  @override
+  Future<void> signOut(FirebaseApp app, User user) {
+    return _commander
+        .execute(RegisteredFunctionCall(#signOut, [app.name, user.uid]));
+  }
 }

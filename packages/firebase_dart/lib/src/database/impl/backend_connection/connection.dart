@@ -25,8 +25,13 @@ class BackendConnection {
         .asyncMap(_onMessage)
         .listen((_) => null, onDone: close);
 
-    sendMessage(HandshakeMessage(
-        HandshakeInfo(DateTime.now(), '5', host, '${nextSessionId++}')));
+    sendMessage(HandshakeMessage(HandshakeInfo(
+        DateTime.now().add(Duration(
+            milliseconds:
+                -2)), // add some artificial delay to mimic a realistic server
+        '5',
+        host,
+        '${nextSessionId++}')));
   }
 
   void close() {
@@ -58,7 +63,7 @@ class BackendConnection {
           await backend.auth(Auth(
               uid: t.claims.subject ?? t.claims['d']['uid'],
               provider: t.claims['provider_id'] ?? t.claims['d']['provider'],
-              token: t.claims['d'] ?? t.claims.toJson()!));
+              token: t.claims['d'] ?? t.claims.toJson()));
           break;
         case DataMessage.actionUnauth:
           await backend.auth(null);

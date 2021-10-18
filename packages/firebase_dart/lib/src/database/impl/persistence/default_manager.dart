@@ -1,12 +1,12 @@
-
-
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:logging/logging.dart';
 
 import '../data_observer.dart';
 import '../query_spec.dart';
+import '../synctree.dart';
 import '../treestructureddata.dart';
+import '../view.dart';
 import 'engine.dart';
 import 'manager.dart';
 import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
@@ -52,16 +52,10 @@ class DefaultPersistenceManager implements PersistenceManager {
 
   bool _completeQueryContains(
       QueryFilter masterFilter, IncompleteData data, QueryFilter f) {
-    if (f == masterFilter) return true;
-    if (f.orderBy != masterFilter.orderBy) return false;
-    if (!masterFilter.limits) return true;
-    return data.value.children
-        .filteredMapView(
-            start: f.validInterval.start,
-            end: f.validInterval.end,
-            limit: f.limit,
-            reversed: f.reversed)
-        .isComplete;
+    var v = MasterView(masterFilter)
+      ..applyOperation(TreeOperation.overwrite(Path.from([]), data.value),
+          ViewOperationSource.server, null);
+    return v.contains(f);
   }
 
   @override

@@ -84,8 +84,8 @@ class FirebaseAuthException extends FirebaseException {
             'cancelled-popup-request',
             'This operation has been cancelled due to another conflicting popup '
                 'being opened');
-  FirebaseAuthException.internalError()
-      : this('internal-error', 'An internal error has occurred');
+  FirebaseAuthException.internalError([String? message])
+      : this('internal-error', message ?? 'An internal error has occurred');
   FirebaseAuthException.invalidApiKey()
       : this('invalid-api-key',
             'Your API key is invalid, please check you have copied it correctly');

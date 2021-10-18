@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
+import 'package:firebase_dart/src/auth/rpc/error.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
     show SetAccountInfoResponse;
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
@@ -29,9 +30,10 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   bool get isDestroyed => _destroyed;
 
-  final BehaviorSubject<String?> _tokenUpdates = BehaviorSubject();
+  final BehaviorSubject<String?> _tokenUpdates = BehaviorSubject(sync: true);
 
-  late final BehaviorSubject<User> _updates = BehaviorSubject.seeded(this);
+  late final BehaviorSubject<User> _updates =
+      BehaviorSubject.seeded(this, sync: true);
 
   FirebaseUserImpl(this._auth, this._credential, [this._authDomain]);
 
@@ -74,7 +76,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     return user;
   }
 
-  Stream<String?> get accessTokenChanged => _tokenUpdates.stream.distinct();
+  Stream<String?> get accessTokenChanged => _tokenUpdates.distinct();
 
   Stream<User> get userChanged => _updates.stream;
 
@@ -95,15 +97,26 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   Future<IdTokenResult> getIdTokenResult([bool refresh = false]) async {
     _checkDestroyed();
 
-    var response = await _credential.getTokenResponse(refresh);
-
-    // Only if the access token is refreshed, notify Auth listeners.
-    if (response.accessToken != _lastAccessToken) {
-      _lastAccessToken = response.accessToken;
-      // Auth state change, notify listeners.
-      _tokenUpdates.add(response.accessToken);
+    try {
+      var response = await _credential.getTokenResponse(refresh);
+      // Only if the access token is refreshed, notify Auth listeners.
+      if (response.accessToken != _lastAccessToken) {
+        _lastAccessToken = response.accessToken;
+        // Auth state change, notify listeners.
+        _tokenUpdates.add(response.accessToken);
+      }
+      return IdTokenResultImpl(response.accessToken!);
+    } on openid.OpenIdException {
+      await _auth.signOut();
+      rethrow;
+    } on openid.HttpRequestException catch (e) {
+      await _auth.signOut();
+      if (e.body is Map && e.body['error'] is Map) {
+        var error = authErrorFromServerErrorCode(e.body['error']['message']);
+        if (error != null) throw error;
+      }
+      rethrow;
     }
-    return IdTokenResultImpl(response.accessToken!);
   }
 
   void destroy() {
@@ -303,8 +316,10 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       return _checkDestroyed();
     }
     var idToken = await getIdToken();
-    var response = await _rpcHandler.updateProfile(
-        idToken, {'displayName': displayName, 'photoUrl': photoURL});
+    var response = await _rpcHandler.updateProfile(idToken, {
+      if (displayName != null) 'displayName': displayName,
+      if (photoURL != null) 'photoUrl': photoURL
+    });
 
     // Calls to SetAccountInfo may invalidate old tokens.
     _updateTokensIfPresent(response);
@@ -400,11 +415,19 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     if (duration == Duration()) return Future.microtask(() => null);
     var completer = Completer<void>();
     late Function() callback;
-    var timer = Timer(duration, () async {
-      callback();
+
+    // When a device goes in stand by for x minutes, a regular timer will fire x
+    // minutes later than foreseen. Therefore, we check every 5 seconds if time
+    // to fire has passed instead.
+    var timeToFire = clock.now().add(duration);
+    var timer = Timer.periodic(Duration(seconds: 5), (timer) async {
+      if (clock.now().isAfter(timeToFire)) {
+        callback();
+      }
     });
     _timers.add(timer);
     callback = () {
+      timer.cancel();
       _timers.remove(timer);
       completer.complete();
     };
@@ -509,6 +532,12 @@ class IdTokenResultImpl extends IdTokenResult {
   @override
   String? get signInProvider =>
       (_idToken.claims['firebase'] ?? {})['sign_in_provider'];
+
+  @override
+  int get hashCode => token.hashCode;
+
+  @override
+  bool operator ==(other) => other is IdTokenResultImpl && other.token == token;
 }
 
 AdditionalUserInfo createAdditionalUserInfo(

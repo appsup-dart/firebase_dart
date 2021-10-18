@@ -1,6 +1,7 @@
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/database.dart';
+import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
@@ -13,19 +14,13 @@ import '../implementation.dart';
 class PureDartFirebaseImplementation extends FirebaseImplementation {
   final http.Client? _httpClient;
 
-  final Function(Uri url) launchUrl;
+  final Function(Uri url, {bool popup}) launchUrl;
 
-  final Future<Map<String, dynamic>> Function() getAuthResult;
-
-  final Future<OAuthCredential?> Function(OAuthProvider provider) oauthSignIn;
-
-  final Future<void> Function(String providerId) oauthSignOut;
+  final AuthHandler authHandler;
 
   PureDartFirebaseImplementation(
       {required this.launchUrl,
-      required this.getAuthResult,
-      required this.oauthSignIn,
-      required this.oauthSignOut,
+      required this.authHandler,
       http.Client? httpClient})
       : _httpClient = httpClient;
 
@@ -37,7 +32,7 @@ class PureDartFirebaseImplementation extends FirebaseImplementation {
             app,
             (s) =>
                 s.databaseURL ==
-                FirebaseDatabaseImpl.normalizeUrl(
+                BaseFirebaseDatabase.normalizeUrl(
                     databaseURL ?? app.options.databaseURL)) ??
         FirebaseDatabaseImpl(app: app, databaseURL: databaseURL);
   }

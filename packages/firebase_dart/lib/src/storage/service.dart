@@ -1,6 +1,7 @@
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
+import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -19,11 +20,9 @@ class FirebaseStorageImpl extends FirebaseService implements FirebaseStorage {
       : _bucket =
             Location.fromBucketSpec(storageBucket ?? app.options.storageBucket),
         httpClient = HttpClient(httpClient ?? http.Client(), () async {
-          var user = FirebaseAuth.instanceFor(app: app).currentUser;
-          if (user == null) return null;
-
-          var token = await user.getIdToken();
-          return token;
+          return AuthTokenProvider.fromFirebaseAuth(
+                  FirebaseAuth.instanceFor(app: app))
+              .getToken();
         }),
         super(app);
 

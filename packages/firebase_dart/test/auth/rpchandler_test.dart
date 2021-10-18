@@ -1242,8 +1242,10 @@ void main() {
           test('verifyAssertion: need confirmation error: nonce id token',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider.credential(
+                providerId: 'oidc.provider',
+                idToken: 'OIDC_ID_TOKEN',
+                rawNonce: 'NONCE');
 
             await tester.shouldFail(
               expectedBody: {
@@ -1271,8 +1273,10 @@ void main() {
           test('verifyAssertion: need confirmation error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider.credential(
+                providerId: 'oidc.provider',
+                idToken: 'OIDC_ID_TOKEN',
+                rawNonce: 'NONCE');
 
             await tester.shouldFail(
               expectedBody: {
@@ -1416,8 +1420,10 @@ void main() {
               'verifyAssertion: credentials already in use error: nonce id token',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider.credential(
+                providerId: 'oidc.provider',
+                idToken: 'OIDC_ID_TOKEN',
+                rawNonce: 'NONCE');
             await tester.shouldFail(
                 expectedBody: {
                   'postBody':
@@ -1445,8 +1451,10 @@ void main() {
               'verifyAssertion: credentials already in use error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider.credential(
+                providerId: 'oidc.provider',
+                idToken: 'OIDC_ID_TOKEN',
+                rawNonce: 'NONCE');
             await tester.shouldFail(
               expectedBody: {
                 'postBody': 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
@@ -1538,8 +1546,10 @@ void main() {
           });
           test('verifyAssertion: email exists error: nonce id token', () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider.credential(
+                providerId: 'oidc.provider',
+                idToken: 'OIDC_ID_TOKEN',
+                rawNonce: 'NONCE');
             await tester.shouldFail(
                 expectedBody: {
                   'postBody':
@@ -1566,8 +1576,10 @@ void main() {
           test('verifyAssertion: email exists error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
-            var credential = OAuthProvider('oidc.provider')
-                .credential(idToken: 'OIDC_ID_TOKEN', rawNonce: 'NONCE');
+            var credential = OAuthProvider.credential(
+                providerId: 'oidc.provider',
+                idToken: 'OIDC_ID_TOKEN',
+                rawNonce: 'NONCE');
             await tester.shouldFail(
               expectedBody: {
                 'postBody': 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',

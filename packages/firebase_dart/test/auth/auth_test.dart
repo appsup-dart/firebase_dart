@@ -33,14 +33,18 @@ void runAuthTests({bool isolated = false}) async {
   var auth = tester.auth;
 
   group('FirebaseAuth', () {
+    setUp(() async {
+      await auth.signOut();
+      await Future.delayed(Duration(milliseconds: 1));
+    });
     group('FirebaseAuth.signInAnonymously', () {
       test('FirebaseAuth.signInAnonymously: success', () async {
         var result = await auth.signInAnonymously() as UserCredentialImpl;
 
         expect(result.user!.uid, hasLength(24));
         expect(result.credential, isNull);
-        expect(result.additionalUserInfo.providerId, isNull);
-        expect(result.additionalUserInfo.isNewUser, isTrue);
+        expect(result.additionalUserInfo!.providerId, isNull);
+        expect(result.additionalUserInfo!.isNewUser, isTrue);
         expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
 
         expect(result.user!.isAnonymous, isTrue);
@@ -70,7 +74,14 @@ void runAuthTests({bool isolated = false}) async {
             'client_id': '',
             'client_secret': null,
             'nonce': null,
-            'token': <String, dynamic>{'accessToken': jwt}
+            'token': <String, dynamic>{
+              'access_token': jwt,
+              'expires_at': DateTime.now()
+                      .add(Duration(hours: 1))
+                      .millisecondsSinceEpoch ~/
+                  1000,
+              'expires_in': '3600'
+            }
           },
           'isAnonymous': true,
           'providerData': [
@@ -101,7 +112,6 @@ void runAuthTests({bool isolated = false}) async {
         // All listeners should be called once with the saved anonymous user.
         var stateChanged = 0;
         var s = auth.authStateChanges().listen((user) {
-          print('auth state changes ${user?.uid}');
           stateChanged++;
           expect(stateChanged, 1);
           expect(user!.uid, uid);
@@ -140,8 +150,8 @@ void runAuthTests({bool isolated = false}) async {
 
         expect(result.user!.uid, 'user1');
         expect(result.credential, isNull);
-        expect(result.additionalUserInfo.providerId, 'password');
-        expect(result.additionalUserInfo.isNewUser, isFalse);
+        expect(result.additionalUserInfo!.providerId, 'password');
+        expect(result.additionalUserInfo!.isNewUser, isFalse);
         expect(result.operationType, UserCredentialImpl.operationTypeSignIn);
 
         expect(result.user!.isAnonymous, isFalse);
@@ -250,6 +260,8 @@ void runAuthTests({bool isolated = false}) async {
             email: expectedEmail, password: expectedNewPassword);
 
         expect(r.user!.email, expectedEmail);
+
+        await auth.confirmPasswordReset(expectedCode, 'password');
       });
 
       test('FirebaseAuth.confirmPasswordReset: error', () async {
@@ -290,6 +302,251 @@ void runAuthTests({bool isolated = false}) async {
 
         expect(r.user!.uid, 'user1');
         expect(r.user!.phoneNumber, phoneNumber);
+      });
+    });
+
+    group('FirebaseAuth.authStateChanges', () {
+      test(
+          'FirebaseAuth.authStateChanges: should emit values when user signs in or out',
+          () async {
+        var values = <User?>[];
+        auth.authStateChanges().listen((v) => values.add(v));
+
+        // when not logged in, should emit null
+        await Future.delayed(Duration(milliseconds: 1));
+        expect(values, [null]);
+        values.clear();
+
+        // when signing in, should emit a User instance
+        await auth.signInAnonymously();
+        expect(values.single, isA<User>());
+        values.clear();
+
+        // reload should not emit event
+        await auth.currentUser!.reload();
+        expect(values.isEmpty, true);
+
+        // refresh id token should not emit event
+        await auth.currentUser!.getIdToken(true);
+        expect(values.isEmpty, true);
+
+        // signing out should emit event
+        await auth.signOut();
+        await Future.delayed(Duration(milliseconds: 1));
+        expect(values.single, null);
+      });
+    });
+
+    group('FirebaseAuth.idTokenChanges', () {
+      test(
+          'FirebaseAuth.idTokenChanges: should emit values when user signs in or out or id token changes',
+          () async {
+        var values = <User?>[];
+        auth.idTokenChanges().listen((v) => values.add(v));
+
+        // when not logged in, should emit null
+        await Future.delayed(Duration(milliseconds: 1));
+        expect(values, [null]);
+        values.clear();
+
+        // when signing in, should emit a User instance
+        await auth.signInAnonymously();
+        expect(values.single, isA<User>());
+        values.clear();
+
+        // reload should not emit event
+        await auth.currentUser!.reload();
+        expect(values.isEmpty, true);
+
+        // refresh id token should emit an event
+        await auth.currentUser!.getIdToken(true);
+        await Future.delayed(Duration(milliseconds: 1));
+        expect(values.isEmpty, false);
+        values.clear();
+
+        // signing out should emit event
+        await auth.signOut();
+        await Future.delayed(Duration(milliseconds: 1));
+        expect(values.single, null);
+      });
+    });
+    group('FirebaseAuth.userChanges', () {
+      test(
+          'FirebaseAuth.userChanges: should emit values when user signs in or out or id token changes or user data changes',
+          () async {
+        var values = <User?>[];
+        auth.userChanges().listen((v) => values.add(v));
+
+        // when not logged in, should emit null
+        await Future.delayed(Duration(milliseconds: 1));
+        expect(values, [null]);
+        values.clear();
+
+        // when signing in, should emit a User instance
+        await auth.signInAnonymously();
+        expect(values.single, isA<User>());
+        values.clear();
+
+        // refresh id token should emit an event
+        await auth.currentUser!.getIdToken(true);
+        await Future.delayed(Duration(milliseconds: 1));
+        expect(values.isEmpty, false);
+        values.clear();
+
+        // updating user data should emit an event
+        await auth.currentUser!.updateProfile(displayName: 'Jane Doe');
+        expect(values.isEmpty, false);
+        values.clear();
+
+        // signing out should emit event
+        await auth.signOut();
+        await Future.delayed(Duration(milliseconds: 1));
+        expect(values.single, null);
+      });
+    });
+
+    group('FirebaseAuth.signInWithCredential', () {
+      test('FirebaseAuth.signInWithCredential: success', () async {
+        var expectedGoogleCredential = GoogleAuthProvider.credential(
+            idToken: createMockGoogleIdToken(uid: 'google_user_1'),
+            accessToken: 'googleAccessToken');
+        var r = await auth.signInWithCredential(expectedGoogleCredential);
+
+        expect(r.user!.uid, 'user1');
+      });
+      test('FirebaseAuth.signInWithCredential: email/pass credential',
+          () async {
+        var r = await auth.signInWithCredential(EmailAuthProvider.credential(
+            email: 'user@example.com', password: 'password'));
+
+        expect(r.user!.uid, 'user1');
+      });
+      test('FirebaseAuth.signInWithCredential: error', () async {
+        var expectedGoogleCredential = GoogleAuthProvider.credential(
+            idToken: createMockGoogleIdToken(
+                uid: 'google_user_2', email: 'user@example.com'),
+            accessToken: 'googleAccessToken');
+        expect(auth.signInWithCredential(expectedGoogleCredential),
+            throwsA(FirebaseAuthException.needConfirmation()));
+      });
+    });
+
+    group('FirebaseAuth.checkActionCode', () {
+      test('FirebaseAuth.checkActionCode: success', () async {
+        var code = await tester.backend
+            .createActionCode('PASSWORD_RESET', 'user@example.com');
+        var v = await auth.checkActionCode(code!);
+
+        expect(v.operation, ActionCodeInfoOperation.passwordReset);
+        expect(v.data['email'], 'user@example.com');
+      });
+
+      test('FirebaseAuth.checkActionCode: error', () async {
+        expect(() => auth.checkActionCode('PASSWORD_RESET_CODE'),
+            throwsA(FirebaseAuthException.invalidOobCode()));
+      });
+    });
+
+    group('FirebaseAuth.applyActionCode', () {
+      test('FirebaseAuth.applyActionCode: success', () async {
+        var code = await tester.backend
+            .createActionCode('EMAIL_VERIFICATION_CODE', 'user@example.com');
+        await auth.applyActionCode(code!);
+      });
+
+      test('FirebaseAuth.applyActionCode: error', () async {
+        expect(() => auth.applyActionCode('EMAIL_VERIFICATION_CODE'),
+            throwsA(FirebaseAuthException.invalidOobCode()));
+      });
+    });
+
+    group('FirebaseAuth.isSignInWithEmailLink', () {
+      test('FirebaseAuth.isSignInWithEmailLink', () {
+        var emailLink1 = 'https://www.example.com/action?mode=signIn&'
+            'oobCode=oobCode&apiKey=API_KEY';
+        var emailLink2 = 'https://www.example.com/action?mode=verifyEmail&'
+            'oobCode=oobCode&apiKey=API_KEY';
+        var emailLink3 = 'https://www.example.com/action?mode=signIn';
+        expect(auth.isSignInWithEmailLink(emailLink1), true);
+        expect(auth.isSignInWithEmailLink(emailLink2), false);
+        expect(auth.isSignInWithEmailLink(emailLink3), false);
+      });
+      test('FirebaseAuth.isSignInWithEmailLink: deep link', () {
+        var deepLink1 =
+            'https://www.example.com/action?mode=signIn&oobCode=oobCode'
+            '&apiKey=API_KEY';
+        var deepLink2 = 'https://www.example.com/action?mode=verifyEmail&'
+            'oobCode=oobCode&apiKey=API_KEY';
+        var deepLink3 = 'https://www.example.com/action?mode=signIn';
+
+        var emailLink1 = 'https://example.app.goo.gl/?link=' +
+            Uri.encodeComponent(deepLink1);
+        var emailLink2 = 'https://example.app.goo.gl/?link=' +
+            Uri.encodeComponent(deepLink2);
+        var emailLink3 = 'https://example.app.goo.gl/?link=' +
+            Uri.encodeComponent(deepLink3);
+        var emailLink4 = 'comexampleiosurl://google/link?deep_link_id=' +
+            Uri.encodeComponent(deepLink1);
+
+        expect(auth.isSignInWithEmailLink(emailLink1), true);
+        expect(auth.isSignInWithEmailLink(emailLink2), false);
+        expect(auth.isSignInWithEmailLink(emailLink3), false);
+        expect(auth.isSignInWithEmailLink(emailLink4), true);
+      });
+    });
+
+    group('FirebaseAuth.signInWithEmailLink', () {
+      test('FirebaseAuth.signInWithEmailLink: success', () async {
+        var expectedEmail = 'user@example.com';
+        var code = await tester.backend
+            .createActionCode('EMAIL_SIGNIN', expectedEmail);
+        var expectedLink =
+            'https://www.example.com?mode=signIn&oobCode=$code&apiKey=API_KEY';
+
+        var r = await auth.signInWithEmailLink(
+            email: expectedEmail, emailLink: expectedLink);
+
+        expect(r.additionalUserInfo!.providerId, 'password');
+        expect(r.additionalUserInfo!.isNewUser, false);
+        expect(r.user!.email, 'user@example.com');
+      });
+
+      test('FirebaseAuth.signInWithEmailLink: deep link success', () async {
+        var expectedEmail = 'user@example.com';
+        var code = await tester.backend
+            .createActionCode('EMAIL_SIGNIN', expectedEmail);
+        var deepLink =
+            'https://www.example.com?mode=signIn&oobCode=$code&apiKey=API_KEY';
+        var expectedLink =
+            'https://example.app.goo.gl/?link=' + Uri.encodeComponent(deepLink);
+
+        var r = await auth.signInWithEmailLink(
+            email: expectedEmail, emailLink: expectedLink);
+
+        expect(r.additionalUserInfo!.providerId, 'password');
+        expect(r.additionalUserInfo!.isNewUser, false);
+        expect(r.user!.email, 'user@example.com');
+      });
+      test('FirebaseAuth.signInWithEmailLink: invalid link error', () async {
+        var expectedEmail = 'user@example.com';
+        var expectedLink = 'https://www.example.com?mode=signIn';
+
+        expect(
+            () => auth.signInWithEmailLink(
+                email: expectedEmail, emailLink: expectedLink),
+            throwsA(
+                FirebaseAuthException.argumentError('Invalid email link!')));
+      });
+    });
+
+    group('FirebaseAuth.verifyPasswordResetCode', () {
+      test('FirebaseAuth.verifyPasswordResetCode: success', () async {
+        var expectedEmail = 'user@example.com';
+        var code = await tester.backend
+            .createActionCode('PASSWORD_RESET', expectedEmail);
+
+        var email = await auth.verifyPasswordResetCode(code!);
+        expect(email, expectedEmail);
       });
     });
   });
@@ -413,7 +670,9 @@ class Tester {
       ..rawPassword = 'password'
       ..providerUserInfo = [
         UserInfoProviderUserInfo()..providerId = 'password',
-        UserInfoProviderUserInfo()..providerId = 'google.com',
+        UserInfoProviderUserInfo()
+          ..providerId = 'google.com'
+          ..rawId = 'google_user_1',
       ]);
 
     return Tester._(app, backend.authBackend);

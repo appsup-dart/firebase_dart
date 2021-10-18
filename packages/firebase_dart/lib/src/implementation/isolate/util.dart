@@ -184,7 +184,8 @@ class IsolateWorker {
 
   IsolateCommander get commander => IsolateCommander._(_receivePort.sendPort);
 
-  static Future<IsolateCommander> startWorkerInIsolate() async {
+  static Future<IsolateCommander> startWorkerInIsolate(
+      {String? debugName}) async {
     var port = ReceivePort();
     var errors = ReceivePort();
 
@@ -196,7 +197,7 @@ class IsolateWorker {
       Zone.current.handleUncaughtError(error, stackTrace);
     });
     await Isolate.spawn(_isolateEntry, port.sendPort,
-        errorsAreFatal: false, onError: errors.sendPort);
+        errorsAreFatal: false, onError: errors.sendPort, debugName: debugName);
 
     var commander = await port.cast<IsolateCommander>().first;
 

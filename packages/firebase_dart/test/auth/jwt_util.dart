@@ -1,5 +1,3 @@
-
-
 import 'dart:math';
 
 import 'package:clock/clock.dart';
@@ -10,6 +8,13 @@ final key = JsonWebKey.fromJson({
   'k':
       'AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow'
 });
+
+String createMockGoogleIdToken({required String uid, String? email}) {
+  var builder = JsonWebSignatureBuilder()
+    ..jsonContent = {'sub': uid, if (email != null) 'email': email}
+    ..addRecipient(key);
+  return builder.build().toCompactSerialization();
+}
 
 String createMockJwt({String? uid, String? providerId}) {
   var builder = JsonWebSignatureBuilder()

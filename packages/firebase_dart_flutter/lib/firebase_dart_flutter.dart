@@ -1,16 +1,14 @@
 import 'dart:async';
-import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart_flutter/src/auth_handlers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
 import 'package:package_info/package_info.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:hive/hive.dart';
 
 class FirebaseDartFlutter {
   static const _channel = const MethodChannel('firebase_dart_flutter');
@@ -25,63 +23,26 @@ class FirebaseDartFlutter {
     if (!kIsWeb) {
       var appDir = await getApplicationDocumentsDirectory();
       path = appDir.path;
+      if (isolated) {
+        Hive.init(path);
+      }
     }
 
     FirebaseDart.setup(
         storagePath: path,
         isolated: isolated,
-        launchUrl: (url) async {
-          await launch(url.toString());
-        },
-        getAuthResult: () async {
-          if (!kIsWeb && platform_info.Platform.instance.isAndroid) {
-            return (await _channel
-                .invokeMapMethod<String, dynamic>('getAuthResult'))!;
-          }
-
-          throw UnimplementedError();
-        },
-        oauthSignIn: (provider) async {
-          switch (provider.providerId) {
-            case 'facebook.com':
-              var facebookLogin = FacebookAuth.instance;
-              var accessToken = await facebookLogin.login();
-
-              return FacebookAuthProvider.credential(accessToken.token);
-            case 'google.com':
-              var account = await GoogleSignIn().signIn();
-              var auth = await account!.authentication;
-              return GoogleAuthProvider.credential(
-                  idToken: auth.idToken!, accessToken: auth.accessToken!);
-            case 'apple.com':
-              if (!platform_info.Platform.instance.isIOS) {
-                return null;
-              }
-              final credential = await SignInWithApple.getAppleIDCredential(
-                scopes: [
-                  AppleIDAuthorizationScopes.email,
-                  AppleIDAuthorizationScopes.fullName,
-                ],
-              );
-              return provider.credential(
-                  idToken: credential.identityToken!,
-                  accessToken: credential.authorizationCode);
-          }
-
-          return null;
-        },
-        oauthSignOut: (providerId) async {
-          switch (providerId) {
-            case 'facebook.com':
-              var facebookLogin = FacebookAuth.instance;
-              await facebookLogin.logOut();
-              return;
-            case 'google.com':
-              await GoogleSignIn().signOut();
-              return;
-          }
-          return null;
-        },
+        launchUrl: kIsWeb
+            ? null
+            : (url, {bool popup = false}) async {
+                await launch(url.toString());
+              },
+        authHandler: AuthHandler.from([
+          GoogleAuthHandler(),
+          FacebookAuthHandler(),
+          AppleAuthHandler(),
+          AndroidAuthHandler(),
+          AuthHandler(),
+        ]),
         platform: await _getPlatform());
   }
 

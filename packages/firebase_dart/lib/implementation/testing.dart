@@ -13,10 +13,12 @@ import 'package:firebase_dart/src/implementation/isolate/util.dart';
 import 'package:firebase_dart/src/storage/backend/backend.dart' as storage;
 import 'package:firebase_dart/src/storage/backend/memory_backend.dart'
     as storage;
+import 'package:firebase_dart/src/storage/backend/memory_backend.dart';
 import 'package:firebase_dart/src/util/proxy.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 import 'package:jose/jose.dart';
+import 'package:openid_client/openid_client.dart';
 
 export 'package:firebase_dart/src/auth/backend/backend.dart' show BackendUser;
 
@@ -28,13 +30,17 @@ class FirebaseTesting {
         var auth =
             BackendImpl.getAuthBackendByApiKey(projectId) as StoreBackend;
         return StoreBackend(
-            users: IsolateStore.forStore(auth.users),
-            smsCodes: IsolateStore.forStore(auth.smsCodes),
-            projectId: projectId,
-            tokenSigningKey: BackendImpl._tokenSigningKey);
+          users: IsolateStore.forStore(auth.users),
+          smsCodes: IsolateStore.forStore(auth.smsCodes),
+          settings: IsolateStore.forStore(auth.settings),
+          projectId: projectId,
+        );
       })
       ..registerFunction(#getStorageBackend, (bucket) {
-        return BackendImpl.getStorageBackend(bucket);
+        var storage = BackendImpl.getStorageBackend(bucket);
+
+        return MemoryStorageBackend(
+            items: IsolateStore.forStore(storage.items));
       })
       ..registerFunction(
           #getTokenSigningKey, () => BackendImpl._tokenSigningKey);
@@ -79,7 +85,8 @@ class TestClient extends http.BaseClient {
             json.encode({
               'keys': [await client.getTokenSigningKey()]
             }),
-            200);
+            200,
+            headers: {'Content-Type': 'application/json'});
       }),
       RegExp('https://securetoken.google.com/.*/.well-known/openid-configuration'):
           http.MockClient((request) async {
@@ -93,7 +100,8 @@ class TestClient extends http.BaseClient {
               'subject_types_supported': ['public'],
               'id_token_signing_alg_values_supported': ['RS256']
             }),
-            200);
+            200,
+            headers: {'Content-Type': 'application/json'});
       }),
       RegExp('https://securetoken.googleapis.com/v1/token'):
           http.MockClient((request) async {
@@ -105,21 +113,27 @@ class TestClient extends http.BaseClient {
         var authBackend = await client.getAuthBackend(apiKey);
 
         var body = request.bodyFields;
-
         switch (body['grant_type']) {
           case 'refresh_token':
-            var uid =
+            var oldIdToken =
                 await authBackend.verifyRefreshToken(body['refresh_token']!);
+            var claims = IdToken.unverified(oldIdToken).claims;
 
-            var accessToken = await authBackend.generateRefreshToken(uid);
+            var accessToken = await authBackend.generateIdToken(
+                uid: claims.subject, providerId: claims['provider_id']);
+
+            var refreshToken =
+                await authBackend.generateRefreshToken(accessToken);
             return http.Response(
                 json.encode({
                   'access_token': accessToken,
                   'id_token': accessToken,
-                  'expires_in': 3600,
-                  'refresh_token': body['refresh_token']
+                  'expires_in':
+                      (await authBackend.getTokenExpiresIn()).inSeconds,
+                  'refresh_token': refreshToken
                 }),
-                200);
+                200,
+                headers: {'Content-Type': 'application/json'});
           default:
             throw UnimplementedError();
         }
@@ -188,8 +202,10 @@ class BackendImpl extends Backend {
   static auth.AuthBackend getAuthBackend(String projectId) =>
       _authBackends.putIfAbsent(
           projectId,
-          () => auth.StoreBackend(
-              tokenSigningKey: _tokenSigningKey, projectId: projectId));
+          () => auth.StoreBackend(projectId: projectId)
+            ..setTokenGenerationSettings(
+                tokenSigningKey: _tokenSigningKey,
+                tokenExpiresIn: Duration(hours: 1)));
 
   static storage.MemoryStorageBackend getStorageBackend(String bucket) =>
       _storageBackends.putIfAbsent(
