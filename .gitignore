@@ -2,8 +2,8 @@
 .packages
 .pub/
 build/
-packages
 pubspec.lock
+.dart_tool/
 
 # Files created by dart2js
 *.dart.js
@@ -21,4 +21,5 @@ doc/api/
 *.ipr
 *.iws
 
-test/secrets.json
+.vscode/
+*.code-workspace
