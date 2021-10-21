@@ -276,8 +276,8 @@ class SyncPoint {
             .keys
             .where((v) => v.limit != null && !v.reversed)
             .toList()
-              ..sort((a, b) => Comparable.compare(
-                  a.validInterval.start, b.validInterval.start));
+          ..sort((a, b) =>
+              Comparable.compare(a.validInterval.start, b.validInterval.start));
 
         while (forwardLimitingQueries.isNotEmpty) {
           var view = createMasterViewForFilter(forwardLimitingQueries.first);
@@ -294,8 +294,8 @@ class SyncPoint {
             .keys
             .where((v) => v.limit != null && v.reversed)
             .toList()
-              ..sort((a, b) => -Comparable.compare(
-                  a.validInterval.end, b.validInterval.end));
+          ..sort((a, b) =>
+              -Comparable.compare(a.validInterval.end, b.validInterval.end));
 
         if (backwardLimitingQueries.isNotEmpty) {
           var view = createMasterViewForFilter(backwardLimitingQueries.first);
@@ -559,7 +559,24 @@ class SyncTree {
     return TreeNode(parent.child(childName));
   }
 
-  final Map<SyncPoint, Future<void>> _invalidPoints = {};
+  final Set<Path<Name>> _invalidPaths = {};
+
+  Future<void>? _handleInvalidPointsFuture;
+
+  void _handleInvalidPaths() {
+    for (var path in _invalidPaths) {
+      var node = root.subtree(path, _createNode);
+      var point = node.value;
+      registrar.registerAll(
+          path,
+          point.minimalSetOfQueries,
+          (f) => point.views[f]?._data.serverVersion.isComplete == true
+              ? point.views[f]!._data.serverVersion.value.hash
+              : null);
+    }
+    _invalidPaths.clear();
+    _handleInvalidPointsFuture = null;
+  }
 
   Future<void> _invalidate(Path<Name> path) {
     var node = root.subtree(path, _createNode);
@@ -577,17 +594,9 @@ class SyncTree {
       }
     }
 
-    return _invalidPoints.putIfAbsent(
-        point,
-        () => Future<void>.microtask(() {
-              _invalidPoints.remove(point);
-              registrar.registerAll(
-                  path,
-                  point.minimalSetOfQueries,
-                  (f) => point.views[f]?._data.serverVersion.isComplete == true
-                      ? point.views[f]!._data.serverVersion.value.hash
-                      : null);
-            }));
+    _invalidPaths.add(path);
+
+    return _handleInvalidPointsFuture ??= Future.microtask(_handleInvalidPaths);
   }
 
   Future<void> _doOnSyncPoint(
