@@ -569,9 +569,12 @@ class SyncTree {
     for (var child in children.keys) {
       var v = children[child]!;
 
-      v.value.isCompleteFromParent = point.isCompleteForChild(child);
+      var newIsCompleteFromParent = point.isCompleteForChild(child);
 
-      _invalidate(path.child(child));
+      if (v.value.isCompleteFromParent != newIsCompleteFromParent) {
+        v.value.isCompleteFromParent = newIsCompleteFromParent;
+        _invalidate(path.child(child));
+      }
     }
 
     return _invalidPoints.putIfAbsent(
