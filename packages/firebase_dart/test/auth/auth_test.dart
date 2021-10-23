@@ -16,7 +16,6 @@ import 'package:firebase_dart/src/database/impl/memory_backend.dart'
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/isolate.dart';
 import 'package:firebase_dart/src/implementation/isolate/util.dart';
-import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 import 'jwt_util.dart';

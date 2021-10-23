@@ -13,8 +13,6 @@ class AuthTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var email = TextEditingController();
-    var password = TextEditingController();
     return StreamBuilder<User?>(
       stream: auth.userChanges(),
       builder: (context, snapshot) {
