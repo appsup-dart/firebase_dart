@@ -1,5 +1,3 @@
-
-
 part of firebase.protocol;
 
 /// Handles a non persistent connection to the server

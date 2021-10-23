@@ -1,5 +1,3 @@
-
-
 part of firebase_dart.core;
 
 /// The entry point for accessing Firebase.

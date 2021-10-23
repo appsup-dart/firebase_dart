@@ -1,5 +1,3 @@
-
-
 part of firebase.protocol;
 
 /// Transforms a channel with frames of limited length to full strings
@@ -19,8 +17,8 @@ class FramesChannelTransformer
         handleData: (data, sink) {
       var dataSegs = List.generate(
           (data.length / maxFrameSize).ceil(),
-          (i) => data.substring(
-              i * maxFrameSize as int, min((i + 1) * maxFrameSize as int, data.length)));
+          (i) => data.substring(i * maxFrameSize as int,
+              min((i + 1) * maxFrameSize as int, data.length)));
 
       if (dataSegs.length > 1) {
         sink.add('${dataSegs.length}');

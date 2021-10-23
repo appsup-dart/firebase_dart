@@ -1,5 +1,3 @@
-
-
 part of firebase_dart.database.backend_connection;
 
 abstract class Backend {

@@ -1,5 +1,3 @@
-
-
 import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'package:test/test.dart';

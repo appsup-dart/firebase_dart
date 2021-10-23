@@ -1,5 +1,3 @@
-
-
 library firebase_core;
 
 export 'src/core.dart'

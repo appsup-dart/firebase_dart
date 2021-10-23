@@ -1,5 +1,3 @@
-
-
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/utils.dart';

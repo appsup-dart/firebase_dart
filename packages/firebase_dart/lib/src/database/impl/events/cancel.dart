@@ -1,5 +1,3 @@
-
-
 import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
 
 import '../event.dart';

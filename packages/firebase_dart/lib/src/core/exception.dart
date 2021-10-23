@@ -1,5 +1,3 @@
-
-
 import 'package:meta/meta.dart';
 
 /// A generic class which provides exceptions in a Firebase-friendly format

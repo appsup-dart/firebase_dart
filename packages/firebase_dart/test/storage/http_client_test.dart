@@ -1,5 +1,3 @@
-
-
 import 'dart:async';
 
 import 'package:firebase_dart/src/storage/impl/http_client.dart';
