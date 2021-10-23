@@ -26,11 +26,13 @@ import '../util.dart';
 const enableLogging = false;
 
 void main() {
-  return runDatabaseTests(isolated: false);
+  group('database service', () => runDatabaseTests(isolated: false));
 }
 
-void runDatabaseTests({bool isolated = false}) async {
-  await FirebaseTesting.setup(isolated: isolated);
+void runDatabaseTests({bool isolated = false}) {
+  setUpAll(() async {
+    await FirebaseTesting.setup(isolated: isolated);
+  });
 
   if (enableLogging) {
     late StreamSubscription logSubscription;
@@ -42,13 +44,12 @@ void runDatabaseTests({bool isolated = false}) async {
       await logSubscription.cancel();
     });
   }
-
   group('mem', () {
     testsWith({'host': 'mem://test/', 'secret': 'x'});
   });
 
   group('https', () {
-    testsWith(s.secrets as Map<String, dynamic>);
+    testsWith(s.secrets);
   });
 
   group('FirebaseDatabase.delete', () {

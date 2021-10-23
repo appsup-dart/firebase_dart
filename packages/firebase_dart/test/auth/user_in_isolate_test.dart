@@ -1,5 +1,8 @@
+import 'package:test/scaffolding.dart';
+
 import 'user_test.dart';
 
 void main() {
-  return runUserTests(isolated: true);
+  group('auth service - user', () => runUserTests(isolated: true),
+      onPlatform: {'browser': Skip('Isolates not supported on web')});
 }

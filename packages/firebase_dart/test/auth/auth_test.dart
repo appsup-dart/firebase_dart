@@ -26,12 +26,16 @@ const identityToolkitBaseUrl =
     'https://www.googleapis.com/identitytoolkit/v3/relyingparty';
 
 void main() {
-  return runAuthTests();
+  group('auth service', () => runAuthTests());
 }
 
-void runAuthTests({bool isolated = false}) async {
-  var tester = await Tester.create(isolated: isolated);
-  var auth = tester.auth;
+void runAuthTests({bool isolated = false}) {
+  late FirebaseAuth auth;
+  late Tester tester;
+  setUpAll(() async {
+    tester = await Tester.create(isolated: isolated);
+    auth = tester.auth;
+  });
 
   group('FirebaseAuth', () {
     setUp(() async {

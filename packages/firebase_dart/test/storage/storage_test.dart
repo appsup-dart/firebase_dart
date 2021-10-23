@@ -8,15 +8,21 @@ import 'package:firebase_dart/src/storage/impl/location.dart';
 import 'package:test/test.dart';
 
 void main() {
-  return runStorageTests(isolated: false);
+  group('storage service', () => runStorageTests(isolated: false));
 }
 
-void runStorageTests({bool isolated = false}) async {
-  var tester = await Tester.create(isolated: isolated);
-  var app = tester.app;
-  var storage = FirebaseStorage.instanceFor(app: app);
-  var root = storage.ref();
-  var child = root.child('hello');
+void runStorageTests({bool isolated = false}) {
+  late Tester tester;
+  late FirebaseStorage storage;
+  late Reference root, child;
+
+  setUpAll(() async {
+    tester = await Tester.create(isolated: isolated);
+    var app = tester.app;
+    storage = FirebaseStorage.instanceFor(app: app);
+    root = storage.ref();
+    child = root.child('hello');
+  });
 
   group('FirebaseStorage', () {
     group('FirebaseStorage.refFromURL', () {
@@ -134,9 +140,12 @@ void runStorageTests({bool isolated = false}) async {
       });
     });
     group('StorageReference.getDownloadUrl', () {
-      var ref = child.child('world.txt');
-      tester.backend.putData(
-          Location.fromUrl(ref.toString()), Uint8List(0), SettableMetadata());
+      late Reference ref;
+      setUpAll(() {
+        ref = child.child('world.txt');
+        tester.backend.putData(
+            Location.fromUrl(ref.toString()), Uint8List(0), SettableMetadata());
+      });
 
       test('StorageReference.getDownloadUrl: file exists', () async {
         var url = await ref.getDownloadURL();

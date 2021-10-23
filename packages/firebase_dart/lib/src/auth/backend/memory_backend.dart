@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
-import 'package:firebase_dart/src/implementation/isolate/store.dart';
+import 'package:firebase_dart/src/util/store.dart';
 import 'package:jose/jose.dart';
 import 'package:openid_client/openid_client.dart';
 import 'package:collection/collection.dart';

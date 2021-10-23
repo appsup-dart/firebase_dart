@@ -1,12 +1,12 @@
 import 'dart:math';
 
-import 'package:firebase_dart/src/implementation/isolate/store.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/storage/impl/location.dart';
 
 import 'package:firebase_dart/src/storage/metadata.dart';
+import 'package:firebase_dart/src/util/store.dart';
 
 import 'backend.dart';
 

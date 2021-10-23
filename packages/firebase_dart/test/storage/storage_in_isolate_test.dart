@@ -1,5 +1,8 @@
+import 'package:test/scaffolding.dart';
+
 import 'storage_test.dart';
 
 void main() {
-  return runStorageTests(isolated: true);
+  group('storage service', () => runStorageTests(isolated: true),
+      onPlatform: {'browser': Skip('Isolates not supported on web')});
 }

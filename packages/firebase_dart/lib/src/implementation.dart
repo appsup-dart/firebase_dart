@@ -32,6 +32,12 @@ abstract class FirebaseImplementation {
       {String? storageBucket});
 }
 
+abstract class BaseFirebaseImplementation extends FirebaseImplementation {
+  final Function(Uri url, {bool popup}) launchUrl;
+
+  BaseFirebaseImplementation({required this.launchUrl});
+}
+
 abstract class AuthTokenProvider {
   Future<String?> getToken([bool fordeRefresh = false]);
 

@@ -7,11 +7,13 @@ import 'package:test/test.dart';
 import '../util.dart';
 
 void main() {
-  return runCoreTests(isolated: false);
+  group('firebase core', () => runCoreTests(isolated: false));
 }
 
-void runCoreTests({bool isolated = false}) async {
-  await FirebaseTesting.setup(isolated: isolated);
+void runCoreTests({bool isolated = false}) {
+  setUpAll(() async {
+    await FirebaseTesting.setup(isolated: isolated);
+  });
 
   group('Firebase', () {
     FirebaseApp? app;

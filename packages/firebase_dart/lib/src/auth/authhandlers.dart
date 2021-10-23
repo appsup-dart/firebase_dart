@@ -7,8 +7,6 @@ import 'package:firebase_dart/src/core.dart';
 import 'package:firebase_dart/src/auth/auth_provider.dart';
 import 'package:firebase_dart/src/auth/auth_credential.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
-import 'package:firebase_dart/src/implementation/dart.dart';
-import 'package:firebase_dart/src/implementation/isolate.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../auth.dart';
@@ -119,9 +117,7 @@ abstract class FirebaseAppAuthHandler implements AuthHandler {
           }
         });
     var installation = FirebaseImplementation.installation;
-    var launchUrl = installation is PureDartFirebaseImplementation
-        ? installation.launchUrl
-        : (installation as IsolateFirebaseImplementation).launchUrl;
+    var launchUrl = (installation as BaseFirebaseImplementation).launchUrl;
     launchUrl(url, popup: isPopup);
     return true;
   }

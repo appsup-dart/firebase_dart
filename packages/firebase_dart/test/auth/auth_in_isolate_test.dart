@@ -1,5 +1,8 @@
+import 'package:test/test.dart';
+
 import 'auth_test.dart';
 
 void main() {
-  return runAuthTests(isolated: true);
+  group('auth service', () => runAuthTests(isolated: true),
+      onPlatform: {'browser': Skip('Isolates not supported on web')});
 }

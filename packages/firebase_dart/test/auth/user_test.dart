@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
@@ -10,13 +11,16 @@ import 'auth_test.dart';
 import 'jwt_util.dart';
 
 void main() {
-  return runUserTests();
+  group('auth service - user', () => runUserTests());
 }
 
-void runUserTests({bool isolated = false}) async {
-  var tester = await Tester.create(isolated: isolated);
-  var auth = tester.auth;
-
+void runUserTests({bool isolated = false}) {
+  late FirebaseAuth auth;
+  late Tester tester;
+  setUpAll(() async {
+    tester = await Tester.create(isolated: isolated);
+    auth = tester.auth;
+  });
   group('FirebaseUserImpl', () {
     var uid = 'defaultUserId';
     var jwt = createMockJwt(uid: uid, providerId: 'firebase');

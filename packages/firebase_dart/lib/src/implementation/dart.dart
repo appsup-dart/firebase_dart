@@ -11,18 +11,17 @@ import 'package:http/http.dart' as http;
 
 import '../implementation.dart';
 
-class PureDartFirebaseImplementation extends FirebaseImplementation {
+class PureDartFirebaseImplementation extends BaseFirebaseImplementation {
   final http.Client? _httpClient;
-
-  final Function(Uri url, {bool popup}) launchUrl;
 
   final AuthHandler authHandler;
 
   PureDartFirebaseImplementation(
-      {required this.launchUrl,
+      {required Function(Uri url, {bool popup}) launchUrl,
       required this.authHandler,
       http.Client? httpClient})
-      : _httpClient = httpClient;
+      : _httpClient = httpClient,
+        super(launchUrl: launchUrl);
 
   static PureDartFirebaseImplementation get installation =>
       FirebaseImplementation.installation as PureDartFirebaseImplementation;

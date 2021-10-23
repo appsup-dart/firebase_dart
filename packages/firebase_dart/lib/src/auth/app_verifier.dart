@@ -1,10 +1,8 @@
-
-
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 
 import 'auth.dart';
 
-import 'app_verifier_io.dart' if (dart.html) 'app_verifier_web.dart';
+import 'app_verifier_io.dart' if (dart.library.html) 'app_verifier_web.dart';
 
 abstract class ApplicationVerifier {
   String get type;

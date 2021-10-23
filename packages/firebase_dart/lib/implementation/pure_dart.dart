@@ -1,17 +1,11 @@
 import 'package:firebase_dart/auth.dart';
-import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/auth/iframeclient/auth_methods.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
-import 'package:firebase_dart/src/core/impl/persistence.dart';
-import 'package:firebase_dart/src/implementation.dart';
-import 'package:firebase_dart/src/implementation/dart.dart';
-import 'package:firebase_dart/src/implementation/isolate.dart';
-import 'package:hive/hive.dart';
+import 'package:firebase_dart/src/implementation/pure_dart_setup_web.dart'
+    if (dart.library.io) 'package:firebase_dart/src/implementation/pure_dart_setup_io.dart'
+    if (dart.library.html) 'package:firebase_dart/src/implementation/pure_dart_setup_web.dart';
 import 'package:http/http.dart' as http;
 
-import 'dart:io' as io;
-
-import 'package:jose/jose.dart';
 import 'package:meta/meta.dart';
 
 import '../core.dart';
@@ -61,47 +55,16 @@ class FirebaseDart {
       Function(Uri url, {bool popup})? launchUrl,
       AuthHandler? authHandler,
       http.Client? httpClient}) {
-    platform ??= _kIsWeb
-        ? Platform.web(
-            currentUrl: Uri.base.toString(),
-            isMobile: io.Platform.isAndroid || io.Platform.isIOS,
-            isOnline: true,
-          )
-        : Platform.linux(isOnline: true);
-
     baseUrl = Uri.base;
 
-    launchUrl ??= _defaultLaunchUrl;
-
-    authHandler ??= DefaultAuthHandler();
-
-    if (isolated && !_kIsWeb) {
-      initPlatform(platform);
-      FirebaseImplementation.install(IsolateFirebaseImplementation(
-          storagePath: storagePath,
-          platform: platform,
-          launchUrl: launchUrl,
-          authHandler: authHandler,
-          httpClient: httpClient));
-    } else {
-      if (storagePath != null) {
-        Hive.init(storagePath);
-      } else if (!_kIsWeb) {
-        PersistenceStorage.setupMemoryStorage();
-      }
-
-      initPlatform(platform);
-      if (httpClient is TestClient) {
-        httpClient.baseClient;
-      }
-      JsonWebKeySetLoader.global =
-          DefaultJsonWebKeySetLoader(httpClient: httpClient);
-
-      FirebaseImplementation.install(PureDartFirebaseImplementation(
-          launchUrl: launchUrl,
-          authHandler: authHandler,
-          httpClient: httpClient));
-    }
+    setupPureDartImplementation(
+      authHandler: authHandler ?? DefaultAuthHandler(),
+      launchUrl: launchUrl ?? _defaultLaunchUrl,
+      platform: platform,
+      httpClient: httpClient,
+      isolated: isolated,
+      storagePath: storagePath,
+    );
   }
 
   static void _defaultLaunchUrl(Uri uri, {bool popup = false}) {

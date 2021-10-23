@@ -16,11 +16,9 @@ import 'isolate/database.dart';
 import 'isolate/storage.dart';
 import 'isolate/util.dart';
 
-class IsolateFirebaseImplementation extends FirebaseImplementation {
+class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
   final String? storagePath;
   final Platform platform;
-
-  final Function(Uri url, {bool popup}) launchUrl;
 
   final AuthHandler authHandler;
 
@@ -33,9 +31,10 @@ class IsolateFirebaseImplementation extends FirebaseImplementation {
   IsolateFirebaseImplementation(
       {required this.storagePath,
       required this.platform,
-      required this.launchUrl,
+      required Function(Uri url, {bool popup}) launchUrl,
       required this.authHandler,
-      this.httpClient});
+      this.httpClient})
+      : super(launchUrl: launchUrl);
 
   Future<IsolateCommander> _setup() async {
     var worker = IsolateWorker()..registerFunction(#launchUrl, launchUrl);

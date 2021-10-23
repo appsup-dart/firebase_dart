@@ -1,3 +1,1 @@
-
-
-Map get secrets => const {};
+Map<String, dynamic> get secrets => const {};
