@@ -16,6 +16,7 @@ import 'package:firebase_dart/src/database/impl/memory_backend.dart'
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/isolate.dart';
 import 'package:firebase_dart/src/implementation/isolate/util.dart';
+import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 import 'jwt_util.dart';
@@ -598,15 +599,16 @@ void runAuthTests({bool isolated = false}) async {
       late FirebaseDatabase db;
       var backend = database.MemoryBackend.getInstance('test');
       backend.securityRules = {'.read': 'auth!=null'};
-      var s = auth.authStateChanges().listen((user) async {
-        if (user == null) return;
+      var f = auth.authStateChanges().asyncMap((user) async {
+        if (user == null) return false;
         await db.reference().child('users').child(user.uid).once();
-      });
+        return true;
+      }).firstWhere((v) => v);
       db = FirebaseDatabase(app: tester.app, databaseURL: 'mem://test');
 
       await auth.signInAnonymously();
 
-      await s.cancel();
+      await f;
     });
   });
 }

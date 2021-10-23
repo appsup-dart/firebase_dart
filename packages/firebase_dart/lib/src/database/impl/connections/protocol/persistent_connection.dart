@@ -278,7 +278,7 @@ class PersistentConnectionImpl extends PersistentConnection
         'Must be connected to send auth, but was: $connectionState');
     assert(_authRequest != null, 'Auth token must be set to authenticate!');
 
-    var response = await _request(_authRequest!);
+    var response = await _request(await _authRequest!, forceQueue: true);
 
     _connectionState = ConnectionState.connected;
 
@@ -462,18 +462,35 @@ class PersistentConnectionImpl extends PersistentConnection
     _flushRequests();
   }
 
-  Future<MessageBody> _request(FutureOr<Request> request) async {
-    _queueRequest(request);
-    return Future.value(request)
-        .then((request) => request.response.then<MessageBody>((r) {
-              _outstandingRequests.remove(request);
-              if (r.message.body.status == MessageBody.statusOk) {
-                return r.message.body;
-              }
-              throw FirebaseDatabaseException(
-                  code: r.message.body.status ?? 'unknown',
-                  details: r.message.body.data);
-            }));
+  Future<MessageBody> _request(Request request,
+      {bool forceQueue = false}) async {
+    var message = request.message;
+    if (message is DataMessage) {
+      switch (message.action) {
+        case DataMessage.actionListen:
+        case DataMessage.actionUnlisten:
+        case DataMessage.actionUnauth:
+        case DataMessage.actionAuth:
+        case DataMessage.actionGauth:
+        case DataMessage.actionStats:
+          break;
+        default:
+          _outstandingRequests.add(request);
+      }
+    }
+
+    if (forceQueue || connectionState == ConnectionState.connected) {
+      _queueRequest(request);
+    }
+    return request.response.then<MessageBody>((r) {
+      _outstandingRequests.remove(request);
+      if (r.message.body.status == MessageBody.statusOk) {
+        return r.message.body;
+      }
+      throw FirebaseDatabaseException(
+          code: r.message.body.status ?? 'unknown',
+          details: r.message.body.data);
+    });
   }
 
   Completer<void>? _requestFlush;
@@ -504,20 +521,6 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   void _doRequest(Request request) {
-    var message = request.message;
-    if (message is DataMessage) {
-      switch (message.action) {
-        case DataMessage.actionListen:
-        case DataMessage.actionUnlisten:
-        case DataMessage.actionUnauth:
-        case DataMessage.actionAuth:
-        case DataMessage.actionGauth:
-        case DataMessage.actionStats:
-          break;
-        default:
-          _outstandingRequests.add(request);
-      }
-    }
     if (_transportIsReady) {
       _connection!.sendRequest(request);
     }

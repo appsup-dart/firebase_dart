@@ -667,7 +667,9 @@ void testsWith(Map<String, dynamic> secrets) {
               }))
           .toList();
 
-      await Future.wait((await f1)..addAll(await f2)..addAll(await f3));
+      await Future.wait((await f1)
+        ..addAll(await f2)
+        ..addAll(await f3));
 
       expect(await ref.child('object/count').get(), 30);
     });

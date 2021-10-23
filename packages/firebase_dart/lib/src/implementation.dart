@@ -35,7 +35,7 @@ abstract class FirebaseImplementation {
 abstract class AuthTokenProvider {
   Future<String?> getToken([bool fordeRefresh = false]);
 
-  Stream<String?> get onTokenChanged;
+  Stream<Future<String>?> get onTokenChanged;
 
   factory AuthTokenProvider.fromFirebaseAuth(FirebaseAuth auth) =>
       _AuthTokenProviderFromFirebaseAuth(auth);
@@ -56,6 +56,6 @@ class _AuthTokenProviderFromFirebaseAuth implements AuthTokenProvider {
   }
 
   @override
-  Stream<String?> get onTokenChanged =>
-      auth.idTokenChanges().asyncMap((event) => event?.getIdToken());
+  Stream<Future<String>?> get onTokenChanged =>
+      auth.idTokenChanges().map((event) => event?.getIdToken());
 }

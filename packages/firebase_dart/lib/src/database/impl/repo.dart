@@ -90,11 +90,11 @@ class Repo {
     _updateInfo(dotInfoConnected, false);
     _authStateChangesSubscription =
         (authTokenProvider?.onTokenChanged ?? Stream.empty()).listen(
-            (token) async {
+            (token) {
               _updateInfo(dotInfoAuthenticated, token != null);
 
               try {
-                return _connection.refreshAuthToken(token);
+                _connection.refreshAuthToken(token);
               } catch (e, tr) {
                 _logger.warning('Could not refresh auth token.', e, tr);
               }
