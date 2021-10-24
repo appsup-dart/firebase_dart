@@ -34,6 +34,11 @@ class RetryHelper {
       this.retryExponent = 1.3,
       this.jitterFactor = 0.5});
 
+  void reset() {
+    _lastWasSuccess = true;
+    _currentRetryDelay = Duration();
+  }
+
   void retry(final Function() runnable) {
     Duration delay;
     if (_scheduledRetry != null) {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Immediately try reconnecting when calling goOnline
+
 ## 1.0.1
 
 - Performance improvements

@@ -390,6 +390,7 @@ class PersistentConnectionImpl extends PersistentConnection
     _interruptReasons.remove(reason);
 
     if (_shouldReconnect() && connectionState == ConnectionState.disconnected) {
+      _retryHelper.reset();
       _tryScheduleReconnect();
     }
   }
