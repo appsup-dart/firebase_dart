@@ -25,22 +25,10 @@ class Path<K> extends UnmodifiableListView<K> {
       other is Path && const ListEquality().equals(this, other);
 }
 
-class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
-  V value;
+abstract class TreeNode<K, V> {
+  V get value;
 
-  final Map<K, TreeNode<K, V>> _children;
-
-  TreeNode(this.value, [Map<K, TreeNode<K, V>>? children])
-      : _children = _cloneMap<K, TreeNode<K, V>>(children ?? {});
-
-  Map<K, TreeNode<K, V>> get children => _children;
-
-  static Map<K, V> _cloneMap<K extends Comparable, V>(Map<K, V> map) {
-    if (map is SortedMap<K, V>) {
-      return map.clone();
-    }
-    return Map<K, V>.from(map);
-  }
+  Map<K, TreeNode<K, V>> get children;
 
   TreeNode<K, V>? subtreeNullable(Path<K> path) {
     if (path.isEmpty) return this;
@@ -51,45 +39,11 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
     return child.subtreeNullable(path.skip(1));
   }
 
-  TreeNode<K, V> subtree(
-      Path<K> path, TreeNode<K, V> Function(V parent, K name) newInstance) {
-    if (path.isEmpty) return this;
-    if (!children.containsKey(path.first)) {
-      children[path.first] = newInstance(value, path.first);
-    }
-    var child = children[path.first]!;
-    return child.subtree(path.skip(1), newInstance);
-  }
-
-  TreeNode<K, V> clone() => TreeNode(value, children);
-
   bool get isLeaf => isEmpty && value != null;
 
   bool get isNil => isEmpty && value == null;
 
   bool get isEmpty => children.isEmpty;
-
-  /// Order: nil, leaf, node with children
-  @override
-  int compareTo(TreeNode<K, V> other) {
-    if (isLeaf) {
-      if (other.isLeaf) {
-        return Comparable.compare(
-            value as Comparable, other.value as Comparable);
-      } else if (other.isNil) {
-        return 1;
-      }
-      return -1;
-    } else if (isNil) {
-      return other.isNil ? 0 : -1;
-    } else {
-      if (other.isEmpty) {
-        return 1;
-      } else {
-        return 0;
-      }
-    }
-  }
 
   bool hasChild(Path<K> path) =>
       path.isEmpty ||
@@ -116,5 +70,60 @@ class TreeNode<K extends Comparable, V> implements Comparable<TreeNode<K, V>> {
     }
 
     _forEach(this, Path());
+  }
+}
+
+class ModifiableTreeNode<K extends Comparable, V> extends TreeNode<K, V>
+    implements Comparable<ModifiableTreeNode<K, V>> {
+  @override
+  V value;
+
+  final Map<K, ModifiableTreeNode<K, V>> _children;
+
+  ModifiableTreeNode(this.value, [Map<K, ModifiableTreeNode<K, V>>? children])
+      : _children = _cloneMap<K, ModifiableTreeNode<K, V>>(children ?? {});
+
+  @override
+  Map<K, ModifiableTreeNode<K, V>> get children => _children;
+
+  static Map<K, V> _cloneMap<K extends Comparable, V>(Map<K, V> map) {
+    if (map is SortedMap<K, V>) {
+      return map.clone();
+    }
+    return Map<K, V>.from(map);
+  }
+
+  ModifiableTreeNode<K, V> subtree(Path<K> path,
+      ModifiableTreeNode<K, V> Function(V parent, K name) newInstance) {
+    if (path.isEmpty) return this;
+    if (!children.containsKey(path.first)) {
+      children[path.first] = newInstance(value, path.first);
+    }
+    var child = children[path.first]!;
+    return child.subtree(path.skip(1), newInstance);
+  }
+
+  ModifiableTreeNode<K, V> clone() => ModifiableTreeNode(value, children);
+
+  /// Order: nil, leaf, node with children
+  @override
+  int compareTo(ModifiableTreeNode<K, V> other) {
+    if (isLeaf) {
+      if (other.isLeaf) {
+        return Comparable.compare(
+            value as Comparable, other.value as Comparable);
+      } else if (other.isNil) {
+        return 1;
+      }
+      return -1;
+    } else if (isNil) {
+      return other.isNil ? 0 : -1;
+    } else {
+      if (other.isEmpty) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
   }
 }

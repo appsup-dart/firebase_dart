@@ -136,15 +136,17 @@ void main() {
 
 extension SyncTreeMeasurer on SyncTree {
   int get obsoleteTreeStructuredDataInstanceCount {
-    var root = TreeNode<Name, Set<TreeStructuredData>>(
+    var root = ModifiableTreeNode<Name, Set<TreeStructuredData>>(
         EqualitySet(IdentityEquality()));
 
-    void handleOperation(
-        TreeNode<Name, Set<TreeStructuredData>> tree, Operation? operation) {
+    void handleOperation(ModifiableTreeNode<Name, Set<TreeStructuredData>> tree,
+        Operation? operation) {
       if (operation is TreeOperation) {
         handleOperation(
-            tree.subtree(operation.path,
-                (parent, name) => TreeNode(EqualitySet(IdentityEquality()))),
+            tree.subtree(
+                operation.path,
+                (parent, name) =>
+                    ModifiableTreeNode(EqualitySet(IdentityEquality()))),
             operation.nodeOperation);
       } else if (operation is Overwrite) {
         var set = tree.value;
@@ -162,7 +164,9 @@ extension SyncTreeMeasurer on SyncTree {
 
     this.root.forEachNode((key, value) {
       var tree = root.subtree(
-          key, (parent, name) => TreeNode(EqualitySet(IdentityEquality())));
+          key,
+          (parent, name) =>
+              ModifiableTreeNode(EqualitySet(IdentityEquality())));
       for (var view in value.views.values) {
         for (var data in [view.data.localVersion, view.data.serverVersion]) {
           var op = data.toOperation();

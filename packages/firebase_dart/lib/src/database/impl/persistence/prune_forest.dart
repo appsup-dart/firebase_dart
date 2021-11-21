@@ -19,17 +19,19 @@ import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 /// * 'false' cannot be a descendant of 'false' (we'll just keep the more
 /// shallow 'false').
 class PruneForest {
-  final TreeNode<Name, bool?> pruneForest;
+  final ModifiableTreeNode<Name, bool?> pruneForest;
 
   static final Predicate<bool?> KEEP_PREDICATE =
       (prune) => prune != null && !prune;
 
   static final Predicate<bool?> PRUNE_PREDICATE = (prune) => prune == true;
 
-  static final TreeNode<Name, bool?> PRUNE_TREE = TreeNode(true);
-  static final TreeNode<Name, bool?> KEEP_TREE = TreeNode(false);
+  static final ModifiableTreeNode<Name, bool?> PRUNE_TREE =
+      ModifiableTreeNode(true);
+  static final ModifiableTreeNode<Name, bool?> KEEP_TREE =
+      ModifiableTreeNode(false);
 
-  PruneForest() : pruneForest = TreeNode(null);
+  PruneForest() : pruneForest = ModifiableTreeNode(null);
 
   PruneForest._(this.pruneForest);
 
@@ -55,10 +57,11 @@ class PruneForest {
   PruneForest directChild(Name key) {
     var childPruneTree = pruneForest.children[key];
     if (childPruneTree == null) {
-      childPruneTree = TreeNode(pruneForest.value);
+      childPruneTree = ModifiableTreeNode(pruneForest.value);
     } else {
       if (childPruneTree.value == null && pruneForest.value != null) {
-        childPruneTree = TreeNode(pruneForest.value, childPruneTree.children);
+        childPruneTree =
+            ModifiableTreeNode(pruneForest.value, childPruneTree.children);
       }
     }
     return PruneForest._(childPruneTree);
@@ -127,14 +130,15 @@ class PruneForest {
   }
 
   PruneForest _doAll(Path<Name> path, Set<Name> children,
-      TreeNode<Name, bool?> keepOrPruneTree) {
-    var subtree = pruneForest.subtree(path, (_, __) => TreeNode(null));
+      ModifiableTreeNode<Name, bool?> keepOrPruneTree) {
+    var subtree =
+        pruneForest.subtree(path, (_, __) => ModifiableTreeNode(null));
     var childrenMap = {
       ...subtree.children,
       for (var key in children) key: keepOrPruneTree
     };
-    return PruneForest._(
-        pruneForest.setPath(path, TreeNode(subtree.value, childrenMap), null));
+    return PruneForest._(pruneForest.setPath(
+        path, ModifiableTreeNode(subtree.value, childrenMap), null));
   }
 
   @override

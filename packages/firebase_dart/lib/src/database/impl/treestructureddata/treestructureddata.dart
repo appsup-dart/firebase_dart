@@ -3,7 +3,7 @@
 
 part of firebase.treestructureddata;
 
-class TreeStructuredData extends TreeNode<Name, Value?> {
+class TreeStructuredData extends ModifiableTreeNode<Name, Value?> {
   final Value? priority;
 
   TreeStructuredData({Value? priority, Value? value, QueryFilter? filter})

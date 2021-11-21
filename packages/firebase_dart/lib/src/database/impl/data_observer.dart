@@ -27,13 +27,13 @@ abstract class Operation {
 /// Any write to an existing path or shadowing an existing path will modify that
 /// existing write to reflect the write added.
 class IncompleteData {
-  final TreeNode<Name, TreeStructuredData?> _writeTree;
+  final ModifiableTreeNode<Name, TreeStructuredData?> _writeTree;
   final QueryFilter filter;
 
   IncompleteData.empty([QueryFilter filter = const QueryFilter()])
-      : this._(TreeNode(null), filter);
+      : this._(ModifiableTreeNode(null), filter);
   IncompleteData.complete(TreeStructuredData data)
-      : this._(TreeNode(data), data.children.filter as QueryFilter);
+      : this._(ModifiableTreeNode(data), data.children.filter as QueryFilter);
   IncompleteData._(this._writeTree, [this.filter = const QueryFilter()]);
 
   IncompleteData withFilter(QueryFilter filter) {
@@ -59,12 +59,12 @@ class IncompleteData {
   /// Creates an [IncompleteData] structure for the direct [child]
   IncompleteData directChild(Name child) {
     if (isComplete) {
-      return IncompleteData._(
-          TreeNode(_writeTree.value!.children[child] ?? TreeStructuredData()));
+      return IncompleteData._(ModifiableTreeNode(
+          _writeTree.value!.children[child] ?? TreeStructuredData()));
     }
     var tree = _writeTree.children[child];
     if (tree != null) return IncompleteData._(tree);
-    return IncompleteData._(TreeNode(null));
+    return IncompleteData._(ModifiableTreeNode(null));
   }
 
   IncompleteData child(Path<Name> path) {
@@ -126,9 +126,10 @@ class IncompleteData {
 
   IncompleteData removeWrite(Path<Name> path) {
     if (path.isEmpty) {
-      return IncompleteData._(TreeNode(null), filter);
+      return IncompleteData._(ModifiableTreeNode(null), filter);
     } else {
-      var newWriteTree = _writeTree.setPath(path, TreeNode(null), null);
+      var newWriteTree =
+          _writeTree.setPath(path, ModifiableTreeNode(null), null);
       return IncompleteData._(newWriteTree, filter);
     }
   }
@@ -174,21 +175,22 @@ class EventGenerator {
   }
 }
 
-extension _WriteTreeX on TreeNode<Name, TreeStructuredData?> {
-  TreeNode<Name, TreeStructuredData?> addOverwrite(
+extension _WriteTreeX on ModifiableTreeNode<Name, TreeStructuredData?> {
+  ModifiableTreeNode<Name, TreeStructuredData?> addOverwrite(
       Path<Name> path, TreeStructuredData data) {
     if (value != null) {
-      return TreeNode(TreeOperation.overwrite(path, data).apply(value!));
+      return ModifiableTreeNode(
+          TreeOperation.overwrite(path, data).apply(value!));
     }
 
-    if (path.isEmpty) return TreeNode(data);
+    if (path.isEmpty) return ModifiableTreeNode(data);
     var c = path.first;
     return clone()
-      ..children[c] =
-          (children[c] ?? TreeNode(null)).addOverwrite(path.skip(1), data);
+      ..children[c] = (children[c] ?? ModifiableTreeNode(null))
+          .addOverwrite(path.skip(1), data);
   }
 
-  TreeNode<Name, TreeStructuredData?> addPriority(
+  ModifiableTreeNode<Name, TreeStructuredData?> addPriority(
       Path<Name> path, Value? data) {
     return addOverwrite(path.child(Name('.priority')),
         data == null ? TreeStructuredData() : TreeStructuredData.leaf(data));

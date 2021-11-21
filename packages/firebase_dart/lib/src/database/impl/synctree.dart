@@ -438,7 +438,8 @@ class SyncPoint {
 }
 
 abstract class RemoteListenerRegistrar {
-  final TreeNode<Name, Map<QueryFilter, Future<Null>>> _queries = TreeNode({});
+  final ModifiableTreeNode<Name, Map<QueryFilter, Future<Null>>> _queries =
+      ModifiableTreeNode({});
   final PersistenceManager persistenceManager;
 
   RemoteListenerRegistrar(this.persistenceManager);
@@ -450,8 +451,8 @@ abstract class RemoteListenerRegistrar {
 
   void registerAll(Path<Name> path, Iterable<QueryFilter> filters,
       String? Function(QueryFilter filter) hashFcn) {
-    var node = _queries.subtree(
-        path, (parent, name) => TreeNode(<QueryFilter, Future<Null>>{}));
+    var node = _queries.subtree(path,
+        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<Null>>{}));
     node.synchronized(() async {
       for (var f in filters.toSet()) {
         if (node.value.containsKey(f)) continue;
@@ -465,8 +466,8 @@ abstract class RemoteListenerRegistrar {
   }
 
   Future<void> register(Path<Name> path, QueryFilter filter, String? hash) {
-    var node = _queries.subtree(
-        path, (parent, name) => TreeNode(<QueryFilter, Future<Null>>{}));
+    var node = _queries.subtree(path,
+        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<Null>>{}));
     return node.value.putIfAbsent(filter, () async {
       try {
         await remoteRegister(path, filter, hash);
@@ -486,8 +487,8 @@ abstract class RemoteListenerRegistrar {
   Future<void> remoteUnregister(Path<Name> path, QueryFilter filter);
 
   Future<void> unregister(Path<Name> path, QueryFilter filter) async {
-    var node = _queries.subtree(
-        path, (parent, name) => TreeNode(<QueryFilter, Future<Null>>{}));
+    var node = _queries.subtree(path,
+        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<Null>>{}));
     if (!node.value.containsKey(filter)) return;
     var f = node.value.remove(filter);
     await f?.then((_) async {
@@ -531,7 +532,7 @@ class SyncTree {
   final String name;
   final RemoteListenerRegistrar registrar;
 
-  final TreeNode<Name, SyncPoint> root;
+  final ModifiableTreeNode<Name, SyncPoint> root;
 
   final PersistenceManager persistenceManager;
 
@@ -548,15 +549,15 @@ class SyncTree {
       {RemoteRegister? remoteRegister,
       RemoteUnregister? remoteUnregister,
       required PersistenceManager persistenceManager})
-      : root = TreeNode(
+      : root = ModifiableTreeNode(
             SyncPoint(name, Path(), persistenceManager: persistenceManager)),
         persistenceManager = persistenceManager,
         registrar = RemoteListenerRegistrar.fromCallbacks(persistenceManager,
             remoteRegister: remoteRegister, remoteUnregister: remoteUnregister);
 
-  static TreeNode<Name, SyncPoint> _createNode(
+  static ModifiableTreeNode<Name, SyncPoint> _createNode(
       SyncPoint parent, Name childName) {
-    return TreeNode(parent.child(childName));
+    return ModifiableTreeNode(parent.child(childName));
   }
 
   final Set<Path<Name>> _invalidPaths = {};
@@ -672,7 +673,7 @@ class SyncTree {
   /// Helper function to recursively apply an operation to a node in the
   /// sync tree and all the relevant descendants.
   void _applyOperationToSyncPoints(
-      TreeNode<Name, SyncPoint>? tree,
+      ModifiableTreeNode<Name, SyncPoint>? tree,
       QueryFilter? filter,
       TreeOperation? operation,
       ViewOperationSource type,

@@ -11,11 +11,12 @@ import 'package:rxdart/rxdart.dart';
 import '../backend_connection.dart';
 
 class SecurityTree {
-  final TreeNode<String, SecurityNode> root;
+  final ModifiableTreeNode<String, SecurityNode> root;
 
   SecurityTree._(this.root);
   factory SecurityTree.fromJson(Map<String, dynamic> json) {
-    TreeNode<String, SecurityNode> process(Map<String, dynamic> json) {
+    ModifiableTreeNode<String, SecurityNode> process(
+        Map<String, dynamic> json) {
       var n = SecurityNode(
         indexOn: json.remove('.indexOn') ?? [],
         read: Expression.parse(json.remove('.read') ?? 'false'),
@@ -23,7 +24,7 @@ class SecurityTree {
         validate: Expression.parse(json.remove('.validate') ?? 'true'),
       );
 
-      return TreeNode(n, json.map((k, v) => MapEntry(k, process(v))));
+      return ModifiableTreeNode(n, json.map((k, v) => MapEntry(k, process(v))));
     }
 
     return SecurityTree._(process(json));

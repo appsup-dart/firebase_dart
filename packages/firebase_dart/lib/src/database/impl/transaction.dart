@@ -237,7 +237,7 @@ class TransactionsTree {
   }
 }
 
-class TransactionsNode extends TreeNode<Name, List<Transaction>> {
+class TransactionsNode extends ModifiableTreeNode<Name, List<Transaction>> {
   TransactionsNode() : super([], SortedMap<Name, TransactionsNode>());
 
   @override
@@ -251,7 +251,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
   @override
   TransactionsNode subtree(
           Path<Name> path,
-          TreeNode<Name, List<Transaction>> Function(
+          ModifiableTreeNode<Name, List<Transaction>> Function(
                   List<Transaction> parent, Name childName)
               newInstance) =>
       super.subtree(path, newInstance) as TransactionsNode;
@@ -472,7 +472,7 @@ class TransactionsNode extends TreeNode<Name, List<Transaction>> {
   }
 }
 
-class SparseSnapshotTree extends TreeNode<Name, TreeStructuredData?> {
+class SparseSnapshotTree extends ModifiableTreeNode<Name, TreeStructuredData?> {
   SparseSnapshotTree() : super(null, SortedMap<Name, SparseSnapshotTree>());
 
   @override

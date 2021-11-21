@@ -83,18 +83,28 @@ extension TreeNodeXNonNull<T> on TreeNode<Name, T> {
     }
   }
 
-  TreeNode<Name, T> setValue(Path<Name> path, T value, T defaultValue) {
-    if (path.isEmpty) return TreeNode(value, children);
+  Iterable<T> get allNonNullValues sync* {
+    if (value != null) yield value!;
+    for (var c in children.values) {
+      yield* c.allNonNullValues;
+    }
+  }
+}
 
-    var c = children[path.first] ?? TreeNode(defaultValue);
+extension ModifiableTreeNodeXNonNull<T> on ModifiableTreeNode<Name, T> {
+  ModifiableTreeNode<Name, T> setValue(
+      Path<Name> path, T value, T defaultValue) {
+    if (path.isEmpty) return ModifiableTreeNode(value, children);
 
-    return TreeNode(this.value, {
+    var c = children[path.first] ?? ModifiableTreeNode(defaultValue);
+
+    return ModifiableTreeNode(this.value, {
       ...children,
       path.first: c.setValue(path.skip(1), value, defaultValue)
     });
   }
 
-  TreeNode<Name, T>? removePath(Path<Name> path) {
+  ModifiableTreeNode<Name, T>? removePath(Path<Name> path) {
     if (path.isEmpty) return null;
 
     if (!this.children.containsKey(path.first)) {
@@ -104,48 +114,41 @@ extension TreeNodeXNonNull<T> on TreeNode<Name, T> {
 
     var children = {...this.children, if (c != null) path.first: c};
     if (value == null && children.isEmpty) return null;
-    return TreeNode(value, children);
+    return ModifiableTreeNode(value, children);
   }
 
-  TreeNode<Name, T> setPath(
-      Path<Name> path, TreeNode<Name, T> subtree, T defaultValue) {
+  ModifiableTreeNode<Name, T> setPath(
+      Path<Name> path, ModifiableTreeNode<Name, T> subtree, T defaultValue) {
     if (path.isEmpty) return subtree;
 
-    var c = children[path.first] ?? TreeNode(defaultValue);
+    var c = children[path.first] ?? ModifiableTreeNode(defaultValue);
 
-    return TreeNode(value, {
+    return ModifiableTreeNode(value, {
       ...children,
       path.first: c.setPath(path.skip(1), subtree, defaultValue)
     });
   }
-
-  Iterable<T> get allNonNullValues sync* {
-    if (value != null) yield value!;
-    for (var c in children.values) {
-      yield* c.allNonNullValues;
-    }
-  }
 }
 
 class TreeNodeEquality<K extends Comparable, V>
-    implements Equality<TreeNode<K, V>> {
+    implements Equality<ModifiableTreeNode<K, V>> {
   static const _childrenEquality = MapEquality(values: TreeNodeEquality());
   const TreeNodeEquality();
 
   @override
-  bool equals(TreeNode<K, V> e1, TreeNode<K, V> e2) {
+  bool equals(ModifiableTreeNode<K, V> e1, ModifiableTreeNode<K, V> e2) {
     return e1.value == e2.value &&
         _childrenEquality.equals(e1.children, e2.children);
   }
 
   @override
-  int hash(TreeNode<K, V> e) {
+  int hash(ModifiableTreeNode<K, V> e) {
     return hash2(_childrenEquality.hash(e.children), e.value);
   }
 
   @override
   bool isValidKey(Object? o) {
-    return o is TreeNode<K, V>;
+    return o is ModifiableTreeNode<K, V>;
   }
 }
 

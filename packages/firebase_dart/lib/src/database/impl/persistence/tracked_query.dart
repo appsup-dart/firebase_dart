@@ -103,7 +103,7 @@ class TrackedQueryManager {
   /// In-memory cache of tracked queries.
   ///
   /// Should always be in-sync with the DB.
-  TreeNode<Name, Map<QueryFilter, TrackedQuery>> trackedQueryTree;
+  ModifiableTreeNode<Name, Map<QueryFilter, TrackedQuery>> trackedQueryTree;
 
   /// DB, where we permanently store tracked queries.
   final PersistenceStorageEngine storageLayer;
@@ -117,7 +117,8 @@ class TrackedQueryManager {
   }
 
   TrackedQueryManager(this.storageLayer)
-      : trackedQueryTree = TreeNode<Name, Map<QueryFilter, TrackedQuery>>({}) {
+      : trackedQueryTree =
+            ModifiableTreeNode<Name, Map<QueryFilter, TrackedQuery>>({}) {
     resetPreviouslyActiveTrackedQueries();
 
     // Populate our cache from the storage layer.
@@ -141,8 +142,9 @@ class TrackedQueryManager {
   }
 
   TrackedQuery? findTrackedQuery(QuerySpec query) {
-    var child =
-        trackedQueryTree.subtree(query.path, (_, __) => TreeNode({})).value;
+    var child = trackedQueryTree
+        .subtree(query.path, (_, __) => ModifiableTreeNode({}))
+        .value;
     return child[query.normalize().params];
   }
 
@@ -156,7 +158,7 @@ class TrackedQueryManager {
     if (trackedQueries.isEmpty &&
         trackedQueryTree.subtreeNullable(query.path)!.isEmpty) {
       trackedQueryTree =
-          trackedQueryTree.removePath(query.path) ?? TreeNode({});
+          trackedQueryTree.removePath(query.path) ?? ModifiableTreeNode({});
     }
   }
 
