@@ -3,32 +3,27 @@
 
 part of firebase.treestructureddata;
 
-class TreeStructuredData extends ModifiableTreeNode<Name, Value?> {
-  final Value? priority;
+abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
+  Value? get priority;
 
-  TreeStructuredData({Value? priority, Value? value, QueryFilter? filter})
-      : this._(value, FilteredMap(filter ?? QueryFilter()), priority);
+  TreeStructuredData._();
 
-  TreeStructuredData._(Value? value,
-      FilteredMap<Name, TreeStructuredData>? children, Value? priority)
-      : priority = priority,
-        assert(children == null || children is FilteredMap),
-        super(
-            value,
-            UnmodifiableFilteredMap<Name, TreeStructuredData>(
-                children ?? FilteredMap(const QueryFilter())));
+  factory TreeStructuredData(
+          {Value? priority, Value? value, QueryFilter? filter}) =>
+      TreeStructuredDataImpl._(
+          value, FilteredMap(filter ?? QueryFilter()), priority);
 
-  TreeStructuredData.leaf(Value value, [Value? priority])
-      : this._(value, null, priority);
+  factory TreeStructuredData.leaf(Value value, [Value? priority]) =>
+      TreeStructuredDataImpl._(value, null, priority);
 
-  TreeStructuredData.nonLeaf(Map<Name, TreeStructuredData> children,
-      [Value? priority])
-      : this._(
-            null,
-            children is FilteredMap
-                ? children as FilteredMap<Name, TreeStructuredData>
-                : (FilteredMap(const QueryFilter())..addAll(children)),
-            priority);
+  factory TreeStructuredData.nonLeaf(Map<Name, TreeStructuredData> children,
+          [Value? priority]) =>
+      TreeStructuredDataImpl._(
+          null,
+          children is FilteredMap
+              ? children as FilteredMap<Name, TreeStructuredData>
+              : (FilteredMap(const QueryFilter())..addAll(children)),
+          priority);
 
   factory TreeStructuredData.fromJson(json, [priority]) {
     if (json == null) {
@@ -77,21 +72,17 @@ class TreeStructuredData extends ModifiableTreeNode<Name, Value?> {
   }
 
   TreeStructuredData withPriority(Value? priority) =>
-      TreeStructuredData._(value, children, priority);
+      TreeStructuredDataImpl._(value, children, priority);
 
   @override
-  TreeStructuredData clone() => TreeStructuredData._(value, children, priority);
-
-  @override
-  UnmodifiableFilteredMap<Name, TreeStructuredData> get children =>
-      super.children as UnmodifiableFilteredMap<Name, TreeStructuredData>;
+  UnmodifiableFilteredMap<Name, TreeStructuredData> get children;
 
   TreeStructuredData view(
           {required Pair start,
           required Pair end,
           int? limit,
           bool reversed = false}) =>
-      TreeStructuredData._(
+      TreeStructuredDataImpl._(
           value,
           children.filteredMapView(
               start: start, end: end, limit: limit, reversed: reversed),
@@ -100,7 +91,7 @@ class TreeStructuredData extends ModifiableTreeNode<Name, Value?> {
   TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) {
     if (children.filter == f) return this;
     if (f.ordering == children.filter.ordering) {
-      return TreeStructuredData._(
+      return TreeStructuredDataImpl._(
           value,
           children.filteredMap(
               start: Pair.min(f.startKey, f.startValue),
@@ -109,7 +100,7 @@ class TreeStructuredData extends ModifiableTreeNode<Name, Value?> {
               reversed: f.reversed),
           priority);
     }
-    return TreeStructuredData._(
+    return TreeStructuredDataImpl._(
         value, FilteredMap(f)..addAll(children), priority);
   }
 
@@ -178,6 +169,25 @@ class TreeStructuredData extends ModifiableTreeNode<Name, Value?> {
     return TreeStructuredData.nonLeaf(
         children._map.clone()..[k] = newChild, priority);
   }
+}
+
+class TreeStructuredDataImpl extends TreeStructuredData {
+  @override
+  final Value? priority;
+
+  @override
+  final Value? value;
+
+  @override
+  final UnmodifiableFilteredMap<Name, TreeStructuredData> children;
+
+  TreeStructuredDataImpl._(this.value,
+      FilteredMap<Name, TreeStructuredData>? children, Value? priority)
+      : priority = priority,
+        assert(children == null || children is FilteredMap),
+        children = UnmodifiableFilteredMap<Name, TreeStructuredData>(
+            children ?? FilteredMap(const QueryFilter())),
+        super._();
 }
 
 String _doubleToIEEE754String(num v) {

@@ -30,6 +30,8 @@ abstract class TreeNode<K, V> {
 
   Map<K, TreeNode<K, V>> get children;
 
+  const TreeNode();
+
   TreeNode<K, V>? subtreeNullable(Path<K> path) {
     if (path.isEmpty) return this;
     if (!children.containsKey(path.first)) {
@@ -73,8 +75,33 @@ abstract class TreeNode<K, V> {
   }
 }
 
-class ModifiableTreeNode<K extends Comparable, V> extends TreeNode<K, V>
-    implements Comparable<ModifiableTreeNode<K, V>> {
+abstract class ComparableTreeNode<K extends Comparable, V>
+    extends TreeNode<K, V> implements Comparable<ModifiableTreeNode<K, V>> {
+  /// Order: nil, leaf, node with children
+  @override
+  int compareTo(ComparableTreeNode<K, V> other) {
+    if (isLeaf) {
+      if (other.isLeaf) {
+        return Comparable.compare(
+            value as Comparable, other.value as Comparable);
+      } else if (other.isNil) {
+        return 1;
+      }
+      return -1;
+    } else if (isNil) {
+      return other.isNil ? 0 : -1;
+    } else {
+      if (other.isEmpty) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
+  }
+}
+
+class ModifiableTreeNode<K extends Comparable, V>
+    extends ComparableTreeNode<K, V> {
   @override
   V value;
 
@@ -104,26 +131,4 @@ class ModifiableTreeNode<K extends Comparable, V> extends TreeNode<K, V>
   }
 
   ModifiableTreeNode<K, V> clone() => ModifiableTreeNode(value, children);
-
-  /// Order: nil, leaf, node with children
-  @override
-  int compareTo(ModifiableTreeNode<K, V> other) {
-    if (isLeaf) {
-      if (other.isLeaf) {
-        return Comparable.compare(
-            value as Comparable, other.value as Comparable);
-      } else if (other.isNil) {
-        return 1;
-      }
-      return -1;
-    } else if (isNil) {
-      return other.isNil ? 0 : -1;
-    } else {
-      if (other.isEmpty) {
-        return 1;
-      } else {
-        return 0;
-      }
-    }
-  }
 }
