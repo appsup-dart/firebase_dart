@@ -3,6 +3,7 @@
 
 part of firebase.treestructureddata;
 
+@immutable
 abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
   Value? get priority;
 
@@ -128,20 +129,16 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
                 const MapEquality().equals(children, other.children));
   }
 
-  int? _hashCode;
-
   @override
-  int get hashCode => _hashCode ??=
+  late final int hashCode =
       quiver.hash3(value, priority, const MapEquality().hash(children));
 
   @override
   String toString() => 'TreeStructuredData[${toJson(true)}]';
 
-  String? _hash;
+  late final String? hash = _computeHash();
 
-  String? get hash {
-    if (_hash != null) return _hash;
-
+  String? _computeHash() {
     var toHash = '';
 
     if (priority != null) {
@@ -154,7 +151,7 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
     children.forEach((key, child) {
       toHash += ':${key.asString()}:${child.hash}';
     });
-    return _hash = (toHash == ''
+    return (toHash == ''
         ? ''
         : base64.encode(sha1.convert(utf8.encode(toHash)).bytes));
   }
