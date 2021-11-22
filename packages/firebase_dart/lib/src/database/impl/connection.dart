@@ -40,7 +40,7 @@ class OperationEvent {
     switch (type) {
       case OperationEventType.overwrite:
         return TreeOperation.overwrite(
-            path!, TreeStructuredData.fromJson(data));
+            path!, TreeStructuredData.fromExportJson(data));
       case OperationEventType.merge:
         return TreeOperation.merge(
             path!,
@@ -48,7 +48,7 @@ class OperationEvent {
                 (data as Map).keys.map((k) => Name.parsePath(k.toString())),
                 (data as Map)
                     .values
-                    .map((v) => TreeStructuredData.fromJson(v))));
+                    .map((v) => TreeStructuredData.fromExportJson(v))));
       default:
         return null;
     }

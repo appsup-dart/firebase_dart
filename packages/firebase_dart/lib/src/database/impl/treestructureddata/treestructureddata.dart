@@ -26,6 +26,9 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
               : (FilteredMap(const QueryFilter())..addAll(children)),
           priority);
 
+  factory TreeStructuredData.fromExportJson(json) =>
+      TreeStructuredDataFromExportJson(json);
+
   factory TreeStructuredData.fromJson(json, [priority]) {
     if (json == null) {
       return TreeStructuredData();
@@ -165,6 +168,78 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
   TreeStructuredData withChild(Name k, TreeStructuredData newChild) {
     return TreeStructuredData.nonLeaf(
         children._map.clone()..[k] = newChild, priority);
+  }
+}
+
+class TreeStructuredDataFromExportJson extends TreeStructuredData {
+  final dynamic _exportJson;
+
+  TreeStructuredDataFromExportJson(this._exportJson) : super._();
+
+  @override
+  late final UnmodifiableFilteredMap<Name, TreeStructuredData> children =
+      _extractChildren();
+
+  @override
+  late final Value? priority = _extractPriority();
+
+  @override
+  late final Value? value = _extractValue();
+
+  Value? _extractValue() {
+    if (_exportJson == null) {
+      return null;
+    }
+
+    var json = _exportJson;
+    if (json is Map && json.containsKey('.value') && json['.value'] != null) {
+      json = json['.value'];
+    }
+
+    if (json is! List && (json is! Map || json.containsKey('.sv'))) {
+      return Value(json);
+    }
+
+    return null;
+  }
+
+  Value? _extractPriority() {
+    if (_exportJson == null) {
+      return null;
+    }
+
+    if (_exportJson is Map && _exportJson.containsKey('.priority')) {
+      return Value(_exportJson['.priority']);
+    }
+    return null;
+  }
+
+  UnmodifiableFilteredMap<Name, TreeStructuredData> _extractChildren() {
+    if (_exportJson == null) {
+      return UnmodifiableFilteredMap<Name, TreeStructuredData>(
+          FilteredMap(const QueryFilter()));
+    }
+
+    var json = _exportJson;
+    if (json is Map && json.containsKey('.value') && json['.value'] != null) {
+      json = json['.value'];
+    }
+
+    if (json is List) {
+      json = <int, dynamic>{...json.asMap()}..removeWhere((k, v) => v == null);
+    }
+    if (json is! Map || json.containsKey('.sv')) {
+      return UnmodifiableFilteredMap<Name, TreeStructuredData>(
+          FilteredMap(const QueryFilter()));
+    }
+
+    var children = {
+      for (var k in json.keys.where((k) => k is! String || !k.startsWith('.')))
+        Name(k.toString()): TreeStructuredData.fromJson(json[k], null)
+    };
+
+    return UnmodifiableFilteredMap<Name, TreeStructuredData>(
+        FilteredMap(const QueryFilter())..addAll(children));
   }
 }
 

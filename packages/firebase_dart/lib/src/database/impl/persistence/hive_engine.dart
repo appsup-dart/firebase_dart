@@ -40,7 +40,7 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
     for (var k in keys) {
       var p = Name.parsePath(k.substring('$_serverCachePrefix:'.length));
       serverCache = serverCache.applyOperation(TreeOperation.overwrite(
-          p, TreeStructuredData.fromJson(database.box.get(k))));
+          p, TreeStructuredData.fromExportJson(database.box.get(k))));
     }
     return serverCache;
   }
