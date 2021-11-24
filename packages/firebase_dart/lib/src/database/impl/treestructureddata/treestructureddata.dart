@@ -272,10 +272,16 @@ class TreeStructuredDataFromExportJson extends TreeStructuredData {
   }
 
   @override
-  dynamic toJson([bool exportFormat = false]) =>
-      /* TreeStructuredData.fromJson(_data._exportJson)
-          .toJson(exportFormat); */
-      _data.toJson(exportFormat);
+  dynamic toJson([bool exportFormat = false]) => _data.toJson(exportFormat);
+
+  @override
+  bool get isEmpty => _data.isEmpty;
+
+  @override
+  bool get isNil => _data.isNil;
+
+  @override
+  bool get isLeaf => _data.isLeaf;
 }
 
 class TreeStructuredDataImpl extends TreeStructuredData {
