@@ -31,18 +31,16 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
   }
 
   IncompleteData loadServerCache() {
-    var serverCache = IncompleteData.empty();
     var keys = database.keysBetween(
       startKey: '$_serverCachePrefix:',
       endKey: '$_serverCachePrefix;',
     );
 
-    for (var k in keys) {
-      var p = Name.parsePath(k.substring('$_serverCachePrefix:'.length));
-      serverCache = serverCache.applyOperation(TreeOperation.overwrite(
-          p, TreeStructuredData.fromExportJson(database.box.get(k))));
-    }
-    return serverCache;
+    return IncompleteData.fromLeafs({
+      for (var k in keys)
+        Name.parsePath(k.substring('$_serverCachePrefix:'.length)):
+            TreeStructuredData.fromExportJson(database.box.get(k))
+    });
   }
 
   @override

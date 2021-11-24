@@ -36,6 +36,19 @@ class IncompleteData {
       : this._(ModifiableTreeNode(data), data.children.filter as QueryFilter);
   IncompleteData._(this._writeTree, [this.filter = const QueryFilter()]);
 
+  factory IncompleteData.fromLeafs(Map<Path<Name>, TreeStructuredData> leafs) {
+    var tree = ModifiableTreeNode<Name, TreeStructuredData?>(null);
+    for (var e in leafs.entries) {
+      tree
+          .subtree(
+              e.key,
+              (parent, name) =>
+                  ModifiableTreeNode<Name, TreeStructuredData?>(null))
+          .value = e.value;
+    }
+    return IncompleteData._(tree);
+  }
+
   IncompleteData withFilter(QueryFilter filter) {
     return IncompleteData._(_writeTree, filter);
   }
