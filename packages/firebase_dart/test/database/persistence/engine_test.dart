@@ -11,7 +11,7 @@ void main() {
     test('performance test', () async {
       var box = await Hive.openBox('test', bytes: Uint8List(0));
 
-      for (var i = 0; i < 10000; i++) {
+      for (var i = 0; i < 1000; i++) {
         await box.put('C:some/path/${randomString()}',
             {for (var i = 0; i < 1000; i++) randomString(): randomString()});
       }
