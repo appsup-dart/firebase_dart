@@ -64,8 +64,9 @@ class Snapshot extends UnmodifiableMapBase<Name, Snapshot> {
     if (v is List) {
       return Iterable.generate(v.length, (i) => Name('$i')).toList();
     }
-    if (v is Map<String, dynamic>) {
+    if (v is Map) {
       return v.keys
+          .cast<String>()
           .where((v) => !v.startsWith('.'))
           .map((v) => Name(v))
           .toList();
