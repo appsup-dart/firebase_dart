@@ -61,9 +61,14 @@ class Snapshot extends UnmodifiableMapBase<Name, Snapshot> {
   Iterable<Name> _extractKeys() {
     var v = _exportJson;
     if (v is Map && v.containsKey('.value')) v = v['.value'];
-    if (v is List) return Iterable.generate(v.length, (i) => Name('$i'));
+    if (v is List) {
+      return Iterable.generate(v.length, (i) => Name('$i')).toList();
+    }
     if (v is Map<String, dynamic>) {
-      return v.keys.where((v) => !v.startsWith('.')).map((v) => Name(v));
+      return v.keys
+          .where((v) => !v.startsWith('.'))
+          .map((v) => Name(v))
+          .toList();
     }
     return const [];
   }
