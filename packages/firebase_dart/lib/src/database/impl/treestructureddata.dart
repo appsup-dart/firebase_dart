@@ -3,6 +3,8 @@
 
 library firebase.treestructureddata;
 
+import 'dart:collection';
+
 import 'package:meta/meta.dart';
 import 'package:quiver/core.dart';
 import 'package:collection/collection.dart';

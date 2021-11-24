@@ -3,6 +3,91 @@
 
 part of firebase.treestructureddata;
 
+class Snapshot extends UnmodifiableMapBase<Name, Snapshot> {
+  final dynamic _exportJson;
+
+  Snapshot(this._exportJson);
+
+  late final Value? priority = _extractPriority();
+
+  late final Value? value = _extractValue();
+
+  Value? _extractValue() {
+    if (_exportJson == null) {
+      return null;
+    }
+
+    var json = _exportJson;
+    if (json is Map && json.containsKey('.value') && json['.value'] != null) {
+      json = json['.value'];
+    }
+
+    if (json is! List && (json is! Map || json.containsKey('.sv'))) {
+      return Value(json);
+    }
+
+    return null;
+  }
+
+  Value? _extractPriority() {
+    if (_exportJson == null) {
+      return null;
+    }
+
+    if (_exportJson is Map && _exportJson.containsKey('.priority')) {
+      return Value(_exportJson['.priority']);
+    }
+    return null;
+  }
+
+  @override
+  Snapshot? operator [](Object? key) {
+    if (key is! Name) return null;
+    var v = _exportJson;
+    if (v is Map && v.containsKey('.value')) v = v['.value'];
+
+    var s = v is List
+        ? v[key.asInt()!]
+        : v is Map
+            ? v[key.asString()]
+            : null;
+
+    return Snapshot(s);
+  }
+
+  @override
+  late final Iterable<Name> keys = _extractKeys();
+
+  Iterable<Name> _extractKeys() {
+    var v = _exportJson;
+    if (v is Map && v.containsKey('.value')) v = v['.value'];
+    if (v is List) return Iterable.generate(v.length, (i) => Name('$i'));
+    if (v is Map<String, dynamic>) {
+      return v.keys.where((v) => !v.startsWith('.')).map((v) => Name(v));
+    }
+    return const [];
+  }
+
+  bool get isNil => isEmpty && value == null;
+  bool get isLeaf => isEmpty && value != null;
+
+  dynamic toJson([bool exportFormat = false]) {
+    if (isNil) return null;
+
+    var v = isLeaf
+        ? value!.toJson()
+        : map((k, v) => MapEntry(k.asString(), v.toJson(exportFormat)));
+
+    if (exportFormat && priority != null) {
+      return {
+        if (v is Map) ...v else '.value': v,
+        '.priority': priority!.toJson(),
+      };
+    }
+    return v;
+  }
+}
+
 @immutable
 abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
   Value? get priority;
@@ -108,18 +193,7 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
         value, FilteredMap(f)..addAll(children), priority);
   }
 
-  dynamic toJson([bool exportFormat = false]) {
-    if (isNil) return null;
-    var c = Map<String, dynamic>.fromIterables(
-        children.keys.map((k) => k.toString()),
-        children.values.map((v) => v.toJson(exportFormat)));
-
-    if (exportFormat && priority != null) {
-      if (isLeaf) c = {'.value': value!.toJson()};
-      return <String, dynamic>{'.priority': priority!.toJson()}..addAll(c);
-    }
-    return isLeaf ? value!.toJson() : c;
-  }
+  dynamic toJson([bool exportFormat = false]);
 
   @override
   bool operator ==(dynamic other) {
@@ -172,75 +246,36 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
 }
 
 class TreeStructuredDataFromExportJson extends TreeStructuredData {
-  final dynamic _exportJson;
+  final Snapshot _data;
 
-  TreeStructuredDataFromExportJson(this._exportJson) : super._();
+  TreeStructuredDataFromExportJson._(this._data) : super._();
+
+  TreeStructuredDataFromExportJson(dynamic exportJson)
+      : this._(Snapshot(exportJson));
 
   @override
   late final UnmodifiableFilteredMap<Name, TreeStructuredData> children =
       _extractChildren();
 
   @override
-  late final Value? priority = _extractPriority();
+  Value? get priority => _data.priority;
 
   @override
-  late final Value? value = _extractValue();
-
-  Value? _extractValue() {
-    if (_exportJson == null) {
-      return null;
-    }
-
-    var json = _exportJson;
-    if (json is Map && json.containsKey('.value') && json['.value'] != null) {
-      json = json['.value'];
-    }
-
-    if (json is! List && (json is! Map || json.containsKey('.sv'))) {
-      return Value(json);
-    }
-
-    return null;
-  }
-
-  Value? _extractPriority() {
-    if (_exportJson == null) {
-      return null;
-    }
-
-    if (_exportJson is Map && _exportJson.containsKey('.priority')) {
-      return Value(_exportJson['.priority']);
-    }
-    return null;
-  }
+  Value? get value => _data.value;
 
   UnmodifiableFilteredMap<Name, TreeStructuredData> _extractChildren() {
-    if (_exportJson == null) {
-      return UnmodifiableFilteredMap<Name, TreeStructuredData>(
-          FilteredMap(const QueryFilter()));
-    }
-
-    var json = _exportJson;
-    if (json is Map && json.containsKey('.value') && json['.value'] != null) {
-      json = json['.value'];
-    }
-
-    if (json is List) {
-      json = <int, dynamic>{...json.asMap()}..removeWhere((k, v) => v == null);
-    }
-    if (json is! Map || json.containsKey('.sv')) {
-      return UnmodifiableFilteredMap<Name, TreeStructuredData>(
-          FilteredMap(const QueryFilter()));
-    }
-
-    var children = {
-      for (var k in json.keys.where((k) => k is! String || !k.startsWith('.')))
-        Name(k.toString()): TreeStructuredData.fromJson(json[k], null)
-    };
+    var children =
+        _data.map((k, v) => MapEntry(k, TreeStructuredDataFromExportJson._(v)));
 
     return UnmodifiableFilteredMap<Name, TreeStructuredData>(
         FilteredMap(const QueryFilter())..addAll(children));
   }
+
+  @override
+  dynamic toJson([bool exportFormat = false]) =>
+      /* TreeStructuredData.fromJson(_data._exportJson)
+          .toJson(exportFormat); */
+      _data.toJson(exportFormat);
 }
 
 class TreeStructuredDataImpl extends TreeStructuredData {
@@ -260,6 +295,20 @@ class TreeStructuredDataImpl extends TreeStructuredData {
         children = UnmodifiableFilteredMap<Name, TreeStructuredData>(
             children ?? FilteredMap(const QueryFilter())),
         super._();
+
+  @override
+  dynamic toJson([bool exportFormat = false]) {
+    if (isNil) return null;
+    var c = Map<String, dynamic>.fromIterables(
+        children.keys.map((k) => k.toString()),
+        children.values.map((v) => v.toJson(exportFormat)));
+
+    if (exportFormat && priority != null) {
+      if (isLeaf) c = {'.value': value!.toJson()};
+      return <String, dynamic>{'.priority': priority!.toJson()}..addAll(c);
+    }
+    return isLeaf ? value!.toJson() : c;
+  }
 }
 
 String _doubleToIEEE754String(num v) {
