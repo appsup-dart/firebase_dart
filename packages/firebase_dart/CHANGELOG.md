@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4
+
+- bugfix: null check operator
+
 ## 1.0.3
 
 - Performance improvements

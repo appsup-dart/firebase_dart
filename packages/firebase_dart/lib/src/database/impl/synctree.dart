@@ -690,6 +690,7 @@ class SyncTree {
         if (filter != null &&
             (childOp.nodeOperation is Overwrite) &&
             (childOp.nodeOperation as Overwrite).value.isNil &&
+            tree.value.views[filter] != null &&
             !tree.value.views[filter]!.isCompleteForChild(k)) {
           continue;
         }
