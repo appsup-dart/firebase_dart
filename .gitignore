@@ -25,3 +25,7 @@ doc/api/
 *.code-workspace
 
 .DS_Store
+
+packages/firebase_dart/test/secrets.json
+
+packages/firebase_dart/example/firebase-config.json

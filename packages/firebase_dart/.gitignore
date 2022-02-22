@@ -22,4 +22,6 @@ doc/api/
 *.ipr
 *.iws
 
-test/secrets.json
+./test/secrets.json
+
+./example/firebase-config.json
