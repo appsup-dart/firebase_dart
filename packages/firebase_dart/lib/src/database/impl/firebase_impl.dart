@@ -270,6 +270,7 @@ class QueryImpl extends Query {
 
   @override
   Query startAt(dynamic value, {String? key = '[MIN_NAME]'}) {
+    key ??= '[MIN_NAME]';
     if (filter.orderBy == '.key') {
       if (key != '[MIN_NAME]') {
         throw ArgumentError(
@@ -285,6 +286,7 @@ class QueryImpl extends Query {
 
   @override
   Query endAt(dynamic value, {String? key = '[MAX_NAME]'}) {
+    key ??= '[MAX_NAME]';
     if (filter.orderBy == '.key') {
       if (key != '[MAX_NAME]') {
         throw ArgumentError(

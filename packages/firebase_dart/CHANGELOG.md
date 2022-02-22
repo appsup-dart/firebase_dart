@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.5
+
+- when calling `startAt` or `endAt` with the `key` parameter equal to null, we now handle this the same as not passing the `key` parameter
+
 ## 1.0.4
 
 - bugfix: null check operator
