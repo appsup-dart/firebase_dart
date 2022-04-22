@@ -5,9 +5,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:firebase_dart/core.dart' hide Firebase;
+import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/core.dart' as core;
-import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/src/database/token.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
@@ -45,11 +44,11 @@ void runDatabaseTests({bool isolated = false}) {
     });
   }
   group('mem', () {
-    testsWith({'host': 'mem://test/', 'secret': 'x'});
+    testsWith({'host': 'mem://test/', 'secret': 'x'}, isolated: isolated);
   });
 
   group('https', () {
-    testsWith(s.secrets);
+    testsWith(s.secrets, isolated: isolated);
   });
 
   group('FirebaseDatabase.delete', () {
@@ -177,25 +176,39 @@ void runDatabaseTests({bool isolated = false}) {
   }
 }
 
-void testsWith(Map<String, dynamic> secrets) {
+void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
   var testUrl = '${secrets['host']}';
 
   late DatabaseReference ref, ref2;
 
-  late StandaloneFirebaseDatabase db1, db2, dbAlt1, dbAlt2;
+  late FirebaseDatabase db1, db2, dbAlt1;
 
-  setUp(() {
-    db1 = StandaloneFirebaseDatabase(testUrl);
-    db2 = StandaloneFirebaseDatabase(testUrl);
-    dbAlt1 = StandaloneFirebaseDatabase(testUrl);
-    dbAlt2 = StandaloneFirebaseDatabase(testUrl);
+  late FirebaseApp app1, app2, appAlt1;
+  setUp(() async {
+    var options = FirebaseOptions(
+        apiKey: 'apiKey',
+        appId: 'my_app_id',
+        projectId: 'my_project',
+        messagingSenderId: 'ignore',
+        databaseURL: testUrl);
+
+    app1 = await Firebase.initializeApp(name: 'app1', options: options);
+    app2 = await Firebase.initializeApp(name: 'app2', options: options);
+    appAlt1 = await Firebase.initializeApp(name: 'appAlt1', options: options);
+
+    db1 = FirebaseDatabase(app: app1);
+    db2 = FirebaseDatabase(app: app2);
+    dbAlt1 = FirebaseDatabase(app: appAlt1);
   });
 
   tearDown(() async {
-    await db1.delete();
+    await app1.delete();
+    await app2.delete();
+    await appAlt1.delete();
+    /* await db1.delete();
     await db2.delete();
     await dbAlt1.delete();
-    await dbAlt2.delete();
+    await dbAlt2.delete(); */
   });
 
   group('Recover from connection loss', () {
@@ -290,37 +303,40 @@ void testsWith(Map<String, dynamic> secrets) {
       ref = db1.reference();
     });
 
-    test('auth/unauth', () async {
-      await ref.child('test').get();
-      var fromStream = db1.onAuthChanged.where((v) => v != null).first;
-      await db1.authenticate(token);
+    if (!isolated) {
+      var db = StandaloneFirebaseDatabase(testUrl);
+      test('auth/unauth', () async {
+        await ref.child('test').get();
+        var fromStream = db.onAuthChanged.where((v) => v != null).first;
+        await db.authenticate(token);
 
-      expect((await fromStream)!['uid'], uid);
-      expect(db1.currentAuth!['uid'], uid);
+        expect((await fromStream)!['uid'], uid);
+        expect(db.currentAuth!['uid'], uid);
 
-      var current = db1.currentAuth;
-      fromStream = db1.onAuthChanged.where((v) => v != current).first;
+        var current = db.currentAuth;
+        fromStream = db.onAuthChanged.where((v) => v != current).first;
 
-      await db1.unauthenticate();
+        await db.unauthenticate();
 
-      expect((await fromStream), isNull);
-      expect(db1.currentAuth, isNull);
-    });
+        expect((await fromStream), isNull);
+        expect(db.currentAuth, isNull);
+      });
 
-    test('permission denied', () async {
-      if (ref.url.scheme == 'mem') {
-        // TODO
-        return;
-      }
-      ref = ref.child('test-protected');
-      ref.onValue.listen((e) => null);
-      await db1.authenticate(token);
-      await ref.set('hello world');
-      expect(await ref.get(), 'hello world');
-      await db1.unauthenticate();
-      await expectLater(() => ref.set('hello all'), throwsException);
-      expect(await ref.get(), 'hello world');
-    });
+      test('permission denied', () async {
+        if (ref.url.scheme == 'mem') {
+          // TODO
+          return;
+        }
+        ref = ref.child('test-protected');
+        ref.onValue.listen((e) => null);
+        await db.authenticate(token);
+        await ref.set('hello world');
+        expect(await ref.get(), 'hello world');
+        await db.unauthenticate();
+        await expectLater(() => ref.set('hello all'), throwsException);
+        expect(await ref.get(), 'hello world');
+      });
+    }
     test('token', () {
       var token =
           'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InJpa0BwYXJ0YWdvLmJlIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJpYXQiOjE0NzIxMjIyMzgsInYiOjAsImQiOnsicHJvdmlkZXIiOiJwYXNzd29yZCIsInVpZCI6IjMzZTc1ZjI0LTE5MTAtNGI1Mi1hZDJjLWNmZGQwYWFjNzI4YiJ9fQ.ZO0zH6xgk58SKDqmqi9gWzsvzoSvPx6QCJizR94rzEc';
