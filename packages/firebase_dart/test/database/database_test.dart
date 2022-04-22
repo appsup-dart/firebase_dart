@@ -516,6 +516,68 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       expect(e.snapshot.key, 'hi');
       expect(e.previousSiblingKey, 'hello');
     });
+
+    group('on*-streams behavior', () {
+      test(
+          'onValue should immediately return last known value to additional listeners',
+          () async {
+        var v = DateTime.now().toIso8601String();
+        await ref.set(v);
+        var stream = ref.onValue.map((v) => v.snapshot.value);
+
+        var c = Completer();
+        var s1 = stream.listen((v) => c.isCompleted ? null : c.complete(v));
+
+        expect(await c.future, v);
+
+        // a new listener should receive the last known value immediately
+        expect(await stream.first.timeout(Duration(milliseconds: 20)), v);
+
+        await s1.cancel();
+      });
+
+      test('onValue should return last known value when offline', () async {
+        var v = DateTime.now().toIso8601String();
+        await ref.set(v);
+        var stream = ref.onValue.map((v) => v.snapshot.value);
+
+        var c = Completer();
+        var s1 = stream.listen((v) => c.isCompleted ? null : c.complete(v));
+
+        expect(await c.future, v);
+
+        await db1.goOffline();
+
+        // a new listener should receive the last known value immediately
+        expect(await stream.first, v);
+        expect(await db1.reference().child('.info/connected').get(), false);
+
+        await s1.cancel();
+      });
+
+      test(
+          'onChildAdded should emit events for all children to each new listener',
+          () async {
+        var v = {
+          for (var i = 0; i < 4; i++)
+            'value-$i': DateTime.now().toIso8601String()
+        };
+        await ref.set(v);
+        var stream = ref.onChildAdded.map((v) => v.snapshot.key);
+
+        var c = StreamController();
+        var s1 = stream.listen((v) => c.add(v));
+
+        expect(await c.stream.take(v.length).toList(), v.keys.toList());
+
+        // a new listener should receive the last known value immediately
+        expect(
+            await stream.take(4).toList().timeout(Duration(milliseconds: 20)),
+            v.keys.toList());
+
+        await s1.cancel();
+      });
+    });
   });
 
   group('Push/Merge/Remove', () {
