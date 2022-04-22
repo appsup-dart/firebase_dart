@@ -285,26 +285,25 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
     });
   });
   group('Authenticate', () {
-    late String token, uid;
-    setUp(() {
-      var host = secrets['host'];
-      var secret = secrets['secret'];
-
-      if (host == null || secret == null) {
-        print('Cannot test Authenticate: set a host and secret.');
-        return;
-      }
-
-      uid = 'pub-test-01';
-      var authData = {'uid': uid, 'debug': true, 'provider': 'custom'};
-      var codec = FirebaseTokenCodec(secret);
-      token = codec.encode(FirebaseToken(authData));
-
-      ref = db1.reference();
-    });
-
     if (!isolated) {
+      late String token, uid;
       var db = StandaloneFirebaseDatabase(testUrl);
+
+      setUp(() {
+        var host = secrets['host'];
+        var secret = secrets['secret'];
+
+        if (host == null || secret == null) {
+          print('Cannot test Authenticate: set a host and secret.');
+          return;
+        }
+
+        uid = 'pub-test-01';
+        var authData = {'uid': uid, 'debug': true, 'provider': 'custom'};
+        var codec = FirebaseTokenCodec(secret);
+        token = codec.encode(FirebaseToken(authData));
+        ref = db.reference();
+      });
       test('auth/unauth', () async {
         await ref.child('test').get();
         var fromStream = db.onAuthChanged.where((v) => v != null).first;
