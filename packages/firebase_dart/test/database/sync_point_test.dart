@@ -306,6 +306,69 @@ void main() {
       });
 
       test(
+          'should retain reverse ordered queries when data makes them non overlapping',
+          () {
+        var p = SyncPoint('test', Path(),
+            persistenceManager: FakePersistenceManager((path, filter) {
+          var key =
+              int.parse(filter.endKey!.asString().substring('key-'.length));
+
+          return IncompleteData.complete(TreeStructuredData.fromJson({
+            'key-${key - 5}': key,
+          }));
+        }));
+
+        for (var i = 0; i < 10; i++) {
+          var event;
+          var filter = QueryFilter(
+            ordering: o,
+            limit: 1,
+            reversed: true,
+            validInterval: KeyValueInterval(
+                Name.min, empty, Name('key-${1000 + (i + 1) * 10}'), empty),
+          );
+          p.addEventListener('value', filter, (e) {
+            event = e;
+          });
+
+          expect(event, isNotNull);
+        }
+
+        expect(p.minimalSetOfQueries.length, 10);
+      });
+
+      test(
+          'should retain non-reverse ordered queries when data makes them non overlapping',
+          () {
+        var p = SyncPoint('test', Path(),
+            persistenceManager: FakePersistenceManager((path, filter) {
+          var key =
+              int.parse(filter.startKey!.asString().substring('key-'.length));
+
+          return IncompleteData.complete(TreeStructuredData.fromJson({
+            'key-${key + 5}': key,
+          }));
+        }));
+
+        for (var i = 0; i < 10; i++) {
+          var event;
+          var filter = QueryFilter(
+            ordering: o,
+            limit: 1,
+            validInterval: KeyValueInterval(
+                Name('key-${1000 + i * 10}'), empty, Name.max, empty),
+          );
+          p.addEventListener('value', filter, (e) {
+            event = e;
+          });
+
+          expect(event, isNotNull);
+        }
+
+        expect(p.minimalSetOfQueries.length, 10);
+      });
+
+      test(
           'should use query with max end as master query for reverse ordered queries',
           () {
         var p = SyncPoint('test', Path(),

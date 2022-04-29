@@ -297,7 +297,7 @@ class SyncPoint {
           ..sort((a, b) =>
               -Comparable.compare(a.validInterval.end, b.validInterval.end));
 
-        if (backwardLimitingQueries.isNotEmpty) {
+        while (backwardLimitingQueries.isNotEmpty) {
           var view = createMasterViewForFilter(backwardLimitingQueries.first);
 
           for (var q in backwardLimitingQueries.toList()) {

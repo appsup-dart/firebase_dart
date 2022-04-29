@@ -32,6 +32,19 @@ abstract class PersistenceManager {
   T runInTransaction<T>(T Function() callable);
 }
 
+class FakePersistenceManager extends NoopPersistenceManager {
+  final IncompleteData Function(Path<Name> path, QueryFilter filter)
+      serverCacheFunction;
+
+  FakePersistenceManager(this.serverCacheFunction);
+
+  @override
+  IncompleteData serverCache(Path<Name> path,
+      [QueryFilter filter = const QueryFilter()]) {
+    return serverCacheFunction(path, filter);
+  }
+}
+
 class NoopPersistenceManager implements PersistenceManager {
   bool _insideTransaction = false;
 
