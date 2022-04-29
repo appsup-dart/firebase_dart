@@ -50,10 +50,12 @@ abstract class Name implements Pattern, Comparable<Name> {
   int get hashCode => hash2(this is _SpecialName, _value.hashCode);
 
   @override
-  bool operator ==(dynamic other) =>
-      other is Name &&
-      (this is _SpecialName == other is _SpecialName) &&
-      other._value == _value;
+  bool operator ==(dynamic other) {
+    if (identical(this, other)) return true;
+    return other is Name &&
+        (this is _SpecialName == other is _SpecialName) &&
+        other._value == _value;
+  }
 
   @override
   int compareTo(Name other) => compare(this, other);
@@ -102,8 +104,8 @@ abstract class Name implements Pattern, Comparable<Name> {
 class _NameImpl extends Name {
   _NameImpl(String value) : super._(value);
 
-  MapEntry<Null, int?>? _intValue;
+  late final int? _intValue = int.tryParse(_value);
 
   @override
-  int? asInt() => (_intValue ??= MapEntry(null, int.tryParse(_value))).value;
+  int? asInt() => _intValue;
 }

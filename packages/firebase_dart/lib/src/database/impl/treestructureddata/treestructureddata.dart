@@ -94,19 +94,46 @@ class Snapshot extends UnmodifiableMapBase<Name, Snapshot> {
   }
 }
 
+class LeafTreeStructuredData extends TreeStructuredData {
+  @override
+  final Value? priority;
+
+  @override
+  final Value? value;
+
+  static final UnmodifiableFilteredMap<Name, TreeStructuredData>
+      _emptyChildren = UnmodifiableFilteredMap<Name, TreeStructuredData>(
+          FilteredMap(const QueryFilter()));
+
+  LeafTreeStructuredData(this.value, this.priority) : super._();
+
+  @override
+  UnmodifiableFilteredMap<Name, TreeStructuredData> get children =>
+      _emptyChildren;
+
+  @override
+  dynamic toJson([bool exportFormat = false]) {
+    return value?.toJson();
+  }
+}
+
 @immutable
 abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
   Value? get priority;
 
   TreeStructuredData._();
 
-  factory TreeStructuredData(
-          {Value? priority, Value? value, QueryFilter? filter}) =>
-      TreeStructuredDataImpl._(
-          value, FilteredMap(filter ?? QueryFilter()), priority);
+  static final TreeStructuredData _nill = LeafTreeStructuredData(null, null);
+
+  factory TreeStructuredData({QueryFilter? filter}) {
+    if (filter == null || filter == const QueryFilter()) {
+      return _nill;
+    }
+    return TreeStructuredDataImpl._(null, FilteredMap(filter), null);
+  }
 
   factory TreeStructuredData.leaf(Value value, [Value? priority]) =>
-      TreeStructuredDataImpl._(value, null, priority);
+      LeafTreeStructuredData(value, priority);
 
   factory TreeStructuredData.nonLeaf(Map<Name, TreeStructuredData> children,
           [Value? priority]) =>
@@ -219,9 +246,9 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
   @override
   String toString() => 'TreeStructuredData[${toJson(true)}]';
 
-  late final String? hash = _computeHash();
+  late final String hash = _computeHash();
 
-  String? _computeHash() {
+  String _computeHash() {
     var toHash = '';
 
     if (priority != null) {

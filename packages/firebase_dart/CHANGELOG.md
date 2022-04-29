@@ -3,6 +3,7 @@
 ## 1.0.6
 
 - fix some realtime database queries not sent to server because of optimization error
+- improve memory usage
 
 ## 1.0.5
 
