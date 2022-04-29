@@ -6,7 +6,6 @@ import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart' as auth_lib;
-import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';

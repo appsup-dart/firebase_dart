@@ -35,6 +35,7 @@ dev_dependencies:
   test: ^1.16.5
   fake_async: ^1.2.0
   benchmark_harness: ^2.0.0
+  vm_service: ^7.3.0
 
 false_secrets:
  - /lib/src/core/options.dart

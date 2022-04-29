@@ -1,4 +1,3 @@
-import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/core.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';

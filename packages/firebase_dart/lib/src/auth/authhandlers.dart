@@ -4,8 +4,6 @@ import 'dart:math';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/core.dart';
-import 'package:firebase_dart/src/auth/auth_provider.dart';
-import 'package:firebase_dart/src/auth/auth_credential.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:uuid/uuid.dart';
 

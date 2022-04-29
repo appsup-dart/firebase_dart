@@ -4,8 +4,6 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:firebase_dart/auth.dart';
-import 'package:firebase_dart/src/auth/auth_provider.dart';
-import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:test/test.dart';

@@ -4,7 +4,6 @@ import 'dart:html';
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
-import 'package:firebase_dart/src/auth/auth_credential.dart';
 import 'package:firebase_dart/src/auth/iframeclient/gapi_iframes.dart';
 import 'package:firebase_dart/src/auth/iframeclient/url_builder.dart';
 import 'iframewrapper.dart';

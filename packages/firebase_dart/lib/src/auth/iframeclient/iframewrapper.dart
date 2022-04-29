@@ -6,7 +6,6 @@ import 'package:js/js.dart';
 import 'dart:async';
 import 'dart:html';
 import 'dart:js';
-import 'dart:js_util';
 import 'dart:math';
 import 'gapi.dart' as gapi;
 import 'gapi_iframes.dart' as gapi;

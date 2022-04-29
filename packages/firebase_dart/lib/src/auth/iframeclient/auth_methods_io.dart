@@ -1,8 +1,6 @@
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/core.dart';
-import 'package:firebase_dart/src/auth/auth_provider.dart';
-import 'package:firebase_dart/src/auth/auth_credential.dart';
 
 Future<Map<String, dynamic>> webGetAuthResult() async {
   throw UnimplementedError();

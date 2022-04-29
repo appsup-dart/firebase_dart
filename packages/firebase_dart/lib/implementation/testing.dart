@@ -2,7 +2,6 @@ import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart' as auth;
-import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/implementation/testing.dart';
 import 'package:firebase_dart/src/storage/backend/backend.dart' as storage;
 import 'package:firebase_dart/src/implementation/testing_no_isolate.dart'

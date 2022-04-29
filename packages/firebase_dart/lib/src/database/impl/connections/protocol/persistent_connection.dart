@@ -466,18 +466,16 @@ class PersistentConnectionImpl extends PersistentConnection
   Future<MessageBody> _request(Request request,
       {bool forceQueue = false}) async {
     var message = request.message;
-    if (message is DataMessage) {
-      switch (message.action) {
-        case DataMessage.actionListen:
-        case DataMessage.actionUnlisten:
-        case DataMessage.actionUnauth:
-        case DataMessage.actionAuth:
-        case DataMessage.actionGauth:
-        case DataMessage.actionStats:
-          break;
-        default:
-          _outstandingRequests.add(request);
-      }
+    switch (message.action) {
+      case DataMessage.actionListen:
+      case DataMessage.actionUnlisten:
+      case DataMessage.actionUnauth:
+      case DataMessage.actionAuth:
+      case DataMessage.actionGauth:
+      case DataMessage.actionStats:
+        break;
+      default:
+        _outstandingRequests.add(request);
     }
 
     if (forceQueue || connectionState == ConnectionState.connected) {

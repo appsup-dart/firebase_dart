@@ -330,7 +330,6 @@ class TreeStructuredDataImpl extends TreeStructuredData {
   TreeStructuredDataImpl._(this.value,
       FilteredMap<Name, TreeStructuredData>? children, Value? priority)
       : priority = priority,
-        assert(children == null || children is FilteredMap),
         children = UnmodifiableFilteredMap<Name, TreeStructuredData>(
             children ?? FilteredMap(const QueryFilter())),
         super._();

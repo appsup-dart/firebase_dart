@@ -16,7 +16,6 @@ import 'events/value.dart';
 import 'event.dart';
 import 'backend_connection/rules.dart';
 import 'events/cancel.dart';
-import '../../../firebase_dart.dart' show ServerValue;
 
 part 'backend_connection/connection.dart';
 part 'backend_connection/transport.dart';
