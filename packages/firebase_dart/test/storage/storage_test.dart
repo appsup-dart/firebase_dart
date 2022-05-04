@@ -195,6 +195,16 @@ void runStorageTests({bool isolated = false}) {
         expect(t.metadata!.contentType, 'lol/wut');
       });
 
+      test('Uses custom metadata', () async {
+        var customMetadata = {'one': '1', 'two': '2'};
+        var t = await child.child('hello.bin').putData(
+              Uint8List(0),
+              SettableMetadata(customMetadata: customMetadata),
+            );
+        var r = await child.child('hello.bin').getMetadata();
+        expect(r.customMetadata, customMetadata);
+      });
+
       test('uploads without error', () async {
         var blob = Uint8List.fromList([97]);
         var ref = child.child('hello.bin');
