@@ -113,7 +113,14 @@ class LeafTreeStructuredData extends TreeStructuredData {
 
   @override
   dynamic toJson([bool exportFormat = false]) {
-    return value?.toJson();
+    if (priority == null || !exportFormat) {
+      return value?.toJson();
+    } else {
+      return {
+        '.priority': priority?.toJson(),
+        '.value': value?.toJson(),
+      };
+    }
   }
 }
 
