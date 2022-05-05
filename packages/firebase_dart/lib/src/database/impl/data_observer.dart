@@ -55,8 +55,16 @@ class IncompleteData {
 
   TreeStructuredData? _cachedValue;
   TreeStructuredData get value {
-    return _cachedValue ??=
-        toOperation().apply(TreeStructuredData(filter: filter));
+    return _cachedValue ??= _composeValue(_writeTree);
+  }
+
+  TreeStructuredData _composeValue(
+      ModifiableTreeNode<Name, TreeStructuredData?> tree) {
+    if (tree.value != null) return tree.value!.withFilter(filter);
+
+    return TreeStructuredData.nonLeaf({
+      for (var k in tree.children.keys) k: _composeValue(tree.children[k]!)
+    }).withFilter(filter);
   }
 
   /// Returns true if all the data is complete
