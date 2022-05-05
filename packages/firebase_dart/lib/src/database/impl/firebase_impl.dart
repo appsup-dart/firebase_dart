@@ -329,7 +329,7 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
   OnDisconnect onDisconnect() => _onDisconnect;
 
   @override
-  Uri get url => _repo.url.replace(path: _path);
+  late final Uri url = _repo.url.replace(path: _path);
 
   @override
   Future<void> set(dynamic value, {dynamic priority}) =>
@@ -375,6 +375,12 @@ class ReferenceImpl extends QueryImpl with DatabaseReference {
 
   @override
   DatabaseReference root() => ReferenceImpl(db, []);
+
+  @override
+  String get path => '/$_path';
+
+  @override
+  String? get key => _pathSegments.isEmpty ? null : _pathSegments.last;
 }
 
 class DisconnectImpl extends OnDisconnect {

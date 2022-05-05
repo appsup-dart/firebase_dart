@@ -1,5 +1,10 @@
 # Changelog
 
+# 1.0.7
+
+- add `DatabaseReference.path` getter
+
+
 ## 1.0.6
 
 - fix some realtime database queries not sent to server because of optimization error

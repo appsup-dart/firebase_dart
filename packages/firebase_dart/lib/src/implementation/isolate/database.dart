@@ -459,4 +459,7 @@ class IsolateDatabaseReference extends IsolateQuery with DatabaseReference {
   Future<void> update(Map<String, dynamic> value) async {
     await invoke(#update, [value]);
   }
+
+  @override
+  String? get key => pathSegments.isEmpty ? null : pathSegments.last;
 }

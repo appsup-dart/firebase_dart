@@ -438,13 +438,13 @@ class StreamFactory {
   }
 
   void startListen() {
-    repo.listen(ref.url.path, filter, type, addEvent);
-    repo.listen(ref.url.path, filter, 'cancel', addError);
+    repo.listen(ref.path, filter, type, addEvent);
+    repo.listen(ref.path, filter, 'cancel', addError);
   }
 
   void stopListen() {
-    repo.unlisten(ref.url.path, filter, type, addEvent);
-    repo.unlisten(ref.url.path, filter, 'cancel', addError);
+    repo.unlisten(ref.path, filter, type, addEvent);
+    repo.unlisten(ref.path, filter, 'cancel', addError);
   }
 
   Stream<firebase.Event> call() {

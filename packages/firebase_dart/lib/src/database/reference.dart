@@ -31,12 +31,13 @@ abstract class DatabaseReference implements Query {
   /// https://SampleChat.firebaseIO-demo.com/users/fred)
   ///
   /// [key] on the root of a Firebase is `null`.
-  String? get key => url.pathSegments.isEmpty
-      ? null
-      : url.pathSegments.lastWhere((s) => s.isNotEmpty);
+  String? get key;
 
   /// Gets the absolute URL corresponding to this Firebase reference's location.
   Uri get url;
+
+  /// Gets the path to this Firebase reference's location.
+  String get path;
 
   /// Write `value` to the location with the specified `priority` if applicable.
   ///
