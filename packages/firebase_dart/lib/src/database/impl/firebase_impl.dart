@@ -128,7 +128,7 @@ class FirebaseDatabaseImpl extends FirebaseService
   }
 
   @override
-  int get hashCode => quiver.hash2(databaseURL, app);
+  late final int hashCode = quiver.hash2(databaseURL, app);
 
   @override
   bool operator ==(Object other) =>
