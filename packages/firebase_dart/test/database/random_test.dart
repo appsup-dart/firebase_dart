@@ -67,6 +67,7 @@ void _doTest(int? seed) {
     var tester = RandomSyncTreeTester(seed: seed);
     for (var i = 0; i < 1000; i++) {
       tester.next();
+      fakeAsync.flushTimers();
       fakeAsync.flushMicrotasks();
       if (tester.outstandingListens.isEmpty) {
         tester.checkServerVersions();

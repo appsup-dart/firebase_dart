@@ -129,6 +129,10 @@ void runDatabaseTests({bool isolated = false}) {
           await ref.once();
 
           await app.delete();
+
+          await Future.delayed(Duration(
+              milliseconds:
+                  10)); // wait for SyncTree processing in Memory Backend
         },
             zoneSpecification: ZoneSpecification(
               createTimer: (self, parent, zone, duration, f) {
@@ -453,14 +457,14 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
 
       await ref.child('key-000').set(0);
       await ref.orderByKey().startAt('key-002').limitToFirst(2).get();
-      await Future.value();
+      await Future.delayed(Duration(milliseconds: 10));
       expect(childrenAdded, ['key-002', 'key-004']);
       expect(childrenRemoved, []);
 
       await ref.child('key-003').set(3);
 
       await ref.orderByKey().startAt('key-002').limitToFirst(2).get();
-      await Future.value();
+      await Future.delayed(Duration(milliseconds: 10));
       expect(childrenAdded, ['key-002', 'key-004', 'key-003']);
       expect(childrenRemoved, ['key-004']);
 

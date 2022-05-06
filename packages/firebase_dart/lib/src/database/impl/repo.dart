@@ -147,6 +147,7 @@ class Repo {
     await _authStateChangesSubscription.cancel();
     await _connection.close();
     _syncTree.destroy();
+    _infoSyncTree.destroy();
     _unlistenTimers.forEach((v) => v.cancel());
     _repos.removeWhere((key, value) => value == this);
   }

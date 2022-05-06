@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:async/async.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
@@ -562,7 +563,13 @@ class SyncTree {
 
   final Set<Path<Name>> _invalidPaths = {};
 
-  Future<void>? _handleInvalidPointsFuture;
+  DelayedCancellableFuture<void>? _handleInvalidPointsFuture;
+
+  Future<void> waitForAllProcessed() async {
+    while (_handleInvalidPointsFuture != null) {
+      await _handleInvalidPointsFuture;
+    }
+  }
 
   void _handleInvalidPaths() {
     for (var path in _invalidPaths) {
@@ -579,7 +586,7 @@ class SyncTree {
     _handleInvalidPointsFuture = null;
   }
 
-  Future<void> _invalidate(Path<Name> path) {
+  void _invalidate(Path<Name> path) {
     var node = root.subtree(path, _createNode);
     var point = node.value;
 
@@ -597,7 +604,8 @@ class SyncTree {
 
     _invalidPaths.add(path);
 
-    return _handleInvalidPointsFuture ??= Future.microtask(_handleInvalidPaths);
+    _handleInvalidPointsFuture ??= DelayedCancellableFuture(
+        Duration(milliseconds: 1), _handleInvalidPaths);
   }
 
   Future<void> _doOnSyncPoint(
@@ -606,7 +614,9 @@ class SyncTree {
 
     action(point);
 
-    return _invalidate(path);
+    _invalidate(path);
+
+    return _handleInvalidPointsFuture!;
   }
 
   /// Adds an event listener for events of [type] and for data at [path] and
@@ -715,13 +725,31 @@ class SyncTree {
   }
 
   void destroy() {
+    _handleInvalidPointsFuture?.cancel();
     root.forEachNode((key, value) {
       for (var v in value.views.values) {
-        for (var o in v.observers.values) {
+        for (var o in v.observers.values.toList()) {
           o.dispatchEvent(CancelEvent(null, null));
         }
         v.observers.clear();
       }
+    });
+  }
+}
+
+class DelayedCancellableFuture<T> extends DelegatingFuture<T> {
+  final void Function() cancel;
+
+  DelayedCancellableFuture._(Future<T> future, this.cancel) : super(future);
+  factory DelayedCancellableFuture(
+      Duration duration, FutureOr<T> Function() computation) {
+    var c = Completer<T>();
+    var t = Timer(duration, () {
+      c.complete(Future(computation));
+    });
+
+    return DelayedCancellableFuture._(c.future, () {
+      t.cancel();
     });
   }
 }

@@ -217,10 +217,10 @@ class TransactionsTree {
   }
 
   /// Executes all transactions
-  void execute() {
-    root.execute().then((finished) {
-      if (!finished) execute();
-    });
+  void execute() async {
+    await repo._syncTree.waitForAllProcessed();
+    var finished = await root.execute();
+    if (!finished) execute();
   }
 
   /// Aborts all transactions at [path] with reason [exception]
