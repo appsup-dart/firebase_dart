@@ -102,10 +102,25 @@ abstract class Name implements Pattern, Comparable<Name> {
 }
 
 class _NameImpl extends Name {
+  /// For use in keys, the minimum possible 32-bit integer.
+  static const min32bitInteger = -2147483648;
+
+  /// For use in kyes, the maximum possible 32-bit integer.
+  static const max32bitInteger = 2147483647;
+
   _NameImpl(String value) : super._(value);
 
   late final int? _intValue = int.tryParse(_value);
 
+  /// If the string contains a 32-bit integer, return it.  Else return null.
   @override
-  int? asInt() => _intValue;
+  int? asInt() {
+    var intValue = _intValue;
+    if (intValue != null) {
+      if (intValue >= min32bitInteger && intValue <= max32bitInteger) {
+        return intValue;
+      }
+    }
+    return null;
+  }
 }

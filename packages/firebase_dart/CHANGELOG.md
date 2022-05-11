@@ -3,6 +3,7 @@
 # 1.0.7
 
 - add `DatabaseReference.path` getter
+- fix key ordering in case of integers overflowing 32-bit
 
 
 ## 1.0.6
