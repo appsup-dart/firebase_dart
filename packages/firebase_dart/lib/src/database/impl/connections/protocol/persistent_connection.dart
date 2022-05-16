@@ -167,7 +167,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Future<Iterable<String>> listen(String path,
-      {QueryFilter? query, String? hash}) async {
+      {required QueryFilter query, String? hash}) async {
     var def = QueryDef(path, query);
     var tag = _nextTag++;
     _tagToQuery[tag] = def;
@@ -191,9 +191,10 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<void> unlisten(String path, {QueryFilter? query}) async {
+  Future<void> unlisten(String path, {required QueryFilter query}) async {
     var def = QueryDef(path, query);
     var tag = _tagToQuery.inverse.remove(def);
+    if (tag == null) return;
     var r = Request.unlisten(path, query: query, tag: tag);
     _removeListen(path, query);
     await _request(r);
@@ -655,7 +656,7 @@ class PersistentConnectionImpl extends PersistentConnection
 }
 
 class QueryDef {
-  final QueryFilter? query;
+  final QueryFilter query;
   final String path;
 
   QueryDef(this.path, this.query);
