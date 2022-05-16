@@ -20,7 +20,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   final List<Request> _listens = [];
 
-  final quiver.BiMap<int, QueryDef> _tagToQuery = quiver.BiMap();
+  final quiver.BiMap<int, QuerySpec> _tagToQuery = quiver.BiMap();
 
   final List<Request> _outstandingRequests = [];
 
@@ -89,7 +89,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   void onDataMessage(DataMessage message) {
-    var query = message.body.query ?? _tagToQuery[message.body.tag]?.query;
+    var query = message.body.query ?? _tagToQuery[message.body.tag]?.params;
     if (query == null && message.body.tag != null) {
       // not listening any more.
       return;
@@ -168,7 +168,7 @@ class PersistentConnectionImpl extends PersistentConnection
   @override
   Future<Iterable<String>> listen(String path,
       {required QueryFilter query, String? hash}) async {
-    var def = QueryDef(path, query);
+    var def = QuerySpec(Name.parsePath(path), query);
     var tag = _nextTag++;
     _tagToQuery[tag] = def;
 
@@ -192,7 +192,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Future<void> unlisten(String path, {required QueryFilter query}) async {
-    var def = QueryDef(path, query);
+    var def = QuerySpec(Name.parsePath(path), query);
     var tag = _tagToQuery.inverse.remove(def);
     if (tag == null) return;
     var r = Request.unlisten(path, query: query, tag: tag);
@@ -653,18 +653,4 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Map<String, dynamic>? get authData => _authData;
-}
-
-class QueryDef {
-  final QueryFilter query;
-  final String path;
-
-  QueryDef(this.path, this.query);
-
-  @override
-  int get hashCode => quiver.hash2(path, query);
-
-  @override
-  bool operator ==(other) =>
-      other is QueryDef && other.path == path && other.query == query;
 }

@@ -16,11 +16,11 @@ import 'package:jose/jose.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:quiver/collection.dart' as quiver;
-import 'package:quiver/core.dart' as quiver;
 import 'package:sortedmap/sortedmap.dart';
 import 'package:stream_channel/stream_channel.dart';
 
 import '../connection.dart';
+import '../query_spec.dart';
 import '../treestructureddata.dart';
 import 'protocol/websocket.dart'
     if (dart.library.html) 'protocol/websocket_html.dart'
