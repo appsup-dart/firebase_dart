@@ -7,7 +7,6 @@ import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
     show SetAccountInfoResponse;
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
 import 'package:openid_client/openid_client.dart' as openid;
-import 'package:quiver/core.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../auth.dart';
@@ -581,7 +580,7 @@ class GenericAdditionalUserInfo implements AdditionalUserInfo {
       this.username});
 
   @override
-  int get hashCode => hash2(providerId, isNewUser);
+  int get hashCode => Object.hash(providerId, isNewUser);
 
   @override
   bool operator ==(other) =>

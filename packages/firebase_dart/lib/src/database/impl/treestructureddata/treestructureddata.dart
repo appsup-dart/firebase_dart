@@ -248,7 +248,7 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
 
   @override
   late final int hashCode =
-      quiver.hash3(value, priority, const MapEquality().hash(children));
+      Object.hash(value, priority, const MapEquality().hash(children));
 
   @override
   String toString() => 'TreeStructuredData[${toJson(true)}]';

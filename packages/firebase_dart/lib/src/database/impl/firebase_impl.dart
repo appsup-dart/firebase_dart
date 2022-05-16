@@ -10,7 +10,6 @@ import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:hive/hive.dart';
-import 'package:quiver/core.dart' as quiver;
 
 import '../../database.dart';
 import 'repo.dart';
@@ -128,7 +127,7 @@ class FirebaseDatabaseImpl extends FirebaseService
   }
 
   @override
-  late final int hashCode = quiver.hash2(databaseURL, app);
+  late final int hashCode = Object.hash(databaseURL, app);
 
   @override
   bool operator ==(Object other) =>

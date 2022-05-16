@@ -6,11 +6,9 @@ library firebase.treestructureddata;
 import 'dart:collection';
 
 import 'package:meta/meta.dart';
-import 'package:quiver/core.dart';
 import 'package:collection/collection.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'tree.dart';
-import 'package:quiver/core.dart' as quiver;
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';

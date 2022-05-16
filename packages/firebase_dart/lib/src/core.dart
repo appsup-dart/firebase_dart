@@ -3,7 +3,6 @@ library firebase_dart.core;
 import 'dart:async';
 
 import 'package:meta/meta.dart';
-import 'package:quiver/core.dart';
 
 import 'implementation.dart';
 import 'core/exception.dart';

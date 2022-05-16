@@ -1,5 +1,4 @@
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
-import 'package:quiver/core.dart';
 
 import 'tree.dart';
 import 'treestructureddata.dart';
@@ -30,7 +29,7 @@ class QuerySpec {
       };
 
   @override
-  int get hashCode => hash2(params, path);
+  int get hashCode => Object.hash(params, path);
 
   @override
   bool operator ==(other) =>

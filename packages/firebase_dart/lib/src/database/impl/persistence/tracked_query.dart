@@ -11,7 +11,6 @@ import 'package:meta/meta.dart';
 
 import '../tree.dart';
 import '../treestructureddata.dart';
-import 'package:quiver/core.dart';
 
 final _logger = Logger('firebase.persistence');
 
@@ -72,7 +71,7 @@ class TrackedQuery {
       o.active == active;
 
   @override
-  int get hashCode => hashObjects([id, querySpec, lastUse, complete, active]);
+  int get hashCode => Object.hash(id, querySpec, lastUse, complete, active);
 
   @override
   String toString() {

@@ -26,7 +26,7 @@ abstract class FirebaseApp {
   }
 
   @override
-  late final int hashCode = hash2(name, options);
+  late final int hashCode = Object.hash(name, options);
 
   @override
   String toString() => '$FirebaseApp($name)';

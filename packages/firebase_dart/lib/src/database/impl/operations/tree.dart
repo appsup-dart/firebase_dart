@@ -2,7 +2,6 @@
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
 import 'package:collection/collection.dart';
-import 'package:quiver/core.dart';
 
 import '../data_observer.dart';
 import '../event.dart';
@@ -69,7 +68,7 @@ class TreeOperation extends Operation {
   }
 
   @override
-  int get hashCode => hash2(path, nodeOperation);
+  int get hashCode => Object.hash(path, nodeOperation);
 
   @override
   bool operator ==(other) =>
@@ -91,7 +90,7 @@ class Ack extends TreeOperation {
   }
 
   @override
-  int get hashCode => hash2(path, success);
+  int get hashCode => Object.hash(path, success);
 
   @override
   bool operator ==(other) =>

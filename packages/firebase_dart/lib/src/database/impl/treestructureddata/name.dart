@@ -47,7 +47,7 @@ abstract class Name implements Pattern, Comparable<Name> {
       _value.matchAsPrefix(string, start);
 
   @override
-  int get hashCode => hash2(this is _SpecialName, _value.hashCode);
+  int get hashCode => Object.hash(this is _SpecialName, _value.hashCode);
 
   @override
   bool operator ==(dynamic other) {

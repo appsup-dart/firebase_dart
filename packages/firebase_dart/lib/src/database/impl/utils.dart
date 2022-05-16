@@ -1,7 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
-import 'package:quiver/core.dart';
 import 'package:sortedmap/sortedmap.dart';
 
 typedef Predicate<T> = bool Function(T);
@@ -143,7 +142,7 @@ class TreeNodeEquality<K extends Comparable, V>
 
   @override
   int hash(ModifiableTreeNode<K, V> e) {
-    return hash2(_childrenEquality.hash(e.children), e.value);
+    return Object.hash(_childrenEquality.hash(e.children), e.value);
   }
 
   @override
