@@ -196,9 +196,18 @@ class SyncPoint {
     if (_isCompleteFromParent == v) return;
     _isCompleteFromParent = v;
     if (_isCompleteFromParent) {
-      views.putIfAbsent(
-          QueryFilter(), () => MasterView(QueryFilter(), debugName: debugName));
+      views.putIfAbsent(const QueryFilter(),
+          () => MasterView(const QueryFilter(), debugName: debugName));
       _prunable = true;
+    } else {
+      var defView = views[const QueryFilter()]!;
+      if (!defView.observers.containsKey(const QueryFilter())) {
+        views.remove(const QueryFilter());
+        for (var k in defView.observers.keys.toList()) {
+          var view = getMasterViewForFilter(k);
+          view.adoptEventTarget(k, defView.observers.remove(k)!);
+        }
+      }
     }
   }
 

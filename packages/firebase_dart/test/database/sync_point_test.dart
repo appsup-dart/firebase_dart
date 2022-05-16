@@ -545,6 +545,35 @@ void main() {
           ),
         ]);
       });
+
+      test(
+          'Should not return const QueryFilter() when isCompleteFromParent is set to false',
+          () {
+        var p = SyncPoint('test', Path(),
+            persistenceManager: NoopPersistenceManager());
+
+        p.isCompleteFromParent = true;
+        p.addEventListener('value', QueryFilter(limit: 1), (event) {});
+        expect(p.minimalSetOfQueries, []);
+        expect(p.views.keys, [const QueryFilter()]);
+
+        p.isCompleteFromParent = false;
+        expect(p.minimalSetOfQueries, [QueryFilter(limit: 1)]);
+      });
+
+      test(
+          'Should not return empty list when isCompleteFromParent is set to true',
+          () {
+        var p = SyncPoint('test', Path(),
+            persistenceManager: NoopPersistenceManager());
+
+        p.addEventListener('value', QueryFilter(limit: 1), (event) {});
+        expect(p.minimalSetOfQueries, [QueryFilter(limit: 1)]);
+        expect(p.views.keys, [QueryFilter(limit: 1)]);
+
+        p.isCompleteFromParent = true;
+        expect(p.minimalSetOfQueries, []);
+      });
     });
   });
 }
