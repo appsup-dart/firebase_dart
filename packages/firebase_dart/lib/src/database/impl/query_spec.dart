@@ -8,7 +8,7 @@ class QuerySpec {
 
   final Path<Name> path;
 
-  QuerySpec(this.path, [this.params = const QueryFilter()]);
+  const QuerySpec(this.path, [this.params = const QueryFilter()]);
 
   QuerySpec.fromJson(Map<dynamic, dynamic> json)
       : this(

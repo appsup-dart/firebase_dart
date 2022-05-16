@@ -33,7 +33,7 @@ void main() async {
             Name.parsePath('foo/quu/2'), TreeStructuredData.fromJson('4')));
       });
 
-      var cache = manager.serverCache(Name.parsePath('foo'));
+      var cache = manager.serverCache(QuerySpec(Name.parsePath('foo')));
       expect(cache.completeValue, null);
     });
 
@@ -41,13 +41,12 @@ void main() async {
       var manager = newTestPersistenceManager();
 
       manager.runInTransaction(() {
-        manager.setQueryActive(limit3FooQuery.path, limit3FooQuery.params);
+        manager.setQueryActive(limit3FooQuery);
         manager.updateServerCache(TreeOperation.overwrite(Name.parsePath('foo'),
             TreeStructuredData.fromJson({'a': 1, 'b': 2, 'c': 3, 'd': 4})));
       });
 
-      var cache =
-          manager.serverCache(Name.parsePath('foo'), limit3FooQuery.params);
+      var cache = manager.serverCache(limit3FooQuery);
       expect(cache.completeValue,
           TreeStructuredData.fromJson({'b': 2, 'c': 3, 'd': 4}));
     });
@@ -56,15 +55,14 @@ void main() async {
       var manager = newTestPersistenceManager();
 
       manager.runInTransaction(() {
-        manager.setQueryActive(limit3FooQuery.path, limit3FooQuery.params);
+        manager.setQueryActive(limit3FooQuery);
         manager.updateServerCache(
             TreeOperation.overwrite(Name.parsePath('foo'),
                 TreeStructuredData.fromJson({'a': 1, 'b': 2, 'c': 3})),
             limit3FooQuery.params);
       });
 
-      var cache =
-          manager.serverCache(Name.parsePath('foo'), limit3FooQuery.params);
+      var cache = manager.serverCache(limit3FooQuery);
       expect(cache.completeValue,
           TreeStructuredData.fromJson({'a': 1, 'b': 2, 'c': 3}));
     });
@@ -73,15 +71,15 @@ void main() async {
       var manager = newTestPersistenceManager();
 
       manager.runInTransaction(() {
-        manager.setQueryActive(limit3FooQuery.path, limit3FooQuery.params);
+        manager.setQueryActive(limit3FooQuery);
         manager.updateServerCache(
             TreeOperation.overwrite(Name.parsePath('foo'),
                 TreeStructuredData.fromJson({'a': 1, 'b': 2, 'c': 3})),
             limit3FooQuery.params);
       });
 
-      var cache = manager.serverCache(
-          Name.parsePath('foo'), QueryFilter(limit: 2, reversed: true));
+      var cache = manager.serverCache(QuerySpec(
+          Name.parsePath('foo'), QueryFilter(limit: 2, reversed: true)));
       expect(
           cache.completeValue, TreeStructuredData.fromJson({'b': 2, 'c': 3}));
     });
@@ -91,14 +89,14 @@ void main() async {
 
       var data = TreeStructuredData.fromJson({'foo': 1, 'bar': 2});
       manager.runInTransaction(() {
-        manager.setQueryActive(defaultFooQuery.path, defaultFooQuery.params);
+        manager.setQueryActive(defaultFooQuery);
         manager.updateServerCache(
             TreeOperation.overwrite(defaultFooQuery.path, data));
-        manager.setQueryComplete(defaultFooQuery.path, defaultFooQuery.params);
+        manager.setQueryComplete(defaultFooQuery);
       });
       var index = TreeStructuredDataOrdering.byChild('index-key');
       var node = manager.serverCache(
-          Name.parsePath('foo'), QueryFilter(ordering: index));
+          QuerySpec(Name.parsePath('foo'), QueryFilter(ordering: index)));
       expect(node.completeValue, data);
       expect(node.filter, QueryFilter(ordering: index));
     });

@@ -1,4 +1,5 @@
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
+import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 
 import '../data_observer.dart';
@@ -15,19 +16,18 @@ abstract class PersistenceManager {
   ///
   /// The query is *not* used to filter the node but rather to determine if it
   /// can be considered complete.
-  IncompleteData serverCache(Path<Name> path,
-      [QueryFilter filter = const QueryFilter()]);
+  IncompleteData serverCache(QuerySpec query);
 
   /// Overwrite the server cache with the given node for a given query.
   ///
   /// The query is considered to be complete after saving this node.
   void updateServerCache(TreeOperation operation, [QueryFilter? filter]);
 
-  void setQueryActive(Path<Name> path, QueryFilter filter);
+  void setQueryActive(QuerySpec query);
 
-  void setQueryInactive(Path<Name> path, QueryFilter filter);
+  void setQueryInactive(QuerySpec query);
 
-  void setQueryComplete(Path<Name> path, QueryFilter filter);
+  void setQueryComplete(QuerySpec query);
 
   T runInTransaction<T>(T Function() callable);
 }
@@ -39,9 +39,8 @@ class FakePersistenceManager extends NoopPersistenceManager {
   FakePersistenceManager(this.serverCacheFunction);
 
   @override
-  IncompleteData serverCache(Path<Name> path,
-      [QueryFilter filter = const QueryFilter()]) {
-    return serverCacheFunction(path, filter);
+  IncompleteData serverCache(QuerySpec query) {
+    return serverCacheFunction(query.path, query.params);
   }
 }
 
@@ -59,9 +58,8 @@ class NoopPersistenceManager implements PersistenceManager {
   }
 
   @override
-  IncompleteData serverCache(Path<Name> path,
-      [QueryFilter filter = const QueryFilter()]) {
-    return IncompleteData.empty(filter);
+  IncompleteData serverCache(QuerySpec query) {
+    return IncompleteData.empty(query.params);
   }
 
   @override
@@ -70,17 +68,17 @@ class NoopPersistenceManager implements PersistenceManager {
   }
 
   @override
-  void setQueryActive(Path<Name> path, QueryFilter filter) {
+  void setQueryActive(QuerySpec query) {
     _verifyInsideTransaction();
   }
 
   @override
-  void setQueryInactive(Path<Name> path, QueryFilter filter) {
+  void setQueryInactive(QuerySpec query) {
     _verifyInsideTransaction();
   }
 
   @override
-  void setQueryComplete(Path<Name> path, QueryFilter filter) {
+  void setQueryComplete(QuerySpec query) {
     _verifyInsideTransaction();
   }
 
@@ -126,24 +124,23 @@ class DelegatingPersistenceManager implements PersistenceManager {
   }
 
   @override
-  IncompleteData serverCache(Path<Name> path,
-      [QueryFilter filter = const QueryFilter()]) {
-    return delegateTo.serverCache(path, filter);
+  IncompleteData serverCache(QuerySpec query) {
+    return delegateTo.serverCache(query);
   }
 
   @override
-  void setQueryActive(Path<Name> path, QueryFilter filter) {
-    return delegateTo.setQueryActive(path, filter);
+  void setQueryActive(QuerySpec query) {
+    return delegateTo.setQueryActive(query);
   }
 
   @override
-  void setQueryComplete(Path<Name> path, QueryFilter filter) {
-    return delegateTo.setQueryComplete(path, filter);
+  void setQueryComplete(QuerySpec query) {
+    return delegateTo.setQueryComplete(query);
   }
 
   @override
-  void setQueryInactive(Path<Name> path, QueryFilter filter) {
-    return delegateTo.setQueryInactive(path, filter);
+  void setQueryInactive(QuerySpec query) {
+    return delegateTo.setQueryInactive(query);
   }
 
   @override

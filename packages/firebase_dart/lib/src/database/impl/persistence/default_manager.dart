@@ -46,7 +46,7 @@ class DefaultPersistenceManager implements PersistenceManager {
       }
     }
     storageLayer.overwriteServerCache(operation);
-    setQueryComplete(operation.path, filter);
+    setQueryComplete(QuerySpec(operation.path, filter));
     _doPruneCheckAfterServerUpdate();
   }
 
@@ -59,44 +59,43 @@ class DefaultPersistenceManager implements PersistenceManager {
   }
 
   @override
-  IncompleteData serverCache(Path<Name> path,
-      [QueryFilter filter = const QueryFilter()]) {
-    var query = QuerySpec(path, filter);
-    var v = storageLayer.serverCache(path);
+  IncompleteData serverCache(QuerySpec query) {
+    var v = storageLayer.serverCache(query.path);
     if (_trackedQueryManager.isQueryComplete(query)) {
-      return IncompleteData.complete(v.value).withFilter(filter);
+      return IncompleteData.complete(v.value).withFilter(query.params);
     } else {
-      var queries =
-          _trackedQueryManager.trackedQueryTree.subtreeNullable(path)?.value ??
-              {};
+      var queries = _trackedQueryManager.trackedQueryTree
+              .subtreeNullable(query.path)
+              ?.value ??
+          {};
       for (var p in queries.keys) {
-        if (p.ordering == filter.ordering &&
+        if (p.ordering == query.params.ordering &&
             queries[p]!.complete &&
-            _completeQueryContains(p, v, filter)) {
-          return IncompleteData.complete(v.value).withFilter(filter);
+            _completeQueryContains(p, v, query.params)) {
+          return IncompleteData.complete(v.value).withFilter(query.params);
         }
       }
 
-      return v.withFilter(filter);
+      return v.withFilter(query.params);
     }
   }
 
   @override
-  void setQueryActive(Path<Name> path, QueryFilter filter) {
-    _trackedQueryManager.setQueryActive(QuerySpec(path, filter));
+  void setQueryActive(QuerySpec query) {
+    _trackedQueryManager.setQueryActive(query);
   }
 
   @override
-  void setQueryInactive(Path<Name> path, QueryFilter filter) {
-    _trackedQueryManager.setQueryInactive(QuerySpec(path, filter));
+  void setQueryInactive(QuerySpec query) {
+    _trackedQueryManager.setQueryInactive(query);
   }
 
   @override
-  void setQueryComplete(Path<Name> path, QueryFilter filter) {
-    if (!filter.limits) {
-      _trackedQueryManager.setQueriesComplete(path);
+  void setQueryComplete(QuerySpec query) {
+    if (!query.params.limits) {
+      _trackedQueryManager.setQueriesComplete(query.path);
     } else {
-      _trackedQueryManager.setQueryCompleteIfExists(QuerySpec(path, filter));
+      _trackedQueryManager.setQueryCompleteIfExists(query);
     }
   }
 

@@ -7,6 +7,7 @@ import 'package:async/async.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
+import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:logging/logging.dart';
 import 'package:sortedmap/sortedmap.dart';
@@ -378,8 +379,9 @@ class SyncPoint {
       return views[filter] = views[unlimitedFilter]!.withFilter(filter);
     }
 
-    var serverVersion =
-        persistenceManager.serverCache(path, filter).withFilter(filter);
+    var serverVersion = persistenceManager
+        .serverCache(QuerySpec(path, filter))
+        .withFilter(filter);
     var cache = ViewCache(serverVersion, serverVersion);
     // TODO: apply user operations from persistence storage
     return views[filter] = MasterView(filter, debugName: debugName)
@@ -482,7 +484,7 @@ abstract class RemoteListenerRegistrar {
       try {
         await remoteRegister(path, filter, hash);
         persistenceManager.runInTransaction(() {
-          persistenceManager.setQueryActive(path, filter);
+          persistenceManager.setQueryActive(QuerySpec(path, filter));
         });
       } catch (e) {
         node.value.remove(filter); // ignore: unawaited_futures
@@ -504,7 +506,7 @@ abstract class RemoteListenerRegistrar {
     await f?.then((_) async {
       await remoteUnregister(path, filter);
       persistenceManager.runInTransaction(() {
-        persistenceManager.setQueryInactive(path, filter);
+        persistenceManager.setQueryInactive(QuerySpec(path, filter));
       });
     });
   }

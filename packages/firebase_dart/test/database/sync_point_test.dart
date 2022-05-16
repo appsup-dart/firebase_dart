@@ -176,7 +176,7 @@ void main() {
   group('SyncPoint', () {
     test('adopt observers', () {
       var p = SyncPoint('test', Path(),
-          persistenceManager: TestPersistenceManager((filter) {
+          persistenceManager: FakePersistenceManager((path, filter) {
         if (filter.reversed) {
           return IncompleteData.complete(
               TreeStructuredData.fromJson('last value'));
@@ -576,16 +576,4 @@ void main() {
       });
     });
   });
-}
-
-class TestPersistenceManager extends NoopPersistenceManager {
-  final IncompleteData Function(QueryFilter filter) getServerCache;
-
-  TestPersistenceManager(this.getServerCache);
-
-  @override
-  IncompleteData serverCache(Path<Name> path,
-      [QueryFilter filter = const QueryFilter()]) {
-    return getServerCache(filter);
-  }
 }
