@@ -339,7 +339,17 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
         await expectLater(() => ref.set('hello all'), throwsException);
         expect(await ref.get(), 'hello world');
       });
+      test('revoke listening', () async {
+        if (ref.url.scheme == 'mem') {
+          // TODO
+          return;
+        }
+        ref = ref.child('test-read-protected');
+
+        await expectLater(() => ref.get(), throwsException);
+      });
     }
+
     test('token', () {
       var token =
           'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InJpa0BwYXJ0YWdvLmJlIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJpYXQiOjE0NzIxMjIyMzgsInYiOjAsImQiOnsicHJvdmlkZXIiOiJwYXNzd29yZCIsInVpZCI6IjMzZTc1ZjI0LTE5MTAtNGI1Mi1hZDJjLWNmZGQwYWFjNzI4YiJ9fQ.ZO0zH6xgk58SKDqmqi9gWzsvzoSvPx6QCJizR94rzEc';
