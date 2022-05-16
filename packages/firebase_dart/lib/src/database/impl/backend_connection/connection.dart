@@ -13,7 +13,7 @@ class BackendConnection {
 
   BackendTransport? get transport => _transport;
 
-  final Map<String?, Map<QueryFilter?, Function>> _listeners = {};
+  final Map<String?, Map<QueryFilter?, Function(Event)>> _listeners = {};
 
   static int nextSessionId = 0;
 
@@ -91,9 +91,9 @@ class BackendConnection {
 
           try {
             await backend.listen(
-              message.body.path,
-              listener as void Function(Event),
-              query: message.body.query,
+              message.body.path!,
+              listener,
+              query: message.body.query ?? const QueryFilter(),
             );
           } on FirebaseDatabaseException catch (e) {
             status = e.code;
@@ -106,14 +106,14 @@ class BackendConnection {
                     message.body.query,
                   );
           await backend.unlisten(
-            message.body.path,
-            listener as void Function(Event)?,
-            query: message.body.query,
+            message.body.path!,
+            listener,
+            query: message.body.query ?? const QueryFilter(),
           );
           break;
         case DataMessage.actionPut:
           try {
-            await backend.put(message.body.path, message.body.data,
+            await backend.put(message.body.path!, message.body.data,
                 hash: message.body.hash);
           } on FirebaseDatabaseException catch (e) {
             status = e.code;
@@ -121,7 +121,7 @@ class BackendConnection {
           }
           break;
         case DataMessage.actionMerge:
-          await backend.merge(message.body.path, message.body.data);
+          await backend.merge(message.body.path!, message.body.data);
           break;
         case DataMessage.actionOnDisconnectCancel:
           _onDisconnect.forget(Name.parsePath(message.body.path!));

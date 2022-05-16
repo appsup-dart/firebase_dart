@@ -6,25 +6,25 @@ class SyncTreeBackend extends Backend {
   SyncTreeBackend(this.syncTree);
 
   @override
-  Future<void> listen(String? path, EventListener listener,
-      {QueryFilter? query = const QueryFilter(), String? hash}) async {
+  Future<void> listen(String path, EventListener listener,
+      {QueryFilter query = const QueryFilter(), String? hash}) async {
     await syncTree.addEventListener(
-        'value', Name.parsePath(path!), query!, listener);
+        'value', Name.parsePath(path), query, listener);
   }
 
   @override
-  Future<void> unlisten(String? path, EventListener? listener,
-      {QueryFilter? query = const QueryFilter()}) async {
+  Future<void> unlisten(String path, EventListener? listener,
+      {QueryFilter query = const QueryFilter()}) async {
     await syncTree.removeEventListener(
-        'value', Name.parsePath(path!), query!, listener!);
+        'value', Name.parsePath(path), query, listener!);
   }
 
   @override
-  Future<void> put(String? path, value, {String? hash}) async {
+  Future<void> put(String path, value, {String? hash}) async {
     var serverValues = {
       ServerValue.timestamp: Value(DateTime.now().millisecondsSinceEpoch)
     };
-    var p = Name.parsePath(path!);
+    var p = Name.parsePath(path);
     if (hash != null) {
       var current = getLatestValue(syncTree, p);
       if (hash != current.hash) {
@@ -40,14 +40,14 @@ class SyncTreeBackend extends Backend {
   }
 
   @override
-  Future<void> merge(String? path, Map<String, dynamic>? children) async {
+  Future<void> merge(String path, Map<String, dynamic> children) async {
     var serverValues = {
       ServerValue.timestamp: Value(DateTime.now().millisecondsSinceEpoch)
     };
     syncTree.applyServerOperation(
         TreeOperation.merge(
-            Name.parsePath(path!),
-            children!.map((k, v) => MapEntry(
+            Name.parsePath(path),
+            children.map((k, v) => MapEntry(
                 Name.parsePath(k),
                 ServerValueX.resolve(
                     TreeStructuredData.fromJson(v), serverValues)))),
