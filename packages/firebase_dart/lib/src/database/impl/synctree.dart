@@ -667,7 +667,8 @@ class SyncTree {
   void applyServerOperation(TreeOperation operation, QueryFilter? filter) {
     _logger.fine(() => 'apply server operation $operation');
     persistenceManager.runInTransaction(() {
-      persistenceManager.updateServerCache(operation, filter);
+      persistenceManager.updateServerCache(
+          QuerySpec(operation.path, filter ?? const QueryFilter()), operation);
       _applyOperationToSyncPoints(
           root, filter, operation, ViewOperationSource.server, null);
     });

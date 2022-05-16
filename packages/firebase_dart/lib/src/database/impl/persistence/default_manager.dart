@@ -36,9 +36,8 @@ class DefaultPersistenceManager implements PersistenceManager {
   }
 
   @override
-  void updateServerCache(TreeOperation operation, [QueryFilter? filter]) {
-    filter ??= QueryFilter();
-    if (filter.limits) {
+  void updateServerCache(QuerySpec query, TreeOperation operation) {
+    if (query.params.limits && query.path == operation.path) {
       var o = operation.nodeOperation;
       if (o is Overwrite) {
         operation = TreeOperation.merge(operation.path,
@@ -46,7 +45,7 @@ class DefaultPersistenceManager implements PersistenceManager {
       }
     }
     storageLayer.overwriteServerCache(operation);
-    setQueryComplete(QuerySpec(operation.path, filter));
+    setQueryComplete(query);
     _doPruneCheckAfterServerUpdate();
   }
 

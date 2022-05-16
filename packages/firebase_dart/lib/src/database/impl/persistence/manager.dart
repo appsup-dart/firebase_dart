@@ -21,7 +21,7 @@ abstract class PersistenceManager {
   /// Overwrite the server cache with the given node for a given query.
   ///
   /// The query is considered to be complete after saving this node.
-  void updateServerCache(TreeOperation operation, [QueryFilter? filter]);
+  void updateServerCache(QuerySpec query, TreeOperation operation);
 
   void setQueryActive(QuerySpec query);
 
@@ -63,7 +63,7 @@ class NoopPersistenceManager implements PersistenceManager {
   }
 
   @override
-  void updateServerCache(TreeOperation operation, [QueryFilter? filter]) {
+  void updateServerCache(QuerySpec query, TreeOperation operation) {
     _verifyInsideTransaction();
   }
 
@@ -144,7 +144,7 @@ class DelegatingPersistenceManager implements PersistenceManager {
   }
 
   @override
-  void updateServerCache(TreeOperation operation, [QueryFilter? filter]) {
-    return delegateTo.updateServerCache(operation, filter);
+  void updateServerCache(QuerySpec query, TreeOperation operation) {
+    return delegateTo.updateServerCache(query, operation);
   }
 }
