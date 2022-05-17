@@ -93,12 +93,22 @@ class MasterView {
 
   bool isCompleteForChild(Name child) {
     var l = _data.localVersion;
-    if (!l.isComplete) return true;
-    if (!masterFilter.limits) return true;
-    if (l.value.children.containsKey(child)) return true;
+    if (!l.isComplete) {
+      // we don't have all the data yet, so could be complete
+      return true;
+    }
+    if (!masterFilter.limits) {
+      // query is not limiting, so all children will be complete
+      return true;
+    }
+    if (l.value.children.containsKey(child)) {
+      // the child exists and is present in this complete value
+      return true;
+    }
     if (masterFilter.ordering is KeyOrdering) {
       if (l.value.children.completeInterval.containsPoint(
           masterFilter.ordering.mapKeyValue(child, TreeStructuredData()))) {
+        // the child does not exist as it should be present in the data if it did
         return true;
       }
     }

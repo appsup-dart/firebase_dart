@@ -1244,6 +1244,35 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       expect(await l, ['c', 'x', null]);
     });
 
+    test('Writing on parent with limiting filter should not remove listener',
+        () async {
+      await iref.set({'child1': 1, 'child2': 2});
+
+      var v1, v2;
+      var sub1 = ref.orderByKey().limitToFirst(1).onValue.listen((event) {
+        v1 = event.snapshot.value;
+      });
+
+      var sub2 = ref.child('child2').onValue.listen((event) {
+        v2 = event.snapshot.value;
+      });
+
+      await wait(500);
+      expect(v1, {'child1': 1});
+      expect(v2, 2);
+
+      await ref.set({'child1': 1, 'child2': 2});
+      await wait(500);
+
+      await iref.child('child2').set(3);
+      await wait(500);
+
+      expect(v2, 3);
+
+      await sub1.cancel();
+      await sub2.cancel();
+    });
+
     test('startAt increasing', () async {
       await iref.set({'10': 10, '20': 20, '30': 30});
 
