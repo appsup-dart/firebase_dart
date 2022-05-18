@@ -105,9 +105,9 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
     database._verifyInsideTransaction();
 
     _serverCache.forEachCompleteNode((absoluteDataPath, value) {
-      assert(root == absoluteDataPath || !absoluteDataPath.contains(root),
+      assert(root == absoluteDataPath || !absoluteDataPath.isDescendantOf(root),
           'Pruning at $root but we found data higher up.');
-      if (root.contains(absoluteDataPath)) {
+      if (root.isDescendantOf(absoluteDataPath)) {
         final dataPath = absoluteDataPath.skip(root.length);
         final dataNode = value;
         if (pruneForest.shouldPruneUnkeptDescendants(dataPath)) {

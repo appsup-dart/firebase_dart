@@ -22,6 +22,11 @@ class Path<K> extends UnmodifiableListView<K> {
   @override
   bool operator ==(dynamic other) =>
       other is Path && const ListEquality().equals(this, other);
+
+  bool isDescendantOf(Path<K> other) {
+    if (other.length >= length) return false;
+    return Path.from(take(other.length)) == other;
+  }
 }
 
 abstract class TreeNode<K, V> {
