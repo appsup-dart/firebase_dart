@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
+import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
@@ -59,7 +60,7 @@ void main() {
                 Overwrite(
                   TreeStructuredData.fromJson({'key-1': 'value-1'}),
                 )),
-            query1);
+            QuerySpec(Path(), query1));
         expect(view.data.serverVersion.isComplete, true);
         expect(view.data.localVersion.isComplete, true);
       });
@@ -116,12 +117,12 @@ void main() {
                 TreeStructuredData.fromJson({
                   for (var i = 0; i < 10; i++) '$i': {'value': i},
                 })),
-            QueryFilter());
+            QuerySpec(Name.parsePath('main')));
         for (var i = 0; i < 10; i++) {
           syncTree.applyServerOperation(
               TreeOperation.overwrite(Name.parsePath('main/$i/valueX2'),
                   TreeStructuredData.fromJson(i)),
-              QueryFilter());
+              QuerySpec(Name.parsePath('main/$i/valueX2')));
         }
 
         print(

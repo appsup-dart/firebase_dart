@@ -137,8 +137,8 @@ class RandomSyncTreeTester {
     var v = currentServerState.getChild(query.path).withFilter(query.params);
     if (registeredListens[query] == v) return;
     // TODO only send difference
-    syncTree.applyServerOperation(TreeOperation(query.path, Overwrite(v)),
-        query.params == QueryFilter() ? null : query.params);
+    syncTree.applyServerOperation(
+        TreeOperation(query.path, Overwrite(v)), query);
     registeredListens[query] = v;
   }
 

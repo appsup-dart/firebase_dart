@@ -414,7 +414,9 @@ class SyncPoint {
   /// views when [filter] is `null`.
   void applyOperation(TreeOperation operation, QueryFilter? filter,
       ViewOperationSource source, int? writeId) {
-    if (filter == null || isCompleteFromParent) {
+    if (filter == null ||
+        filter == const QueryFilter() ||
+        isCompleteFromParent) {
       if (source == ViewOperationSource.server) {
         if (operation.path.isEmpty) {
           if (views.isNotEmpty &&
@@ -674,13 +676,13 @@ class SyncTree {
     });
   }
 
-  void applyServerOperation(TreeOperation operation, QueryFilter? filter) {
+  void applyServerOperation(TreeOperation operation, QuerySpec? query) {
     _logger.fine(() => 'apply server operation $operation');
     persistenceManager.runInTransaction(() {
-      persistenceManager.updateServerCache(
-          QuerySpec(operation.path, filter ?? const QueryFilter()), operation);
+      query ??= QuerySpec(operation.path);
+      persistenceManager.updateServerCache(query!, operation);
       _applyOperationToSyncPoints(
-          root, filter, operation, ViewOperationSource.server, null);
+          root, query, operation, ViewOperationSource.server, null);
     });
   }
 
@@ -706,13 +708,14 @@ class SyncTree {
   /// sync tree and all the relevant descendants.
   void _applyOperationToSyncPoints(
       ModifiableTreeNode<Name, SyncPoint>? tree,
-      QueryFilter? filter,
+      QuerySpec? query,
       TreeOperation? operation,
       ViewOperationSource type,
       int? writeId,
       [Path<Name>? path]) {
     if (tree == null || operation == null) return;
     path ??= Path();
+    var filter = query?.params;
     _doOnSyncPoint(path,
         (point) => point.applyOperation(operation, filter, type, writeId));
     if (operation.path.isEmpty) {
@@ -732,7 +735,7 @@ class SyncTree {
       return;
     }
     var child = operation.path.first;
-    _applyOperationToSyncPoints(tree.children[child], filter,
+    _applyOperationToSyncPoints(tree.children[child], query,
         operation.operationForChild(child), type, writeId, path.child(child));
   }
 
