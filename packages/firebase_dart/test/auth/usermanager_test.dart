@@ -180,7 +180,7 @@ void main() async {
 
         var isDone = false;
         userManager.onCurrentUserChanged
-            .listen((_) => null, onDone: () => isDone = true);
+            .listen((_) {}, onDone: () => isDone = true);
 
         await userManager.close();
 
@@ -194,7 +194,7 @@ void main() async {
 
         var isDone = false;
 
-        var last;
+        FirebaseUserImpl? last;
         var s = userManager2.onCurrentUserChanged
             .listen((v) => last = v, onDone: () => isDone = true);
 
@@ -203,7 +203,7 @@ void main() async {
         await userManager2.setCurrentUser(exampleUser);
 
         expect(isDone, false);
-        expect(last.uid, exampleUser.uid);
+        expect(last!.uid, exampleUser.uid);
 
         await s.cancel();
       });

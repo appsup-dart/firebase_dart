@@ -93,11 +93,11 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       (await getIdTokenResult(forceRefresh)).token!;
 
   @override
-  Future<IdTokenResult> getIdTokenResult([bool refresh = false]) async {
+  Future<IdTokenResult> getIdTokenResult([bool forceRefresh = false]) async {
     _checkDestroyed();
 
     try {
-      var response = await _credential.getTokenResponse(refresh);
+      var response = await _credential.getTokenResponse(forceRefresh);
       // Only if the access token is refreshed, notify Auth listeners.
       if (response.accessToken != _lastAccessToken) {
         _lastAccessToken = response.accessToken;
@@ -255,15 +255,15 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   }
 
   @override
-  Future<User> unlink(String provider) async {
+  Future<User> unlink(String providerId) async {
     await _reloadWithoutSaving();
     // Provider already unlinked.
-    if (providerData.every((element) => element.providerId != provider)) {
+    if (providerData.every((element) => element.providerId != providerId)) {
       throw FirebaseAuthException.noSuchProvider();
     }
     // We delete the providerId given.
     var idToken = await getIdToken();
-    var resp = await _rpcHandler.deleteLinkedAccounts(idToken, [provider]);
+    var resp = await _rpcHandler.deleteLinkedAccounts(idToken, [providerId]);
 
     // Construct the set of provider IDs returned by server.
     var userInfo = resp.providerUserInfo ?? [];
@@ -288,9 +288,9 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   }
 
   @override
-  Future<void> updateEmail(String email) async {
+  Future<void> updateEmail(String newEmail) async {
     var idToken = await getIdToken();
-    var response = await _rpcHandler.updateEmail(idToken, email);
+    var response = await _rpcHandler.updateEmail(idToken, newEmail);
     // Calls to SetAccountInfo may invalidate old tokens.
     _updateTokensIfPresent(response);
     // Reloads the user to update emailVerified.
@@ -298,9 +298,9 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   }
 
   @override
-  Future<void> updatePassword(String password) async {
+  Future<void> updatePassword(String newPassword) async {
     var idToken = await getIdToken();
-    var response = await _rpcHandler.updatePassword(idToken, password);
+    var response = await _rpcHandler.updatePassword(idToken, newPassword);
     // Calls to SetAccountInfo may invalidate old tokens.
     _updateTokensIfPresent(response);
     // Reloads the user in case email has also been updated and the user

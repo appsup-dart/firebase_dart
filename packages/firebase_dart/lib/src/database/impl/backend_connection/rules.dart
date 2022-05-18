@@ -106,7 +106,7 @@ class _ExpressionEvaluator extends ExpressionEvaluator {
     var v = super.eval(expression, context);
 
     if (v == null) {
-      return Stream<Null>.value(v);
+      return Stream<void>.value(null);
     }
     if (v is bool) {
       return Stream<bool>.value(v);

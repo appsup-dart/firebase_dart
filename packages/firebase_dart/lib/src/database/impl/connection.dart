@@ -125,22 +125,22 @@ abstract class PersistentConnection {
   void purgeOutstandingWrites();
 
   /// Overwrites some value at a particular path.
-  Future<Null> put(String path, dynamic value, {String? hash});
+  Future<void> put(String path, dynamic value, {String? hash});
 
   /// Merges children at a particular path.
-  Future<Null> merge(String path, Map<String, dynamic> value, {String? hash});
+  Future<void> merge(String path, Map<String, dynamic> value, {String? hash});
 
   // disconnects
 
   /// Registers an onDisconnectPut
-  Future<Null> onDisconnectPut(String path, dynamic value);
+  Future<void> onDisconnectPut(String path, dynamic value);
 
   /// Registers an onDisconnectMerge
-  Future<Null> onDisconnectMerge(
+  Future<void> onDisconnectMerge(
       String path, Map<String, dynamic> childrenToMerge);
 
   /// Registers an onDisconnectCancel
-  Future<Null> onDisconnectCancel(String path);
+  Future<void> onDisconnectCancel(String path);
   // Connection management
 
   void interrupt(String reason);

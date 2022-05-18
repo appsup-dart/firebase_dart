@@ -10,7 +10,6 @@ import 'package:firebase_dart/src/implementation/dart.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:openid_client/openid_client.dart' as openid;
-import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../auth.dart';

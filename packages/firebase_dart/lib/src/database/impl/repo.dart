@@ -149,7 +149,9 @@ class Repo {
     await _connection.close();
     _syncTree.destroy();
     _infoSyncTree.destroy();
-    _unlistenTimers.forEach((v) => v.cancel());
+    for (var v in _unlistenTimers) {
+      v.cancel();
+    }
     _repos.removeWhere((key, value) => value == this);
   }
 
@@ -282,7 +284,7 @@ class Repo {
       _infoSyncTree.removeEventListener(
           type, Name.parsePath(path), filter ?? QueryFilter(), cb);
     } else {
-      var self;
+      Timer? self;
       var timer = Timer(Duration(milliseconds: 2000), () {
         _unlistenTimers.remove(self);
         _syncTree.removeEventListener(
@@ -479,7 +481,7 @@ class PushIdGenerator {
         lastRandChars[i] = random.nextInt(64);
       }
     } else {
-      var i;
+      int i;
       for (i = 11; i >= 0 && lastRandChars[i] == 63; i--) {
         lastRandChars[i] = 0;
       }

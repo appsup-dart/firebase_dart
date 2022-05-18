@@ -62,7 +62,7 @@ void runDatabaseTests({bool isolated = false}) {
       var ref = db.reference().child('test/some-key');
 
       var isDone = false;
-      ref.onValue.listen((_) => null, onDone: () => isDone = true);
+      ref.onValue.listen((_) {}, onDone: () => isDone = true);
 
       await app.delete();
       await wait(100);
@@ -332,7 +332,7 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
           return;
         }
         ref = ref.child('test-protected');
-        ref.onValue.listen((e) => null);
+        ref.onValue.listen((e) {});
         await db.authenticate(token);
         await ref.set('hello world');
         expect(await ref.get(), 'hello world');
@@ -712,7 +712,7 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
     test('Counter', () async {
       await ref.set(0);
 
-      ref.onValue.listen((e) => null);
+      ref.onValue.listen((e) {});
       await ref.onValue.first;
       var f1 = Stream.periodic(Duration(milliseconds: 10))
           .take(10)
@@ -1196,7 +1196,7 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
     test('Upgrade subquery to master view', () async {
       await iref.set({'text1': 'b', 'text2': 'c', 'text3': 'a'});
 
-      var s1 = ref.orderByKey().limitToFirst(1).onValue.listen((_) => null);
+      var s1 = ref.orderByKey().limitToFirst(1).onValue.listen((_) {});
       var l = ref
           .orderByKey()
           .startAt('text2')
@@ -1223,7 +1223,7 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
           .limitToFirst(2)
           .onValue
           .map((e) => e.snapshot.value)
-          .listen((_) => null);
+          .listen((_) {});
 
       await wait(500);
 
@@ -1249,7 +1249,7 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
         () async {
       await iref.set({'child1': 1, 'child2': 2});
 
-      var v1, v2;
+      dynamic v1, v2;
       var sub1 = ref.orderByKey().limitToFirst(1).onValue.listen((event) {
         v1 = event.snapshot.value;
       });
@@ -1286,7 +1286,7 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
         }
       });
 
-      var v1, v2;
+      dynamic v1, v2;
       var sub1 = ref.limitToFirst(1).onValue.listen((event) {
         v1 = event.snapshot.value;
       });
@@ -1320,7 +1320,7 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
         }
       });
 
-      var v1, v2;
+      dynamic v1, v2;
       var sub1 = ref.limitToFirst(1).onValue.listen((event) {
         v1 = event.snapshot.value;
       });
@@ -1360,7 +1360,7 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
         'child2': {'a': 1, 'b': 2, 'c': 3}
       });
 
-      var sub = ref.orderByKey().limitToFirst(1).onValue.listen((_) => null);
+      var sub = ref.orderByKey().limitToFirst(1).onValue.listen((_) {});
 
       await Future.delayed(Duration(milliseconds: 500));
 
@@ -1389,13 +1389,13 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
         'child2': {'a': 1, 'b': 2, 'c': 3}
       });
 
-      var sub = ref.orderByKey().onValue.listen((_) => null);
+      var sub = ref.orderByKey().onValue.listen((_) {});
       var sub2 = ref
           .child('child2')
           .orderByKey()
           .limitToFirst(1)
           .onValue
-          .listen((_) => null);
+          .listen((_) {});
       await wait(500);
 
       var l = ref
@@ -1419,7 +1419,7 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
     });
 
     test('with canceled parent', () async {
-      var sub = ref.root().onValue.listen((v) => null, onError: (e) => null);
+      var sub = ref.root().onValue.listen((v) {}, onError: (e) => null);
       await wait(400);
 
       await iref.set('hello world');
@@ -1436,7 +1436,7 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
 
     test('Listen, set parent and get child', () async {
       var ref = db1.reference().child('test');
-      ref.child('cars').onValue.listen((e) => null);
+      ref.child('cars').onValue.listen((e) {});
 
       var data = {
         'cars': {
@@ -1452,8 +1452,8 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
     test('Bugfix: crash when receiving merge', () async {
       var ref = db1.reference().child('test').child('some/path');
 
-      ref.parent()!.orderByKey().equalTo('path').onValue.listen((_) => null);
-      ref.child('child1').onValue.listen((_) => null);
+      ref.parent()!.orderByKey().equalTo('path').onValue.listen((_) {});
+      ref.child('child1').onValue.listen((_) {});
       await ref.set({'child1': 'v', 'child2': 3});
 
       await ref.update({'hello': 'world'});
@@ -1625,8 +1625,9 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
         var refs = List.generate(4, (_) => ref.push());
 
         var events = [];
-        refs.forEach((ref) =>
-            ref.onValue.map((e) => e.snapshot.value).listen(events.add));
+        for (var ref in refs) {
+          ref.onValue.map((e) => e.snapshot.value).listen(events.add);
+        }
 
         for (var r in refs) {
           expect(() => r.set('test-value-${refs.indexOf(r)}'),

@@ -495,7 +495,7 @@ abstract class BaseBackend extends AuthBackend {
     return {
       'iss': 'https://securetoken.google.com/$projectId',
       'provider_id': providerId,
-      'aud': '$projectId',
+      'aud': projectId,
       'auth_time': now,
       'sub': user.localId,
       'iat': now,

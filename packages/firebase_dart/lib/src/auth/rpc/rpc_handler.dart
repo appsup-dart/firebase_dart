@@ -346,7 +346,7 @@ class RpcHandler {
       return await action();
     } on DetailedApiRequestError catch (e) {
       var errorCode = e.message!;
-      var errorMessage;
+      String? errorMessage;
       // Get detailed message if available.
       var match = RegExp(r'^([^\s]+)\s*:\s*(.*)$').firstMatch(errorCode);
       if (match != null) {
@@ -831,7 +831,7 @@ class RpcHandler {
 
   FirebaseAuthException? _errorInfoFromResponse(
       FirebaseAuthException? error, IdTokenResponse response) {
-    var message, email, phoneNumber;
+    String? message, email, phoneNumber;
     if (response is VerifyAssertionResponse) {
       email = response.email;
     } else if (response

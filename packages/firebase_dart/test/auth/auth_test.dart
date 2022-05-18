@@ -294,7 +294,7 @@ void runAuthTests({bool isolated = false}) {
             verificationFailed: (e) {
               throw e;
             },
-            codeSent: (a, b) => null,
+            codeSent: (a, b) {},
             codeAutoRetrievalTimeout: (verificationId) async {
               var code = await tester.backend.receiveSmsCode(phoneNumber);
               credential.complete(PhoneAuthProvider.credential(
@@ -566,9 +566,7 @@ void runAuthTests({bool isolated = false}) {
           var auth = FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;
 
           var isDone = false;
-          auth
-              .authStateChanges()
-              .listen((_) => null, onDone: () => isDone = true);
+          auth.authStateChanges().listen((_) {}, onDone: () => isDone = true);
           await app.delete();
 
           expect(auth.isDeleted, isTrue);

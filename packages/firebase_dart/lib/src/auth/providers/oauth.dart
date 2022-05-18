@@ -9,11 +9,7 @@ import '../auth_provider.dart';
 /// This class is extended by other OAuth based providers, or can be used
 /// standalone for integration with other 3rd party providers.
 class OAuthProvider extends AuthProvider {
-  /// The provider ID with which this provider is associated
-  @override
-  final String providerId;
-
-  OAuthProvider(this.providerId) : super(providerId);
+  OAuthProvider(String providerId) : super(providerId);
 
   final List<String> _scopes = [];
   Map<dynamic, dynamic>? _parameters;

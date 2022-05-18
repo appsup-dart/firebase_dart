@@ -175,7 +175,7 @@ FirebaseAuthException authErrorFromResponse(Map<String, dynamic> data) {
     );
   }
 
-  var errorMessage;
+  String? errorMessage;
 
 // Get detailed message if available.
   var match = RegExp(r'^[^\s]+\s*:\s*(.*)$').firstMatch(errorCode);

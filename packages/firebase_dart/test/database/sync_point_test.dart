@@ -1,4 +1,5 @@
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
+import 'package:firebase_dart/src/database/impl/event.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
@@ -184,7 +185,7 @@ void main() {
         return IncompleteData.empty();
       }));
 
-      var event1, event2;
+      Event? event1, event2;
       p.addEventListener('value', QueryFilter(limit: 1), (event) {
         event1 = event;
       });

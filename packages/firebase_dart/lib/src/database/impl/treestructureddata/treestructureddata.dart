@@ -345,9 +345,8 @@ class TreeStructuredDataImpl extends TreeStructuredData {
   final UnmodifiableFilteredMap<Name, TreeStructuredData> children;
 
   TreeStructuredDataImpl._(this.value,
-      FilteredMap<Name, TreeStructuredData>? children, Value? priority)
-      : priority = priority,
-        children = UnmodifiableFilteredMap<Name, TreeStructuredData>(
+      FilteredMap<Name, TreeStructuredData>? children, this.priority)
+      : children = UnmodifiableFilteredMap<Name, TreeStructuredData>(
             children ?? FilteredMap(const QueryFilter())),
         super._();
 

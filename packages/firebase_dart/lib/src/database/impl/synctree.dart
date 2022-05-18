@@ -417,10 +417,10 @@ class SyncPoint {
   /// [filter].
   void removeEventListener(
       String type, QueryFilter filter, EventListener listener) {
-    views.values.forEach((v) {
+    for (var v in views.values) {
       v.removeEventListener(type, filter, listener);
       if (v.observers.isEmpty) _prunable = true;
-    });
+    }
   }
 
   /// Applies an operation to the view for [filter] at this [SyncPoint] or all
@@ -433,7 +433,9 @@ class SyncPoint {
           if (views.isNotEmpty &&
               views.values.every((v) => v.masterFilter.limits)) {
             _logger.fine('no filter: upgrade ${views.keys}');
-            views.values.forEach((v) => v.upgrade());
+            for (var v in views.values) {
+              v.upgrade();
+            }
           }
         }
       }
@@ -469,7 +471,7 @@ class SyncPoint {
 }
 
 abstract class RemoteListenerRegistrar {
-  final ModifiableTreeNode<Name, Map<QueryFilter, Future<Null>>> _queries =
+  final ModifiableTreeNode<Name, Map<QueryFilter, Future<void>>> _queries =
       ModifiableTreeNode({});
   final PersistenceManager persistenceManager;
 
@@ -483,7 +485,7 @@ abstract class RemoteListenerRegistrar {
   void registerAll(Path<Name> path, Iterable<QueryFilter> filters,
       String? Function(QueryFilter filter) hashFcn) {
     var node = _queries.subtree(path,
-        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<Null>>{}));
+        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<void>>{}));
     node.synchronized(() async {
       for (var f in filters.toSet()) {
         if (node.value.containsKey(f)) continue;
@@ -498,7 +500,7 @@ abstract class RemoteListenerRegistrar {
 
   Future<void> register(Path<Name> path, QueryFilter filter, String? hash) {
     var node = _queries.subtree(path,
-        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<Null>>{}));
+        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<void>>{}));
     return node.value.putIfAbsent(filter, () async {
       try {
         await remoteRegister(path, filter, hash);
@@ -519,7 +521,7 @@ abstract class RemoteListenerRegistrar {
 
   Future<void> unregister(Path<Name> path, QueryFilter filter) async {
     var node = _queries.subtree(path,
-        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<Null>>{}));
+        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<void>>{}));
     if (!node.value.containsKey(filter)) return;
     var f = node.value.remove(filter);
     await f?.then((_) async {
@@ -531,9 +533,9 @@ abstract class RemoteListenerRegistrar {
   }
 }
 
-typedef RemoteRegister = Future<Null> Function(
+typedef RemoteRegister = Future<void> Function(
     Path<Name> path, QueryFilter filter, String? hash);
-typedef RemoteUnregister = Future<Null> Function(
+typedef RemoteUnregister = Future<void> Function(
     Path<Name> path, QueryFilter filter);
 
 class _RemoteListenerRegistrarImpl extends RemoteListenerRegistrar {
@@ -546,14 +548,14 @@ class _RemoteListenerRegistrarImpl extends RemoteListenerRegistrar {
         _remoteUnregister = remoteUnregister,
         super(persistenceManager);
   @override
-  Future<Null> remoteRegister(
+  Future<void> remoteRegister(
       Path<Name> path, QueryFilter filter, String? hash) async {
     if (_remoteRegister == null) return;
     return _remoteRegister!(path, filter, hash);
   }
 
   @override
-  Future<Null> remoteUnregister(Path<Name> path, QueryFilter filter) async {
+  Future<void> remoteUnregister(Path<Name> path, QueryFilter filter) async {
     if (_remoteUnregister == null) return;
     return _remoteUnregister!(path, filter);
   }
@@ -579,10 +581,9 @@ class SyncTree {
   SyncTree._(this.name,
       {RemoteRegister? remoteRegister,
       RemoteUnregister? remoteUnregister,
-      required PersistenceManager persistenceManager})
+      required this.persistenceManager})
       : root = ModifiableTreeNode(
             SyncPoint(name, Path(), persistenceManager: persistenceManager)),
-        persistenceManager = persistenceManager,
         registrar = RemoteListenerRegistrar.fromCallbacks(persistenceManager,
             remoteRegister: remoteRegister, remoteUnregister: remoteUnregister);
 
@@ -699,10 +700,12 @@ class SyncTree {
   void applyListenRevoked(Path<Name> path, QueryFilter? filter) {
     var view = root.subtreeNullable(path)?.value.views.remove(filter);
     if (view == null) return;
-    view.observers.values.forEach((t) => t.dispatchEvent(CancelEvent(
-        FirebaseDatabaseException.permissionDenied()
-            .replace(message: 'Access to ${path.join('/')} denied'),
-        null))); // TODO is this always because of permission denied?
+    for (var t in view.observers.values) {
+      t.dispatchEvent(CancelEvent(
+          FirebaseDatabaseException.permissionDenied()
+              .replace(message: 'Access to ${path.join('/')} denied'),
+          null));
+    } // TODO is this always because of permission denied?
     view.observers.clear();
   }
 

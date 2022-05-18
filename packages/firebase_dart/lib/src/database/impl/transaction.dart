@@ -279,10 +279,14 @@ class TransactionsNode extends ModifiableTreeNode<Name, List<Transaction>> {
     // remove the transactions that are now complete
     value = value.where((t) => !t.isComplete).toList();
     // reset the status of all other transactions
-    value.forEach((m) => m.reset());
+    for (var m in value) {
+      m.reset();
+    }
 
     // repeat for all children
-    children.values.forEach((n) => n.complete());
+    for (var n in children.values) {
+      n.complete();
+    }
   }
 
   /// Fails aborted transactions and resets other sent transactions
@@ -299,7 +303,9 @@ class TransactionsNode extends ModifiableTreeNode<Name, List<Transaction>> {
     value.where((t) => !t.isAborted).forEach((m) => m.reset());
 
     // repeat for all children
-    children.values.forEach((n) => n.stale());
+    for (var n in children.values) {
+      n.stale();
+    }
   }
 
   /// Fails all sent transactions
@@ -313,12 +319,18 @@ class TransactionsNode extends ModifiableTreeNode<Name, List<Transaction>> {
     value = value.where((t) => !t.isComplete).toList();
 
     // repeat for children
-    children.values.forEach((n) => n.fail(e));
+    for (var n in children.values) {
+      n.fail(e);
+    }
   }
 
   void markAllTransactionsSent() {
-    value.forEach((m) => m.markSent());
-    children.values.forEach((n) => n.markAllTransactionsSent());
+    for (var m in value) {
+      m.markSent();
+    }
+    for (var n in children.values) {
+      n.markAllTransactionsSent();
+    }
   }
 
   /// Executes the transactions in this node and child nodes and sends the

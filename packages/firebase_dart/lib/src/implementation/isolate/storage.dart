@@ -170,8 +170,8 @@ class IsolateStorageReference extends Reference {
   }
 
   @override
-  IsolateStorageReference child(String childPath) =>
-      IsolateStorageReference(storage, location.child(childPath));
+  IsolateStorageReference child(String path) =>
+      IsolateStorageReference(storage, location.child(path));
 
   @override
   Future<void> delete() async {

@@ -5,7 +5,7 @@ final framesChannelTransformer = const FramesChannelTransformer();
 
 class FramesChannelTransformer
     implements StreamChannelTransformer<String, String> {
-  final maxFrameSize;
+  final int maxFrameSize;
 
   const FramesChannelTransformer({this.maxFrameSize = 16384});
 
@@ -17,8 +17,8 @@ class FramesChannelTransformer
         handleData: (data, sink) {
       var dataSegs = List.generate(
           (data.length / maxFrameSize).ceil(),
-          (i) => data.substring(i * maxFrameSize as int,
-              min((i + 1) * maxFrameSize as int, data.length)));
+          (i) => data.substring(
+              i * maxFrameSize, min((i + 1) * maxFrameSize, data.length)));
 
       if (dataSegs.length > 1) {
         sink.add('${dataSegs.length}');
@@ -33,9 +33,9 @@ class FramesChannelTransformer
 
 class FramesToMessagesTransformer
     extends StreamTransformerBase<String, String> {
-  final maxFrameSize;
+  final int maxFrameSize;
 
-  const FramesToMessagesTransformer({this.maxFrameSize});
+  const FramesToMessagesTransformer({this.maxFrameSize = 16384});
 
   @override
   Stream<String> bind(Stream<String> stream) {

@@ -23,7 +23,7 @@ class BackendConnection {
 
     transport!.channel.stream
         .asyncMap(_onMessage)
-        .listen((_) => null, onDone: close);
+        .listen((_) {}, onDone: close);
 
     sendMessage(HandshakeMessage(HandshakeInfo(
         DateTime.now().add(Duration(
@@ -53,7 +53,7 @@ class BackendConnection {
 
   Future<void> _onMessage(Message message) async {
     if (message is DataMessage) {
-      var data;
+      dynamic data;
       var status = 'ok';
       switch (message.action) {
         case DataMessage.actionAuth:

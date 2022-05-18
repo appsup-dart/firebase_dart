@@ -62,13 +62,13 @@ class TrackedQuery {
       };
 
   @override
-  bool operator ==(o) =>
-      o is TrackedQuery &&
-      o.id == id &&
-      o.querySpec == querySpec &&
-      o.lastUse == lastUse &&
-      o.complete == complete &&
-      o.active == active;
+  bool operator ==(other) =>
+      other is TrackedQuery &&
+      other.id == id &&
+      other.querySpec == querySpec &&
+      other.lastUse == lastUse &&
+      other.complete == complete &&
+      other.active == active;
 
   @override
   int get hashCode => Object.hash(id, querySpec, lastUse, complete, active);

@@ -101,16 +101,14 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
   }
 
   @override
-  void pruneCache(Path<Name> prunePath, PruneForest pruneForest) {
+  void pruneCache(Path<Name> root, PruneForest pruneForest) {
     database._verifyInsideTransaction();
 
     _serverCache.forEachCompleteNode((absoluteDataPath, value) {
-      assert(
-          prunePath == absoluteDataPath ||
-              !absoluteDataPath.contains(prunePath),
-          'Pruning at $prunePath but we found data higher up.');
-      if (prunePath.contains(absoluteDataPath)) {
-        final dataPath = absoluteDataPath.skip(prunePath.length);
+      assert(root == absoluteDataPath || !absoluteDataPath.contains(root),
+          'Pruning at $root but we found data higher up.');
+      if (root.contains(absoluteDataPath)) {
+        final dataPath = absoluteDataPath.skip(root.length);
         final dataNode = value;
         if (pruneForest.shouldPruneUnkeptDescendants(dataPath)) {
           var newCache = pruneForest

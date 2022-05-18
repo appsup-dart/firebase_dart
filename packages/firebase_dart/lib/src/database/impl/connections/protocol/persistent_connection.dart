@@ -202,12 +202,12 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<Null> put(String path, dynamic value, {String? hash}) async {
+  Future<void> put(String path, dynamic value, {String? hash}) async {
     await _putInternal(Request.put(path, value, hash));
   }
 
   @override
-  Future<Null> merge(String path, Map<String, dynamic> value,
+  Future<void> merge(String path, Map<String, dynamic> value,
       {String? hash}) async {
     await _putInternal(Request.merge(path, value, hash));
   }
@@ -242,7 +242,7 @@ class PersistentConnectionImpl extends PersistentConnection
   Future<void> disconnect() async => _connection!.close();
 
   @override
-  Future<Null> close() async {
+  Future<void> close() async {
     interrupt('close');
     await _onDataOperation.close();
     await _onAuth.close();
@@ -331,14 +331,14 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<Null> onDisconnectPut(String path, dynamic value) async {
+  Future<void> onDisconnectPut(String path, dynamic value) async {
     _hasOnDisconnects = true;
     await _request(Request.onDisconnectPut(path, value));
     _doIdleCheck();
   }
 
   @override
-  Future<Null> onDisconnectMerge(
+  Future<void> onDisconnectMerge(
       String path, Map<String, dynamic> childrenToMerge) async {
     _hasOnDisconnects = true;
     await _request(Request.onDisconnectMerge(path, childrenToMerge));
@@ -346,7 +346,7 @@ class PersistentConnectionImpl extends PersistentConnection
   }
 
   @override
-  Future<Null> onDisconnectCancel(String path) async {
+  Future<void> onDisconnectCancel(String path) async {
     // We do not mark hasOnDisconnects true here, because we only are removing disconnects.
     // However, we can also not reliably determine whether we had onDisconnects, so we can't
     // and do not reset the flag.
@@ -447,9 +447,9 @@ class PersistentConnectionImpl extends PersistentConnection
 
     _logger.fine('Restoring writes.');
     // Restore puts
-    _outstandingRequests.forEach((r) {
+    for (var r in _outstandingRequests) {
       _connection!.sendRequest(r);
-    });
+    }
 
     if (_connection!.state != ConnectionState.connected) return;
   }
@@ -558,7 +558,7 @@ class PersistentConnectionImpl extends PersistentConnection
         _connectionState = ConnectionState.gettingToken;
         _currentGetTokenAttempt++;
         final thisGetTokenAttempt = _currentGetTokenAttempt;
-        var token;
+        String? token;
         try {
           token = await _authTokenProvider?.getToken(forceRefresh);
         } catch (error) {

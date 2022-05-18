@@ -226,7 +226,7 @@ class TreeEventGenerator extends EventGenerator {
     }
     switch (eventType) {
       case 'child_added':
-        var newPrevKey;
+        Name? newPrevKey;
         for (var key in newChildren.keys) {
           if (!oldChildren.containsKey(key)) {
             yield ChildAddedEvent(key, newChildren[key], newPrevKey);
@@ -235,7 +235,7 @@ class TreeEventGenerator extends EventGenerator {
         }
         return;
       case 'child_changed':
-        var newPrevKey;
+        Name? newPrevKey;
         for (var key in newChildren.keys) {
           if (oldChildren.containsKey(key)) {
             if (oldChildren[key] != newChildren[key]) {
@@ -246,7 +246,7 @@ class TreeEventGenerator extends EventGenerator {
         }
         return;
       case 'child_removed':
-        var oldPrevKey;
+        Name? oldPrevKey;
         for (var key in oldChildren.keys) {
           if (!newChildren.containsKey(key)) {
             yield ChildRemovedEvent(key, oldChildren[key], oldPrevKey);
@@ -262,7 +262,7 @@ class TreeEventGenerator extends EventGenerator {
         }
         var newKeys = newChildren.keys.toList();
 
-        var oldPrevKey;
+        Name? oldPrevKey;
         for (var key in oldChildren.keys) {
           if (newChildren.containsKey(key)) {
             var newPrevKey = lastKeyBefore(newKeys, key);

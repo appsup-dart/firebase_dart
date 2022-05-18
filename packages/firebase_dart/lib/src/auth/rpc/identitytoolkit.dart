@@ -324,7 +324,7 @@ class _MyApiRequester extends commons.ApiRequester {
                   throw FirebaseAuthException.networkRequestFailed());
     } on it.DetailedApiRequestError catch (e) {
       var errorCode = e.message;
-      var errorMessage;
+      String? errorMessage;
       FirebaseAuthException? error;
       if (errorCode != null) {
         // Get detailed message if available.
