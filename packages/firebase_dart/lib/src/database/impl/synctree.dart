@@ -414,9 +414,7 @@ class SyncPoint {
   /// views when [filter] is `null`.
   void applyOperation(TreeOperation operation, QueryFilter? filter,
       ViewOperationSource source, int? writeId) {
-    if (filter == null ||
-        filter == const QueryFilter() ||
-        isCompleteFromParent) {
+    if (filter == null || filter == const QueryFilter()) {
       if (source == ViewOperationSource.server) {
         if (operation.path.isEmpty) {
           if (views.isNotEmpty &&
@@ -715,7 +713,7 @@ class SyncTree {
       [Path<Name>? path]) {
     if (tree == null || operation == null) return;
     path ??= Path();
-    var filter = query?.params;
+    var filter = query?.path == path ? query?.params : null;
     _doOnSyncPoint(path,
         (point) => point.applyOperation(operation, filter, type, writeId));
     if (operation.path.isEmpty) {

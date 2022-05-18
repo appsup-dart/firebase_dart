@@ -154,6 +154,11 @@ class IncompleteData {
       safeToOverwrite =
           safeToOverwrite || (!isComplete && isCompleteForPath(operation.path));
 
+      // when some parent was already complete, it is safe to overwrite
+      safeToOverwrite = safeToOverwrite ||
+          (isComplete &&
+              _writeTree.value!.children.containsKey(operation.path.first));
+
       if (!safeToOverwrite) {
         return this;
       }
