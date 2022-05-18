@@ -1,5 +1,10 @@
 # Changelog
 
+# 1.0.8
+
+- bugfixes and performance improvements on realtime database
+
+
 # 1.0.7
 
 - add `DatabaseReference.path` getter
