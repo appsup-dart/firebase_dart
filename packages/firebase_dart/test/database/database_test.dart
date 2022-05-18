@@ -1273,6 +1273,76 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       await sub2.cancel();
     });
 
+    test('Parent with limiting filter, child without', () async {
+      await iref.set({
+        'child1': {'.priority': 1, '.value': 1},
+        'child2': {
+          '.priority': 2,
+          '.value': {
+            'subchild1': {'.priority': 1, '.value': 'hello world'},
+            'subchild2': {'.priority': 2, '.value': 'hello universe'}
+          }
+        }
+      });
+
+      var v1, v2;
+      var sub1 = ref.limitToFirst(1).onValue.listen((event) {
+        v1 = event.snapshot.value;
+      });
+
+      var sub2 = ref.child('child2/subchild1').onValue.listen((event) {
+        v2 = event.snapshot.value;
+      });
+
+      await wait(500);
+      expect(v1, {'child1': 1});
+      expect(v2, 'hello world');
+
+      await iref.child('child2/subchild1/subsubchild').set('hello world');
+      await wait(500);
+      expect(v1, {'child1': 1});
+      expect(v2, {'subsubchild': 'hello world'});
+
+      await sub1.cancel();
+      await sub2.cancel();
+    });
+
+    test('Same filters on parent and child', () async {
+      await iref.set({
+        'child1': {'.priority': 1, '.value': 1},
+        'child2': {
+          '.priority': 2,
+          '.value': {
+            'subchild1': {'.priority': 1, '.value': 'hello world'},
+            'subchild2': {'.priority': 2, '.value': 'hello universe'}
+          }
+        }
+      });
+
+      var v1, v2;
+      var sub1 = ref.limitToFirst(1).onValue.listen((event) {
+        v1 = event.snapshot.value;
+      });
+
+      var sub2 = ref.child('child2').limitToFirst(1).onValue.listen((event) {
+        v2 = event.snapshot.value;
+      });
+
+      await wait(500);
+      expect(v1, {'child1': 1});
+      expect(v2, {'subchild1': 'hello world'});
+
+      await iref.child('child2/subchild1/subsubchild').set('hello world');
+      await wait(500);
+      expect(v1, {'child1': 1});
+      expect(v2, {
+        'subchild1': {'subsubchild': 'hello world'}
+      });
+
+      await sub1.cancel();
+      await sub2.cancel();
+    });
+
     test('startAt increasing', () async {
       await iref.set({'10': 10, '20': 20, '30': 30});
 

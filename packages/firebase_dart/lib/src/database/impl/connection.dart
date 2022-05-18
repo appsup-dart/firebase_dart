@@ -3,6 +3,7 @@ library firebase.connection;
 import 'dart:async';
 
 import 'package:firebase_dart/database.dart' show ServerValue;
+import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/implementation.dart';
 
 import 'connections/protocol.dart';
@@ -15,7 +16,7 @@ enum OperationEventType { overwrite, merge, listenRevoked }
 class OperationEvent {
   final Path<Name>? path;
   final OperationEventType? type;
-  final QueryFilter? query;
+  final QuerySpec? query;
   final dynamic data;
 
   OperationEvent(this.type, this.path, this.data, this.query) {
@@ -40,7 +41,11 @@ class OperationEvent {
     switch (type) {
       case OperationEventType.overwrite:
         return TreeOperation.overwrite(
-            path!, TreeStructuredData.fromExportJson(data));
+            path!,
+            TreeStructuredData.fromExportJson(
+                data,
+                (path == query?.path ? query!.params : null) ??
+                    const QueryFilter()));
       case OperationEventType.merge:
         return TreeOperation.merge(
             path!,

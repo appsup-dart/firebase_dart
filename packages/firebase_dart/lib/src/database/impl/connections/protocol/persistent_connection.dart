@@ -89,7 +89,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   void onDataMessage(DataMessage message) {
-    var query = message.body.query ?? _tagToQuery[message.body.tag]?.params;
+    var query = _tagToQuery[message.body.tag];
     if (query == null && message.body.tag != null) {
       // not listening any more.
       return;
@@ -182,8 +182,8 @@ class PersistentConnectionImpl extends PersistentConnection
       _tagToQuery.remove(tag);
       _removeListen(path, query);
 
-      var event = OperationEvent(
-          OperationEventType.listenRevoked, Name.parsePath(path), null, query);
+      var event =
+          OperationEvent(OperationEventType.listenRevoked, def.path, null, def);
       if (!_onDataOperation.isClosed) _onDataOperation.add(event);
 
       return [e.code];

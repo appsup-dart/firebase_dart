@@ -154,11 +154,13 @@ class QueryFilter extends Filter<Name, TreeStructuredData> {
         reversed: reverse ?? reversed);
   }
 
-  bool get limits => limit != null || !validInterval.isUnlimited;
-
   KeyValueInterval get validTypedInterval => validInterval;
 
   @override
   String toString() =>
       'QueryFilter[orderBy: $orderBy, limit: $limit, reversed: $reversed, start: (${validInterval.start.key}, ${validInterval.start.value}), end: (${validInterval.end.key}, ${validInterval.end.value})]';
+}
+
+extension FilterX<K extends Comparable, V> on Filter<K, V> {
+  bool get limits => limit != null || !validInterval.isUnlimited;
 }

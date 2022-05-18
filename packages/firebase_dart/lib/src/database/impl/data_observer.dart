@@ -130,6 +130,34 @@ class IncompleteData {
       return IncompleteData._(
           _writeTree.addPriority(operation.path, n.priority), filter);
     } else if (n is Overwrite) {
+      // when the data to overwrite with is filtered, do a merge instead
+      if (n.value.filter.limits && !n.value.isLeaf) {
+        // unless we overwrite the root and the filters match
+        if (operation.path.isNotEmpty || filter != n.value.filter) {
+          return applyOperation(TreeOperation.merge(operation.path,
+              n.value.children.map((k, v) => MapEntry(Path.from([k]), v))));
+        }
+      }
+
+      // check if it is safe to overwrite, meaning we do not risk setting unknown values to null
+
+      // when overwriting the root or a child with non filtered data it is always safe
+      var safeToOverwrite = operation.path.length < 2;
+
+      // when the path was not yet complete, we can safely overwrite
+      safeToOverwrite = safeToOverwrite || !isCompleteForPath(operation.path);
+
+      // when the filter is not limiting and the data is already complete, it is safe to overwrite
+      safeToOverwrite = safeToOverwrite || (!filter.limits && isComplete);
+
+      // when the path to overwrite is complete, it is safe to overwrite
+      safeToOverwrite =
+          safeToOverwrite || (!isComplete && isCompleteForPath(operation.path));
+
+      if (!safeToOverwrite) {
+        return this;
+      }
+
       var v = IncompleteData._(
           _writeTree.addOverwrite(operation.path, n.value), filter);
       return v;

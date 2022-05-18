@@ -122,6 +122,9 @@ class LeafTreeStructuredData extends TreeStructuredData {
       };
     }
   }
+
+  @override
+  Filter<Name, TreeStructuredData> get filter => const QueryFilter();
 }
 
 @immutable
@@ -151,8 +154,9 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
               : (FilteredMap(const QueryFilter())..addAll(children)),
           priority);
 
-  factory TreeStructuredData.fromExportJson(json) =>
-      TreeStructuredDataFromExportJson(json);
+  factory TreeStructuredData.fromExportJson(json,
+          [QueryFilter filter = const QueryFilter()]) =>
+      TreeStructuredDataFromExportJson(json, filter);
 
   factory TreeStructuredData.fromJson(json, [priority]) {
     if (json == null) {
@@ -199,6 +203,8 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
 
     return TreeStructuredData.nonLeaf(children, priority);
   }
+
+  Filter<Name, TreeStructuredData> get filter;
 
   TreeStructuredData withPriority(Value? priority) =>
       TreeStructuredDataImpl._(value, children, priority);
@@ -288,10 +294,14 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
 class TreeStructuredDataFromExportJson extends TreeStructuredData {
   final Snapshot _data;
 
-  TreeStructuredDataFromExportJson._(this._data) : super._();
+  @override
+  final QueryFilter filter;
 
-  TreeStructuredDataFromExportJson(dynamic exportJson)
-      : this._(Snapshot(exportJson));
+  TreeStructuredDataFromExportJson._(this._data, this.filter) : super._();
+
+  TreeStructuredDataFromExportJson(dynamic exportJson,
+      [QueryFilter filter = const QueryFilter()])
+      : this._(Snapshot(exportJson), filter);
 
   @override
   late final UnmodifiableFilteredMap<Name, TreeStructuredData> children =
@@ -304,8 +314,8 @@ class TreeStructuredDataFromExportJson extends TreeStructuredData {
   Value? get value => _data.value;
 
   UnmodifiableFilteredMap<Name, TreeStructuredData> _extractChildren() {
-    var children =
-        _data.map((k, v) => MapEntry(k, TreeStructuredDataFromExportJson._(v)));
+    var children = _data.map((k, v) => MapEntry(
+        k, TreeStructuredDataFromExportJson._(v, const QueryFilter())));
 
     return UnmodifiableFilteredMap<Name, TreeStructuredData>(
         FilteredMap(const QueryFilter())..addAll(children));
@@ -354,6 +364,9 @@ class TreeStructuredDataImpl extends TreeStructuredData {
     }
     return isLeaf ? value!.toJson() : c;
   }
+
+  @override
+  Filter<Name, TreeStructuredData> get filter => children.filter;
 }
 
 String _doubleToIEEE754String(num v) {

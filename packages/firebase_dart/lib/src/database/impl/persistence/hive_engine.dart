@@ -91,6 +91,10 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
         startKey: '$_serverCachePrefix:$p/',
         endKey: '$_serverCachePrefix:${p}0',
       ));
+
+      // we will read back the data as if it were ordered/filtered with default, so we should also write it like that
+      assert(v.filter == const QueryFilter());
+
       database.put('$_serverCachePrefix:$p/', v.toJson(true));
     });
     _serverCache = newValue;

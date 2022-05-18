@@ -120,9 +120,9 @@ class Repo {
     });
     _connection.onDataOperation.listen((event) {
       if (event.type == OperationEventType.listenRevoked) {
-        _syncTree.applyListenRevoked(event.path!, event.query);
+        _syncTree.applyListenRevoked(event.path!, event.query?.params);
       } else {
-        _syncTree.applyServerOperation(event.operation!, event.query);
+        _syncTree.applyServerOperation(event.operation!, event.query?.params);
       }
     });
   }
