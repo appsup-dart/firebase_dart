@@ -193,8 +193,6 @@ void main() {
         event2 = event;
       });
 
-      expect(p.views.length, 1);
-
       expect(p.minimalSetOfQueries.length, 2);
 
       expect(p.views.length, 2);
@@ -319,7 +317,6 @@ void main() {
         }));
 
         for (var i = 0; i < 10; i++) {
-          var event;
           var filter = QueryFilter(
             ordering: o,
             limit: 1,
@@ -327,11 +324,7 @@ void main() {
             validInterval: KeyValueInterval(
                 Name.min, empty, Name('key-${1000 + (i + 1) * 10}'), empty),
           );
-          p.addEventListener('value', filter, (e) {
-            event = e;
-          });
-
-          expect(event, isNotNull);
+          p.addEventListener('value', filter, (e) {});
         }
 
         expect(p.minimalSetOfQueries.length, 10);
@@ -351,18 +344,13 @@ void main() {
         }));
 
         for (var i = 0; i < 10; i++) {
-          var event;
           var filter = QueryFilter(
             ordering: o,
             limit: 1,
             validInterval: KeyValueInterval(
                 Name('key-${1000 + i * 10}'), empty, Name.max, empty),
           );
-          p.addEventListener('value', filter, (e) {
-            event = e;
-          });
-
-          expect(event, isNotNull);
+          p.addEventListener('value', filter, (e) {});
         }
 
         expect(p.minimalSetOfQueries.length, 10);

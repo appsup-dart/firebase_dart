@@ -86,6 +86,7 @@ class Repo {
             SyncTree(url.replace(pathSegments: ['.info']).toString()) {
     _infoSyncTree.addEventListener(
         'value', Path.from([]), QueryFilter(), (event) {});
+    _infoSyncTree.handleInvalidPaths();
     _updateInfo(dotInfoAuthenticated, false);
     _updateInfo(dotInfoConnected, false);
     _authStateChangesSubscription =

@@ -10,6 +10,7 @@ import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:sortedmap/sortedmap.dart';
 
 import 'data_observer.dart';
@@ -187,6 +188,8 @@ class SyncPoint {
 
   final Path<Name> path;
 
+  final Map<QueryFilter, EventTarget> _newQueries = {};
+
   SyncPoint(this.debugName, this.path,
       {ViewCache? data, required this.persistenceManager}) {
     if (data == null) return;
@@ -235,44 +238,40 @@ class SyncPoint {
     return views.values.any((m) => m.isCompleteForChild(child));
   }
 
-  final Set<QueryFilter> _lastMinimalSetOfQueries = {};
-
-  Map<QueryFilter, EventTarget> _removeNewQueries() {
-    var out = <QueryFilter, EventTarget>{};
-
-    var newViewsKeys =
-        views.keys.where((k) => !_lastMinimalSetOfQueries.contains(k)).toList();
-    var newViews = newViewsKeys.map((k) => views.remove(k)!).toList();
-
-    for (var v in newViews) {
-      assert(out.keys.toSet().intersection(v.observers.keys.toSet()).isEmpty);
-
-      out.addAll(v.observers);
-      v.observers.clear();
-    }
-    return out;
-  }
-
   Iterable<QueryFilter> get minimalSetOfQueries {
-    var v = _minimalSetOfQueries.toList();
-    _lastMinimalSetOfQueries
-      ..clear()
-      ..addAll(v);
-    return v;
+    processNewQueries();
+    if (isCompleteFromParent) return const [];
+    var queries = views.keys;
+    if (queries.any((q) => !q.limits)) {
+      return const [QueryFilter()];
+    } else {
+      return queries;
+    }
   }
 
-  Iterable<QueryFilter> get _minimalSetOfQueries sync* {
-    if (isCompleteFromParent) return;
+  @visibleForTesting
+  void processNewQueries() {
+    if (isCompleteFromParent) {
+      _newQueries.forEach((key, value) {
+        getMasterViewForFilter(key).adoptEventTarget(key, value);
+      });
+      _newQueries.clear();
+      return;
+    }
     prune();
     var queries = views.keys;
     if (queries.any((q) => !q.limits)) {
-      yield QueryFilter();
+      _newQueries.forEach((key, value) {
+        getMasterViewForFilter(key).adoptEventTarget(key, value);
+      });
+      _newQueries.clear();
     } else {
       // TODO: move this to a separate class and make it configurable
       var v = <Ordering, Map<QueryFilter, EventTarget>>{};
-      _removeNewQueries().forEach((key, value) {
+      _newQueries.forEach((key, value) {
         v.putIfAbsent(key.ordering, () => {})[key] = value;
       });
+      _newQueries.clear();
 
       for (var o in v.keys) {
         var nonLimitingQueries =
@@ -290,7 +289,9 @@ class SyncPoint {
           var view =
               views.values.firstWhereOrNull((element) => element.contains(q));
           assert(view?.observers[q] == null);
-          if (view != null) view.observers[q] = v[o]!.remove(q)!;
+          if (view != null) {
+            view.adoptEventTarget(q, v[o]!.remove(q)!);
+          }
         }
 
         var forwardLimitingQueries = v[o]!
@@ -329,8 +330,6 @@ class SyncPoint {
           }
         }
       }
-
-      yield* views.keys;
     }
   }
 
@@ -347,17 +346,31 @@ class SyncPoint {
   /// [filter].
   void addEventListener(
       String type, QueryFilter filter, EventListener listener) {
-    getMasterViewForFilter(filter).addEventListener(type, filter, listener);
+    var v = getMasterViewIfExistsForFilter(filter);
+    if (v != null) {
+      v.addEventListener(type, filter, listener);
+    } else {
+      _newQueries
+          .putIfAbsent(filter, () => EventTarget())
+          .addEventListener(type, listener);
+    }
+  }
 
-    // every filter should only be present once
-    assert(
-        views.values.expand((v) => v.observers.keys).length ==
-            views.values.expand((v) => v.observers.keys).toSet().length,
-        'a filter may only be present once in a SyncPoint');
+  MasterView? getMasterViewIfExistsForFilter(QueryFilter filter) {
+    // first check if filter already in one of the master views
+    for (var v in views.values) {
+      if (v.masterFilter == filter || v.observers.containsKey(filter)) {
+        return v;
+      }
+    }
 
-    // filter should be present
-    assert(views.values.expand((v) => v.observers.keys).contains(filter),
-        'filter should be present after addEventListener in a SyncPoint');
+    // secondly, check if filter might be contained by one of the master views
+    for (var v in views.values) {
+      if (v.contains(filter)) {
+        return v;
+      }
+    }
+    return null;
   }
 
   MasterView getMasterViewForFilter(QueryFilter filter) {
@@ -427,18 +440,14 @@ class SyncPoint {
       for (var v in views.values.toList()) {
         var d = v.applyOperation(operation, source, writeId);
         for (var q in d.keys) {
-          var v = getMasterViewForFilter(q);
-          assert(!v.observers.containsKey(q));
-          v.observers[q] = d[q]!;
+          _newQueries[q] = d[q]!;
         }
       }
     } else {
       var d = views[filter]?.applyOperation(operation, source, writeId);
       if (d != null) {
         for (var q in d.keys) {
-          var v = getMasterViewForFilter(q);
-          assert(!v.observers.containsKey(q));
-          v.observers[q] = d[q]!;
+          _newQueries[q] = d[q]!;
         }
       }
     }
@@ -592,18 +601,21 @@ class SyncTree {
     }
   }
 
-  void _handleInvalidPaths() {
+  void handleInvalidPaths() {
     for (var path in _invalidPaths) {
       var node = root.subtree(path, _createNode);
       var point = node.value;
+      var queries = point.minimalSetOfQueries.toList();
+
       registrar.registerAll(
           path,
-          point.minimalSetOfQueries,
+          queries,
           (f) => point.views[f]?._data.serverVersion.isComplete == true
               ? point.views[f]!._data.serverVersion.value.hash
               : null);
     }
     _invalidPaths.clear();
+    _handleInvalidPointsFuture?.cancel();
     _handleInvalidPointsFuture = null;
   }
 
@@ -625,8 +637,8 @@ class SyncTree {
 
     _invalidPaths.add(path);
 
-    _handleInvalidPointsFuture ??= DelayedCancellableFuture(
-        Duration(milliseconds: 1), _handleInvalidPaths);
+    _handleInvalidPointsFuture ??=
+        DelayedCancellableFuture(Duration(milliseconds: 1), handleInvalidPaths);
   }
 
   Future<void> _doOnSyncPoint(
@@ -756,6 +768,10 @@ class SyncTree {
         }
         v.observers.clear();
       }
+      for (var o in value._newQueries.values) {
+        o.dispatchEvent(CancelEvent(null, null));
+      }
+      value._newQueries.clear();
     });
   }
 }

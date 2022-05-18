@@ -65,6 +65,7 @@ void runDatabaseTests({bool isolated = false}) {
       ref.onValue.listen((_) => null, onDone: () => isDone = true);
 
       await app.delete();
+      await wait(100);
 
       expect(isDone, true);
     });
