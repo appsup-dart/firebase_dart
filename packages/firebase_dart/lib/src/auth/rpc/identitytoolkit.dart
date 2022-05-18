@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:_discoveryapis_commons/_discoveryapis_commons.dart' as commons;
-import 'package:_discoveryapis_commons/src/requests.dart' as client_requests;
 import 'package:googleapis/identitytoolkit/v3.dart' as it;
 import 'package:http/http.dart' as http;
 
@@ -302,7 +301,7 @@ class _MyApiRequester extends commons.ApiRequester {
       commons.Media? uploadMedia,
       commons.UploadOptions? uploadOptions,
       commons.DownloadOptions? downloadOptions =
-          client_requests.DownloadOptions.metadata}) async {
+          commons.DownloadOptions.metadata}) async {
     queryParams ??= {};
     try {
       var fields = queryParams.remove('fields') ?? [];

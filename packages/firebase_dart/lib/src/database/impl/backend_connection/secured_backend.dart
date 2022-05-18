@@ -16,6 +16,7 @@ class SecuredBackend extends Backend {
   }
 
   @override
+  // ignore: unnecessary_overrides
   Future<void> auth(Auth? auth) {
     return super.auth(auth);
     // TODO reevaluate listeners
