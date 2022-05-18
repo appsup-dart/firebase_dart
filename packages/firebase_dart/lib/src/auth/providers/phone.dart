@@ -8,11 +8,19 @@ import '../auth_provider.dart';
 /// generate a new [PhoneAuthCredential] when a SMS code has been sent.
 class PhoneAuthProvider extends AuthProvider {
   /// Creates a new instance.
-  PhoneAuthProvider() : super(PROVIDER_ID);
+  PhoneAuthProvider() : super(id);
 
-  static const String PROVIDER_ID = 'phone';
+  static const String id = 'phone';
 
-  static String get PHONE_SIGN_IN_METHOD => PROVIDER_ID;
+  static const String phoneSignInMethod = id;
+
+  @Deprecated('Replaced by lower camel case identifier `id`')
+  // ignore: constant_identifier_names
+  static const String PROVIDER_ID = id;
+
+  @Deprecated('Replaced by lower camel case identifier `phoneSignInMethod`')
+  // ignore: constant_identifier_names
+  static const PHONE_SIGN_IN_METHOD = phoneSignInMethod;
 
   /// Create a new [PhoneAuthCredential] from a provided [verificationId] and
   /// [smsCode].
@@ -50,8 +58,8 @@ class PhoneAuthCredential extends AuthCredential {
       this.temporaryProof,
       this.phoneNumber})
       : super(
-          providerId: PhoneAuthProvider.PROVIDER_ID,
-          signInMethod: PhoneAuthProvider.PHONE_SIGN_IN_METHOD,
+          providerId: PhoneAuthProvider.id,
+          signInMethod: PhoneAuthProvider.phoneSignInMethod,
         );
 
   @override

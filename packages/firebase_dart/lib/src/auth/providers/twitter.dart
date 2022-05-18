@@ -32,12 +32,20 @@ import 'oauth.dart';
 /// ```
 class TwitterAuthProvider extends OAuthProvider {
   /// Creates a new instance.
-  TwitterAuthProvider() : super(PROVIDER_ID);
+  TwitterAuthProvider() : super(id);
 
-  static const String PROVIDER_ID = 'twitter.com';
+  static const String id = 'twitter.com';
 
   /// This corresponds to the sign-in method identifier.
-  static String get TWITTER_SIGN_IN_METHOD => PROVIDER_ID;
+  static const String twitterSignInMethod = id;
+
+  @Deprecated('Replaced by lower camel case identifier `id`')
+  // ignore: constant_identifier_names
+  static const String PROVIDER_ID = id;
+
+  @Deprecated('Replaced by lower camel case identifier `twitterSignInMethod`')
+  // ignore: constant_identifier_names
+  static const TWITTER_SIGN_IN_METHOD = twitterSignInMethod;
 
   /// Create a new [TwitterAuthCredential] from a provided [accessToken] and
   /// [secret];
@@ -56,8 +64,8 @@ class TwitterAuthCredential extends OAuthCredential {
     String? accessToken,
     String? secret,
   }) : super(
-            providerId: TwitterAuthProvider.PROVIDER_ID,
-            signInMethod: TwitterAuthProvider.TWITTER_SIGN_IN_METHOD,
+            providerId: TwitterAuthProvider.id,
+            signInMethod: TwitterAuthProvider.twitterSignInMethod,
             accessToken: accessToken,
             secret: secret);
 }

@@ -278,7 +278,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     }
 
     // Remove the phone number if the phone provider was unlinked.
-    if (!remainingProviderIds.contains(PhoneAuthProvider.PROVIDER_ID)) {
+    if (!remainingProviderIds.contains(PhoneAuthProvider.id)) {
       _accountInfo =
           AccountInfo.fromJson(_accountInfo.toJson()..remove('phoneNumber'));
     }
@@ -332,7 +332,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
     for (var userInfo in providerData) {
       // Check if password provider is linked.
-      if (userInfo.providerId == EmailAuthProvider.PROVIDER_ID) {
+      if (userInfo.providerId == EmailAuthProvider.id) {
         // If so, update both fields in that provider.
         _providerData[_providerData.indexOf(userInfo)] = UserInfo.fromJson({
           ...userInfo.toJson(),

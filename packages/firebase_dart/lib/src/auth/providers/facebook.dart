@@ -31,12 +31,20 @@ import 'oauth.dart';
 /// ```
 class FacebookAuthProvider extends OAuthProvider {
   /// Creates a new instance.
-  FacebookAuthProvider() : super(PROVIDER_ID);
+  FacebookAuthProvider() : super(id);
 
-  static const String PROVIDER_ID = 'facebook.com';
+  static const String id = 'facebook.com';
 
   /// This corresponds to the sign-in method identifier.
-  static String get FACEBOOK_SIGN_IN_METHOD => PROVIDER_ID;
+  static const String facebookSignInMethod = id;
+
+  @Deprecated('Replaced by lower camel case identifier `id`')
+  // ignore: constant_identifier_names
+  static const String PROVIDER_ID = id;
+
+  @Deprecated('Replaced by lower camel case identifier `facebookSignInMethod`')
+  // ignore: constant_identifier_names
+  static const FACEBOOK_SIGN_IN_METHOD = facebookSignInMethod;
 
   /// Create a new [FacebookAuthCredential] from a provided [accessToken];
   static OAuthCredential credential(String accessToken) {
@@ -51,7 +59,7 @@ class FacebookAuthProvider extends OAuthProvider {
 class FacebookAuthCredential extends OAuthCredential {
   FacebookAuthCredential._(String accessToken)
       : super(
-            providerId: FacebookAuthProvider.PROVIDER_ID,
-            signInMethod: FacebookAuthProvider.FACEBOOK_SIGN_IN_METHOD,
+            providerId: FacebookAuthProvider.id,
+            signInMethod: FacebookAuthProvider.facebookSignInMethod,
             accessToken: accessToken);
 }

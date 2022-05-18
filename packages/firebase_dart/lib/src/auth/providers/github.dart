@@ -31,12 +31,20 @@ import 'oauth.dart';
 /// ```
 class GithubAuthProvider extends OAuthProvider {
   /// Creates a new instance.
-  GithubAuthProvider() : super(PROVIDER_ID);
+  GithubAuthProvider() : super(id);
 
-  static const String PROVIDER_ID = 'github.com';
+  static const String id = 'github.com';
 
   /// This corresponds to the sign-in method identifier.
-  static String get GITHUB_SIGN_IN_METHOD => PROVIDER_ID;
+  static const String githubSignInMethod = id;
+
+  @Deprecated('Replaced by lower camel case identifier `id`')
+  // ignore: constant_identifier_names
+  static const String PROVIDER_ID = id;
+
+  @Deprecated('Replaced by lower camel case identifier `githubSignInMethod`')
+  // ignore: constant_identifier_names
+  static const GITHUB_SIGN_IN_METHOD = githubSignInMethod;
 
   /// Create a new [GithubAuthCredential] from a provided [accessToken];
   static OAuthCredential credential(String accessToken) {
@@ -50,7 +58,7 @@ class GithubAuthProvider extends OAuthProvider {
 class GithubAuthCredential extends OAuthCredential {
   GithubAuthCredential._(String accessToken)
       : super(
-            providerId: GithubAuthProvider.PROVIDER_ID,
-            signInMethod: GithubAuthProvider.GITHUB_SIGN_IN_METHOD,
+            providerId: GithubAuthProvider.id,
+            signInMethod: GithubAuthProvider.githubSignInMethod,
             accessToken: accessToken);
 }

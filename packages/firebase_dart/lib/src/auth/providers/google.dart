@@ -30,12 +30,20 @@ import 'oauth.dart';
 /// ```
 class GoogleAuthProvider extends OAuthProvider {
   /// Creates a new instance.
-  GoogleAuthProvider() : super(PROVIDER_ID);
+  GoogleAuthProvider() : super(id);
 
   /// This corresponds to the sign-in method identifier.
-  static String get GOOGLE_SIGN_IN_METHOD => PROVIDER_ID;
+  static const String googleSignInMethod = id;
 
-  static const String PROVIDER_ID = 'google.com';
+  static const String id = 'google.com';
+
+  @Deprecated('Replaced by lower camel case identifier `id`')
+  // ignore: constant_identifier_names
+  static const String PROVIDER_ID = id;
+
+  @Deprecated('Replaced by lower camel case identifier `googleSignInMethod`')
+  // ignore: constant_identifier_names
+  static const GOOGLE_SIGN_IN_METHOD = googleSignInMethod;
 
   /// Create a new [GoogleAuthCredential] from a provided [accessToken].
   static OAuthCredential credential({String? idToken, String? accessToken}) {
@@ -53,8 +61,8 @@ class GoogleAuthCredential extends OAuthCredential {
   GoogleAuthCredential._(
       {required String? idToken, required String? accessToken})
       : super(
-            providerId: GoogleAuthProvider.PROVIDER_ID,
-            signInMethod: GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD,
+            providerId: GoogleAuthProvider.id,
+            signInMethod: GoogleAuthProvider.googleSignInMethod,
             accessToken: accessToken,
             idToken: idToken);
 }

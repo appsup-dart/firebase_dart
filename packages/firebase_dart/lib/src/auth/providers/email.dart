@@ -7,17 +7,30 @@ import '../auth_provider.dart';
 /// Usage of [EmailAuthProvider] would be when you wish to sign a user in with a
 /// credential or reauthenticate a user.
 abstract class EmailAuthProvider extends AuthProvider {
-  static const String PROVIDER_ID = 'password';
+  static const String id = 'password';
 
   /// This corresponds to the sign-in method identifier for email-link sign-ins.
-  static String get EMAIL_LINK_SIGN_IN_METHOD => 'emailLink';
+  static const String emailLinkSignInMethod = 'emailLink';
 
   /// This corresponds to the sign-in method identifier for email-password
   /// sign-ins.
-  static String get EMAIL_PASSWORD_SIGN_IN_METHOD => PROVIDER_ID;
+  static const String emailPasswordSignInMethod = id;
+
+  @Deprecated('Replaced by lower camel case identifier `id`')
+  // ignore: constant_identifier_names
+  static const String PROVIDER_ID = id;
+
+  @Deprecated('Replaced by lower camel case identifier `emailLinkSignInMethod`')
+  // ignore: constant_identifier_names
+  static const EMAIL_LINK_SIGN_IN_METHOD = emailLinkSignInMethod;
+
+  @Deprecated(
+      'Replaced by lower camel case identifier `emailPasswordSignInMethod`')
+  // ignore: constant_identifier_names
+  static const EMAIL_PASSWORD_SIGN_IN_METHOD = emailPasswordSignInMethod;
 
   /// Creates a new instance.
-  EmailAuthProvider() : super(PROVIDER_ID);
+  EmailAuthProvider() : super(id);
 
   static AuthCredential credential({
     required String email,
@@ -48,10 +61,10 @@ class EmailAuthCredential extends AuthCredential {
 
   EmailAuthCredential._({required this.email, this.password, this.emailLink})
       : super(
-            providerId: EmailAuthProvider.PROVIDER_ID,
+            providerId: EmailAuthProvider.id,
             signInMethod: password == null
-                ? EmailAuthProvider.EMAIL_LINK_SIGN_IN_METHOD
-                : EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD);
+                ? EmailAuthProvider.emailLinkSignInMethod
+                : EmailAuthProvider.emailPasswordSignInMethod);
 
   EmailAuthCredential.fromJson(Map<String, dynamic> json)
       : this._(

@@ -629,7 +629,7 @@ class RpcHandler {
     // When sessionId is provided, mobile flow (Cordova) is being used, force
     // code flow and not implicit flow. All other providers use code flow by
     // default.
-    if (sessionId != null && providerId == GoogleAuthProvider.PROVIDER_ID) {
+    if (sessionId != null && providerId == GoogleAuthProvider.id) {
       request.authFlowType = 'CODE_FLOW';
     }
     var response = await relyingparty.createAuthUri(request);
@@ -865,24 +865,24 @@ class RpcHandler {
 
       // Email and password is not supported as there is no situation where the
       // server would return the password to the client.
-      if (providerId == null || providerId == EmailAuthProvider.PROVIDER_ID) {
+      if (providerId == null || providerId == EmailAuthProvider.id) {
         return null;
       }
 
       try {
         switch (providerId) {
-          case GoogleAuthProvider.PROVIDER_ID:
+          case GoogleAuthProvider.id:
             return GoogleAuthProvider.credential(
                 idToken: response.oauthIdToken,
                 accessToken: response.oauthAccessToken);
 
-          case FacebookAuthProvider.PROVIDER_ID:
+          case FacebookAuthProvider.id:
             return FacebookAuthProvider.credential(response.oauthAccessToken!);
 
-          case GithubAuthProvider.PROVIDER_ID:
+          case GithubAuthProvider.id:
             return GithubAuthProvider.credential(response.oauthAccessToken!);
 
-          case TwitterAuthProvider.PROVIDER_ID:
+          case TwitterAuthProvider.id:
             return TwitterAuthProvider.credential(
                 accessToken: response.oauthAccessToken!,
                 secret: response.oauthTokenSecret!);
