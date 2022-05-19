@@ -40,12 +40,16 @@ class OperationEvent {
   TreeOperation? get operation {
     switch (type) {
       case OperationEventType.overwrite:
+        var filter =
+            (path == query?.path ? query!.params : null) ?? const QueryFilter();
+        if (filter.limits) {
+          filter = QueryFilter(
+              ordering: filter.ordering as TreeStructuredDataOrdering);
+        }
         return TreeOperation.overwrite(
-            path!,
-            TreeStructuredData.fromExportJson(
-                data,
-                (path == query?.path ? query!.params : null) ??
-                    const QueryFilter()));
+            path!, TreeStructuredData.fromExportJson(data, filter),
+            valueOnly: path == query?.path);
+
       case OperationEventType.merge:
         return TreeOperation.merge(
             path!,

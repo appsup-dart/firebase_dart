@@ -15,11 +15,12 @@ class TreeOperation extends Operation {
 
   TreeOperation(this.path, this.nodeOperation);
 
-  factory TreeOperation.overwrite(Path<Name> path, TreeStructuredData value) {
+  factory TreeOperation.overwrite(Path<Name> path, TreeStructuredData value,
+      {bool valueOnly = false}) {
     if (path.isNotEmpty && path.last == Name('.priority')) {
       return TreeOperation(path.parent!, SetPriority(value.value));
     }
-    return TreeOperation(path, Overwrite(value));
+    return TreeOperation(path, valueOnly ? SetValue(value) : Overwrite(value));
   }
 
   TreeOperation.merge(
@@ -173,6 +174,10 @@ class Overwrite extends Operation {
 
   @override
   bool operator ==(other) => other is Overwrite && other.value == value;
+}
+
+class SetValue extends Overwrite {
+  SetValue(TreeStructuredData value) : super(value);
 }
 
 class SetPriority extends Operation implements Overwrite {

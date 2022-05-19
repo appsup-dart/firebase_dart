@@ -142,8 +142,12 @@ class IncompleteData {
 
       // check if it is safe to overwrite, meaning we do not risk setting unknown values to null
 
-      // when overwriting the root or a child with non filtered data it is always safe
-      var safeToOverwrite = operation.path.length < 2;
+      // when overwriting the root with non filtered data it is always safe
+      var safeToOverwrite = operation.path.isEmpty;
+
+      // when overwriting a child including the priority it is safe
+      safeToOverwrite =
+          safeToOverwrite || operation.path.length == 1 && n is! SetValue;
 
       // when the path was not yet complete, we can safely overwrite
       safeToOverwrite = safeToOverwrite || !isCompleteForPath(operation.path);
