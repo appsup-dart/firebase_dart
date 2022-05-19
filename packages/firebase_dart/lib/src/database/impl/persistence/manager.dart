@@ -30,6 +30,8 @@ abstract class PersistenceManager {
   void setQueryComplete(QuerySpec query);
 
   T runInTransaction<T>(T Function() callable);
+
+  Future<void> close();
 }
 
 class FakePersistenceManager extends NoopPersistenceManager {
@@ -99,6 +101,9 @@ class NoopPersistenceManager implements PersistenceManager {
     assert(
         _insideTransaction, 'Transaction expected to already be in progress.');
   }
+
+  @override
+  Future<void> close() async {}
 }
 
 class DelegatingPersistenceManager implements PersistenceManager {
@@ -146,5 +151,10 @@ class DelegatingPersistenceManager implements PersistenceManager {
   @override
   void updateServerCache(QuerySpec query, TreeOperation operation) {
     return delegateTo.updateServerCache(query, operation);
+  }
+
+  @override
+  Future<void> close() {
+    return delegateTo.close();
   }
 }

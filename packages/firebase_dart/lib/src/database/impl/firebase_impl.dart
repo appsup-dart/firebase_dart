@@ -96,6 +96,7 @@ mixin BaseFirebaseDatabase implements FirebaseDatabase {
     if (Repo.hasInstance(this)) {
       await Repo(this).close();
     }
+    await persistenceManager.close();
     if (Hive.isBoxOpen(_persistenceStorageName)) {
       await Hive.box(_persistenceStorageName).close();
     }

@@ -5,7 +5,7 @@ import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/persistence/prune_forest.dart';
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:hive/hive.dart';
-import 'package:logging/logging.dart';
+import 'package:synchronized/extension.dart';
 
 import '../data_observer.dart';
 import '../tree.dart';
@@ -13,21 +13,20 @@ import '../utils.dart';
 import '../treestructureddata.dart';
 import 'engine.dart';
 
-final _logger = Logger('firebase.persistence');
-
 class HivePersistenceStorageEngine extends PersistenceStorageEngine {
   static const _serverCachePrefix = 'C';
   static const _trackedQueryPrefix = 'Q';
   static const _userWritesPrefix = 'W';
 
-  IncompleteData _serverCache = IncompleteData.empty();
+  late IncompleteData _serverCache;
+  late IncompleteData _lastWrittenServerCache;
 
   IncompleteData get currentServerCache => _serverCache;
 
   final KeyValueDatabase database;
 
   HivePersistenceStorageEngine(this.database) {
-    _serverCache = loadServerCache();
+    _serverCache = _lastWrittenServerCache = loadServerCache();
   }
 
   IncompleteData loadServerCache() {
@@ -90,14 +89,18 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
   void _scheduleWriteToDatabase() {
     _writeToDatabaseFuture ??=
         Future.delayed(const Duration(milliseconds: 500), () {
-      _writeToDatabase();
-      _writeToDatabaseFuture = null;
+      if (_writeToDatabaseFuture == null) return;
+      synchronized(() async {
+        _writeToDatabaseFuture = null;
+        await _writeToDatabase();
+      });
     });
   }
 
-  void _writeToDatabase() {
+  Future<void> _writeToDatabase() async {
+    database.beginTransaction();
     _serverCache.forEachCompleteNode((k, v) {
-      var c = _serverCache.child(k);
+      var c = _lastWrittenServerCache.child(k);
       if (c.isComplete && c.value == v) return;
       var p = k.join('/');
       database.deleteAll(database.keysBetween(
@@ -110,6 +113,7 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
       database.put('$_serverCachePrefix:$p/', v.toJson(true));
     });
+    await database.endTransaction();
   }
 
   @override
@@ -194,12 +198,16 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
   @override
   void setTransactionSuccessful() {}
+
+  @override
+  Future<void> close() async {
+    _writeToDatabaseFuture = null;
+    await _writeToDatabase();
+  }
 }
 
 class KeyValueDatabase {
   final Box box;
-
-  DateTime? _transactionStart;
 
   Map<String, dynamic>? _transaction;
 
@@ -231,19 +239,15 @@ class KeyValueDatabase {
   void beginTransaction() {
     assert(!isInsideTransaction,
         'runInTransaction called when an existing transaction is already in progress.');
-    _logger.fine('Starting transaction.');
-    _transactionStart = clock.now();
     _transaction = {};
   }
 
-  void endTransaction() {
+  Future<void> endTransaction() async {
     assert(isInsideTransaction);
-    box.putAll(_transaction!);
-    box.deleteAll(_transaction!.keys.where((k) => _transaction![k] == null));
+    var v = _transaction!;
     _transaction = null;
-    var elapsed = clock.now().difference(_transactionStart!);
-    _logger.fine('Transaction completed. Elapsed: $elapsed');
-    _transactionStart = null;
+    await box.putAll(v);
+    await box.deleteAll(v.keys.where((k) => v[k] == null));
   }
 
   void close() {

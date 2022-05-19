@@ -133,4 +133,9 @@ class DefaultPersistenceManager implements PersistenceManager {
       }
     }
   }
+
+  @override
+  Future<void> close() {
+    return storageLayer.close();
+  }
 }

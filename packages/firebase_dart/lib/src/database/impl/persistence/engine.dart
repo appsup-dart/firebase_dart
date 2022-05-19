@@ -47,4 +47,6 @@ abstract class PersistenceStorageEngine {
   void endTransaction();
 
   void setTransactionSuccessful();
+
+  Future<void> close();
 }
