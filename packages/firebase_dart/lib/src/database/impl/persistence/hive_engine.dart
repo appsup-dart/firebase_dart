@@ -242,12 +242,13 @@ class KeyValueDatabase {
     _transaction = {};
   }
 
-  Future<void> endTransaction() async {
+  Future<void> endTransaction() {
     assert(isInsideTransaction);
     var v = _transaction!;
     _transaction = null;
-    await box.putAll(v);
-    await box.deleteAll(v.keys.where((k) => v[k] == null));
+    var f = Future.wait(
+        [box.putAll(v), box.deleteAll(v.keys.where((k) => v[k] == null))]);
+    return f;
   }
 
   void close() {
