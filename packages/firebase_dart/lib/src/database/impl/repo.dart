@@ -395,7 +395,7 @@ class StreamFactory {
   void addEvent(Event value) {
     var e = _mapEvent(value);
     if (e == null) return;
-    Future.microtask(() => controller.add(e));
+    Future.microtask(() => controller.isClosed ? null : controller.add(e));
   }
 
   firebase.Event? _mapEvent(Event value) {
