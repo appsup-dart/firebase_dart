@@ -124,6 +124,10 @@ class LeafTreeStructuredData extends TreeStructuredData {
   }
 
   @override
+  UnmodifiableFilteredMap<Name, TreeStructuredData> get childrenAsFilteredMap =>
+      children;
+
+  @override
   Filter<Name, TreeStructuredData> get filter => const QueryFilter();
 }
 
@@ -207,10 +211,12 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
   Filter<Name, TreeStructuredData> get filter;
 
   TreeStructuredData withPriority(Value? priority) =>
-      TreeStructuredDataImpl._(value, children, priority);
+      TreeStructuredDataImpl._(value, childrenAsFilteredMap, priority);
 
   @override
-  UnmodifiableFilteredMap<Name, TreeStructuredData> get children;
+  Map<Name, TreeStructuredData> get children;
+
+  UnmodifiableFilteredMap<Name, TreeStructuredData> get childrenAsFilteredMap;
 
   TreeStructuredData view(
           {required Pair start,
@@ -219,7 +225,7 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
           bool reversed = false}) =>
       TreeStructuredDataImpl._(
           value,
-          children.filteredMapView(
+          childrenAsFilteredMap.filteredMapView(
               start: start, end: end, limit: limit, reversed: reversed),
           priority);
 
@@ -228,7 +234,7 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
     if (f.ordering == filter.ordering) {
       return TreeStructuredDataImpl._(
           value,
-          children.filteredMap(
+          childrenAsFilteredMap.filteredMap(
               start: Pair.min(f.startKey, f.startValue),
               end: Pair.max(f.endKey, f.endValue),
               limit: f.limit,
@@ -282,12 +288,12 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
   TreeStructuredData withoutChild(Name k) {
     if (!children.containsKey(k)) return this;
     return TreeStructuredData.nonLeaf(
-        children._map.clone()..remove(k), priority);
+        childrenAsFilteredMap._map.clone()..remove(k), priority);
   }
 
   TreeStructuredData withChild(Name k, TreeStructuredData newChild) {
     return TreeStructuredData.nonLeaf(
-        children._map.clone()..[k] = newChild, priority);
+        childrenAsFilteredMap._map.clone()..[k] = newChild, priority);
   }
 }
 
@@ -304,22 +310,14 @@ class TreeStructuredDataFromExportJson extends TreeStructuredData {
       : this._(Snapshot(exportJson), filter);
 
   @override
-  late final UnmodifiableFilteredMap<Name, TreeStructuredData> children =
-      _extractChildren();
+  late final Map<Name, TreeStructuredData> children = _data.map((k, v) =>
+      MapEntry(k, TreeStructuredDataFromExportJson._(v, const QueryFilter())));
 
   @override
   Value? get priority => _data.priority;
 
   @override
   Value? get value => _data.value;
-
-  UnmodifiableFilteredMap<Name, TreeStructuredData> _extractChildren() {
-    var children = _data.map((k, v) => MapEntry(
-        k, TreeStructuredDataFromExportJson._(v, const QueryFilter())));
-
-    return UnmodifiableFilteredMap<Name, TreeStructuredData>(
-        FilteredMap(const QueryFilter())..addAll(children));
-  }
 
   @override
   dynamic toJson([bool exportFormat = false]) => _data.toJson(exportFormat);
@@ -332,6 +330,11 @@ class TreeStructuredDataFromExportJson extends TreeStructuredData {
 
   @override
   bool get isLeaf => _data.isLeaf;
+
+  @override
+  late final UnmodifiableFilteredMap<Name, TreeStructuredData>
+      childrenAsFilteredMap = UnmodifiableFilteredMap<Name, TreeStructuredData>(
+          FilteredMap(filter)..addAll(children));
 }
 
 class TreeStructuredDataImpl extends TreeStructuredData {
@@ -366,6 +369,10 @@ class TreeStructuredDataImpl extends TreeStructuredData {
 
   @override
   Filter<Name, TreeStructuredData> get filter => children.filter;
+
+  @override
+  UnmodifiableFilteredMap<Name, TreeStructuredData> get childrenAsFilteredMap =>
+      children;
 }
 
 String _doubleToIEEE754String(num v) {

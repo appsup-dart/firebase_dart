@@ -73,7 +73,7 @@ class MasterView {
       return false;
     }
 
-    var i = _data.localVersion.value.children.completeInterval;
+    var i = _data.localVersion.value.childrenAsFilteredMap.completeInterval;
     if (i.start == Pair.min()) {
       if (i.end == Pair.max() || i.containsPoint(f.validInterval.end)) {
         return true;
@@ -83,7 +83,7 @@ class MasterView {
     } else if (i.contains(f.validInterval)) {
       return true;
     }
-    return _data.localVersion.value.children
+    return _data.localVersion.value.childrenAsFilteredMap
         .filteredMapView(
             start: f.validInterval.start,
             end: f.validInterval.end,
@@ -107,7 +107,7 @@ class MasterView {
       return true;
     }
     if (masterFilter.ordering is KeyOrdering) {
-      if (l.value.children.completeInterval.containsPoint(
+      if (l.value.childrenAsFilteredMap.completeInterval.containsPoint(
           masterFilter.ordering.mapKeyValue(child, TreeStructuredData()))) {
         // the child does not exist as it should be present in the data if it did
         return true;
