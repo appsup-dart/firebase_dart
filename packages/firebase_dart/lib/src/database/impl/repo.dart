@@ -57,9 +57,8 @@ class Repo {
   late StreamSubscription _authStateChangesSubscription;
 
   factory Repo(firebase.BaseFirebaseDatabase db) {
-    var url = Uri.parse(db.databaseURL);
-
     return _repos.putIfAbsent(db, () {
+      var url = Uri.parse(db.databaseURL);
       var authTokenProvider = db.authTokenProvider;
 
       var connection =
