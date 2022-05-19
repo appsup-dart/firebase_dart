@@ -153,7 +153,7 @@ class Overwrite extends Operation {
 
   @override
   TreeStructuredData apply(TreeStructuredData value) {
-    return this.value.withFilter(value.children.filter);
+    return this.value.withFilter(value.filter);
   }
 
   @override
@@ -214,12 +214,12 @@ class TreeEventGenerator extends EventGenerator {
   @override
   Iterable<Event> generateEvents(String eventType, IncompleteData oldValue,
       IncompleteData newValue) sync* {
-    var newChildren = newValue.value.children;
-    Map<Name, TreeStructuredData> oldChildren = oldValue.value.children;
     if (!newValue.isComplete) {
       // do not generate events when value is incomplete
       return;
     }
+    var newChildren = newValue.value.children;
+    Map<Name, TreeStructuredData> oldChildren = oldValue.value.children;
     if (!oldValue.isComplete) {
       // when old value was not complete, we didn't yet show any children
       oldChildren = const {};
