@@ -224,8 +224,8 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
           priority);
 
   TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) {
-    if (children.filter == f) return this;
-    if (f.ordering == children.filter.ordering) {
+    if (filter == f) return this;
+    if (f.ordering == filter.ordering) {
       return TreeStructuredDataImpl._(
           value,
           children.filteredMap(

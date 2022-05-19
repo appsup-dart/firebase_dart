@@ -55,15 +55,16 @@ class IncompleteData {
 
   TreeStructuredData? _cachedValue;
   TreeStructuredData get value {
-    return _cachedValue ??= _composeValue(_writeTree);
+    return _cachedValue ??= _composeValue(_writeTree, filter);
   }
 
-  TreeStructuredData _composeValue(
-      ModifiableTreeNode<Name, TreeStructuredData?> tree) {
+  static TreeStructuredData _composeValue(
+      ModifiableTreeNode<Name, TreeStructuredData?> tree, QueryFilter filter) {
     if (tree.value != null) return tree.value!.withFilter(filter);
 
     return TreeStructuredData.nonLeaf({
-      for (var k in tree.children.keys) k: _composeValue(tree.children[k]!)
+      for (var k in tree.children.keys)
+        k: _composeValue(tree.children[k]!, const QueryFilter())
     }).withFilter(filter);
   }
 
