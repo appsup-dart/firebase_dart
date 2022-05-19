@@ -1193,6 +1193,28 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       expect(await l, ['text1', 'text0', 'text0', 'text2']);
     });
 
+    test('Remove out of view and back in', () async {
+      await iref.set({'text1': 'b', 'text2': 'c', 'text3': 'a'});
+
+      await wait(500);
+
+      var l = ref
+          .orderByKey()
+          .limitToFirst(1)
+          .onValue
+          .map((e) => e.snapshot.value?.keys?.first)
+          .take(3)
+          .toList();
+
+      await wait(500);
+
+      await iref.child('text0').set('d');
+      await iref.child('text1').remove();
+      await iref.child('text0').remove();
+
+      expect(await l, ['text1', 'text0', 'text2']);
+    });
+
     test('Upgrade subquery to master view', () async {
       await iref.set({'text1': 'b', 'text2': 'c', 'text3': 'a'});
 

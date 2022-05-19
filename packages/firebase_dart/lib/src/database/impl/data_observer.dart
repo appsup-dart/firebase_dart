@@ -34,7 +34,9 @@ class IncompleteData {
       : this._(ModifiableTreeNode(null), filter);
   IncompleteData.complete(TreeStructuredData data)
       : this._(ModifiableTreeNode(data), data.filter as QueryFilter);
-  IncompleteData._(this._writeTree, [this.filter = const QueryFilter()]);
+  IncompleteData._(ModifiableTreeNode<Name, TreeStructuredData?> writeTree,
+      [this.filter = const QueryFilter()])
+      : _writeTree = writeTree.withFilter(filter);
 
   factory IncompleteData.fromLeafs(Map<Path<Name>, TreeStructuredData> leafs) {
     var tree = ModifiableTreeNode<Name, TreeStructuredData?>(null);
@@ -50,7 +52,7 @@ class IncompleteData {
   }
 
   IncompleteData withFilter(QueryFilter filter) {
-    return IncompleteData._(_writeTree, filter);
+    return IncompleteData._(_writeTree.withFilter(filter), filter);
   }
 
   TreeStructuredData? _cachedValue;
@@ -173,6 +175,12 @@ class IncompleteData {
       return v;
     } else if (n is Merge) {
       var v = this;
+      if (isComplete && operation.path.isEmpty) {
+        // use Merge.apply here as it will make sure that operations are applied
+        // in the correct order (first delete, then add)
+        return IncompleteData._(
+            _writeTree.clone()..value = n.apply(_writeTree.value!), filter);
+      }
       for (var o in n.overwrites) {
         v = v.applyOperation(TreeOperation.overwrite(
             Path.from([...operation.path, ...o.path]),
@@ -253,5 +261,10 @@ extension _WriteTreeX on ModifiableTreeNode<Name, TreeStructuredData?> {
       Path<Name> path, Value? data) {
     return addOverwrite(path.child(Name('.priority')),
         data == null ? TreeStructuredData() : TreeStructuredData.leaf(data));
+  }
+
+  ModifiableTreeNode<Name, TreeStructuredData?> withFilter(QueryFilter filter) {
+    if (value == null) return this;
+    return clone()..value = value!.withFilter(filter);
   }
 }
