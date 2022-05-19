@@ -81,9 +81,22 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
   @override
   void overwriteServerCache(TreeOperation operation) {
-    var newValue = _serverCache.applyOperation(operation);
+    _serverCache = _serverCache.applyOperation(operation);
+    _scheduleWriteToDatabase();
+  }
 
-    newValue.forEachCompleteNode((k, v) {
+  Future<void>? _writeToDatabaseFuture;
+
+  void _scheduleWriteToDatabase() {
+    _writeToDatabaseFuture ??=
+        Future.delayed(const Duration(milliseconds: 500), () {
+      _writeToDatabase();
+      _writeToDatabaseFuture = null;
+    });
+  }
+
+  void _writeToDatabase() {
+    _serverCache.forEachCompleteNode((k, v) {
       var c = _serverCache.child(k);
       if (c.isComplete && c.value == v) return;
       var p = k.join('/');
@@ -97,7 +110,6 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
       database.put('$_serverCachePrefix:$p/', v.toJson(true));
     });
-    _serverCache = newValue;
   }
 
   @override
