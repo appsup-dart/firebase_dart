@@ -167,14 +167,22 @@ class QueryFunctionCall<T> extends BaseFunctionCall<T> {
   final QueryFilter filter;
   final Symbol functionName;
 
+  static final Expando<Map<String, FirebaseDatabase>> _databaseCache =
+      Expando();
+
   QueryFunctionCall(
       this.functionName, this.appName, this.databaseURL, this.path, this.filter,
       [List<dynamic>? positionalArguments,
       Map<Symbol, dynamic>? namedArguments])
       : super(positionalArguments, namedArguments);
 
-  FirebaseDatabase get database =>
-      FirebaseDatabase(app: Firebase.app(appName), databaseURL: databaseURL);
+  FirebaseDatabase get database {
+    var app = Firebase.app(appName);
+    // getting a firebase database instance is quite expensive, it requires normalizing the url, so we cache it
+    var map = _databaseCache[app] ??= {};
+    return map.putIfAbsent(databaseURL,
+        () => FirebaseDatabase(app: app, databaseURL: databaseURL));
+  }
 
   DatabaseReference getRef() {
     return database.reference().child(path);
