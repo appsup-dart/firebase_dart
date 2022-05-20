@@ -19,6 +19,25 @@ import '../persistence/mock.dart';
 
 final _logger = Logger('firebase.test.random_synctree');
 
+class MemoryQueryRegistrar extends QueryRegistrar {
+  final List<QuerySpec> outstandingListens;
+
+  final Map<QuerySpec, TreeStructuredData> registeredListens;
+
+  MemoryQueryRegistrar(this.outstandingListens, this.registeredListens);
+
+  @override
+  Future<void> register(QuerySpec query, String? hash) async {
+    outstandingListens.add(query);
+  }
+
+  @override
+  Future<void> unregister(QuerySpec query) async {
+    outstandingListens.remove(query);
+    registeredListens.remove(query);
+  }
+}
+
 class RandomSyncTreeTester {
   late final SyncTree syncTree;
   static Logger get logger => _logger;
@@ -64,13 +83,9 @@ class RandomSyncTreeTester {
       this.serverOperationProbability = 0.1})
       : random =
             RandomGenerator(seed ?? DateTime.now().millisecondsSinceEpoch) {
-    syncTree = SyncTree('test:///', remoteRegister: (path, query, tag) async {
-      outstandingListens.add(QuerySpec(path, query));
-    }, remoteUnregister: (path, query) async {
-      var spec = QuerySpec(path, query);
-      outstandingListens.remove(spec);
-      registeredListens.remove(spec);
-    },
+    syncTree = SyncTree('test:///',
+        queryRegistrar:
+            MemoryQueryRegistrar(outstandingListens, registeredListens),
         persistenceManager: DefaultPersistenceManager(
             HivePersistenceStorageEngine(
                 KeyValueDatabase(Hive.box('firebase-db-storage'))),

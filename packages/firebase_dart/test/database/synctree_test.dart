@@ -10,25 +10,36 @@ import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:test/test.dart';
 
+class LoggingQueryRegistrar extends QueryRegistrar {
+  final StreamController<String> controller = StreamController();
+
+  @override
+  Future<void> register(QuerySpec query, String? hash) async {
+    controller.add('register');
+  }
+
+  @override
+  Future<void> unregister(QuerySpec query) async {
+    controller.add('unregister');
+  }
+
+  Stream<String> get onEvent => controller.stream;
+}
+
 void main() {
   group('RemoteListenerRegistrar', () {
     test('RemoteListenerRegistrar should register and unregister in order',
         () async {
-      var c = StreamController();
-      var registrar = RemoteListenerRegistrar.fromCallbacks(
-          NoopPersistenceManager(), remoteRegister: (path, filter, hash) async {
-        c.add('register');
-      }, remoteUnregister: (path, filter) async {
-        c.add('unregister');
-      });
+      var logger = LoggingQueryRegistrar();
+      var registrar = QueryRegistrarTree(SequentialQueryRegistrar(logger));
 
-      var l = c.stream.take(3).toList();
+      var l = logger.onEvent.take(3).toList();
 
-      registrar.registerAll(Name.parsePath('/test'), [QueryFilter()],
+      registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [QueryFilter()],
           (filter) => filter.hashCode.toString());
-      registrar.registerAll(
+      registrar.setActiveQueriesOnPath(
           Name.parsePath('/test'), [], (filter) => filter.hashCode.toString());
-      registrar.registerAll(Name.parsePath('/test'), [QueryFilter()],
+      registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [QueryFilter()],
           (filter) => filter.hashCode.toString());
 
       expect(await l, ['register', 'unregister', 'register']);

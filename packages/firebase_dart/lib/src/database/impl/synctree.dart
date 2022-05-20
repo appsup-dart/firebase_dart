@@ -470,122 +470,136 @@ class SyncPoint {
   String toString() => 'SyncPoint[$debugName]';
 }
 
-abstract class RemoteListenerRegistrar {
-  final ModifiableTreeNode<Name, Map<QueryFilter, Future<void>>> _queries =
-      ModifiableTreeNode({});
-  final PersistenceManager persistenceManager;
+/// Registers listeners for queries
+abstract class QueryRegistrar {
+  Future<void> register(QuerySpec query, String? hash);
 
-  RemoteListenerRegistrar(this.persistenceManager);
+  Future<void> unregister(QuerySpec query);
+}
 
-  factory RemoteListenerRegistrar.fromCallbacks(
-      PersistenceManager persistenceManager,
-      {RemoteRegister? remoteRegister,
-      RemoteUnregister? remoteUnregister}) = _RemoteListenerRegistrarImpl;
+/// This query registrar delegates (un)registrations to another query registrar
+/// making sure that registrations and unregistrations for the same query are
+/// handled in order and sequentially.
+class SequentialQueryRegistrar extends QueryRegistrar {
+  final QueryRegistrar delegateTo;
 
-  void registerAll(Path<Name> path, Iterable<QueryFilter> filters,
-      String? Function(QueryFilter filter) hashFcn) {
-    var node = _queries.subtree(path,
-        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<void>>{}));
-    node.synchronized(() async {
-      for (var f in filters.toSet()) {
-        if (node.value.containsKey(f)) continue;
-        var hash = hashFcn(f);
-        await register(path, f, hash);
-      }
-      for (var f in node.value.keys.toSet().difference(filters.toSet())) {
-        await unregister(path, f);
-      }
-    });
-  }
+  final Map<QuerySpec, Future<void>> _activeRegistrations = {};
 
-  Future<void> register(Path<Name> path, QueryFilter filter, String? hash) {
-    var node = _queries.subtree(path,
-        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<void>>{}));
-    return node.value.putIfAbsent(filter, () async {
+  SequentialQueryRegistrar(this.delegateTo);
+
+  @override
+  Future<void> register(QuerySpec query, String? hash) {
+    return _activeRegistrations[query] ??= Future(() async {
       try {
-        await remoteRegister(path, filter, hash);
-        persistenceManager.runInTransaction(() {
-          persistenceManager.setQueryActive(QuerySpec(path, filter));
-        });
+        await delegateTo.register(query, hash);
       } catch (e) {
-        node.value.remove(filter); // ignore: unawaited_futures
+        _activeRegistrations.remove(query); // ignore: unawaited_futures
         rethrow;
       }
     });
   }
 
-  Future<void> remoteRegister(
-      Path<Name> path, QueryFilter filter, String? hash);
-
-  Future<void> remoteUnregister(Path<Name> path, QueryFilter filter);
-
-  Future<void> unregister(Path<Name> path, QueryFilter filter) async {
-    var node = _queries.subtree(path,
-        (parent, name) => ModifiableTreeNode(<QueryFilter, Future<void>>{}));
-    if (!node.value.containsKey(filter)) return;
-    var f = node.value.remove(filter);
-    await f?.then((_) async {
-      await remoteUnregister(path, filter);
-      persistenceManager.runInTransaction(() {
-        persistenceManager.setQueryInactive(QuerySpec(path, filter));
-      });
+  @override
+  Future<void> unregister(QuerySpec query) {
+    if (!_activeRegistrations.containsKey(query)) return Future.value();
+    var f = _activeRegistrations.remove(query);
+    return f!.then((_) async {
+      await delegateTo.unregister(query);
     });
   }
 }
 
-typedef RemoteRegister = Future<void> Function(
-    Path<Name> path, QueryFilter filter, String? hash);
-typedef RemoteUnregister = Future<void> Function(
-    Path<Name> path, QueryFilter filter);
+class PersistActiveQueryRegistrar extends QueryRegistrar {
+  final PersistenceManager persistenceManager;
 
-class _RemoteListenerRegistrarImpl extends RemoteListenerRegistrar {
-  final RemoteRegister? _remoteRegister;
-  final RemoteUnregister? _remoteUnregister;
+  final QueryRegistrar delegateTo;
 
-  _RemoteListenerRegistrarImpl(PersistenceManager persistenceManager,
-      {RemoteRegister? remoteRegister, RemoteUnregister? remoteUnregister})
-      : _remoteRegister = remoteRegister,
-        _remoteUnregister = remoteUnregister,
-        super(persistenceManager);
+  PersistActiveQueryRegistrar(this.persistenceManager, this.delegateTo);
+
   @override
-  Future<void> remoteRegister(
-      Path<Name> path, QueryFilter filter, String? hash) async {
-    if (_remoteRegister == null) return;
-    return _remoteRegister!(path, filter, hash);
+  Future<void> register(QuerySpec query, String? hash) async {
+    await delegateTo.register(query, hash);
+    persistenceManager.runInTransaction(() {
+      persistenceManager.setQueryActive(query);
+    });
   }
 
   @override
-  Future<void> remoteUnregister(Path<Name> path, QueryFilter filter) async {
-    if (_remoteUnregister == null) return;
-    return _remoteUnregister!(path, filter);
+  Future<void> unregister(QuerySpec query) async {
+    await delegateTo.unregister(query);
+    persistenceManager.runInTransaction(() {
+      persistenceManager.setQueryInactive(query);
+    });
+  }
+}
+
+class QueryRegistrarTree {
+  final QueryRegistrar queryRegistrar;
+
+  final Map<Path<Name>, Set<QueryFilter>> _activeQueries = {};
+
+  QueryRegistrarTree(this.queryRegistrar);
+
+  void setActiveQueriesOnPath(Path<Name> path, Iterable<QueryFilter> filters,
+      String? Function(QueryFilter filter) hashFcn) {
+    var activeFilters = _activeQueries.putIfAbsent(path, () => {});
+
+    var filtersToActivate = filters.toSet().difference(activeFilters);
+
+    var filtersToDeactivate = activeFilters.difference(filters.toSet());
+
+    for (var f in filtersToActivate) {
+      queryRegistrar.register(QuerySpec(path, f), hashFcn(f));
+    }
+
+    for (var f in filtersToDeactivate) {
+      queryRegistrar.unregister(QuerySpec(path, f));
+    }
+
+    activeFilters =
+        activeFilters.union(filtersToActivate).difference(filtersToDeactivate);
+
+    if (activeFilters.isEmpty) {
+      _activeQueries.remove(path);
+    } else {
+      _activeQueries[path] = activeFilters;
+    }
+  }
+}
+
+class NoopQueryRegistrar extends QueryRegistrar {
+  @override
+  Future<void> register(QuerySpec query, String? hash) {
+    return Future.value();
+  }
+
+  @override
+  Future<void> unregister(QuerySpec query) {
+    return Future.value();
   }
 }
 
 class SyncTree {
   final String name;
-  final RemoteListenerRegistrar registrar;
+  final QueryRegistrarTree registrar;
 
   final ModifiableTreeNode<Name, SyncPoint> root;
 
   final PersistenceManager persistenceManager;
 
   SyncTree(String name,
-      {RemoteRegister? remoteRegister,
-      RemoteUnregister? remoteUnregister,
-      PersistenceManager? persistenceManager})
+      {QueryRegistrar? queryRegistrar, PersistenceManager? persistenceManager})
       : this._(name,
-            remoteRegister: remoteRegister,
-            remoteUnregister: remoteUnregister,
+            queryRegistrar: queryRegistrar,
             persistenceManager: persistenceManager ?? NoopPersistenceManager());
 
   SyncTree._(this.name,
-      {RemoteRegister? remoteRegister,
-      RemoteUnregister? remoteUnregister,
-      required this.persistenceManager})
+      {QueryRegistrar? queryRegistrar, required this.persistenceManager})
       : root = ModifiableTreeNode(
             SyncPoint(name, Path(), persistenceManager: persistenceManager)),
-        registrar = RemoteListenerRegistrar.fromCallbacks(persistenceManager,
-            remoteRegister: remoteRegister, remoteUnregister: remoteUnregister);
+        registrar = QueryRegistrarTree(SequentialQueryRegistrar(
+            PersistActiveQueryRegistrar(
+                persistenceManager, queryRegistrar ?? NoopQueryRegistrar())));
 
   static ModifiableTreeNode<Name, SyncPoint> _createNode(
       SyncPoint parent, Name childName) {
@@ -608,7 +622,7 @@ class SyncTree {
       var point = node.value;
       var queries = point.minimalSetOfQueries.toList();
 
-      registrar.registerAll(
+      registrar.setActiveQueriesOnPath(
           path,
           queries,
           (f) => point.views[f]?._data.serverVersion.isComplete == true

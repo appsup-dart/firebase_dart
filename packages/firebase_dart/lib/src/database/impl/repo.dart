@@ -7,6 +7,7 @@ import 'dart:math';
 import 'package:firebase_dart/database.dart'
     show FirebaseDatabaseException, MutableData, TransactionHandler;
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
+import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
@@ -72,15 +73,8 @@ class Repo {
   Repo._(this.url, this._connection, AuthTokenProvider? authTokenProvider,
       PersistenceManager persistenceManager)
       : _syncTree = SyncTree(url.toString(),
-            remoteRegister: (path, filter, hash) async {
-          var warnings = await _connection.listen(path.join('/'),
-              query: filter, hash: hash);
-          for (var w in warnings) {
-            _logger.warning(w);
-          }
-        }, remoteUnregister: (path, filter) async {
-          await _connection.unlisten(path.join('/'), query: filter);
-        }, persistenceManager: persistenceManager),
+            queryRegistrar: RemoteQueryRegistrar(_connection),
+            persistenceManager: persistenceManager),
         _infoSyncTree =
             SyncTree(url.replace(pathSegments: ['.info']).toString()) {
     _infoSyncTree.addEventListener(
@@ -129,7 +123,7 @@ class Repo {
 
   SyncTree get syncTree => _syncTree;
 
-  RemoteListenerRegistrar get registrar => _syncTree.registrar;
+  QueryRegistrarTree get registrar => _syncTree.registrar;
 
   Future<void> triggerDisconnect() => _connection.disconnect();
 
@@ -503,4 +497,24 @@ TreeStructuredData getLatestValue(SyncTree syncTree, Path<Name> path) {
     point = point.child(n);
   }
   return point.valueForFilter(QueryFilter());
+}
+
+class RemoteQueryRegistrar extends QueryRegistrar {
+  final PersistentConnection connection;
+
+  RemoteQueryRegistrar(this.connection);
+
+  @override
+  Future<void> register(QuerySpec query, String? hash) async {
+    var warnings = await connection.listen(query.path.join('/'),
+        query: query.params, hash: hash);
+    for (var w in warnings) {
+      _logger.warning(w);
+    }
+  }
+
+  @override
+  Future<void> unregister(QuerySpec query) async {
+    await connection.unlisten(query.path.join('/'), query: query.params);
+  }
 }
