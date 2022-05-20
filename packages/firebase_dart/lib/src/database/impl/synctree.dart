@@ -21,8 +21,6 @@ import 'tree.dart';
 import 'treestructureddata.dart';
 import 'view.dart';
 
-import 'package:synchronized/extension.dart';
-
 final _logger = Logger('firebase-synctree');
 
 class MasterView {
@@ -533,6 +531,103 @@ class PersistActiveQueryRegistrar extends QueryRegistrar {
   }
 }
 
+class PrioritizedQueryRegistrar extends QueryRegistrar {
+  final QueryRegistrar delegateTo;
+
+  final Map<QuerySpec, MapEntry<Completer<void>, String>>
+      lowPriorityPendingRegistrations = {};
+  final Map<QuerySpec, Completer<void>> highPriorityPendingRegistrations = {};
+  final Map<QuerySpec, Completer<void>> pendingDeregistrations = {};
+
+  Future<void>? _handleFuture;
+
+  PrioritizedQueryRegistrar(this.delegateTo);
+
+  void _handle() {
+    const maxOperations = 20;
+    if (highPriorityPendingRegistrations.isNotEmpty) {
+      var queries =
+          highPriorityPendingRegistrations.keys.take(maxOperations).toList();
+      for (var q in queries) {
+        var c = highPriorityPendingRegistrations.remove(q)!;
+
+        c.complete(delegateTo.register(q, null));
+      }
+      return;
+    }
+    if (lowPriorityPendingRegistrations.isNotEmpty) {
+      var queries =
+          lowPriorityPendingRegistrations.keys.take(maxOperations).toList();
+      for (var q in queries) {
+        var e = lowPriorityPendingRegistrations.remove(q)!;
+        var c = e.key;
+
+        c.complete(delegateTo.register(q, e.value));
+      }
+      return;
+    }
+    if (pendingDeregistrations.isNotEmpty) {
+      var queries = pendingDeregistrations.keys.take(maxOperations).toList();
+      for (var q in queries) {
+        var c = pendingDeregistrations.remove(q)!;
+
+        c.complete(delegateTo.unregister(q));
+      }
+      return;
+    }
+  }
+
+  void _scheduleHandle() {
+    _handleFuture ??= Future.delayed(const Duration(milliseconds: 4), () {
+      _handle();
+      _handleFuture = null;
+      if (highPriorityPendingRegistrations.isNotEmpty ||
+          lowPriorityPendingRegistrations.isNotEmpty ||
+          pendingDeregistrations.isNotEmpty) {
+        _scheduleHandle();
+      }
+    });
+  }
+
+  @override
+  Future<void> register(QuerySpec query, String? hash) {
+    if (pendingDeregistrations.containsKey(query)) {
+      // still registered, remove and complete the pending deregistration
+      pendingDeregistrations.remove(query)?.complete();
+      return Future.value();
+    }
+
+    var c = highPriorityPendingRegistrations.remove(query) ??
+        lowPriorityPendingRegistrations.remove(query)?.key ??
+        Completer();
+
+    if (hash != null) {
+      lowPriorityPendingRegistrations[query] = MapEntry(c, hash);
+    } else {
+      highPriorityPendingRegistrations[query] = c;
+    }
+
+    _scheduleHandle();
+    return c.future;
+  }
+
+  @override
+  Future<void> unregister(QuerySpec query) {
+    var c = highPriorityPendingRegistrations.remove(query) ??
+        lowPriorityPendingRegistrations.remove(query)?.key;
+
+    if (c != null) {
+      // not yet registered
+      c.complete();
+      return Future.value();
+    }
+
+    c = pendingDeregistrations[query] ??= Completer();
+    _scheduleHandle();
+    return c.future;
+  }
+}
+
 class QueryRegistrarTree {
   final QueryRegistrar queryRegistrar;
 
@@ -597,9 +692,9 @@ class SyncTree {
       {QueryRegistrar? queryRegistrar, required this.persistenceManager})
       : root = ModifiableTreeNode(
             SyncPoint(name, Path(), persistenceManager: persistenceManager)),
-        registrar = QueryRegistrarTree(SequentialQueryRegistrar(
-            PersistActiveQueryRegistrar(
-                persistenceManager, queryRegistrar ?? NoopQueryRegistrar())));
+        registrar = QueryRegistrarTree(PrioritizedQueryRegistrar(
+            SequentialQueryRegistrar(PersistActiveQueryRegistrar(
+                persistenceManager, queryRegistrar ?? NoopQueryRegistrar()))));
 
   static ModifiableTreeNode<Name, SyncPoint> _createNode(
       SyncPoint parent, Name childName) {
