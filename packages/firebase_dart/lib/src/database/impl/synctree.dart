@@ -525,10 +525,11 @@ class PersistActiveQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> register(QuerySpec query, String? hash) async {
-    await delegateTo.register(query, hash);
+    // first set query active then register as otherwise the tracked query will not be stored as complete
     persistenceManager.runInTransaction(() {
       persistenceManager.setQueryActive(query);
     });
+    await delegateTo.register(query, hash);
   }
 
   @override
