@@ -202,6 +202,7 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
   Future<void> close() async {
     _writeToDatabaseFuture = null;
     await _writeToDatabase();
+    await database.close();
   }
 }
 
@@ -241,17 +242,25 @@ class KeyValueDatabase {
     _transaction = {};
   }
 
-  Future<void> endTransaction() {
+  Future<void> endTransaction() async {
     assert(isInsideTransaction);
     var v = _transaction!;
     _transaction = null;
-    var f = Future.wait(
-        [box.putAll(v), box.deleteAll(v.keys.where((k) => v[k] == null))]);
-    return f;
+
+    _transactionFuture = Future.wait([
+      if (_transactionFuture != null) _transactionFuture!,
+      box.putAll(v),
+      box.deleteAll(v.keys.where((k) => v[k] == null))
+    ]);
+
+    await _transactionFuture;
   }
 
-  void close() {
-    box.close();
+  Future<void>? _transactionFuture;
+
+  Future<void> close() async {
+    await _transactionFuture;
+    await box.close();
   }
 
   void delete(String key) {

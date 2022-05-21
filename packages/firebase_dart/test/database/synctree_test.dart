@@ -24,6 +24,11 @@ class LoggingQueryRegistrar extends QueryRegistrar {
   }
 
   Stream<String> get onEvent => controller.stream;
+
+  @override
+  Future<void> close() async {
+    await controller.close();
+  }
 }
 
 void main() {

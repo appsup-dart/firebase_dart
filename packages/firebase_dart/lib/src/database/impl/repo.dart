@@ -517,4 +517,7 @@ class RemoteQueryRegistrar extends QueryRegistrar {
   Future<void> unregister(QuerySpec query) async {
     await connection.unlisten(query.path.join('/'), query: query.params);
   }
+
+  @override
+  Future<void> close() async {}
 }

@@ -473,6 +473,8 @@ abstract class QueryRegistrar {
   Future<void> register(QuerySpec query, String? hash);
 
   Future<void> unregister(QuerySpec query);
+
+  Future<void> close();
 }
 
 /// This query registrar delegates (un)registrations to another query registrar
@@ -488,6 +490,7 @@ class SequentialQueryRegistrar extends QueryRegistrar {
   @override
   Future<void> register(QuerySpec query, String? hash) {
     return _activeRegistrations[query] ??= Future(() async {
+      if (_activeRegistrations[query] == null) return; // already closed
       try {
         await delegateTo.register(query, hash);
       } catch (e) {
@@ -504,6 +507,12 @@ class SequentialQueryRegistrar extends QueryRegistrar {
     return f!.then((_) async {
       await delegateTo.unregister(query);
     });
+  }
+
+  @override
+  Future<void> close() {
+    _activeRegistrations.clear();
+    return delegateTo.close();
   }
 }
 
@@ -528,6 +537,11 @@ class PersistActiveQueryRegistrar extends QueryRegistrar {
     persistenceManager.runInTransaction(() {
       persistenceManager.setQueryInactive(query);
     });
+  }
+
+  @override
+  Future<void> close() {
+    return delegateTo.close();
   }
 }
 
@@ -579,6 +593,7 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
 
   void _scheduleHandle() {
     _handleFuture ??= Future.delayed(const Duration(milliseconds: 4), () {
+      if (_handleFuture == null) return;
       _handle();
       _handleFuture = null;
       if (highPriorityPendingRegistrations.isNotEmpty ||
@@ -626,6 +641,12 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
     _scheduleHandle();
     return c.future;
   }
+
+  @override
+  Future<void> close() {
+    _handleFuture = null;
+    return delegateTo.close();
+  }
 }
 
 class QueryRegistrarTree {
@@ -634,6 +655,10 @@ class QueryRegistrarTree {
   final Map<Path<Name>, Set<QueryFilter>> _activeQueries = {};
 
   QueryRegistrarTree(this.queryRegistrar);
+
+  Future<void> close() {
+    return queryRegistrar.close();
+  }
 
   void setActiveQueriesOnPath(Path<Name> path, Iterable<QueryFilter> filters,
       String? Function(QueryFilter filter) hashFcn) {
@@ -670,6 +695,11 @@ class NoopQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> unregister(QuerySpec query) {
+    return Future.value();
+  }
+
+  @override
+  Future<void> close() {
     return Future.value();
   }
 }
@@ -873,6 +903,7 @@ class SyncTree {
 
   void destroy() {
     _handleInvalidPointsFuture?.cancel();
+    registrar.close();
     root.forEachNode((key, value) {
       for (var v in value.views.values) {
         for (var o in v.observers.values.toList()) {

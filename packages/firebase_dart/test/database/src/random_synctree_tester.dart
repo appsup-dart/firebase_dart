@@ -36,6 +36,11 @@ class MemoryQueryRegistrar extends QueryRegistrar {
     outstandingListens.remove(query);
     registeredListens.remove(query);
   }
+
+  @override
+  Future<void> close() {
+    return Future.value();
+  }
 }
 
 class RandomSyncTreeTester {
