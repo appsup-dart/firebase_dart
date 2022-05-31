@@ -12,23 +12,74 @@ import '../utils.dart';
 import '../treestructureddata.dart';
 import 'engine.dart';
 
-class HivePersistenceStorageEngine extends PersistenceStorageEngine {
+class PersistenceStorageTransaction {
+  final Map<int, TrackedQuery?> _trackedQueries = {};
+  final Map<int, TreeOperation?> _userOperations = {};
+  IncompleteData? _serverCache;
+
+  PersistenceStorageTransaction();
+
+  bool get isEmpty =>
+      _trackedQueries.isEmpty &&
+      _userOperations.isEmpty &&
+      _serverCache == null;
+
+  void deleteTrackedQuery(int trackedQueryId) {
+    _trackedQueries[trackedQueryId] = null;
+  }
+
+  void saveTrackedQuery(TrackedQuery trackedQuery) {
+    _trackedQueries[trackedQuery.id] = trackedQuery;
+  }
+
+  void deleteUserOperation(int writeId) {
+    _userOperations[writeId] = null;
+  }
+
+  void saveUserOperation(TreeOperation operation, int writeId) {
+    _userOperations[writeId] = operation;
+  }
+
+  void saveServerCache(IncompleteData value) {
+    _serverCache = value;
+  }
+
+  void addTransaction(PersistenceStorageTransaction transaction) {
+    _trackedQueries.addAll(transaction._trackedQueries);
+    _userOperations.addAll(transaction._userOperations);
+    _serverCache = transaction._serverCache ?? _serverCache;
+  }
+}
+
+abstract class PersistenceStorageDatabase {
+  IncompleteData loadServerCache();
+
+  List<TrackedQuery> loadTrackedQueries();
+
+  Map<int, TreeOperation> loadUserOperations();
+
+  Future<void> applyTransaction(PersistenceStorageTransaction transaction);
+
+  Future<void> close();
+}
+
+class PersistenceStorageDatabaseImpl extends PersistenceStorageDatabase {
   static const _serverCachePrefix = 'C';
   static const _trackedQueryPrefix = 'Q';
   static const _userWritesPrefix = 'W';
 
-  late IncompleteData _serverCache;
-  late IncompleteData _lastWrittenServerCache;
-
-  IncompleteData get currentServerCache => _serverCache;
-
   final KeyValueDatabase database;
 
-  HivePersistenceStorageEngine(this.database) {
-    _serverCache = _lastWrittenServerCache = loadServerCache();
+  late IncompleteData _lastWrittenServerCache = _loadServerCache();
+
+  PersistenceStorageDatabaseImpl(this.database);
+
+  @override
+  IncompleteData loadServerCache() {
+    return _lastWrittenServerCache;
   }
 
-  IncompleteData loadServerCache() {
+  IncompleteData _loadServerCache() {
     var keys = database.keysBetween(
       startKey: '$_serverCachePrefix:',
       endKey: '$_serverCachePrefix;',
@@ -39,21 +90,6 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
         Name.parsePath(k.substring('$_serverCachePrefix:'.length)):
             TreeStructuredData.fromExportJson(database.box.get(k))
     });
-  }
-
-  @override
-  void beginTransaction() {
-    database.beginTransaction();
-  }
-
-  @override
-  void deleteTrackedQuery(int trackedQueryId) {
-    database.delete('$_trackedQueryPrefix:$trackedQueryId');
-  }
-
-  @override
-  void endTransaction() {
-    database.endTransaction();
   }
 
   @override
@@ -78,48 +114,198 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
   }
 
   @override
-  void overwriteServerCache(TreeOperation operation) {
-    _serverCache = _serverCache.applyOperation(operation);
+  Future<void> applyTransaction(
+      PersistenceStorageTransaction transaction) async {
+    database.beginTransaction();
+
+    for (var e in transaction._trackedQueries.entries) {
+      var trackedQueryId = e.key;
+      var trackedQuery = e.value;
+      if (trackedQuery == null) {
+        database.delete('$_trackedQueryPrefix:$trackedQueryId');
+      } else {
+        database.put(
+            '$_trackedQueryPrefix:${trackedQuery.id}', trackedQuery.toJson());
+      }
+    }
+
+    for (var e in transaction._userOperations.entries) {
+      var writeId = e.key;
+      var operation = e.value;
+      if (operation == null) {
+        database.delete('$_userWritesPrefix:$writeId');
+      } else {
+        database.put('$_userWritesPrefix:$writeId', operation.toJson());
+      }
+    }
+
+    var serverCache = transaction._serverCache;
+
+    if (serverCache != null) {
+      void write(Path<Name> path, TreeNode<Name, TreeStructuredData?> value,
+          TreeNode<Name, TreeStructuredData?> lastWritten) {
+        if (value.value != null && lastWritten.value == value.value) return;
+
+        if (value.value != null || lastWritten.value != null) {
+          var p = path.join('/');
+          database.deleteAll(database.keysBetween(
+            startKey: '$_serverCachePrefix:$p/',
+            endKey: '$_serverCachePrefix:${p}0',
+          ));
+        }
+
+        if (value.value != null) {
+          var p = path.join('/');
+          var v = value.value!;
+          // we will read back the data as if it were ordered/filtered with default, so we should also write it like that
+          assert(v.filter == const QueryFilter());
+
+          database.put('$_serverCachePrefix:$p/', v.toJson(true));
+        } else {
+          var allChildren = [
+            ...lastWritten.children.keys,
+            ...value.children.keys
+          ];
+
+          for (var k in allChildren) {
+            write(path.child(k), value.children[k] ?? const LeafTreeNode(null),
+                lastWritten.children[k] ?? const LeafTreeNode(null));
+          }
+        }
+      }
+
+      write(Path(), serverCache.writeTree, _lastWrittenServerCache.writeTree);
+
+      _lastWrittenServerCache = serverCache;
+    }
+
+    await database.endTransaction();
+  }
+
+  @override
+  Future<void> close() => database.close();
+}
+
+class DebouncedPersistenceStorageDatabase
+    implements PersistenceStorageDatabase {
+  final PersistenceStorageDatabase delegateTo;
+
+  PersistenceStorageTransaction _transaction = PersistenceStorageTransaction();
+
+  Future<void>? _writeToDatabaseFuture;
+
+  DebouncedPersistenceStorageDatabase(this.delegateTo);
+
+  @override
+  Future<void> applyTransaction(
+      PersistenceStorageTransaction transaction) async {
+    _transaction.addTransaction(transaction);
     _scheduleWriteToDatabase();
   }
 
-  Future<void>? _writeToDatabaseFuture;
+  @override
+  Future<void> close() async {
+    await _writeToDatabase();
+    await delegateTo.close();
+  }
+
+  @override
+  IncompleteData loadServerCache() {
+    return _transaction._serverCache ?? delegateTo.loadServerCache();
+  }
+
+  @override
+  List<TrackedQuery> loadTrackedQueries() {
+    return [
+      ...delegateTo
+          .loadTrackedQueries()
+          .where((v) => !_transaction._trackedQueries.containsKey(v.id)),
+      ..._transaction._trackedQueries.values.whereType()
+    ];
+  }
+
+  @override
+  Map<int, TreeOperation> loadUserOperations() {
+    return ({
+      ...delegateTo.loadUserOperations(),
+      ..._transaction._userOperations,
+    }..removeWhere((key, value) => value == null))
+        .cast();
+  }
 
   void _scheduleWriteToDatabase() {
     _writeToDatabaseFuture ??=
         Future.delayed(const Duration(milliseconds: 500), () {
       if (_writeToDatabaseFuture == null) return;
-      synchronized(() async {
-        _writeToDatabaseFuture = null;
-        await _writeToDatabase();
-      });
+      synchronized(_writeToDatabase);
     });
   }
 
   Future<void> _writeToDatabase() async {
-    database.beginTransaction();
-    _serverCache.forEachCompleteNode((k, v) {
-      var c = _lastWrittenServerCache.child(k);
-      if (c.isComplete && c.value == v) return;
-      var p = k.join('/');
-      database.deleteAll(database.keysBetween(
-        startKey: '$_serverCachePrefix:$p/',
-        endKey: '$_serverCachePrefix:${p}0',
-      ));
+    _writeToDatabaseFuture = null;
 
-      // we will read back the data as if it were ordered/filtered with default, so we should also write it like that
-      assert(v.filter == const QueryFilter());
+    if (_transaction.isEmpty) return;
 
-      database.put('$_serverCachePrefix:$p/', v.toJson(true));
-    });
-    await database.endTransaction();
+    await delegateTo.applyTransaction(_transaction);
+    _transaction = PersistenceStorageTransaction();
+  }
+}
+
+class HivePersistenceStorageEngine extends PersistenceStorageEngine {
+  final PersistenceStorageDatabase database;
+
+  PersistenceStorageTransaction? _transaction;
+
+  HivePersistenceStorageEngine(KeyValueDatabase database)
+      : database = DebouncedPersistenceStorageDatabase(
+            PersistenceStorageDatabaseImpl(database));
+
+  @override
+  void beginTransaction() {
+    assert(_transaction == null);
+    _transaction = PersistenceStorageTransaction();
+  }
+
+  @override
+  void deleteTrackedQuery(int trackedQueryId) {
+    assert(_transaction != null);
+    _transaction!.deleteTrackedQuery(trackedQueryId);
+  }
+
+  @override
+  void endTransaction() {
+    assert(_transaction != null);
+    database.applyTransaction(_transaction!);
+    _transaction = null;
+  }
+
+  @override
+  List<TrackedQuery> loadTrackedQueries() {
+    return database.loadTrackedQueries();
+  }
+
+  @override
+  Map<int, TreeOperation> loadUserOperations() {
+    return database.loadUserOperations();
+  }
+
+  @override
+  void overwriteServerCache(TreeOperation operation) {
+    _saveServerCache(database.loadServerCache().applyOperation(operation));
+  }
+
+  void _saveServerCache(IncompleteData serverCache) {
+    assert(_transaction != null);
+    _transaction!.saveServerCache(serverCache);
   }
 
   @override
   void pruneCache(Path<Name> root, PruneForest pruneForest) {
-    database._verifyInsideTransaction();
+    assert(_transaction != null);
 
-    _serverCache.forEachCompleteNode((absoluteDataPath, value) {
+    var serverCache = database.loadServerCache();
+
+    serverCache.forEachCompleteNode((absoluteDataPath, value) {
       assert(root == absoluteDataPath || !absoluteDataPath.isDescendantOf(root),
           'Pruning at $root but we found data higher up.');
       if (root.isDescendantOf(absoluteDataPath)) {
@@ -135,18 +321,9 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
                 dataNode.getChild(keepPath));
             return accum.applyOperation(op);
           });
-          _serverCache = _serverCache
+          serverCache = serverCache
               .removeWrite(absoluteDataPath)
               .applyOperation(newCache.toOperation());
-
-          var p = absoluteDataPath.join('/');
-          database.deleteAll(database.keysBetween(
-            startKey: '$_serverCachePrefix:$p/',
-            endKey: '$_serverCachePrefix:${p}0',
-          ));
-          _serverCache.forEachCompleteNode((k, v) {
-            database.put('$_serverCachePrefix:${k.join('/')}/', v.toJson(true));
-          }, absoluteDataPath);
         } else {
           // NOTE: This is technically a valid scenario (e.g. you ask to prune at / but only want to
           // prune 'foo' and 'bar' and ignore everything else).  But currently our pruning will
@@ -157,11 +334,14 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
         }
       }
     });
+
+    _saveServerCache(serverCache);
   }
 
   @override
   void removeUserOperation(int writeId) {
-    database.delete('$_userWritesPrefix:$writeId');
+    assert(_transaction != null);
+    _transaction!.deleteUserOperation(writeId);
   }
 
   @override
@@ -176,23 +356,24 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
   @override
   void saveTrackedQuery(TrackedQuery trackedQuery) {
-    database.put(
-        '$_trackedQueryPrefix:${trackedQuery.id}', trackedQuery.toJson());
+    assert(_transaction != null);
+    _transaction!.saveTrackedQuery(trackedQuery);
   }
 
   @override
   void saveUserOperation(TreeOperation operation, int writeId) {
-    database.put('$_userWritesPrefix:$writeId', operation.toJson());
+    assert(_transaction != null);
+    _transaction!.saveUserOperation(operation, writeId);
   }
 
   @override
   IncompleteData serverCache(Path<Name> path) {
-    return _serverCache.child(path);
+    return database.loadServerCache().child(path);
   }
 
   @override
   int serverCacheEstimatedSizeInBytes() {
-    return _serverCache.estimatedStorageSize;
+    return database.loadServerCache().estimatedStorageSize;
   }
 
   @override
@@ -200,8 +381,6 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
   @override
   Future<void> close() async {
-    _writeToDatabaseFuture = null;
-    await _writeToDatabase();
     await database.close();
   }
 }

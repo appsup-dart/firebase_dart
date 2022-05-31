@@ -60,6 +60,8 @@ class IncompleteData {
     return _cachedValue ??= _composeValue(_writeTree, filter);
   }
 
+  TreeNode<Name, TreeStructuredData?> get writeTree => _writeTree;
+
   static TreeStructuredData _composeValue(
       ModifiableTreeNode<Name, TreeStructuredData?> tree, QueryFilter filter) {
     if (tree.value != null) return tree.value!.withFilter(filter);

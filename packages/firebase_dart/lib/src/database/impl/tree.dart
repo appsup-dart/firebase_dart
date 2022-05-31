@@ -79,6 +79,16 @@ abstract class TreeNode<K, V> {
   }
 }
 
+class LeafTreeNode<K, V> extends TreeNode<K, V> {
+  const LeafTreeNode(this.value);
+
+  @override
+  Map<K, TreeNode<K, V>> get children => const {};
+
+  @override
+  final V value;
+}
+
 abstract class ComparableTreeNode<K extends Comparable, V>
     extends TreeNode<K, V> implements Comparable<ModifiableTreeNode<K, V>> {
   /// Order: nil, leaf, node with children
