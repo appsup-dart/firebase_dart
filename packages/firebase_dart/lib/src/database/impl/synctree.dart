@@ -3,7 +3,6 @@
 
 import 'dart:async';
 
-import 'package:async/async.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:firebase_dart/database.dart' show FirebaseDatabaseException;
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
@@ -916,23 +915,6 @@ class SyncTree {
         o.dispatchEvent(CancelEvent(null, null));
       }
       value._newQueries.clear();
-    });
-  }
-}
-
-class DelayedCancellableFuture<T> extends DelegatingFuture<T> {
-  final void Function() cancel;
-
-  DelayedCancellableFuture._(Future<T> future, this.cancel) : super(future);
-  factory DelayedCancellableFuture(
-      Duration duration, FutureOr<T> Function() computation) {
-    var c = Completer<T>();
-    var t = Timer(duration, () {
-      c.complete(Future(computation));
-    });
-
-    return DelayedCancellableFuture._(c.future, () {
-      t.cancel();
     });
   }
 }

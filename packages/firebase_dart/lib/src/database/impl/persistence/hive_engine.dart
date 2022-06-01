@@ -61,6 +61,8 @@ abstract class PersistenceStorageDatabase {
   Future<void> applyTransaction(PersistenceStorageTransaction transaction);
 
   Future<void> close();
+
+  bool get isOpen;
 }
 
 class PersistenceStorageDatabaseImpl extends PersistenceStorageDatabase {
@@ -76,6 +78,7 @@ class PersistenceStorageDatabaseImpl extends PersistenceStorageDatabase {
 
   @override
   IncompleteData loadServerCache() {
+    assert(isOpen);
     return _lastWrittenServerCache;
   }
 
@@ -94,6 +97,7 @@ class PersistenceStorageDatabaseImpl extends PersistenceStorageDatabase {
 
   @override
   List<TrackedQuery> loadTrackedQueries() {
+    assert(isOpen);
     return [
       ...database
           .valuesBetween(
@@ -105,6 +109,7 @@ class PersistenceStorageDatabaseImpl extends PersistenceStorageDatabase {
 
   @override
   Map<int, TreeOperation> loadUserOperations() {
+    assert(isOpen);
     return {
       for (var k in database.keysBetween(
           startKey: '$_userWritesPrefix:', endKey: '$_userWritesPrefix;'))
@@ -116,6 +121,7 @@ class PersistenceStorageDatabaseImpl extends PersistenceStorageDatabase {
   @override
   Future<void> applyTransaction(
       PersistenceStorageTransaction transaction) async {
+    assert(isOpen);
     database.beginTransaction();
 
     for (var e in transaction._trackedQueries.entries) {
@@ -183,7 +189,13 @@ class PersistenceStorageDatabaseImpl extends PersistenceStorageDatabase {
   }
 
   @override
-  Future<void> close() => database.close();
+  Future<void> close() {
+    assert(isOpen);
+    return database.close();
+  }
+
+  @override
+  bool get isOpen => database.box.isOpen;
 }
 
 class DebouncedPersistenceStorageDatabase
@@ -192,30 +204,35 @@ class DebouncedPersistenceStorageDatabase
 
   PersistenceStorageTransaction _transaction = PersistenceStorageTransaction();
 
-  Future<void>? _writeToDatabaseFuture;
+  DelayedCancellableFuture<void>? _writeToDatabaseFuture;
 
   DebouncedPersistenceStorageDatabase(this.delegateTo);
 
   @override
   Future<void> applyTransaction(
       PersistenceStorageTransaction transaction) async {
+    assert(isOpen);
     _transaction.addTransaction(transaction);
     _scheduleWriteToDatabase();
   }
 
   @override
   Future<void> close() async {
+    assert(isOpen);
+    _writeToDatabaseFuture?.cancel();
     await _writeToDatabase();
     await delegateTo.close();
   }
 
   @override
   IncompleteData loadServerCache() {
+    assert(isOpen);
     return _transaction._serverCache ?? delegateTo.loadServerCache();
   }
 
   @override
   List<TrackedQuery> loadTrackedQueries() {
+    assert(isOpen);
     return [
       ...delegateTo
           .loadTrackedQueries()
@@ -226,6 +243,7 @@ class DebouncedPersistenceStorageDatabase
 
   @override
   Map<int, TreeOperation> loadUserOperations() {
+    assert(isOpen);
     return ({
       ...delegateTo.loadUserOperations(),
       ..._transaction._userOperations,
@@ -235,13 +253,14 @@ class DebouncedPersistenceStorageDatabase
 
   void _scheduleWriteToDatabase() {
     _writeToDatabaseFuture ??=
-        Future.delayed(const Duration(milliseconds: 500), () {
+        DelayedCancellableFuture(const Duration(milliseconds: 500), () {
       if (_writeToDatabaseFuture == null) return;
       synchronized(_writeToDatabase);
     });
   }
 
   Future<void> _writeToDatabase() async {
+    assert(isOpen);
     _writeToDatabaseFuture = null;
 
     if (_transaction.isEmpty) return;
@@ -249,6 +268,9 @@ class DebouncedPersistenceStorageDatabase
     await delegateTo.applyTransaction(_transaction);
     _transaction = PersistenceStorageTransaction();
   }
+
+  @override
+  bool get isOpen => delegateTo.isOpen;
 }
 
 class HivePersistenceStorageEngine extends PersistenceStorageEngine {
@@ -396,6 +418,7 @@ class KeyValueDatabase {
 
   Iterable<dynamic> valuesBetween(
       {required String startKey, required String endKey}) {
+    assert(box.isOpen);
     // TODO merge transaction data
     return keysBetween(startKey: startKey, endKey: endKey)
         .map((k) => box.get(k));
@@ -403,6 +426,7 @@ class KeyValueDatabase {
 
   Iterable<String> keysBetween(
       {required String startKey, required String endKey}) sync* {
+    assert(box.isOpen);
     // TODO merge transaction data
     for (var k in box.keys) {
       if (Comparable.compare(k, startKey) < 0) continue;
@@ -412,16 +436,19 @@ class KeyValueDatabase {
   }
 
   bool containsKey(String key) {
+    assert(box.isOpen);
     return box.containsKey(key);
   }
 
   void beginTransaction() {
+    assert(box.isOpen);
     assert(!isInsideTransaction,
         'runInTransaction called when an existing transaction is already in progress.');
     _transaction = {};
   }
 
   Future<void> endTransaction() async {
+    assert(box.isOpen);
     assert(isInsideTransaction);
     var v = _transaction!;
     _transaction = null;
@@ -438,6 +465,7 @@ class KeyValueDatabase {
   Future<void>? _transactionFuture;
 
   Future<void> close() async {
+    assert(box.isOpen);
     await _transactionFuture;
     await box.close();
   }
@@ -460,6 +488,7 @@ class KeyValueDatabase {
   }
 
   void _verifyInsideTransaction() {
+    assert(box.isOpen);
     assert(
         isInsideTransaction, 'Transaction expected to already be in progress.');
   }

@@ -155,6 +155,33 @@ void runDatabaseTests({bool isolated = false}) {
         });
       });
     }
+
+    test(
+        'multiple apps with same host should close PersistenceManager when last one deleted',
+        () async {
+      var app1 = await core.Firebase.initializeApp(
+          name: 'app1', options: getOptions());
+
+      var db1 = FirebaseDatabase(app: app1, databaseURL: testUrl);
+      await db1.setPersistenceEnabled(true);
+
+      var ref1 = db1.reference().child('test/some-key');
+      await ref1.get();
+
+      var app2 = await core.Firebase.initializeApp(
+          name: 'app2', options: getOptions());
+
+      var db2 = FirebaseDatabase(app: app2, databaseURL: testUrl);
+      await db2.setPersistenceEnabled(true);
+
+      var ref2 = db2.reference().child('test/some-key');
+      await ref2.get();
+
+      await app1.delete();
+      await app2.delete();
+
+      await wait(100);
+    });
   });
 
   if (!isolated) {

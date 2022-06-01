@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:async/async.dart';
 import 'package:collection/collection.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
@@ -229,5 +232,22 @@ extension KeyValueIntervalX on KeyValueInterval {
       last = i;
     }
     if (last != null) yield last;
+  }
+}
+
+class DelayedCancellableFuture<T> extends DelegatingFuture<T> {
+  final void Function() cancel;
+
+  DelayedCancellableFuture._(Future<T> future, this.cancel) : super(future);
+  factory DelayedCancellableFuture(
+      Duration duration, FutureOr<T> Function() computation) {
+    var c = Completer<T>();
+    var t = Timer(duration, () {
+      c.complete(Future(computation));
+    });
+
+    return DelayedCancellableFuture._(c.future, () {
+      t.cancel();
+    });
   }
 }

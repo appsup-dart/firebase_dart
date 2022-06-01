@@ -1,5 +1,9 @@
 # Changelog
 
+# 1.0.9
+
+- bugfix: properly close persistence storage when deleting app
+
 # 1.0.8
 
 - bugfixes and performance improvements on realtime database

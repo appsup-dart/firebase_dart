@@ -44,15 +44,25 @@ mixin BaseFirebaseDatabase implements FirebaseDatabase {
   String get _persistenceStorageName =>
       'firebase-db-persistence-storage-${Uri.parse(databaseURL).host}';
 
-  late final PersistenceManager persistenceManager =
+  static final Map<String, MapEntry<PersistenceManager, int>>
+      _persistenceManagers = {};
+
+  late final DelegatingPersistenceManager persistenceManager =
       DelegatingPersistenceManager(() {
     _persistenceManagerInitialized = true;
-    return _persistenceEnabled
-        ? DefaultPersistenceManager(
+    if (!_persistenceEnabled) return NoopPersistenceManager();
+
+    var m = _persistenceManagers[_persistenceStorageName] ??= MapEntry(
+        DefaultPersistenceManager(
             HivePersistenceStorageEngine(
                 KeyValueDatabase(Hive.box(_persistenceStorageName))),
-            LRUCachePolicy(_persistenceCacheSize))
-        : NoopPersistenceManager();
+            LRUCachePolicy(_persistenceCacheSize)),
+        0);
+
+    _persistenceManagers[_persistenceStorageName] =
+        MapEntry(m.key, m.value + 1);
+
+    return m.key;
   });
 
   int _persistenceCacheSize = 10 * 1024 * 1024;
@@ -96,9 +106,19 @@ mixin BaseFirebaseDatabase implements FirebaseDatabase {
     if (Repo.hasInstance(this)) {
       await Repo(this).close();
     }
-    await persistenceManager.close();
-    if (Hive.isBoxOpen(_persistenceStorageName)) {
-      await Hive.box(_persistenceStorageName).close();
+    if (_persistenceManagerInitialized) {
+      var m = _persistenceManagers.remove(_persistenceStorageName);
+      if (m != null && m.key == persistenceManager.delegateTo) {
+        if (m.value > 1) {
+          _persistenceManagers[_persistenceStorageName] =
+              MapEntry(m.key, m.value - 1);
+          return;
+        }
+      }
+      await persistenceManager.close();
+      if (Hive.isBoxOpen(_persistenceStorageName)) {
+        await Hive.box(_persistenceStorageName).close();
+      }
     }
   }
 
