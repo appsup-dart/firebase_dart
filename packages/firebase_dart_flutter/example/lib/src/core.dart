@@ -201,7 +201,7 @@ class _NewAppDialogState extends State<NewAppDialog> {
           appId: '',
         ).asMap
       ];
-      box.put('apps', apps);
+      await box.put('apps', apps);
       Navigator.pop(context);
       return;
     }

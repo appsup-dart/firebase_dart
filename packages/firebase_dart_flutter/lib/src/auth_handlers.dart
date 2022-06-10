@@ -18,7 +18,9 @@ class FacebookAuthHandler extends DirectAuthHandler {
     try {
       var facebookLogin = FacebookAuth.instance;
       await facebookLogin.logOut();
-    } catch (e) {}
+    } catch (e) {
+      // ignore
+    }
   }
 
   @override
@@ -43,7 +45,9 @@ class GoogleAuthHandler extends DirectAuthHandler {
     try {
       await GoogleSignIn().signOut();
     } on AssertionError {
+      // TODO
     } on MissingPluginException {
+      // TODO
     } catch (e) {
       // TODO: on release build for web, this throws an exception, should be checked why, for now ignore
     }
@@ -91,7 +95,7 @@ class AppleAuthHandler extends DirectAuthHandler<OAuthProvider> {
 }
 
 class AndroidAuthHandler extends FirebaseAppAuthHandler {
-  static const _channel = const MethodChannel('firebase_dart_flutter');
+  static const _channel = MethodChannel('firebase_dart_flutter');
 
   Future<AuthCredential?>? _result;
 

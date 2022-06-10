@@ -11,7 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:hive/hive.dart';
 
 class FirebaseDartFlutter {
-  static const _channel = const MethodChannel('firebase_dart_flutter');
+  static const _channel = MethodChannel('firebase_dart_flutter');
 
   static Future<void> setup({
     bool isolated = !kIsWeb,
@@ -19,7 +19,7 @@ class FirebaseDartFlutter {
     isolated = isolated && !kIsWeb;
     WidgetsFlutterBinding.ensureInitialized();
 
-    var path;
+    String? path;
     if (!kIsWeb) {
       var appDir = await getApplicationDocumentsDirectory();
       path = appDir.path;
@@ -41,7 +41,7 @@ class FirebaseDartFlutter {
           FacebookAuthHandler(),
           AppleAuthHandler(),
           AndroidAuthHandler(),
-          AuthHandler(),
+          const AuthHandler(),
         ]),
         platform: await _getPlatform());
   }
