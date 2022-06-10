@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:firebase_dart/firebase_dart.dart';
 
 import 'auth.dart';
+import 'database.dart';
 
 class AppListPage extends StatelessWidget {
   final Stream<List<FirebaseOptions>> apps = (() async* {
@@ -302,8 +303,8 @@ class AppPage extends StatelessWidget {
             ),
             body: TabBarView(
               children: [
-                AuthTab(app: snapshot.data!),
-                const Text('database'),
+                AuthTab(app: snapshot.requireData),
+                DatabaseTab(app: snapshot.requireData),
                 const Text('storage'),
               ],
             ),

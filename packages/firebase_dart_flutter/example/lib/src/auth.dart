@@ -105,7 +105,7 @@ class UserInfo extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        MaterialButton(
+        TextButton(
             onPressed: () {
               showEditFieldDialog(
                 title: 'Change profile picture',
@@ -123,7 +123,7 @@ class UserInfo extends StatelessWidget {
                     : NetworkImage(user.photoURL!),
                 child:
                     user.photoURL == null ? const Icon(Icons.person) : null)),
-        MaterialButton(
+        TextButton(
             onPressed: () {
               showEditFieldDialog(
                 title: 'Change display name',
@@ -138,7 +138,7 @@ class UserInfo extends StatelessWidget {
             child: Text(user.displayName == null || user.displayName!.isEmpty
                 ? '[no display name]'
                 : user.displayName!)),
-        MaterialButton(
+        TextButton(
             onPressed: () {
               showEditFieldDialog(
                 title: 'Change email',
@@ -154,7 +154,7 @@ class UserInfo extends StatelessWidget {
                 ? '[no email]'
                 : user.email!)),
         if (!user.emailVerified)
-          MaterialButton(
+          TextButton(
             onPressed: () {
               showConfirmDialog(
                 title: 'Send email verification email',
@@ -167,7 +167,7 @@ class UserInfo extends StatelessWidget {
             child: const Text('verify email'),
           ),
         if (user.providerData.any((v) => v.providerId == 'password'))
-          MaterialButton(
+          TextButton(
               onPressed: () {
                 showEditFieldDialog(
                   title: 'Change password',
