@@ -29,28 +29,21 @@ class _ActionDialogState<T> extends State<ActionDialog<T>> {
       ),
       actions: <Widget>[
         TextButton(
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
           onPressed: _inProgress
               ? null
               : () {
                   Navigator.pop(context);
                 },
+          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
         ),
         TextButton(
-          child: Row(children: [
-            Container(
-                width: 16,
-                height: 16,
-                child: _inProgress ? CircularProgressIndicator() : null),
-            Text(MaterialLocalizations.of(context).okButtonLabel),
-          ]),
           onPressed: _inProgress
               ? null
               : () async {
                   setState(() => _inProgress = true);
                   try {
                     var v = await widget.onContinue();
-                    Navigator.pop(context, v);
+                    if (mounted) Navigator.pop(context, v);
                   } catch (e) {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(SnackBar(content: Text('$e')));
@@ -58,6 +51,13 @@ class _ActionDialogState<T> extends State<ActionDialog<T>> {
                     rethrow;
                   }
                 },
+          child: Row(children: [
+            SizedBox(
+                width: 16,
+                height: 16,
+                child: _inProgress ? const CircularProgressIndicator() : null),
+            Text(MaterialLocalizations.of(context).okButtonLabel),
+          ]),
         ),
       ],
     );

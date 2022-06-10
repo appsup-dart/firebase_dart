@@ -14,17 +14,19 @@ class AppListPage extends StatelessWidget {
     yield* box.watch(key: 'apps').map((e) => parseApps(e.value));
   })();
 
+  AppListPage({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Select a firebase app')),
+      appBar: AppBar(title: const Text('Select a firebase app')),
       floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
         onPressed: () {
           showDialog(
               context: context,
               builder: (context) {
-                return NewAppDialog();
+                return const NewAppDialog();
               });
         },
       ),
@@ -32,7 +34,7 @@ class AppListPage extends StatelessWidget {
         stream: apps,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return Container(child: CircularProgressIndicator());
+            return const CircularProgressIndicator();
           }
 
           return ListView(
@@ -57,6 +59,8 @@ class AppListPage extends StatelessWidget {
 }
 
 class NewAppDialog extends StatefulWidget {
+  const NewAppDialog({Key? key}) : super(key: key);
+
   @override
   State<StatefulWidget> createState() => _NewAppDialogState();
 }
@@ -68,55 +72,60 @@ class _NewAppDialogState extends State<NewAppDialog> {
     TextFormField(
       key: GlobalKey<FormFieldState>(),
       controller: TextEditingController(),
-      decoration: InputDecoration(labelText: 'project id'),
+      decoration: const InputDecoration(labelText: 'project id'),
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: (value) {
-        if (value == null || value.isEmpty)
+        if (value == null || value.isEmpty) {
           return 'project id should not be empty';
+        }
         return null;
       },
     ),
     TextFormField(
       key: GlobalKey<FormFieldState>(),
       controller: TextEditingController(),
-      decoration: InputDecoration(labelText: 'API key'),
+      decoration: const InputDecoration(labelText: 'API key'),
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: (value) {
-        if (value == null || value.isEmpty)
+        if (value == null || value.isEmpty) {
           return 'API key should not be empty';
+        }
         return null;
       },
     ),
     TextFormField(
       key: GlobalKey<FormFieldState>(),
       controller: TextEditingController(),
-      decoration: InputDecoration(labelText: 'auth domain'),
+      decoration: const InputDecoration(labelText: 'auth domain'),
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: (value) {
-        if (value == null || value.isEmpty)
+        if (value == null || value.isEmpty) {
           return 'auth domain should not be empty';
+        }
         return null;
       },
     ),
     TextFormField(
       key: GlobalKey<FormFieldState>(),
       controller: TextEditingController(),
-      decoration: InputDecoration(labelText: 'database url'),
+      decoration: const InputDecoration(labelText: 'database url'),
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: (value) {
-        if (value == null || value.isEmpty)
+        if (value == null || value.isEmpty) {
           return 'database url should not be empty';
+        }
         return null;
       },
     ),
     TextFormField(
       key: GlobalKey<FormFieldState>(),
       controller: TextEditingController(),
-      decoration: InputDecoration(labelText: 'storage bucket'),
+      decoration: const InputDecoration(labelText: 'storage bucket'),
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: (value) {
-        if (value == null || value.isEmpty)
+        if (value == null || value.isEmpty) {
           return 'storage bucket should not be empty';
+        }
         return null;
       },
     ),
@@ -139,7 +148,7 @@ class _NewAppDialogState extends State<NewAppDialog> {
   }
 
   void _onFieldChanged() {
-    setState(() => null);
+    setState(() {});
   }
 
   @override
@@ -147,7 +156,7 @@ class _NewAppDialogState extends State<NewAppDialog> {
     var steps = [
       for (var f in _fields)
         Step(
-            title: Text(''),
+            title: const Text(''),
             isActive: _index == _fields.indexOf(f),
             content: f),
     ];
@@ -155,9 +164,9 @@ class _NewAppDialogState extends State<NewAppDialog> {
     var key = _fields[_index].key as GlobalKey<FormFieldState>;
     var canContinue = key.currentState?.isValid ?? false;
     return SimpleDialog(
-      title: Text('New firebase app'),
+      title: const Text('New firebase app'),
       children: [
-        Container(
+        SizedBox(
             width: 300,
             height: 300,
             child: Form(
@@ -202,7 +211,7 @@ class _NewAppDialogState extends State<NewAppDialog> {
         ).asMap
       ];
       await box.put('apps', apps);
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
       return;
     }
 
@@ -245,7 +254,7 @@ class AppPage extends StatelessWidget {
             context: context,
             builder: (context) {
               return AlertDialog(
-                title: Text('Please provide your email'),
+                title: const Text('Please provide your email'),
                 content: Column(
                   children: [
                     TextFormField(
@@ -274,8 +283,8 @@ class AppPage extends StatelessWidget {
     }), builder: (context, snapshot) {
       if (!snapshot.hasData) {
         return Column(
-          children: [CircularProgressIndicator()],
           mainAxisAlignment: MainAxisAlignment.center,
+          children: const [CircularProgressIndicator()],
         );
       }
       return DefaultTabController(
@@ -283,7 +292,7 @@ class AppPage extends StatelessWidget {
           child: Scaffold(
             appBar: AppBar(
               title: Text(firebaseOptions.projectId),
-              bottom: TabBar(
+              bottom: const TabBar(
                 tabs: [
                   Text('auth'),
                   Text('database'),
@@ -294,8 +303,8 @@ class AppPage extends StatelessWidget {
             body: TabBarView(
               children: [
                 AuthTab(app: snapshot.data!),
-                Text('database'),
-                Text('storage'),
+                const Text('database'),
+                const Text('storage'),
               ],
             ),
           ));

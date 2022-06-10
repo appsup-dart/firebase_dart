@@ -18,19 +18,19 @@ class AuthTab extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Column(
-            children: [CircularProgressIndicator()],
             mainAxisAlignment: MainAxisAlignment.center,
+            children: const [CircularProgressIndicator()],
           );
         }
 
         if (snapshot.data == null) {
           return Padding(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   TextButton(
-                      child: Text('sign in with email and password'),
+                      child: const Text('sign in with email and password'),
                       onPressed: () {
                         showDialog(
                             context: context,
@@ -38,17 +38,17 @@ class AuthTab extends StatelessWidget {
                                 SignInWithEmailAndPasswordDialog(auth: auth));
                       }),
                   TextButton(
-                      child: Text('sign in with google'),
+                      child: const Text('sign in with google'),
                       onPressed: () async {
                         await auth.signInWithRedirect(GoogleAuthProvider());
                       }),
                   TextButton(
-                      child: Text('sign in with facebook'),
+                      child: const Text('sign in with facebook'),
                       onPressed: () async {
                         await auth.signInWithRedirect(FacebookAuthProvider());
                       }),
                   TextButton(
-                    child: Text('send sign in link'),
+                    child: const Text('send sign in link'),
                     onPressed: () async {
                       var email = await showEditFieldDialog(
                           context: context,
@@ -118,10 +118,11 @@ class UserInfo extends StatelessWidget {
               );
             },
             child: CircleAvatar(
-                child: user.photoURL == null ? Icon(Icons.person) : null,
                 backgroundImage: user.photoURL == null || user.photoURL!.isEmpty
                     ? null
-                    : NetworkImage(user.photoURL!))),
+                    : NetworkImage(user.photoURL!),
+                child:
+                    user.photoURL == null ? const Icon(Icons.person) : null)),
         MaterialButton(
             onPressed: () {
               showEditFieldDialog(
@@ -163,7 +164,7 @@ class UserInfo extends StatelessWidget {
                 },
               );
             },
-            child: Text('verify email'),
+            child: const Text('verify email'),
           ),
         if (user.providerData.any((v) => v.providerId == 'password'))
           MaterialButton(
@@ -178,9 +179,9 @@ class UserInfo extends StatelessWidget {
                   context: context,
                 );
               },
-              child: Text('password: ***')),
+              child: const Text('password: ***')),
         TextButton(
-          child: Text('sign out'),
+          child: const Text('sign out'),
           onPressed: () {
             auth.signOut();
           },
@@ -202,7 +203,7 @@ class SignInWithEmailAndPasswordDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ActionDialog(
-      title: Text('Sign in with email and password'),
+      title: const Text('Sign in with email and password'),
       onContinue: () async {
         await auth.signInWithEmailAndPassword(
           email: email.text,
@@ -212,11 +213,11 @@ class SignInWithEmailAndPasswordDialog extends StatelessWidget {
       children: [
         TextField(
           controller: email,
-          decoration: InputDecoration(labelText: 'email'),
+          decoration: const InputDecoration(labelText: 'email'),
         ),
         TextField(
           controller: password,
-          decoration: InputDecoration(labelText: 'password'),
+          decoration: const InputDecoration(labelText: 'password'),
           obscureText: true,
         ),
       ],
