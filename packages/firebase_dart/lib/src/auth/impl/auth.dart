@@ -5,6 +5,7 @@ import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/authhandlers.dart';
+import 'package:firebase_dart/src/auth/rpc/http_util.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/implementation/dart.dart';
 import 'package:http/http.dart';
@@ -20,7 +21,8 @@ import 'user.dart';
 
 /// The entry point of the Firebase Authentication SDK.
 class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
-  final RpcHandler rpcHandler;
+  late final RpcHandler rpcHandler =
+      RpcHandler(app.options.apiKey, httpClient: httpClient);
 
   late final UserManager userStorageManager = UserManager(this);
 
@@ -31,8 +33,11 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   final BehaviorSubject<FirebaseUserImpl?> _currentUser = BehaviorSubject();
 
+  final MetadataClient httpClient;
+
   FirebaseAuthImpl(FirebaseApp app, {Client? httpClient})
-      : rpcHandler = RpcHandler(app.options.apiKey, httpClient: httpClient),
+      : httpClient = MetadataClient(httpClient ?? Client(),
+            firebaseAppId: app.options.appId),
         super(app) {
     _onReady = _init();
     getRedirectResult();
@@ -232,9 +237,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }
 
   @override
-  Future<void> setLanguageCode(String language) {
-    // TODO: implement setLanguageCode
-    throw UnimplementedError();
+  Future<void> setLanguageCode(String language) async {
+    httpClient.locale = language;
   }
 
   @override
