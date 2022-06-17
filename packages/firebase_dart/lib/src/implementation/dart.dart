@@ -2,6 +2,7 @@ import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
@@ -16,9 +17,12 @@ class PureDartFirebaseImplementation extends BaseFirebaseImplementation {
 
   final AuthHandler authHandler;
 
+  final ApplicationVerifier applicationVerifier;
+
   PureDartFirebaseImplementation(
       {required Function(Uri url, {bool popup}) launchUrl,
       required this.authHandler,
+      required this.applicationVerifier,
       http.Client? httpClient})
       : _httpClient = httpClient,
         super(launchUrl: launchUrl);

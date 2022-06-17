@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_dart_flutter_example/src/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_dart/firebase_dart.dart';
@@ -36,6 +38,14 @@ class AuthTab extends StatelessWidget {
                             context: context,
                             builder: (context) =>
                                 SignInWithEmailAndPasswordDialog(auth: auth));
+                      }),
+                  TextButton(
+                      child: const Text('sign in with phone'),
+                      onPressed: () {
+                        showDialog(
+                            context: context,
+                            builder: (context) =>
+                                SignInWithPhoneNumberDialog(auth: auth));
                       }),
                   TextButton(
                       child: const Text('sign in with google'),
@@ -219,6 +229,75 @@ class SignInWithEmailAndPasswordDialog extends StatelessWidget {
           controller: password,
           decoration: const InputDecoration(labelText: 'password'),
           obscureText: true,
+        ),
+      ],
+    );
+  }
+}
+
+class SignInWithPhoneNumberDialog extends StatelessWidget {
+  final FirebaseAuth auth;
+
+  final TextEditingController phoneNumber = TextEditingController();
+
+  SignInWithPhoneNumberDialog({Key? key, required this.auth}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionDialog(
+      title: const Text('Sign in with phone number'),
+      onContinue: () async {
+        var completer = Completer();
+        await auth.verifyPhoneNumber(
+          phoneNumber: phoneNumber.text,
+          codeAutoRetrievalTimeout: (String verificationId) {},
+          codeSent: (String verificationId, int? forceResendingToken) {
+            Navigator.of(context).pop();
+            showDialog(
+                context: context,
+                builder: (context) => SignInWithSmsCodeDialog(
+                      auth: auth,
+                      verificationId: verificationId,
+                    ));
+          },
+          verificationCompleted: (PhoneAuthCredential phoneAuthCredential) {},
+          verificationFailed: (FirebaseAuthException error) {},
+        );
+        await completer.future;
+      },
+      children: [
+        TextField(
+          controller: phoneNumber,
+          decoration: const InputDecoration(labelText: 'phone number'),
+        ),
+      ],
+    );
+  }
+}
+
+class SignInWithSmsCodeDialog extends StatelessWidget {
+  final FirebaseAuth auth;
+
+  final String verificationId;
+
+  final TextEditingController otp = TextEditingController();
+
+  SignInWithSmsCodeDialog(
+      {Key? key, required this.auth, required this.verificationId})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionDialog(
+      title: const Text('Sign in with sms'),
+      onContinue: () async {
+        await auth.signInWithCredential(PhoneAuthProvider.credential(
+            verificationId: verificationId, smsCode: otp.text));
+      },
+      children: [
+        TextField(
+          controller: otp,
+          decoration: const InputDecoration(labelText: 'sms code'),
         ),
       ],
     );

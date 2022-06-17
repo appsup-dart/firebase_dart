@@ -1,4 +1,5 @@
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/dart.dart';
@@ -41,6 +42,7 @@ void setupPureDartImplementation(
     bool isolated = false,
     required Function(Uri url, {bool popup}) launchUrl,
     required AuthHandler authHandler,
+    required ApplicationVerifier applicationVerifier,
     http.Client? httpClient}) {
   platform ??= Platform.web(
     currentUrl: Uri.base.toString(),
@@ -57,5 +59,8 @@ void setupPureDartImplementation(
       DefaultJsonWebKeySetLoader(httpClient: httpClient);
 
   FirebaseImplementation.install(PureDartFirebaseImplementation(
-      launchUrl: launchUrl, authHandler: authHandler, httpClient: httpClient));
+      launchUrl: launchUrl,
+      authHandler: authHandler,
+      applicationVerifier: applicationVerifier,
+      httpClient: httpClient));
 }

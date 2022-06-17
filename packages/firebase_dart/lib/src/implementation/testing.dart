@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/testing.dart';
-import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart' as auth;
 import 'package:firebase_dart/src/auth/backend/memory_backend.dart' as auth;
@@ -99,7 +98,6 @@ class TestClient extends http.BaseClient {
   }
 
   static http.Client _createClient(BackendRef backend) {
-    ApplicationVerifier.instance = DummyApplicationVerifier();
     var openIdClient = ProxyClient({
       RegExp('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'):
           http.MockClient((request) async {

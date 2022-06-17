@@ -3,10 +3,10 @@ import 'dart:collection';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
-import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/authhandlers.dart';
 import 'package:firebase_dart/src/auth/rpc/http_util.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
+import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/dart.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
@@ -339,7 +339,10 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     Duration timeout = const Duration(seconds: 30),
     int? forceResendingToken,
   }) async {
-    var assertion = await ApplicationVerifier.instance.verify(this);
+    var assertion = await (FirebaseImplementation.installation
+            as PureDartFirebaseImplementation)
+        .applicationVerifier
+        .verify(this);
     var v = await rpcHandler.sendVerificationCode(
         phoneNumber: phoneNumber, recaptchaToken: assertion);
 

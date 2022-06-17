@@ -12,11 +12,11 @@ export 'package:firebase_dart/src/auth/backend/backend.dart' show BackendUser;
 class FirebaseTesting {
   /// Initializes the pure dart firebase implementation for testing purposes.
   static Future<void> setup({bool isolated = false}) async {
-    ApplicationVerifier.instance = DummyApplicationVerifier();
     FirebaseDart.setup(
         isolated: isolated,
         platform: Platform.web(
             currentUrl: 'http://localhost', isMobile: true, isOnline: true),
+        applicationVerifier: DummyApplicationVerifier(),
         httpClient: createHttpClient());
   }
 

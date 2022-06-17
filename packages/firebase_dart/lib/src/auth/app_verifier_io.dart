@@ -8,9 +8,6 @@ import 'app_verifier.dart';
 import 'impl/auth.dart';
 
 class RecaptchaVerifier extends BaseRecaptchaVerifier {
-  @override
-  String get type => 'recaptcha';
-
   final Completer<String> _completer = Completer();
 
   Future<HttpServer> _startServer(int port, String content) {

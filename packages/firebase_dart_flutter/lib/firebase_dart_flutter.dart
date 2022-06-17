@@ -34,7 +34,7 @@ class FirebaseDartFlutter {
         launchUrl: kIsWeb
             ? null
             : (url, {bool popup = false}) async {
-                await launch(url.toString());
+                await launchUrl(url, mode: LaunchMode.externalApplication);
               },
         authHandler: AuthHandler.from([
           GoogleAuthHandler(),
@@ -43,6 +43,7 @@ class FirebaseDartFlutter {
           AndroidAuthHandler(),
           const AuthHandler(),
         ]),
+        applicationVerifier: AndroidAuthHandler(),
         platform: await _getPlatform());
   }
 

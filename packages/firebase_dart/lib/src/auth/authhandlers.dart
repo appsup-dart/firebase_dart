@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/core.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
+import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../auth.dart';
@@ -21,7 +23,8 @@ class FirebaseAppAuthCredential extends AuthCredential {
   }) : super(providerId: providerId, signInMethod: providerId);
 }
 
-abstract class FirebaseAppAuthHandler implements AuthHandler {
+abstract class FirebaseAppAuthHandler
+    implements AuthHandler, ApplicationVerifier {
   const FirebaseAppAuthHandler();
   Future<FirebaseAppAuthCredential> createCredential(
       {String? eventId,
@@ -55,17 +58,16 @@ abstract class FirebaseAppAuthHandler implements AuthHandler {
         length, (_) => charset[random.nextInt(charset.length)]).join();
   }
 
-  @override
-  Future<bool> signIn(FirebaseApp app, AuthProvider provider,
-      {bool isPopup = false}) async {
-    if (provider is! OAuthProvider) return false;
+  static Uri createAuthHandlerUrl({
+    required FirebaseApp app,
+    required String authType,
+    String? providerId,
+    List<String>? scopes,
+    Map<dynamic, dynamic>? parameters,
+  }) {
     var eventId = Uuid().v4();
 
     var sessionId = _randomString();
-
-    var box = await PersistenceStorage.openBox('firebase_auth');
-    await box.put('redirect_session_id', sessionId);
-    await box.put('redirect_event_id', eventId);
 
     var platform = Platform.current;
 
@@ -75,12 +77,11 @@ abstract class FirebaseAppAuthHandler implements AuthHandler {
         path: '__/auth/handler',
         queryParameters: {
           // TODO: version 'v': 'X$clientVersion',
-          'authType': isPopup ? 'signInWithPopup' : 'signInWithRedirect',
+          'authType': authType,
           'apiKey': app.options.apiKey,
-          'providerId': provider.providerId,
-          if (provider.scopes.isNotEmpty) 'scopes': provider.scopes.join(','),
-          if (provider.parameters != null)
-            'customParameters': json.encode(provider.parameters),
+          if (providerId != null) 'providerId': providerId,
+          if (scopes != null && scopes.isNotEmpty) 'scopes': scopes.join(','),
+          if (parameters != null) 'customParameters': json.encode(parameters),
           // TODO: if (tenantId != null) 'tid': tenantId
 
           'eventId': eventId,
@@ -114,6 +115,28 @@ abstract class FirebaseAppAuthHandler implements AuthHandler {
             'appName': app.name,
           }
         });
+    return url;
+  }
+
+  @override
+  Future<bool> signIn(FirebaseApp app, AuthProvider provider,
+      {bool isPopup = false}) async {
+    if (provider is! OAuthProvider) {
+      return false;
+    }
+
+    var url = createAuthHandlerUrl(
+      app: app,
+      authType: isPopup ? 'signInWithPopup' : 'signInWithRedirect',
+      providerId: provider.providerId,
+      parameters: provider.parameters,
+      scopes: provider.scopes,
+    );
+
+    var box = await PersistenceStorage.openBox('firebase_auth');
+    await box.put('redirect_session_id', url.queryParameters['sessionId']);
+    await box.put('redirect_event_id', url.queryParameters['eventId']);
+
     var installation = FirebaseImplementation.installation;
     var launchUrl = (installation as BaseFirebaseImplementation).launchUrl;
     launchUrl(url, popup: isPopup);
@@ -122,4 +145,21 @@ abstract class FirebaseAppAuthHandler implements AuthHandler {
 
   @override
   Future<void> signOut(FirebaseApp app, User user) async {}
+
+  @override
+  Future<String> verify(FirebaseAuth auth) async {
+    var url = createAuthHandlerUrl(
+      app: auth.app,
+      authType: 'verifyApp',
+    );
+
+    var installation = FirebaseImplementation.installation;
+    var launchUrl = (installation as BaseFirebaseImplementation).launchUrl;
+    launchUrl(url);
+
+    return getVerifyResult(auth.app);
+  }
+
+  @visibleForOverriding
+  Future<String> getVerifyResult(FirebaseApp app);
 }

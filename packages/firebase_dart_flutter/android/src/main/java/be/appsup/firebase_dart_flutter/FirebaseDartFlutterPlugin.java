@@ -36,6 +36,7 @@ public class FirebaseDartFlutterPlugin implements FlutterPlugin, MethodCallHandl
   private FlutterPluginBinding binding;
 
   static final String ACTION_AUTH_RECEIVED = "be.appsup.firebase_dart_flutter.ACTION_AUTH_RECEIVED";
+  static final String ACTION_RECAPTCHA_RECEIVED = "be.appsup.firebase_dart_flutter.ACTION_RECAPTCHA_RECEIVED";
 
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
@@ -84,6 +85,15 @@ public class FirebaseDartFlutterPlugin implements FlutterPlugin, MethodCallHandl
                       binding.getApplicationContext().unregisterReceiver(this);
                   }
               }, new IntentFilter(ACTION_AUTH_RECEIVED));
+              break;
+          case "getVerifyResult":
+              binding.getApplicationContext().registerReceiver(new BroadcastReceiver() {
+                  @Override
+                  public void onReceive(Context context, Intent intent) {
+                      result.success(bundleToMap(intent.getExtras()));
+                      binding.getApplicationContext().unregisterReceiver(this);
+                  }
+              }, new IntentFilter(ACTION_RECAPTCHA_RECEIVED));
               break;
           default:
               result.notImplemented();

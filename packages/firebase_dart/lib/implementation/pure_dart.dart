@@ -1,4 +1,5 @@
 import 'package:firebase_dart/auth.dart';
+import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/iframeclient/auth_methods.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/implementation/pure_dart_setup_web.dart'
@@ -54,11 +55,13 @@ class FirebaseDart {
       bool isolated = false,
       Function(Uri url, {bool popup})? launchUrl,
       AuthHandler? authHandler,
+      ApplicationVerifier? applicationVerifier,
       http.Client? httpClient}) {
     baseUrl = Uri.base;
 
     setupPureDartImplementation(
       authHandler: authHandler ?? DefaultAuthHandler(),
+      applicationVerifier: applicationVerifier ?? RecaptchaVerifier(),
       launchUrl: launchUrl ?? _defaultLaunchUrl,
       platform: platform,
       httpClient: httpClient,

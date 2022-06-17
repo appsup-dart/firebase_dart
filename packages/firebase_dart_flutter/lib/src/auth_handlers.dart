@@ -103,20 +103,7 @@ class AndroidAuthHandler extends FirebaseAppAuthHandler {
   Future<AuthCredential?> getSignInResult(FirebaseApp app) async {
     if (!kIsWeb && platform_info.Platform.instance.isAndroid) {
       return _result ??= Future(() async {
-        var v =
-            (await _channel.invokeMapMethod<String, dynamic>('getAuthResult'))!;
-
-        _result = null;
-
-        Map<String, dynamic>? error =
-            v['firebaseError'] == null ? null : json.decode(v['firebaseError']);
-        if (error != null) {
-          var code = error['code'];
-          if (code.startsWith('auth/')) {
-            code = code.substring('auth/'.length);
-          }
-          throw FirebaseAuthException(code, error['message']);
-        }
+        var v = await _getResult('getAuthResult');
         return createCredential(
             sessionId: v['sessionId'],
             providerId: v['providerId'],
@@ -124,5 +111,36 @@ class AndroidAuthHandler extends FirebaseAppAuthHandler {
       });
     }
     return null;
+  }
+
+  Future<Map<String, dynamic>> _getResult(String type) async {
+    var v = (await _channel.invokeMapMethod<String, dynamic>(type))!;
+    _result = null;
+
+    Map<String, dynamic>? error =
+        v['firebaseError'] == null ? null : json.decode(v['firebaseError']);
+    if (error != null) {
+      var code = error['code'];
+      if (code.startsWith('auth/')) {
+        code = code.substring('auth/'.length);
+      }
+      throw FirebaseAuthException(code, error['message']);
+    }
+    return v;
+  }
+
+  Future<String>? _verifyResult;
+
+  @override
+  Future<String> getVerifyResult(FirebaseApp app) {
+    if (!kIsWeb && platform_info.Platform.instance.isAndroid) {
+      return _verifyResult ??= Future(() async {
+        var v = await _getResult('getVerifyResult');
+        _verifyResult = null;
+
+        return Uri.parse(v['link']!).queryParameters['recaptchaToken']!;
+      });
+    }
+    throw UnimplementedError();
   }
 }

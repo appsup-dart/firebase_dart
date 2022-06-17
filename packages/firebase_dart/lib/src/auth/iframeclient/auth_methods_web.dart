@@ -49,6 +49,12 @@ class DefaultAuthHandler extends FirebaseAppAuthHandler {
     return completer.future
         .whenComplete(() => ifc._authEventListeners.remove(callback));
   }
+
+  @override
+  Future<String> getVerifyResult(FirebaseApp app) {
+    // TODO: implement getVerifyResult
+    throw UnimplementedError();
+  }
 }
 
 void webLaunchUrl(Uri uri, {bool popup = false}) {
