@@ -46,3 +46,7 @@ android {
         disable 'InvalidPackage'
     }
 }
+
+dependencies {
+    implementation 'com.google.android.gms:play-services-safetynet:18.0.1'
+}

@@ -14,6 +14,11 @@ class ApplicationVerificationResult {
   final String token;
 
   ApplicationVerificationResult(this.type, this.token);
+
+  @override
+  String toString() {
+    return 'ApplicationVerificationResult($type, $token)';
+  }
 }
 
 abstract class BaseRecaptchaVerifier implements ApplicationVerifier {

@@ -14,6 +14,8 @@ import '../core.dart';
 export 'package:firebase_dart/src/auth/utils.dart' show Platform;
 export 'package:firebase_dart/src/auth/authhandlers.dart'
     show FirebaseAppAuthHandler;
+export 'package:firebase_dart/src/auth/app_verifier.dart'
+    show ApplicationVerificationResult;
 
 const bool _kIsWeb = identical(0, 0.0);
 

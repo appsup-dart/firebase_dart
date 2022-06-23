@@ -137,6 +137,23 @@ class IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse
   Map<String, Object?> toJson() => _write(super.toJson());
 }
 
+class IdentitytoolkitRelyingpartySendVerificationCodeRequest
+    extends it.IdentitytoolkitRelyingpartySendVerificationCodeRequest {
+  String? safetyNetToken;
+
+  IdentitytoolkitRelyingpartySendVerificationCodeRequest();
+
+  IdentitytoolkitRelyingpartySendVerificationCodeRequest.fromJson(Map _json)
+      : safetyNetToken = _json['safetyNetToken'],
+        super.fromJson(_json);
+
+  @override
+  Map<String, Object?> toJson() => {
+        ...super.toJson(),
+        if (safetyNetToken != null) 'safetyNetToken': safetyNetToken,
+      };
+}
+
 class VerifyCustomTokenResponse extends it.VerifyCustomTokenResponse
     with _JsonSerializable, IdTokenResponse {
   VerifyCustomTokenResponse();

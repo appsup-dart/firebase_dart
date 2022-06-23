@@ -640,16 +640,20 @@ class RpcHandler {
   /// Requests sendVerificationCode endpoint for verifying the user's ownership of
   /// a phone number. It resolves with a sessionInfo (verificationId).
   Future<String> sendVerificationCode(
-      {String? phoneNumber, String? recaptchaToken}) async {
+      {String? phoneNumber,
+      String? recaptchaToken,
+      String? safetyNetToken}) async {
     // In the future, we could support other types of assertions so for now,
     // we are keeping the request an object.
 
-    if (phoneNumber == null || recaptchaToken == null) {
+    if (phoneNumber == null ||
+        (recaptchaToken == null && safetyNetToken == null)) {
       throw FirebaseAuthException.internalError();
     }
     var request = IdentitytoolkitRelyingpartySendVerificationCodeRequest()
       ..phoneNumber = phoneNumber
-      ..recaptchaToken = recaptchaToken;
+      ..recaptchaToken = recaptchaToken
+      ..safetyNetToken = safetyNetToken;
     var response = await relyingparty.sendVerificationCode(request);
     if (response.sessionInfo == null) {
       throw FirebaseAuthException.internalError();

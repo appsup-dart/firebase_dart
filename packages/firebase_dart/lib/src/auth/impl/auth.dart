@@ -343,9 +343,12 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
             as PureDartFirebaseImplementation)
         .applicationVerifier
         .verify(this, phoneNumber);
+
     var v = await rpcHandler.sendVerificationCode(
-        phoneNumber: phoneNumber,
-        recaptchaToken: assertion.type == 'recaptcha' ? assertion.token : null);
+      phoneNumber: phoneNumber,
+      recaptchaToken: assertion.type == 'recaptcha' ? assertion.token : null,
+      safetyNetToken: assertion.type == 'safetynet' ? assertion.token : null,
+    );
 
     codeSent(v, 0 /*TODO*/);
 
