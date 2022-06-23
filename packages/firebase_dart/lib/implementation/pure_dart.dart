@@ -1,6 +1,7 @@
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/iframeclient/auth_methods.dart';
+import 'package:firebase_dart/src/auth/sms_retriever.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/implementation/pure_dart_setup_web.dart'
     if (dart.library.io) 'package:firebase_dart/src/implementation/pure_dart_setup_io.dart'
@@ -16,6 +17,7 @@ export 'package:firebase_dart/src/auth/authhandlers.dart'
     show FirebaseAppAuthHandler;
 export 'package:firebase_dart/src/auth/app_verifier.dart'
     show ApplicationVerificationResult;
+export 'package:firebase_dart/src/auth/sms_retriever.dart' show SmsRetriever;
 
 const bool _kIsWeb = identical(0, 0.0);
 
@@ -58,12 +60,14 @@ class FirebaseDart {
       Function(Uri url, {bool popup})? launchUrl,
       AuthHandler? authHandler,
       ApplicationVerifier? applicationVerifier,
+      SmsRetriever? smsRetriever,
       http.Client? httpClient}) {
     baseUrl = Uri.base;
 
     setupPureDartImplementation(
       authHandler: authHandler ?? DefaultAuthHandler(),
       applicationVerifier: applicationVerifier ?? RecaptchaVerifier(),
+      smsRetriever: smsRetriever ?? DummySmsRetriever(),
       launchUrl: launchUrl ?? _defaultLaunchUrl,
       platform: platform,
       httpClient: httpClient,

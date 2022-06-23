@@ -176,3 +176,31 @@ class AndroidAuthHandler extends FirebaseAppAuthHandler {
     return token!;
   }
 }
+
+class AndroidSmsRetriever extends SmsRetriever {
+  static const _channel = MethodChannel('firebase_dart_flutter');
+
+  late final Future<String?> _appSignatureHash = Future(() async {
+    var v = (await _channel.invokeMethod<String>('getAppSignatureHash'))!;
+    return v;
+  });
+
+  @override
+  Future<String?> getAppSignatureHash() {
+    if (!kIsWeb && platform_info.Platform.instance.isAndroid) {
+      return _appSignatureHash;
+    }
+    return Future.value();
+  }
+
+  @override
+  Future<String?> retrieveSms() {
+    if (!kIsWeb && platform_info.Platform.instance.isAndroid) {
+      return Future(() async {
+        var v = (await _channel.invokeMethod<String>('retrieveSms'))!;
+        return v;
+      });
+    }
+    return Future.value();
+  }
+}

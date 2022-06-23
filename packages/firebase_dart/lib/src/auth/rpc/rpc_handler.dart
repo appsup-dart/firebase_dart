@@ -641,6 +641,7 @@ class RpcHandler {
   /// a phone number. It resolves with a sessionInfo (verificationId).
   Future<String> sendVerificationCode(
       {String? phoneNumber,
+      String? appSignatureHash,
       String? recaptchaToken,
       String? safetyNetToken}) async {
     // In the future, we could support other types of assertions so for now,
@@ -652,6 +653,9 @@ class RpcHandler {
     }
     var request = IdentitytoolkitRelyingpartySendVerificationCodeRequest()
       ..phoneNumber = phoneNumber
+      ..autoRetrievalInfo = appSignatureHash == null
+          ? null
+          : {'appSignatureHash': appSignatureHash}
       ..recaptchaToken = recaptchaToken
       ..safetyNetToken = safetyNetToken;
     var response = await relyingparty.sendVerificationCode(request);

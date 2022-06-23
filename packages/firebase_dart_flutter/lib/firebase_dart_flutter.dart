@@ -44,6 +44,7 @@ class FirebaseDartFlutter {
           const AuthHandler(),
         ]),
         applicationVerifier: AndroidAuthHandler(),
+        smsRetriever: AndroidSmsRetriever(),
         platform: await _getPlatform());
   }
 

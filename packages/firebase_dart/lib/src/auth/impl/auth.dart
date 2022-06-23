@@ -339,20 +339,34 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     Duration timeout = const Duration(seconds: 30),
     int? forceResendingToken,
   }) async {
-    var assertion = await (FirebaseImplementation.installation
-            as PureDartFirebaseImplementation)
-        .applicationVerifier
-        .verify(this, phoneNumber);
+    var impl =
+        FirebaseImplementation.installation as PureDartFirebaseImplementation;
+    var appSignatureHash = await impl.smsRetriever.getAppSignatureHash();
 
-    var v = await rpcHandler.sendVerificationCode(
+    var assertion = await impl.applicationVerifier.verify(this, phoneNumber);
+
+    var smsFuture = impl.smsRetriever.retrieveSms();
+
+    var verificationId = await rpcHandler.sendVerificationCode(
       phoneNumber: phoneNumber,
+      appSignatureHash: appSignatureHash,
       recaptchaToken: assertion.type == 'recaptcha' ? assertion.token : null,
       safetyNetToken: assertion.type == 'safetynet' ? assertion.token : null,
     );
 
-    codeSent(v, 0 /*TODO*/);
+    codeSent(verificationId, 0 /*TODO*/);
 
-    unawaited(Future.delayed(timeout).then((_) => codeAutoRetrievalTimeout(v)));
+    smsFuture.timeout(timeout, onTimeout: () {
+      codeAutoRetrievalTimeout(verificationId);
+      return null;
+    }).then((v) async {
+      if (v == null) return;
+      var code = RegExp(r'(?<!\d)\d{6}(?!\d)').firstMatch(v)!.group(0)!;
+      var credential = PhoneAuthProvider.credential(
+          verificationId: verificationId, smsCode: code);
+      var c = await signInWithCredential(credential);
+      verificationCompleted(c.credential as PhoneAuthCredential);
+    }).ignore();
   }
 
   @override

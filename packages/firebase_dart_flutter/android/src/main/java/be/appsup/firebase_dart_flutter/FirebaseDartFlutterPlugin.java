@@ -16,7 +16,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.Base64;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 import io.flutter.Log;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
@@ -28,8 +31,13 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.auth.api.phone.SmsRetriever;
+import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
 import com.google.android.gms.safetynet.SafetyNetApi;
 import com.google.android.gms.safetynet.SafetyNet;
+import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
@@ -130,13 +138,84 @@ public class FirebaseDartFlutterPlugin implements FlutterPlugin, MethodCallHandl
                 result.error("Could not get SafetyNet token", e.getMessage(), null);
             } 
             break;
+        case "getAppSignatureHash": 
+            try {
+                result.success(getAppSignatureHash());
+            } catch (PackageManager.NameNotFoundException e) {
+                result.error("Name not found", e.getMessage(), null);
+            } catch (NoSuchAlgorithmException e) {
+                result.error("No such algorithm", e.getMessage(), null);
+            }
+            break;  
+        case "retrieveSms":
+            retrieveSms(result);
+            break;
         default:
             result.notImplemented();
       }
-
-
-
   }
+
+private void retrieveSms(@NonNull final Result result) {
+    // Get an instance of SmsRetrieverClient, used to start listening for a matching
+    // SMS message.
+    SmsRetrieverClient client = SmsRetriever.getClient(binding.getApplicationContext());
+
+    // Starts SmsRetriever, which waits for ONE matching SMS message until timeout
+    // (5 minutes). The matching SMS message will be sent via a Broadcast Intent with
+    // action SmsRetriever#SMS_RETRIEVED_ACTION.
+    Task<Void> task = client.startSmsRetriever();
+
+    task.addOnFailureListener(new OnFailureListener() {
+        @Override
+        public void onFailure(@NonNull Exception e) {
+            result.error("Start sms retriever failed", e.getMessage(), null);
+        }
+    });
+
+
+    binding.getApplicationContext().registerReceiver(new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Bundle extras = intent.getExtras();
+            Status status = (Status) extras.get(SmsRetriever.EXTRA_STATUS);
+
+            switch (status.getStatusCode()) {
+                case CommonStatusCodes.SUCCESS:
+                    // Get SMS message contents
+                    String sms = (String) extras.get(SmsRetriever.EXTRA_SMS_MESSAGE);
+                    result.success(sms);
+                    break;
+
+                case CommonStatusCodes.TIMEOUT:
+                    result.error("Sms retrieve timeout", "", null);
+                    break;
+            }
+            binding.getApplicationContext().unregisterReceiver(this);
+        }
+    }, new IntentFilter(SmsRetriever.SMS_RETRIEVED_ACTION));
+  }
+
+  private String getAppSignatureHash() throws PackageManager.NameNotFoundException, NoSuchAlgorithmException {
+    String packageName = binding.getApplicationContext().getPackageName();
+    final PackageInfo info = binding.getApplicationContext().getPackageManager()
+        .getPackageInfo(packageName, PackageManager.GET_SIGNATURES);
+
+    final String appInfo = packageName + " " + info.signatures[0].toCharsString();
+    MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+    messageDigest.update(appInfo.getBytes(StandardCharsets.UTF_8));
+
+    byte[] hashSignature = messageDigest.digest();
+
+    // truncated into NUM_HASHED_BYTES
+    hashSignature = Arrays.copyOfRange(hashSignature, 0, 9);
+
+    // encode into Base64
+    String base64Hash = Base64.getEncoder().withoutPadding().encodeToString(hashSignature);
+    base64Hash = base64Hash.substring(0, 11);
+
+    return base64Hash;
+
+  }  
 
   static private Map<String,Object> bundleToMap(Bundle bundle) {
       Map<String,Object> map = new HashMap<>();

@@ -18,6 +18,7 @@ void setupPureDartImplementation(
     required Function(Uri url, {bool popup}) launchUrl,
     required AuthHandler authHandler,
     required ApplicationVerifier applicationVerifier,
+    required SmsRetriever smsRetriever,
     http.Client? httpClient}) {
   platform ??= Platform.linux(isOnline: true);
 
@@ -47,6 +48,7 @@ void setupPureDartImplementation(
         launchUrl: launchUrl,
         authHandler: authHandler,
         applicationVerifier: applicationVerifier,
+        smsRetriever: smsRetriever,
         httpClient: httpClient));
   }
 }

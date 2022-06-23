@@ -141,16 +141,20 @@ class IdentitytoolkitRelyingpartySendVerificationCodeRequest
     extends it.IdentitytoolkitRelyingpartySendVerificationCodeRequest {
   String? safetyNetToken;
 
+  Map<String, dynamic>? autoRetrievalInfo;
+
   IdentitytoolkitRelyingpartySendVerificationCodeRequest();
 
   IdentitytoolkitRelyingpartySendVerificationCodeRequest.fromJson(Map _json)
       : safetyNetToken = _json['safetyNetToken'],
+        autoRetrievalInfo = _json['autoRetrievalInfo'],
         super.fromJson(_json);
 
   @override
   Map<String, Object?> toJson() => {
         ...super.toJson(),
         if (safetyNetToken != null) 'safetyNetToken': safetyNetToken,
+        if (autoRetrievalInfo != null) 'autoRetrievalInfo': autoRetrievalInfo,
       };
 }
 

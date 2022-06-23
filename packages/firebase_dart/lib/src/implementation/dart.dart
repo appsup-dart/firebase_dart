@@ -19,10 +19,13 @@ class PureDartFirebaseImplementation extends BaseFirebaseImplementation {
 
   final ApplicationVerifier applicationVerifier;
 
+  final SmsRetriever smsRetriever;
+
   PureDartFirebaseImplementation(
       {required Function(Uri url, {bool popup}) launchUrl,
       required this.authHandler,
       required this.applicationVerifier,
+      required this.smsRetriever,
       http.Client? httpClient})
       : _httpClient = httpClient,
         super(launchUrl: launchUrl);
