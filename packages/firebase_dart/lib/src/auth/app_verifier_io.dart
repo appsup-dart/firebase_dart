@@ -34,7 +34,7 @@ class RecaptchaVerifier extends BaseRecaptchaVerifier {
   }
 
   @override
-  Future<String> verify(FirebaseAuth auth) async {
+  Future<String> verifyWithRecaptcha(FirebaseAuth auth) async {
     var siteKey = await getRecaptchaParameters(auth as FirebaseAuthImpl);
     var html = '''
 <html>

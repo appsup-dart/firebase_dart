@@ -23,8 +23,8 @@ class FirebaseAppAuthCredential extends AuthCredential {
   }) : super(providerId: providerId, signInMethod: providerId);
 }
 
-abstract class FirebaseAppAuthHandler
-    implements AuthHandler, ApplicationVerifier {
+abstract class FirebaseAppAuthHandler extends BaseRecaptchaVerifier
+    implements AuthHandler {
   const FirebaseAppAuthHandler();
   Future<FirebaseAppAuthCredential> createCredential(
       {String? eventId,
@@ -147,7 +147,7 @@ abstract class FirebaseAppAuthHandler
   Future<void> signOut(FirebaseApp app, User user) async {}
 
   @override
-  Future<String> verify(FirebaseAuth auth) async {
+  Future<String> verifyWithRecaptcha(FirebaseAuth auth) async {
     var url = createAuthHandlerUrl(
       app: auth.app,
       authType: 'verifyApp',

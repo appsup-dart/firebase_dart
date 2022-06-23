@@ -4,7 +4,7 @@ import 'app_verifier.dart';
 
 class RecaptchaVerifier extends BaseRecaptchaVerifier {
   @override
-  Future<String> verify(FirebaseAuth auth) {
+  Future<String> verifyWithRecaptcha(FirebaseAuth auth) {
     throw UnimplementedError();
   }
 }
