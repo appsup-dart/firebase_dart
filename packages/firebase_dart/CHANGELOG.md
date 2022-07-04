@@ -3,6 +3,7 @@
 # 1.0.10
 
 - Upgrade dependencies
+- Basic support for sign in with phone number
 
 # 1.0.9
 
