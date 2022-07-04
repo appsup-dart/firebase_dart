@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/database.dart';
 import 'package:firebase_dart/src/core.dart';
@@ -21,6 +22,10 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
 
   final AuthHandler authHandler;
 
+  final ApplicationVerifier applicationVerifier;
+
+  final SmsRetriever smsRetriever;
+
   final http.Client? httpClient;
 
   Future<IsolateCommander>? _commander;
@@ -32,6 +37,8 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
       required this.platform,
       required Function(Uri url, {bool popup}) launchUrl,
       required this.authHandler,
+      required this.applicationVerifier,
+      required this.smsRetriever,
       this.httpClient})
       : super(launchUrl: launchUrl);
 
@@ -45,6 +52,8 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
       platform,
       worker.commander,
       IsolateAuthHandler.from(authHandler),
+      IsolateApplicationVerifier.from(applicationVerifier),
+      IsolateSmsRetriever.from(smsRetriever),
       httpClient
     ]));
 
@@ -67,6 +76,8 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
     Platform? platform,
     IsolateCommander commander,
     AuthHandler authHandler,
+    ApplicationVerifier applicationVerifier,
+    SmsRetriever smsRetriever,
     http.Client? httpClient,
   ) async {
     _registerFunctions();
@@ -74,6 +85,8 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
         storagePath: storagePath,
         platform: platform,
         authHandler: authHandler,
+        applicationVerifier: applicationVerifier,
+        smsRetriever: smsRetriever,
         launchUrl: (url, {bool popup = false}) {
           return commander.execute(
               RegisteredFunctionCall(#launchUrl, [url], {#popup: popup}));
@@ -136,6 +149,54 @@ abstract class IsolateFirebaseService extends FirebaseService {
 
   @override
   IsolateFirebaseApp get app => super.app as IsolateFirebaseApp;
+}
+
+class IsolateApplicationVerifier implements ApplicationVerifier {
+  late final IsolateCommander _commander;
+
+  IsolateApplicationVerifier.from(ApplicationVerifier applicationVerifier) {
+    var worker = IsolateWorker()
+      ..registerFunction(#verify, (String appName, String nonce) {
+        var app = Firebase.app(appName);
+        return applicationVerifier.verify(
+            FirebaseAuth.instanceFor(app: app), nonce);
+      });
+
+    _commander = worker.commander;
+  }
+
+  @override
+  Future<ApplicationVerificationResult> verify(
+      FirebaseAuth auth, String nonce) {
+    return _commander
+        .execute(RegisteredFunctionCall(#verify, [auth.app.name, nonce]));
+  }
+}
+
+class IsolateSmsRetriever implements SmsRetriever {
+  late final IsolateCommander _commander;
+
+  IsolateSmsRetriever.from(SmsRetriever smsRetriever) {
+    var worker = IsolateWorker()
+      ..registerFunction(#getAppSignatureHash, () {
+        return smsRetriever.getAppSignatureHash();
+      })
+      ..registerFunction(#retrieveSms, () {
+        return smsRetriever.retrieveSms();
+      });
+
+    _commander = worker.commander;
+  }
+
+  @override
+  Future<String?> getAppSignatureHash() {
+    return _commander.execute(RegisteredFunctionCall(#getAppSignatureHash, []));
+  }
+
+  @override
+  Future<String?> retrieveSms() {
+    return _commander.execute(RegisteredFunctionCall(#retrieveSms, []));
+  }
 }
 
 class IsolateAuthHandler implements AuthHandler {

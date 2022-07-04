@@ -1,3 +1,5 @@
+import 'dart:async';
+
 abstract class SmsRetriever {
   Future<String?> getAppSignatureHash();
 
@@ -9,5 +11,5 @@ class DummySmsRetriever extends SmsRetriever {
   Future<String?> getAppSignatureHash() => Future.value();
 
   @override
-  Future<String?> retrieveSms() => Future.value();
+  Future<String?> retrieveSms() => Completer<String?>().future;
 }

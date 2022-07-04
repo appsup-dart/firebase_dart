@@ -29,6 +29,8 @@ void setupPureDartImplementation(
         platform: platform,
         launchUrl: launchUrl,
         authHandler: authHandler,
+        applicationVerifier: applicationVerifier,
+        smsRetriever: smsRetriever,
         httpClient: httpClient));
   } else {
     if (storagePath != null) {
