@@ -81,23 +81,22 @@ class TrackedQuery {
 }
 
 class TrackedQueryManager {
-  static final Predicate<Map<QueryFilter, TrackedQuery>>
-      _hasDefaultCompletePredicate = (trackedQueries) {
+  static bool _hasDefaultCompletePredicate(
+      Map<QueryFilter, TrackedQuery> trackedQueries) {
     var trackedQuery = trackedQueries[const QueryFilter()];
     return trackedQuery != null && trackedQuery.complete;
-  };
+  }
 
-  static final Predicate<Map<QueryFilter, TrackedQuery>>
-      _hasActiveDefaultPredicate = (trackedQueries) {
+  static bool _hasActiveDefaultPredicate(
+      Map<QueryFilter, TrackedQuery> trackedQueries) {
     var trackedQuery = trackedQueries[const QueryFilter()];
     return trackedQuery != null && trackedQuery.active;
-  };
+  }
 
-  static final Predicate<TrackedQuery> _isQueryPrunablePredicate =
-      (query) => !query.active;
+  static bool _isQueryPrunablePredicate(TrackedQuery query) => !query.active;
 
-  static final Predicate<TrackedQuery> _isQueryUnprunablePredicate =
-      (query) => !_isQueryPrunablePredicate(query);
+  static bool _isQueryUnprunablePredicate(TrackedQuery query) =>
+      !_isQueryPrunablePredicate(query);
 
   /// In-memory cache of tracked queries.
   ///

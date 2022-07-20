@@ -482,14 +482,14 @@ void runAuthTests({bool isolated = false}) {
             'oobCode=oobCode&apiKey=API_KEY';
         var deepLink3 = 'https://www.example.com/action?mode=signIn';
 
-        var emailLink1 = 'https://example.app.goo.gl/?link=' +
-            Uri.encodeComponent(deepLink1);
-        var emailLink2 = 'https://example.app.goo.gl/?link=' +
-            Uri.encodeComponent(deepLink2);
-        var emailLink3 = 'https://example.app.goo.gl/?link=' +
-            Uri.encodeComponent(deepLink3);
-        var emailLink4 = 'comexampleiosurl://google/link?deep_link_id=' +
-            Uri.encodeComponent(deepLink1);
+        var emailLink1 =
+            'https://example.app.goo.gl/?link=${Uri.encodeComponent(deepLink1)}';
+        var emailLink2 =
+            'https://example.app.goo.gl/?link=${Uri.encodeComponent(deepLink2)}';
+        var emailLink3 =
+            'https://example.app.goo.gl/?link=${Uri.encodeComponent(deepLink3)}';
+        var emailLink4 =
+            'comexampleiosurl://google/link?deep_link_id=${Uri.encodeComponent(deepLink1)}';
 
         expect(auth.isSignInWithEmailLink(emailLink1), true);
         expect(auth.isSignInWithEmailLink(emailLink2), false);
@@ -521,7 +521,7 @@ void runAuthTests({bool isolated = false}) {
         var deepLink =
             'https://www.example.com?mode=signIn&oobCode=$code&apiKey=API_KEY';
         var expectedLink =
-            'https://example.app.goo.gl/?link=' + Uri.encodeComponent(deepLink);
+            'https://example.app.goo.gl/?link=${Uri.encodeComponent(deepLink)}';
 
         var r = await auth.signInWithEmailLink(
             email: expectedEmail, emailLink: expectedLink);

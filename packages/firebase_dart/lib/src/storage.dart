@@ -533,8 +533,8 @@ class StorageException extends FirebaseException {
 
   StorageException.invalidFormat(String format, String message)
       : this('invalid-format',
-            "String does not match format '" + format + "': " + message);
+            "String does not match format '$format': $message");
 
   StorageException.internalError(String message)
-      : this('internal-error', 'Internal error: ' + message);
+      : this('internal-error', 'Internal error: $message');
 }

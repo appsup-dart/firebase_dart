@@ -127,7 +127,7 @@ class IframeWrapper {
       var completer = Completer<void>();
 
       // Function to run when gapi.load is ready.
-      var onGapiLoad = () {
+      void onGapiLoad() {
         // The developer may have tried to previously run gapi.load and failed.
         // Run this to fix that.
         // TODO fireauth.util.resetUnloadedGapiModules();
@@ -147,7 +147,7 @@ class IframeWrapper {
                   completer.completeError(Exception('Network Error'));
                 }),
                 timeout: 30000));
-      };
+      }
 
       if (util.getObjectRef('gapi.iframes.Iframe') != null) {
         // If gapi.iframes.Iframe available, resolve.

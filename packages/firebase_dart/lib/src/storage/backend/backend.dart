@@ -39,10 +39,10 @@ class BackendConnection {
         case 'POST':
           switch (request.headers['X-Goog-Upload-Protocol']) {
             case 'multipart':
-              var boundary = '--' +
-                  RegExp(r'multipart/related; boundary=(\d*)')
-                      .firstMatch(request.headers['Content-Type']!)!
-                      .group(1)!;
+              var boundary = RegExp(r'multipart/related; boundary=(\d*)')
+                  .firstMatch(request.headers['Content-Type']!)!
+                  .group(1)!;
+              boundary = '--$boundary';
 
               var parts =
                   String.fromCharCodes(request.bodyBytes).split(boundary);

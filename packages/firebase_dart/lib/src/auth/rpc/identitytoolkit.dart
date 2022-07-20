@@ -10,33 +10,33 @@ import 'error.dart';
 
 export 'package:googleapis/identitytoolkit/v3.dart';
 
-mixin _JsonSerializable {
-  void _read(Map<String, dynamic> _json) {}
-  Map<String, dynamic> _write(Map<String, dynamic> _json) => _json;
+mixin JsonSerializable {
+  void _read(Map<String, dynamic> json) {}
+  Map<String, dynamic> _write(Map<String, dynamic> json) => json;
 }
-mixin _ReturnSecureTokenProperty on _JsonSerializable {
+mixin _ReturnSecureTokenProperty on JsonSerializable {
   /// Whether return sts id token and refresh token instead of gitkit token.
   bool? returnSecureToken;
 
   @override
-  Map<String, dynamic> _write(Map<String, dynamic> _json) {
-    _json = super._write(_json);
+  Map<String, dynamic> _write(Map<String, dynamic> json) {
+    json = super._write(json);
     if (returnSecureToken != null) {
-      _json['returnSecureToken'] = returnSecureToken;
+      json['returnSecureToken'] = returnSecureToken;
     }
-    return _json;
+    return json;
   }
 
   @override
-  void _read(Map<String, dynamic> _json) {
-    super._read(_json);
-    if (_json.containsKey('returnSecureToken')) {
-      returnSecureToken = _json['returnSecureToken'];
+  void _read(Map<String, dynamic> json) {
+    super._read(json);
+    if (json.containsKey('returnSecureToken')) {
+      returnSecureToken = json['returnSecureToken'];
     }
   }
 }
 
-mixin IdTokenResponse on _JsonSerializable {
+mixin IdTokenResponse on JsonSerializable {
   String? get idToken;
 
   String? get refreshToken;
@@ -48,39 +48,39 @@ mixin IdTokenResponse on _JsonSerializable {
   dynamic _mfaPendingCredential;
 
   @override
-  Map<String, dynamic> _write(Map<String, dynamic> _json) {
-    _json = super._write(_json);
+  Map<String, dynamic> _write(Map<String, dynamic> json) {
+    json = super._write(json);
     if (mfaPendingCredential != null) {
-      _json['mfaPendingCredential'] = mfaPendingCredential;
+      json['mfaPendingCredential'] = mfaPendingCredential;
     }
-    return _json;
+    return json;
   }
 
   @override
-  void _read(Map<String, dynamic> _json) {
-    super._read(_json);
-    if (_json.containsKey('mfaPendingCredential')) {
-      _mfaPendingCredential = _json['mfaPendingCredential'];
+  void _read(Map<String, dynamic> json) {
+    super._read(json);
+    if (json.containsKey('mfaPendingCredential')) {
+      _mfaPendingCredential = json['mfaPendingCredential'];
     }
   }
 }
 
-mixin _TenantIdProperty on _JsonSerializable {
+mixin _TenantIdProperty on JsonSerializable {
   /// For multi-tenant use cases, in order to construct sign-in URL with the
   /// correct IDP parameters, Firebear needs to know which Tenant to retrieve
   /// IDP configs from.
   String? tenantId;
 
   @override
-  Map<String, dynamic> _write(Map<String, dynamic> _json) {
-    _json = super._write(_json);
+  Map<String, dynamic> _write(Map<String, dynamic> json) {
+    json = super._write(json);
     if (tenantId != null) {
-      _json['tenantId'] = tenantId;
-      if (_json.containsKey('tenantId')) {
-        tenantId = _json['tenantId'];
+      json['tenantId'] = tenantId;
+      if (json.containsKey('tenantId')) {
+        tenantId = json['tenantId'];
       }
     }
-    return _json;
+    return json;
   }
 }
 
@@ -90,9 +90,9 @@ class ResetPasswordResponse extends it.ResetPasswordResponse {
 
   ResetPasswordResponse();
 
-  ResetPasswordResponse.fromJson(Map _json)
-      : mfaInfo = _json['mfaInfo'],
-        super.fromJson(_json);
+  ResetPasswordResponse.fromJson(Map json)
+      : mfaInfo = json['mfaInfo'],
+        super.fromJson(json);
 
   @override
   Map<String, Object?> toJson() =>
@@ -100,11 +100,11 @@ class ResetPasswordResponse extends it.ResetPasswordResponse {
 }
 
 class SetAccountInfoResponse extends it.SetAccountInfoResponse
-    with _JsonSerializable, IdTokenResponse {
+    with JsonSerializable, IdTokenResponse {
   SetAccountInfoResponse();
 
-  SetAccountInfoResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json as Map<String, dynamic>);
+  SetAccountInfoResponse.fromJson(Map json) : super.fromJson(json) {
+    _read(json as Map<String, dynamic>);
   }
 
   @override
@@ -112,11 +112,11 @@ class SetAccountInfoResponse extends it.SetAccountInfoResponse
 }
 
 class VerifyPasswordResponse extends it.VerifyPasswordResponse
-    with _JsonSerializable, IdTokenResponse {
+    with JsonSerializable, IdTokenResponse {
   VerifyPasswordResponse();
 
-  VerifyPasswordResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json as Map<String, dynamic>);
+  VerifyPasswordResponse.fromJson(Map json) : super.fromJson(json) {
+    _read(json as Map<String, dynamic>);
   }
 
   @override
@@ -125,12 +125,12 @@ class VerifyPasswordResponse extends it.VerifyPasswordResponse
 
 class IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse
     extends it.IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse
-    with _JsonSerializable, IdTokenResponse {
+    with JsonSerializable, IdTokenResponse {
   IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse();
 
-  IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse.fromJson(Map _json)
-      : super.fromJson(_json) {
-    _read(_json as Map<String, dynamic>);
+  IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse.fromJson(Map json)
+      : super.fromJson(json) {
+    _read(json as Map<String, dynamic>);
   }
 
   @override
@@ -145,10 +145,10 @@ class IdentitytoolkitRelyingpartySendVerificationCodeRequest
 
   IdentitytoolkitRelyingpartySendVerificationCodeRequest();
 
-  IdentitytoolkitRelyingpartySendVerificationCodeRequest.fromJson(Map _json)
-      : safetyNetToken = _json['safetyNetToken'],
-        autoRetrievalInfo = _json['autoRetrievalInfo'],
-        super.fromJson(_json);
+  IdentitytoolkitRelyingpartySendVerificationCodeRequest.fromJson(Map json)
+      : safetyNetToken = json['safetyNetToken'],
+        autoRetrievalInfo = json['autoRetrievalInfo'],
+        super.fromJson(json);
 
   @override
   Map<String, Object?> toJson() => {
@@ -159,11 +159,11 @@ class IdentitytoolkitRelyingpartySendVerificationCodeRequest
 }
 
 class VerifyCustomTokenResponse extends it.VerifyCustomTokenResponse
-    with _JsonSerializable, IdTokenResponse {
+    with JsonSerializable, IdTokenResponse {
   VerifyCustomTokenResponse();
 
-  VerifyCustomTokenResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json as Map<String, dynamic>);
+  VerifyCustomTokenResponse.fromJson(Map json) : super.fromJson(json) {
+    _read(json as Map<String, dynamic>);
   }
 
   @override
@@ -171,11 +171,11 @@ class VerifyCustomTokenResponse extends it.VerifyCustomTokenResponse
 }
 
 class EmailLinkSigninResponse extends it.EmailLinkSigninResponse
-    with _JsonSerializable, IdTokenResponse {
+    with JsonSerializable, IdTokenResponse {
   EmailLinkSigninResponse();
 
-  EmailLinkSigninResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json as Map<String, dynamic>);
+  EmailLinkSigninResponse.fromJson(Map json) : super.fromJson(json) {
+    _read(json as Map<String, dynamic>);
   }
 
   @override
@@ -183,11 +183,11 @@ class EmailLinkSigninResponse extends it.EmailLinkSigninResponse
 }
 
 class SignupNewUserResponse extends it.SignupNewUserResponse
-    with _JsonSerializable, IdTokenResponse {
+    with JsonSerializable, IdTokenResponse {
   SignupNewUserResponse();
 
-  SignupNewUserResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json as Map<String, dynamic>);
+  SignupNewUserResponse.fromJson(Map json) : super.fromJson(json) {
+    _read(json as Map<String, dynamic>);
   }
 
   @override
@@ -195,7 +195,7 @@ class SignupNewUserResponse extends it.SignupNewUserResponse
 }
 
 class VerifyAssertionResponse extends it.VerifyAssertionResponse
-    with _JsonSerializable, IdTokenResponse {
+    with JsonSerializable, IdTokenResponse {
   String? _pendingToken;
 
   String? nonce;
@@ -204,21 +204,21 @@ class VerifyAssertionResponse extends it.VerifyAssertionResponse
 
   VerifyAssertionResponse();
 
-  VerifyAssertionResponse.fromJson(Map _json) : super.fromJson(_json) {
-    _read(_json as Map<String, dynamic>);
+  VerifyAssertionResponse.fromJson(Map json) : super.fromJson(json) {
+    _read(json as Map<String, dynamic>);
   }
 
   @override
-  void _read(Map<String, dynamic> _json) {
-    super._read(_json);
-    _pendingToken = _json['pendingToken'];
-    nonce = _json['nonce'];
+  void _read(Map<String, dynamic> json) {
+    super._read(json);
+    _pendingToken = json['pendingToken'];
+    nonce = json['nonce'];
   }
 
   @override
-  Map<String, dynamic> _write(Map<String, dynamic> _json) {
+  Map<String, dynamic> _write(Map<String, dynamic> json) {
     return {
-      ...super._write(_json),
+      ...super._write(json),
       if (pendingToken != null) 'pendingToken': pendingToken,
       if (nonce != null) 'nonce': nonce
     };
@@ -233,8 +233,8 @@ class Relyingparty extends it.Relyingparty {
 
   Relyingparty();
 
-  Relyingparty.fromJson(Map _json) : super.fromJson(_json) {
-    dynamicLinkDomain = _json['dynamicLinkDomain'];
+  Relyingparty.fromJson(Map json) : super.fromJson(json) {
+    dynamicLinkDomain = json['dynamicLinkDomain'];
   }
 
   @override
@@ -246,12 +246,12 @@ class Relyingparty extends it.Relyingparty {
 
 class IdentitytoolkitRelyingpartyEmailLinkSigninRequest
     extends it.IdentitytoolkitRelyingpartyEmailLinkSigninRequest
-    with _JsonSerializable, _ReturnSecureTokenProperty, _TenantIdProperty {
+    with JsonSerializable, _ReturnSecureTokenProperty, _TenantIdProperty {
   IdentitytoolkitRelyingpartyEmailLinkSigninRequest();
 
-  IdentitytoolkitRelyingpartyEmailLinkSigninRequest.fromJson(Map _json)
-      : super.fromJson(_json) {
-    _read(_json as Map<String, dynamic>);
+  IdentitytoolkitRelyingpartyEmailLinkSigninRequest.fromJson(Map json)
+      : super.fromJson(json) {
+    _read(json as Map<String, dynamic>);
   }
 
   @override
@@ -260,12 +260,12 @@ class IdentitytoolkitRelyingpartyEmailLinkSigninRequest
 
 class IdentitytoolkitRelyingpartySignupNewUserRequest
     extends it.IdentitytoolkitRelyingpartySignupNewUserRequest
-    with _JsonSerializable, _ReturnSecureTokenProperty {
+    with JsonSerializable, _ReturnSecureTokenProperty {
   IdentitytoolkitRelyingpartySignupNewUserRequest();
 
-  IdentitytoolkitRelyingpartySignupNewUserRequest.fromJson(Map _json)
-      : super.fromJson(_json) {
-    _read(_json as Map<String, dynamic>);
+  IdentitytoolkitRelyingpartySignupNewUserRequest.fromJson(Map json)
+      : super.fromJson(json) {
+    _read(json as Map<String, dynamic>);
   }
 
   @override
@@ -274,12 +274,12 @@ class IdentitytoolkitRelyingpartySignupNewUserRequest
 
 class IdentitytoolkitRelyingpartyVerifyCustomTokenRequest
     extends it.IdentitytoolkitRelyingpartyVerifyCustomTokenRequest
-    with _JsonSerializable, _TenantIdProperty {
+    with JsonSerializable, _TenantIdProperty {
   IdentitytoolkitRelyingpartyVerifyCustomTokenRequest();
 
-  IdentitytoolkitRelyingpartyVerifyCustomTokenRequest.fromJson(Map _json)
-      : super.fromJson(_json) {
-    _read(_json as Map<String, dynamic>);
+  IdentitytoolkitRelyingpartyVerifyCustomTokenRequest.fromJson(Map json)
+      : super.fromJson(json) {
+    _read(json as Map<String, dynamic>);
   }
 
   @override

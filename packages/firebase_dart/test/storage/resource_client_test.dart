@@ -15,8 +15,8 @@ void main() async {
     var normalBucket = 'b';
     var locationRoot = Location.fromBucketSpec(normalBucket);
     var locationNormal = locationRoot.child('o');
-    var locationNormalUrl = '/b/' + normalBucket + '/o/o';
-    var locationNormalNoObjUrl = '/b/' + normalBucket + '/o';
+    var locationNormalUrl = '/b/$normalBucket/o/o';
+    var locationNormalNoObjUrl = '/b/$normalBucket/o';
     var locationEscapes = Location.fromBucketSpec('b/').child('o?');
     var locationEscapesUrl = '/b/b%2F/o/o%3F';
     var locationEscapesNoObjUrl = '/b/b%2F/o';
@@ -118,7 +118,7 @@ void main() async {
             'delimiter': '/',
             'pageToken': 'page_token',
             'maxResults': '4',
-            'prefix': client.location.path + '/',
+            'prefix': '${client.location.path}/',
           });
           return Response(
               json.encode({
@@ -175,13 +175,8 @@ void main() async {
 
         var response = await client.getDownloadUrl();
 
-        expect(
-            response,
-            'https://${ResourceClient.defaultHost}/v0/b/' +
-                normalBucket +
-                '/o/' +
-                Uri.encodeComponent('foo/bar/baz.png') +
-                '?alt=media&token=a');
+        expect(response,
+            'https://${ResourceClient.defaultHost}/v0/b/$normalBucket/o/${Uri.encodeComponent('foo/bar/baz.png')}?alt=media&token=a');
       });
     });
 

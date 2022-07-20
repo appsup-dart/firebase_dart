@@ -27,7 +27,7 @@ class HttpClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     var authToken = await getAuthToken();
     if (authToken != null && authToken.isNotEmpty) {
-      request.headers['Authorization'] = 'Firebase ' + authToken;
+      request.headers['Authorization'] = 'Firebase $authToken';
     }
 
     var response =

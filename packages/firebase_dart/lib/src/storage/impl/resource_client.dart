@@ -54,10 +54,8 @@ class ResourceClient {
       return null;
     }
     var token = metadata.downloadTokens!.first;
-    var urlPart = '/b/' +
-        Uri.encodeComponent(metadata.bucket!) +
-        '/o/' +
-        Uri.encodeComponent(metadata.fullPath);
+    var urlPart =
+        '/b/${Uri.encodeComponent(metadata.bucket!)}/o/${Uri.encodeComponent(metadata.fullPath)}';
     var base = _makeUrl(urlPart);
     return base
         .replace(queryParameters: {'alt': 'media', 'token': token}).toString();
@@ -102,12 +100,12 @@ class ResourceClient {
 
     final boundary = generateBoundary();
 
-    final _metadata = {
+    final metadataMap = {
       ...?metadata?.asMap(),
       'fullPath': location.path,
       'size': blob.length,
     };
-    final metadataString = json.encode(_metadata);
+    final metadataString = json.encode(metadataMap);
     final preBlobPart = '--$boundary\r\n'
         'Content-Type: application/json; charset=utf-8\r\n\r\n'
         '$metadataString\r\n'
@@ -124,7 +122,7 @@ class ResourceClient {
     ]);
 
     final url = _makeUrl(location.bucketOnlyServerUrl())
-        .replace(queryParameters: {'name': _metadata['fullPath']!});
+        .replace(queryParameters: {'name': metadataMap['fullPath']!});
 
     var response = await httpClient.post(url,
         headers: {
@@ -140,14 +138,14 @@ class ResourceClient {
 
   Future<Uri> startResumableUpload(
       Uint8List blob, SettableMetadata? metadata) async {
-    final _metadata = {
+    final metadataMap = {
       ...?metadata?.asMap(),
       'fullPath': location.path,
       'size': blob.length,
     };
 
     final url = _makeUrl(location.bucketOnlyServerUrl())
-        .replace(queryParameters: {'name': _metadata['fullPath']!});
+        .replace(queryParameters: {'name': metadataMap['fullPath']!});
 
     var response = await httpClient.post(url,
         headers: {
@@ -158,7 +156,7 @@ class ResourceClient {
               metadata?.contentType ?? 'application/octet-stream',
           'Content-Type': 'application/json; charset=utf-8'
         },
-        body: json.encode(_metadata));
+        body: json.encode(metadataMap));
 
     _handleResponse(response);
 

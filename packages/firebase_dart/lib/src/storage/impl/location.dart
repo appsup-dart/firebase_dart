@@ -82,14 +82,11 @@ class Location {
   }
 
   String fullServerUrl() {
-    return '/b/' +
-        Uri.encodeComponent(bucket) +
-        '/o/' +
-        Uri.encodeComponent(path);
+    return '/b/${Uri.encodeComponent(bucket)}/o/${Uri.encodeComponent(path)}';
   }
 
   String bucketOnlyServerUrl() {
-    return '/b/' + Uri.encodeComponent(bucket) + '/o';
+    return '/b/${Uri.encodeComponent(bucket)}/o';
   }
 
   @override
