@@ -22,12 +22,12 @@ class Location {
       if (bucketLocation.isRoot) {
         return bucketLocation;
       }
-      throw StorageException.invalidDefaultBucket(bucketString);
     } catch (e) {
       // Not valid URL, use as-is. This lets you put bare bucket names in
       // config.
       return Location(bucketString);
     }
+    throw StorageException.invalidDefaultBucket(bucketString);
   }
 
   factory Location.fromUrl(String url) {
@@ -37,8 +37,8 @@ class Location {
       case 'gs':
         var m = RegExp(r'^gs://([A-Za-z0-9\.\-_]+)(/(.*))?$').firstMatch(url);
         if (m == null) break;
-        var segments = m.group(3)!.split('/');
-        if (segments.last.isEmpty) segments.removeLast();
+        var segments = m.group(3)?.split('/') ?? [];
+        if (segments.isNotEmpty && segments.last.isEmpty) segments.removeLast();
         return Location(m.group(1)!, segments);
       case 'http':
       case 'https':

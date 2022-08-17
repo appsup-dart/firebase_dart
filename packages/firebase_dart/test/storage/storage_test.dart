@@ -30,6 +30,11 @@ void runStorageTests({bool isolated = false}) {
         var ref = storage.refFromURL('gs://test-bucket/');
         expect(ref.toString(), 'gs://test-bucket/');
       });
+
+      test('FirebaseStorage.refFromURL: root without trailing slash', () {
+        var ref = storage.refFromURL('gs://test-bucket');
+        expect(ref.toString(), 'gs://test-bucket/');
+      });
       test(
           'FirebaseStorage.refFromURL: keeps characters after ? on a gs:// string',
           () {
