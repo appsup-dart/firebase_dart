@@ -84,7 +84,14 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   void onCacheHost(String? host) {
-    _url = _url.replace(host: host);
+    final hostPort = host?.split(':');
+    String? newHost;
+    int? port;
+    if (hostPort != null) {
+      newHost = hostPort.length >= 1 ? hostPort[0] : null;
+      port = hostPort.length > 1 ? int.parse(hostPort[1]) : null;
+    }
+    _url = _url.replace(host: newHost, port: port);
   }
 
   @override
