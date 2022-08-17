@@ -1,5 +1,10 @@
 # Changelog
 
+# 1.0.11
+
+- Merge pull request #25 from IgoKom/fix_custom_metadata
+- Merge pull request #23 from TimWhiting/develop
+
 # 1.0.10
 
 - Upgrade dependencies
