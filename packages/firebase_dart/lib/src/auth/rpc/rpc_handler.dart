@@ -45,7 +45,8 @@ class RpcHandler {
                   'id_token_signing_alg_values_supported': ['RS256']
                 }),
                 200,
-                headers: {'Content-Type': 'application/json'});
+                headers: {'Content-Type': 'application/json'},
+                request: request);
           }),
           RegExp('.*'): httpClient ?? http.Client(),
         }),

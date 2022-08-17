@@ -19,7 +19,7 @@ void main() async {
         expect(request.headers['RequestHeader1'], 'RequestValue1');
         expect(request.headers['Authorization'], isNull);
         return Response('I am the server response!!!!', 234,
-            headers: {'ResponseHeader1': 'ResponseValue1'});
+            headers: {'ResponseHeader1': 'ResponseValue1'}, request: request);
       };
       var response = await httpClient.get(Uri.parse('http://my-url.com/'),
           headers: {'RequestHeader1': 'RequestValue1'});
@@ -34,7 +34,7 @@ void main() async {
         expect(request.headers['RequestHeader1'], 'RequestValue1');
         expect(request.headers['Authorization'], 'Firebase $token');
         return Response('I am the server response!!!!', 234,
-            headers: {'ResponseHeader1': 'ResponseValue1'});
+            headers: {'ResponseHeader1': 'ResponseValue1'}, request: request);
       };
       var response = await httpClient.get(Uri.parse('http://my-url.com/'),
           headers: {'RequestHeader1': 'RequestValue1'});

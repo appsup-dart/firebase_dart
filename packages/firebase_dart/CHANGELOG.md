@@ -2,6 +2,7 @@
 
 # 1.0.11
 
+- Fix incompatibility with `http` version 0.13.5
 - Merge pull request #25 from IgoKom/fix_custom_metadata
 - Merge pull request #23 from TimWhiting/develop
 

@@ -106,7 +106,8 @@ class TestClient extends http.BaseClient {
               'keys': [await backend.getTokenSigningKey()]
             }),
             200,
-            headers: {'Content-Type': 'application/json'});
+            headers: {'Content-Type': 'application/json'},
+            request: request);
       }),
       RegExp('https://securetoken.google.com/.*/.well-known/openid-configuration'):
           http.MockClient((request) async {
@@ -121,7 +122,8 @@ class TestClient extends http.BaseClient {
               'id_token_signing_alg_values_supported': ['RS256']
             }),
             200,
-            headers: {'Content-Type': 'application/json'});
+            headers: {'Content-Type': 'application/json'},
+            request: request);
       }),
       RegExp('https://securetoken.googleapis.com/v1/token'):
           http.MockClient((request) async {
@@ -153,7 +155,8 @@ class TestClient extends http.BaseClient {
                   'refresh_token': refreshToken
                 }),
                 200,
-                headers: {'Content-Type': 'application/json'});
+                headers: {'Content-Type': 'application/json'},
+                request: request);
           default:
             throw UnimplementedError();
         }

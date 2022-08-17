@@ -34,7 +34,7 @@ class BackendConnection {
                       maxResults != null ? int.parse(maxResults) : null));
 
           return http.Response(json.encode(v), 200,
-              headers: {'Content-Type': 'application/json'});
+              headers: {'Content-Type': 'application/json'}, request: request);
 
         case 'POST':
           switch (request.headers['X-Goog-Upload-Protocol']) {
@@ -73,7 +73,8 @@ class BackendConnection {
 
               var fullMetadata = await backend.getMetadata(location);
               return http.Response(json.encode(fullMetadata), 200,
-                  headers: {'Content-Type': 'application/json'});
+                  headers: {'Content-Type': 'application/json'},
+                  request: request);
             case 'resumable':
           }
       }
@@ -85,10 +86,10 @@ class BackendConnection {
         case 'GET':
           var metadata = await backend.getMetadata(location);
           if (metadata == null) {
-            return http.Response('Not found', 404);
+            return http.Response('Not found', 404, request: request);
           }
           return http.Response(json.encode(metadata), 200,
-              headers: {'Content-Type': 'application/json'});
+              headers: {'Content-Type': 'application/json'}, request: request);
         case 'PATCH':
           var map = json.decode(request.body);
 
@@ -102,14 +103,14 @@ class BackendConnection {
                   contentType: map['contentType'],
                   customMetadata: (map['metadata'] as Map?)?.cast()));
           if (metadata == null) {
-            return http.Response('Not found', 404);
+            return http.Response('Not found', 404, request: request);
           }
-          return http.Response(json.encode(metadata), 200);
+          return http.Response(json.encode(metadata), 200, request: request);
         case 'DELETE':
           await backend.delete(location);
 
           return http.Response('', 200,
-              headers: {'Content-Type': 'text/plain'});
+              headers: {'Content-Type': 'text/plain'}, request: request);
       }
     }
     throw UnimplementedError('${request.method} requests to ${request.url}');

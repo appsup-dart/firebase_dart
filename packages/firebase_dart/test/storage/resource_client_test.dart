@@ -60,7 +60,8 @@ void main() async {
                   'downloadTokens': 'a,b,c',
                   'metadata': {'foo': 'bar'}
                 }),
-                200);
+                200,
+                request: request);
           };
           var response = await client.getMetadata();
 
@@ -98,7 +99,8 @@ void main() async {
                 'prefixes': [],
                 'items': [],
               }),
-              200);
+              200,
+              request: request);
         };
 
         var response = await client.getList(delimiter: '/');
@@ -129,7 +131,8 @@ void main() async {
                 ],
                 'nextPageToken': 'YS9mLw=='
               }),
-              200);
+              200,
+              request: request);
         };
 
         var response = await client.getList(
@@ -170,7 +173,8 @@ void main() async {
                 'downloadTokens': 'a,b,c',
                 'metadata': {'foo': 'bar'}
               }),
-              200);
+              200,
+              request: request);
         };
 
         var response = await client.getDownloadUrl();
@@ -223,7 +227,8 @@ void main() async {
                   'downloadTokens': 'a,b,c',
                   'metadata': {'foo': 'bar'}
                 }),
-                200);
+                200,
+                request: request);
           };
           var response = await client.updateMetadata(SettableMetadata(
               contentType: 'application/json', customMetadata: {'foo': 'bar'}));
@@ -261,7 +266,7 @@ void main() async {
           handler = (request) {
             expect(request.url.path, '/v0$url');
             expect(request.method, 'DELETE');
-            return Response('', 204);
+            return Response('', 204, request: request);
           };
 
           await client.deleteObject();
@@ -311,7 +316,8 @@ void main() async {
                 json.encode({
                   'name': metadata['fullPath'],
                 }),
-                200);
+                200,
+                request: request);
           };
 
           var r = await client.multipartUpload(data, null);
@@ -347,11 +353,13 @@ void main() async {
               'Content-Type': 'application/json; charset=utf-8'
             });
 
-            return Response('', 200, headers: {
-              'X-Goog-Upload-Url': uploadUrl,
-              'X-Goog-Upload-Status': 'active',
-              'Content-Type': 'text/plain'
-            });
+            return Response('', 200,
+                headers: {
+                  'X-Goog-Upload-Url': uploadUrl,
+                  'X-Goog-Upload-Status': 'active',
+                  'Content-Type': 'text/plain'
+                },
+                request: request);
           };
 
           var r = await client.startResumableUpload(data, null);
@@ -375,11 +383,13 @@ void main() async {
             'X-Goog-Upload-Command': 'query',
           });
 
-          return Response('', 200, headers: {
-            'X-Goog-Upload-Status': 'active',
-            'X-Goog-Upload-Size-Received': '0',
-            'Content-Type': 'text/plain'
-          });
+          return Response('', 200,
+              headers: {
+                'X-Goog-Upload-Status': 'active',
+                'X-Goog-Upload-Size-Received': '0',
+                'Content-Type': 'text/plain'
+              },
+              request: request);
         };
 
         var r = await client.getResumableUploadStatus(Uri.parse(url), data);
@@ -402,11 +412,13 @@ void main() async {
             'X-Goog-Upload-Command': 'query',
           });
 
-          return Response('', 200, headers: {
-            'X-Goog-Upload-Status': 'final',
-            'X-Goog-Upload-Size-Received': '${data.length}',
-            'Content-Type': 'text/plain'
-          });
+          return Response('', 200,
+              headers: {
+                'X-Goog-Upload-Status': 'final',
+                'X-Goog-Upload-Size-Received': '${data.length}',
+                'Content-Type': 'text/plain'
+              },
+              request: request);
         };
 
         var r = await client.getResumableUploadStatus(Uri.parse(url), data);
@@ -435,11 +447,13 @@ void main() async {
           var content = request.bodyBytes;
           expect(content, data);
 
-          return Response(json.encode({'name': location.path}), 200, headers: {
-            'X-Goog-Upload-Status': 'final',
-            'X-Goog-Upload-Size-Received': '${content.length}',
-            'Content-Type': 'application/json'
-          });
+          return Response(json.encode({'name': location.path}), 200,
+              headers: {
+                'X-Goog-Upload-Status': 'final',
+                'X-Goog-Upload-Size-Received': '${content.length}',
+                'Content-Type': 'application/json'
+              },
+              request: request);
         };
 
         var r = await client.continueResumableUpload(
@@ -457,7 +471,7 @@ void main() async {
         var location = locationNormal;
         var client = ResourceClient(location, httpClient);
         handler = (request) {
-          return Response('', 509);
+          return Response('', 509, request: request);
         };
         expect(() => client.getMetadata(), throwsA(StorageException.unknown()));
       });
@@ -465,7 +479,7 @@ void main() async {
         var location = locationNormal;
         var client = ResourceClient(location, httpClient);
         handler = (request) {
-          return Response('', 404);
+          return Response('', 404, request: request);
         };
         expect(() => client.getMetadata(),
             throwsA(StorageException.objectNotFound(location.path)));
@@ -474,7 +488,7 @@ void main() async {
         var location = locationNormal;
         var client = ResourceClient(location, httpClient);
         handler = (request) {
-          return Response('', 402);
+          return Response('', 402, request: request);
         };
         expect(() => client.getMetadata(),
             throwsA(StorageException.quotaExceeded(location.bucket)));

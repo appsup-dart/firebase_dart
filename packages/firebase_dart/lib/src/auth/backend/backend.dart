@@ -359,10 +359,10 @@ class BackendConnection {
 
     try {
       return http.Response(json.encode(await _handle(method, body)), 200,
-          headers: {'content-type': 'application/json'});
+          headers: {'content-type': 'application/json'}, request: request);
     } on FirebaseAuthException catch (e) {
       return http.Response(json.encode(errorToServerResponse(e)), 400,
-          headers: {'content-type': 'application/json'});
+          headers: {'content-type': 'application/json'}, request: request);
     }
   }
 }

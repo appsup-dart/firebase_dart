@@ -71,7 +71,7 @@ class Expectation {
         ? 400
         : (response['error'] ?? {})['code'] ?? httpCode;
     return http.Response(json.encode(response), code,
-        headers: {'content-type': 'application/json'});
+        headers: {'content-type': 'application/json'}, request: r);
   }
 }
 
