@@ -67,7 +67,8 @@ class BackendConnection {
                     contentEncoding: metadata['contentEncoding'],
                     contentLanguage: metadata['contentLanguage'],
                     contentType: metadata['contentType'] ?? contentType,
-                    customMetadata: metadata['customMetadata']),
+                    customMetadata:
+                        (metadata['customMetadata'] as Map?)?.cast()),
               );
 
               var fullMetadata = await backend.getMetadata(location);
