@@ -7,6 +7,7 @@ import 'package:firebase_dart/src/database.dart';
 import 'package:firebase_dart/src/core.dart';
 import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
+import 'package:firebase_dart/src/firestore.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:http/http.dart' as http;
@@ -127,6 +128,12 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
     return FirebaseService.findService<IsolateFirebaseStorage>(
             app, (s) => s.bucket == storageBucket) ??
         IsolateFirebaseStorage(app: app, storageBucket: storageBucket);
+  }
+
+  @override
+  FirebaseFirestore createFirestore(covariant FirebaseApp app) {
+    // TODO: implement createFirestore
+    throw UnimplementedError();
   }
 }
 

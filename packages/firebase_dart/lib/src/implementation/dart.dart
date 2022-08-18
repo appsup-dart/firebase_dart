@@ -6,10 +6,12 @@ import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
+import 'package:firebase_dart/src/firestore.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:firebase_dart/src/storage/service.dart';
 import 'package:http/http.dart' as http;
 
+import '../firestore/impl/firestore.dart';
 import '../implementation.dart';
 
 class PureDartFirebaseImplementation extends BaseFirebaseImplementation {
@@ -59,5 +61,11 @@ class PureDartFirebaseImplementation extends BaseFirebaseImplementation {
     return FirebaseService.findService<FirebaseStorageImpl>(app,
             (s) => s.bucket == (storageBucket ?? app.options.storageBucket)) ??
         FirebaseStorageImpl(app, storageBucket, httpClient: _httpClient);
+  }
+
+  @override
+  FirebaseFirestore createFirestore(covariant FirebaseApp app) {
+    return FirebaseService.findService<FirebaseFirestoreImpl>(app) ??
+        FirebaseFirestoreImpl(app);
   }
 }

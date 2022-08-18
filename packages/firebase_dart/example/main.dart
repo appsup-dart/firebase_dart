@@ -6,6 +6,7 @@ import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/firestore.dart';
 import 'package:firebase_dart/storage.dart';
 
 void main() async {
@@ -69,6 +70,13 @@ void main() async {
 
   user = auth.currentUser;
   print('current user (after delete) = ${user?.uid}');
+
+  var firestore = FirebaseFirestore.instanceFor(app: app);
+
+  var doc =
+      await firestore.collection('cars').doc('cnrjBu7TJcGuoKDrZguo').get();
+
+  print('content of firestore cars/cnrjBu7TJcGuoKDrZguo ${doc.data()}');
 
   await app.delete();
 }
