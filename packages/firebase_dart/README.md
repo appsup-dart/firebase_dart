@@ -104,7 +104,7 @@ This implementation does not yet support all functionalities of the firebase aut
 | FirebaseAuth.isSignInWithEmailLink | ✅
 | FirebaseAuth.sendPasswordResetEmail | ✅
 | FirebaseAuth.sendSignInLinkToEmail | ✅
-| FirebaseAuth.setLanguageCode | ❌
+| FirebaseAuth.setLanguageCode | ✅
 | FirebaseAuth.setPersistence | ❌
 | FirebaseAuth.signInAnonymously | ✅
 | FirebaseAuth.signInWithCredential | ✅
