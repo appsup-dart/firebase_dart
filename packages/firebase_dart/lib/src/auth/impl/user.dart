@@ -10,6 +10,7 @@ import 'package:openid_client/openid_client.dart' as openid;
 import 'package:rxdart/rxdart.dart';
 
 import '../auth.dart';
+import '../authhandlers.dart';
 
 class FirebaseUserImpl extends User with DelegatingUserInfo {
   final FirebaseAuthImpl _auth;
@@ -235,11 +236,89 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     throw UnimplementedError();
   }
 
+  Future<openid.Credential> _getCredential(AuthCredential credential) async {
+    if (credential is PhoneAuthCredential) {
+      return await _auth.rpcHandler.verifyPhoneNumber(
+          sessionInfo: credential.verificationId,
+          code: credential.smsCode,
+          phoneNumber: credential.phoneNumber,
+          temporaryProof: credential.temporaryProof,
+          reauth: true);
+    }
+
+    if (credential is OAuthCredential) {
+      return await _auth.rpcHandler.verifyAssertion(
+          postBody: Uri(queryParameters: {
+            if (credential.idToken != null) 'id_token': credential.idToken,
+            if (credential.accessToken != null)
+              'access_token': credential.accessToken,
+            if (credential.secret != null)
+              'oauth_token_secret': credential.secret,
+            'providerId': credential.providerId,
+            if (credential.rawNonce != null) 'nonce': credential.rawNonce
+          }).query,
+          requestUri: 'http://localhost',
+          autoCreate: false);
+    }
+
+    if (credential is EmailAuthCredential) {
+      if (credential.password != null) {
+        return await _auth.rpcHandler
+            .verifyPassword(credential.email, credential.password);
+      } else {
+        var actionCodeUrl =
+            getActionCodeUrlFromSignInEmailLink(credential.emailLink!);
+        if (actionCodeUrl == null) {
+          throw FirebaseAuthException.argumentError('Invalid email link!');
+        }
+        return await _auth.rpcHandler
+            .emailLinkSignIn(email!, actionCodeUrl.code);
+      }
+    }
+
+    if (credential is FirebaseAppAuthCredential) {
+      return await _auth.rpcHandler.verifyAssertion(
+          sessionId: credential.sessionId,
+          requestUri: credential.link,
+          autoCreate: false);
+    }
+
+    throw UnimplementedError();
+  }
+
   @override
   Future<UserCredential> reauthenticateWithCredential(
-      AuthCredential credential) {
-    // TODO: implement reauthenticateWithCredential
-    throw UnimplementedError();
+      AuthCredential credential) async {
+    openid.Credential c;
+    try {
+      c = await _getCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == FirebaseAuthException.userDeleted().code) {
+        throw FirebaseAuthException.userMismatch();
+      }
+      rethrow;
+    }
+
+    if (uid != c.idToken.claims.subject) {
+      throw FirebaseAuthException.userMismatch();
+    }
+
+    _credential = c;
+
+    _lastAccessToken = _credential.idToken.toCompactSerialization();
+    _tokenUpdates.add(_lastAccessToken);
+
+    await reload();
+
+    return UserCredentialImpl(
+        user: this,
+        credential: credential,
+        additionalUserInfo: createAdditionalUserInfo(
+          credential: _credential,
+          providerId: credential.providerId,
+          isNewUser: false,
+        ),
+        operationType: UserCredentialImpl.operationTypeReauthenticate);
   }
 
   @override

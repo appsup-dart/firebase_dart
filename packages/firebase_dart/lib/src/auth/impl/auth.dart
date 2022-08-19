@@ -530,7 +530,14 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 }
 
 class UserCredentialImpl extends UserCredential {
+  /// Operation involving signing in a user.
   static const operationTypeSignIn = 'signIn';
+
+  /// Operation involving using a provider to reauthenticate an already signed-in user.
+  static const operationTypeReauthenticate = 'reauthenticate';
+
+  /// Operation involving linking an additional provider to an already signed-in user.
+  static const operationTypeLink = 'link';
 
   @override
   final User? user;

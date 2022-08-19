@@ -1,5 +1,9 @@
 # Changelog
 
+# 1.0.12
+
+- Implemented `FirebaseUser.reauthenticateWithCredential` method.
+
 # 1.0.11
 
 - Fix incompatibility with `http` version 0.13.5

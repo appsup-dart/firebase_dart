@@ -123,7 +123,7 @@ This implementation does not yet support all functionalities of the firebase aut
 | User.getIdTokenResult | ✅
 | User.linkWithCredential | ❌
 | User.linkWithPhoneNumber | ❌
-| User.reauthenticateWithCredential | ❌
+| User.reauthenticateWithCredential | ✅
 | User.reload | ✅
 | User.sendEmailVerification | ✅
 | User.unlink | ✅

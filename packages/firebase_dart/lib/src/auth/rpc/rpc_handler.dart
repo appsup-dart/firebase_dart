@@ -257,13 +257,19 @@ class RpcHandler {
       {String? sessionId,
       String? requestUri,
       String? postBody,
-      String? pendingIdToken}) async {
-    var response = await _verifyAssertion(
-        IdentitytoolkitRelyingpartyVerifyAssertionRequest()
-          ..postBody = postBody
-          ..sessionId = sessionId
-          ..requestUri = requestUri
-          ..pendingIdToken = pendingIdToken);
+      String? pendingIdToken,
+      bool autoCreate = true}) async {
+    var request = IdentitytoolkitRelyingpartyVerifyAssertionRequest()
+      ..postBody = postBody
+      ..sessionId = sessionId
+      ..requestUri = requestUri
+      ..pendingIdToken = pendingIdToken;
+
+    if (!autoCreate) {
+      request.autoCreate = false;
+    }
+
+    var response = await _verifyAssertion(request);
 
     return _credentialFromIdToken(
         idToken: response.idToken!,
@@ -672,12 +678,15 @@ class RpcHandler {
       {String? sessionInfo,
       String? code,
       String? temporaryProof,
-      String? phoneNumber}) async {
+      String? phoneNumber,
+      bool reauth = false}) async {
     var request = IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest()
       ..sessionInfo = sessionInfo
       ..code = code
       ..temporaryProof = temporaryProof
       ..phoneNumber = phoneNumber;
+
+    if (reauth) request.operation = 'REAUTH';
     _validateVerifyPhoneNumberRequest(request);
 
     var response = await relyingparty.verifyPhoneNumber(request);
