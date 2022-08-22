@@ -10,6 +10,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
 import 'package:logging/logging.dart';
+import 'package:uni_links/uni_links.dart';
 
 class FacebookAuthHandler extends DirectAuthHandler {
   FacebookAuthHandler() : super(FacebookAuthProvider.PROVIDER_ID);
@@ -145,6 +146,15 @@ class AndroidAuthHandler extends FirebaseAppAuthHandler {
         _lastRecaptchaResult = null;
 
         return Uri.parse(v['link']!).queryParameters['recaptchaToken']!;
+      });
+    } else if (!kIsWeb) {
+      // TODO: can this replace the android implementation as well?
+      return _lastRecaptchaResult ??= Future(() async {
+        var uri = await uriLinkStream.first;
+        var v = uri!.queryParameters;
+        _lastRecaptchaResult = null;
+
+        return Uri.parse(v['deep_link_id']!).queryParameters['recaptchaToken']!;
       });
     }
     throw UnimplementedError();
