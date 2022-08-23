@@ -93,7 +93,8 @@ class StoreBackend extends BaseBackend {
   }
 
   @override
-  Future<BackendUser> verifyPhoneNumber(String sessionInfo, String code) async {
+  Future<BackendUser> signInWithPhoneNumber(
+      String sessionInfo, String code) async {
     var s = JsonWebSignature.fromCompactSerialization(sessionInfo);
 
     var phoneNumber = s.unverifiedPayload.jsonContent;
@@ -106,7 +107,7 @@ class StoreBackend extends BaseBackend {
   }
 
   @override
-  Future<BackendUser> verifyAssertion(String providerId, String idToken) async {
+  Future<BackendUser> signInWithIdp(String providerId, String idToken) async {
     var s = IdToken.unverified(idToken);
     var rawId = s.claims.subject;
     var email = s.claims['email'];

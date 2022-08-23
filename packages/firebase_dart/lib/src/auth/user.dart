@@ -170,7 +170,7 @@ abstract class User {
 
   /// Updates the user's phone number.
   ///
-  /// A credential can be created by verifying a phone number via [verifyPhoneNumber].
+  /// A credential can be created by verifying a phone number via [signInWithPhoneNumber].
   ///
   /// A [FirebaseAuthException] maybe thrown with the following error code:
   /// - **invalid-verification-code**:

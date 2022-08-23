@@ -237,7 +237,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   Future<openid.Credential> _getCredential(AuthCredential credential) async {
     if (credential is PhoneAuthCredential) {
-      return await _auth.rpcHandler.verifyPhoneNumber(
+      return await _auth.rpcHandler.signInWithPhoneNumber(
           sessionInfo: credential.verificationId,
           code: credential.smsCode,
           phoneNumber: credential.phoneNumber,
@@ -246,7 +246,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     }
 
     if (credential is OAuthCredential) {
-      return await _auth.rpcHandler.verifyAssertion(
+      return await _auth.rpcHandler.signInWithIdp(
           postBody: Uri(queryParameters: {
             if (credential.idToken != null) 'id_token': credential.idToken,
             if (credential.accessToken != null)
@@ -263,7 +263,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     if (credential is EmailAuthCredential) {
       if (credential.password != null) {
         return await _auth.rpcHandler
-            .verifyPassword(credential.email, credential.password);
+            .signInWithPassword(credential.email, credential.password);
       } else {
         var actionCodeUrl =
             getActionCodeUrlFromSignInEmailLink(credential.emailLink!);
@@ -271,12 +271,12 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
           throw FirebaseAuthException.argumentError('Invalid email link!');
         }
         return await _auth.rpcHandler
-            .emailLinkSignIn(email!, actionCodeUrl.code);
+            .signInWithEmailLink(email!, actionCodeUrl.code);
       }
     }
 
     if (credential is FirebaseAppAuthCredential) {
-      return await _auth.rpcHandler.verifyAssertion(
+      return await _auth.rpcHandler.signInWithIdp(
           sessionId: credential.sessionId,
           requestUri: credential.link,
           autoCreate: false);
@@ -675,9 +675,9 @@ class GenericAdditionalUserInfo implements AdditionalUserInfo {
       {String? providerId, required String idToken}) {
     // Try to get providerId from the ID token if available.
     if (providerId == null) {
-      // verifyPassword/setAccountInfo and verifyPhoneNumber return an ID token
+      // signInWithPassword/setAccountInfo and signInWithPhoneNumber return an ID token
       // but no providerId. Get providerId from the token itself.
-      // isNewUser will be returned for verifyPhoneNumber.
+      // isNewUser will be returned for signInWithPhoneNumber.
       var token = openid.IdToken.unverified(idToken);
       providerId = token.claims.getTyped('provider_id') ??
           (token.claims['firebase'] ?? {})['sign_in_provider'];

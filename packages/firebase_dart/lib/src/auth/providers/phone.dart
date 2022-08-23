@@ -4,7 +4,7 @@ import '../auth_provider.dart';
 /// This class should be used to either create a new Phone credential with an
 /// verification ID and SMS code.
 ///
-/// Typically this provider will be used when calling [verifyPhoneNumber] to
+/// Typically this provider will be used when calling [signInWithPhoneNumber] to
 /// generate a new [PhoneAuthCredential] when a SMS code has been sent.
 class PhoneAuthProvider extends AuthProvider {
   /// Creates a new instance.

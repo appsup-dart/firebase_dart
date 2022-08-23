@@ -615,7 +615,7 @@ void main() {
           );
         });
       });
-      group('verifyCustomToken', () {
+      group('signInWithCustomToken', () {
         var tester = Tester(
           path: 'accounts:signInWithCustomToken',
           expectedBody: {'token': 'CUSTOM_TOKEN', 'returnSecureToken': true},
@@ -623,17 +623,17 @@ void main() {
             return {'id_token': response['idToken']};
           },
           action: () => rpcHandler
-              .verifyCustomToken('CUSTOM_TOKEN')
+              .signInWithCustomToken('CUSTOM_TOKEN')
               .then((v) => {'id_token': v.response!['id_token']}),
         );
 
-        test('verifyCustomToken: success', () async {
+        test('signInWithCustomToken: success', () async {
           await tester.shouldSucceed(
             serverResponse: {'idToken': createMockJwt(uid: 'my_id')},
           );
         });
 
-        test('verifyCustomToken: tenant id', () async {
+        test('signInWithCustomToken: tenant id', () async {
           rpcHandler.tenantId = '123456789012';
           await tester.shouldSucceed(
             expectedBody: {
@@ -645,7 +645,7 @@ void main() {
           );
         });
 
-        test('verifyCustomToken: unsupported tenant operation', () async {
+        test('signInWithCustomToken: unsupported tenant operation', () async {
           rpcHandler.tenantId = '123456789012';
           await tester.shouldFailWithServerErrors(expectedBody: {
             'token': 'CUSTOM_TOKEN',
@@ -657,7 +657,7 @@ void main() {
           });
         });
 
-        test('verifyCustomToken: server caught error', () async {
+        test('signInWithCustomToken: server caught error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
             'MISSING_CUSTOM_TOKEN': FirebaseAuthException.internalError(),
             'INVALID_CUSTOM_TOKEN': FirebaseAuthException.invalidCustomToken(),
@@ -667,7 +667,7 @@ void main() {
           });
         });
 
-        test('verifyCustomToken: unknown server response', () async {
+        test('signInWithCustomToken: unknown server response', () async {
           await tester.shouldFail(
               expectedBody: {
                 'token': 'CUSTOM_TOKEN',
@@ -675,11 +675,11 @@ void main() {
               },
               serverResponse: {},
               expectedError: FirebaseAuthException.internalError(),
-              action: () => rpcHandler.verifyCustomToken('CUSTOM_TOKEN'));
+              action: () => rpcHandler.signInWithCustomToken('CUSTOM_TOKEN'));
         });
       });
 
-      group('emailLinkSignIn', () {
+      group('signInWithEmailLink', () {
         var tester = Tester(
             path: 'accounts:signInWithEmailLink',
             expectedBody: {
@@ -690,22 +690,22 @@ void main() {
               return {'id_token': response['idToken']};
             },
             action: () => rpcHandler
-                .emailLinkSignIn('user@example.com', 'OTP_CODE')
+                .signInWithEmailLink('user@example.com', 'OTP_CODE')
                 .then((v) => {'id_token': v.response!['id_token']}));
-        test('emailLinkSignIn: success', () async {
+        test('signInWithEmailLink: success', () async {
           await tester.shouldSucceed(
             serverResponse: {'idToken': createMockJwt(uid: 'user1')},
           );
         });
 
-        test('emailLinkSignIn: multi factor required', () async {
+        test('signInWithEmailLink: multi factor required', () async {
           await tester.shouldFail(
             expectedError: FirebaseAuthException.mfaRequired(),
             serverResponse: pendingCredResponse,
           );
         });
 
-        test('emailLinkSignIn: tenant id', () async {
+        test('signInWithEmailLink: tenant id', () async {
           rpcHandler.tenantId = 'TENANT_ID';
           await tester.shouldSucceed(
             expectedBody: {
@@ -717,32 +717,33 @@ void main() {
           );
         });
 
-        test('emailLinkSignIn: server caught error', () async {
+        test('signInWithEmailLink: server caught error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
             'INVALID_EMAIL': FirebaseAuthException.invalidEmail(),
           });
         });
 
-        test('emailLinkSignIn: unknown server response', () async {
+        test('signInWithEmailLink: unknown server response', () async {
           await tester.shouldFail(
             serverResponse: {},
             expectedError: FirebaseAuthException.internalError(),
           );
         });
 
-        test('emailLinkSignIn: empty action code error', () async {
-          // Test when empty action code is passed in emailLinkSignIn request.
-          expect(() => rpcHandler.emailLinkSignIn('user@example.com', ''),
+        test('signInWithEmailLink: empty action code error', () async {
+          // Test when empty action code is passed in signInWithEmailLink request.
+          expect(() => rpcHandler.signInWithEmailLink('user@example.com', ''),
               throwsA(FirebaseAuthException.internalError()));
         });
-        test('emailLinkSignIn: invalid email error', () async {
-          // Test when invalid email is passed in emailLinkSignIn request.
-          expect(() => rpcHandler.emailLinkSignIn('user.invalid', 'OTP_CODE'),
+        test('signInWithEmailLink: invalid email error', () async {
+          // Test when invalid email is passed in signInWithEmailLink request.
+          expect(
+              () => rpcHandler.signInWithEmailLink('user.invalid', 'OTP_CODE'),
               throwsA(FirebaseAuthException.invalidEmail()));
         });
       });
 
-      group('createAccount', () {
+      group('signUp', () {
         var tester = Tester(
           path: 'accounts:signUp',
           expectedBody: {
@@ -753,15 +754,15 @@ void main() {
             return {'id_token': response['idToken']};
           },
           action: () => rpcHandler
-              .createAccount('uid123@fake.com', 'mysupersecretpassword')
+              .signUp('uid123@fake.com', 'mysupersecretpassword')
               .then((v) => {'id_token': v.response!['id_token']}),
         );
-        test('createAccount: success', () async {
+        test('signUp: success', () async {
           await tester.shouldSucceed(
             serverResponse: {'idToken': createMockJwt(uid: 'user1')},
           );
         });
-        test('createAccount: tenant id', () async {
+        test('signUp: tenant id', () async {
           rpcHandler.tenantId = '123456789012';
           await tester.shouldSucceed(
             expectedBody: {
@@ -773,7 +774,7 @@ void main() {
           );
         });
 
-        test('createAccount: server caught error', () async {
+        test('signUp: server caught error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
               'EMAIL_EXISTS': FirebaseAuthException.emailExists(),
@@ -788,7 +789,7 @@ void main() {
             },
           );
         });
-        test('createAccount: unknown server response', () async {
+        test('signUp: unknown server response', () async {
           // Test when server returns unexpected response with no error message.
           await tester.shouldFail(
             serverResponse: {},
@@ -796,14 +797,14 @@ void main() {
           );
         });
 
-        test('createAccount: no password error', () async {
-          expect(() => rpcHandler.createAccount('uid123@fake.com', ''),
+        test('signUp: no password error', () async {
+          expect(() => rpcHandler.signUp('uid123@fake.com', ''),
               throwsA(FirebaseAuthException.weakPassword()));
         });
-        test('createAccount: invalid email error', () async {
+        test('signUp: invalid email error', () async {
           expect(
-              () => rpcHandler.createAccount(
-                  'uid123.invalid', 'mysupersecretpassword'),
+              () =>
+                  rpcHandler.signUp('uid123.invalid', 'mysupersecretpassword'),
               throwsA(FirebaseAuthException.invalidEmail()));
         });
       });
@@ -841,7 +842,7 @@ void main() {
         });
       });
 
-      group('verifyPassword', () {
+      group('signInWithPassword', () {
         var tester = Tester(
             path: 'accounts:signInWithPassword',
             expectedBody: {
@@ -853,9 +854,9 @@ void main() {
               return {'id_token': response['idToken']};
             },
             action: () => rpcHandler
-                .verifyPassword('uid123@fake.com', 'mysupersecretpassword')
+                .signInWithPassword('uid123@fake.com', 'mysupersecretpassword')
                 .then((v) => {'id_token': v.response!['id_token']}));
-        test('verifyPassword: success', () async {
+        test('signInWithPassword: success', () async {
           await tester.shouldSucceed(
             serverResponse: {
               'idToken': createMockJwt(uid: 'uid123', providerId: 'password')
@@ -863,14 +864,14 @@ void main() {
           );
         });
 
-        test('verifyPassword: multi factor required', () async {
+        test('signInWithPassword: multi factor required', () async {
           await tester.shouldFail(
             expectedError: FirebaseAuthException.mfaRequired(),
             serverResponse: pendingCredResponse,
           );
         });
 
-        test('verifyPassword: tenant id', () async {
+        test('signInWithPassword: tenant id', () async {
           rpcHandler.tenantId = '123456789012';
           await tester.shouldSucceed(
             expectedBody: {
@@ -885,7 +886,7 @@ void main() {
           );
         });
 
-        test('verifyPassword: server caught error', () async {
+        test('signInWithPassword: server caught error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
               'INVALID_EMAIL': FirebaseAuthException.invalidEmail(),
@@ -898,7 +899,7 @@ void main() {
           );
         });
 
-        test('verifyPassword: unknown server response', () async {
+        test('signInWithPassword: unknown server response', () async {
           await tester.shouldFail(
             expectedBody: {
               'email': 'uid123@fake.com',
@@ -907,21 +908,21 @@ void main() {
             },
             serverResponse: {},
             expectedError: FirebaseAuthException.internalError(),
-            action: () => rpcHandler.verifyPassword(
+            action: () => rpcHandler.signInWithPassword(
                 'uid123@fake.com', 'mysupersecretpassword'),
           );
         });
 
-        test('verifyPassword: invalid password request', () async {
-          expect(() => rpcHandler.verifyPassword('uid123@fake.com', ''),
+        test('signInWithPassword: invalid password request', () async {
+          expect(() => rpcHandler.signInWithPassword('uid123@fake.com', ''),
               throwsA(FirebaseAuthException.invalidPassword()));
         });
 
-        test('verifyPassword: invalid email error', () async {
-          // Test when invalid email is passed in verifyPassword request.
+        test('signInWithPassword: invalid email error', () async {
+          // Test when invalid email is passed in signInWithPassword request.
           // Test when request is invalid.
           expect(
-              () => rpcHandler.verifyPassword(
+              () => rpcHandler.signInWithPassword(
                   'uid123.invalid', 'mysupersecretpassword'),
               throwsA(FirebaseAuthException.invalidEmail()));
         });
@@ -972,7 +973,7 @@ void main() {
           );
         });
       });
-      group('verifyAssertion', () {
+      group('signInWithIdp', () {
         var tester = Tester(
           path: 'accounts:signInWithIdp',
           expectedBody: {
@@ -983,12 +984,12 @@ void main() {
           },
           expectedResult: (v) => v['idToken'],
           action: () => rpcHandler
-              .verifyAssertion(
+              .signInWithIdp(
                   sessionId: 'SESSION_ID',
                   requestUri: 'http://localhost/callback#oauthResponse')
               .then((v) => v.idToken.toCompactSerialization()),
         );
-        test('verifyAssertion: success', () async {
+        test('signInWithIdp: success', () async {
           await tester.shouldSucceed(
             serverResponse: {
               'idToken': createMockJwt(uid: 'my_id'),
@@ -998,7 +999,7 @@ void main() {
             },
           );
         });
-        test('verifyAssertion: with session id nonce: success', () async {
+        test('signInWithIdp: with session id nonce: success', () async {
           var token = createMockJwt(uid: 'my_id');
           await tester.shouldSucceed(
             expectedBody: {
@@ -1015,14 +1016,14 @@ void main() {
               'providerId': 'oidc.provider'
             },
             action: () => rpcHandler
-                .verifyAssertion(
+                .signInWithIdp(
                     sessionId: 'NONCE',
                     requestUri:
                         'http://localhost/callback#id_token=ID_TOKEN&state=STATE')
                 .then((v) => v.idToken.toCompactSerialization()),
           );
         });
-        test('verifyAssertion: with post body nonce: success', () async {
+        test('signInWithIdp: with post body nonce: success', () async {
           var token = createMockJwt(uid: 'my_id');
           await tester.shouldSucceed(
             expectedBody: {
@@ -1039,14 +1040,14 @@ void main() {
               'providerId': 'oidc.provider',
             },
             action: () => rpcHandler
-                .verifyAssertion(
+                .signInWithIdp(
                     postBody:
                         'id_token=$token&providerId=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost')
                 .then((v) => v.idToken.toCompactSerialization()),
           );
         });
-        test('verifyAssertion: pending token response: success', () async {
+        test('signInWithIdp: pending token response: success', () async {
           var token = createMockJwt(uid: 'my_id');
           // Nonce should not be injected since pending token is present in response.
           await tester.shouldSucceed(
@@ -1065,15 +1066,15 @@ void main() {
               'providerId': 'oidc.provider'
             },
             action: () => rpcHandler
-                .verifyAssertion(
+                .signInWithIdp(
                     postBody:
                         'id_token=$token&providerId=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost')
                 .then((v) => v.idToken.toCompactSerialization()),
           );
         });
-        group('verifyAssertion: pending token request', () {
-          test('verifyAssertion: pending token request: success', () async {
+        group('signInWithIdp: pending token request', () {
+          test('signInWithIdp: pending token request: success', () async {
             await tester.shouldSucceed(
               expectedBody: {
                 'pendingIdToken': 'PENDING_TOKEN',
@@ -1088,14 +1089,14 @@ void main() {
                 'oauthExpireIn': 3600,
               },
               action: () => rpcHandler
-                  .verifyAssertion(
+                  .signInWithIdp(
                       pendingIdToken: 'PENDING_TOKEN',
                       requestUri: 'http://localhost')
                   .then((v) => v.idToken.toCompactSerialization()),
             );
           });
 
-          test('verifyAssertion: pending token request: server caught error',
+          test('signInWithIdp: pending token request: server caught error',
               () async {
             await tester.shouldFailWithServerErrors(
               expectedBody: {
@@ -1104,7 +1105,7 @@ void main() {
                 'returnIdpCredential': true,
                 'returnSecureToken': true
               },
-              action: () => rpcHandler.verifyAssertion(
+              action: () => rpcHandler.signInWithIdp(
                 pendingIdToken: 'PENDING_TOKEN',
                 requestUri: 'http://localhost',
               ),
@@ -1117,8 +1118,8 @@ void main() {
             );
           });
         });
-        group('verifyAssertion: return idp credential', () {
-          test('verifyAssertion: return idp credential: no recovery error',
+        group('signInWithIdp: return idp credential', () {
+          test('signInWithIdp: return idp credential: no recovery error',
               () async {
             // Simulate server response containing unrecoverable errorMessage.
             await tester.shouldFail(
@@ -1139,19 +1140,19 @@ void main() {
                 'errorMessage': 'USER_DISABLED'
               },
               expectedError: FirebaseAuthException.userDisabled(),
-              action: () => rpcHandler.verifyAssertion(
+              action: () => rpcHandler.signInWithIdp(
                   sessionId: 'SESSION_ID',
                   requestUri: 'http://localhost/callback#oauthResponse'),
             );
           });
         });
-        test('verifyAssertion: error', () async {
+        test('signInWithIdp: error', () async {
           expect(
-              () => rpcHandler.verifyAssertion(
+              () => rpcHandler.signInWithIdp(
                   requestUri: 'http://localhost/callback#oauthResponse'),
               throwsA(FirebaseAuthException.internalError()));
         });
-        test('verifyAssertion: server caught error', () async {
+        test('signInWithIdp: server caught error', () async {
           await tester.shouldFailWithServerErrors(
             expectedBody: {
               'postBody':
@@ -1160,7 +1161,7 @@ void main() {
               'returnIdpCredential': true,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.verifyAssertion(
+            action: () => rpcHandler.signInWithIdp(
               postBody:
                   'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=invalid',
               requestUri: 'http://localhost',
@@ -1179,15 +1180,15 @@ void main() {
             },
           );
         });
-        test('verifyAssertion: invalid request error', () async {
+        test('signInWithIdp: invalid request error', () async {
           // Test when request is invalid.
-          expect(() => rpcHandler.verifyAssertion(postBody: '....'),
+          expect(() => rpcHandler.signInWithIdp(postBody: '....'),
               throwsA(FirebaseAuthException.internalError()));
         });
 
-        group('verifyAssertion: need confirmation error', () {
+        group('signInWithIdp: need confirmation error', () {
           test(
-              'verifyAssertion: need confirmation error: oauth response and email',
+              'signInWithIdp: need confirmation error: oauth response and email',
               () {
             // Test Auth linking error when need confirmation flag is returned.
             var credential =
@@ -1211,13 +1212,13 @@ void main() {
               },
               expectedError: FirebaseAuthException.needConfirmation()
                   .replace(email: 'user@example.com', credential: credential),
-              action: () => rpcHandler.verifyAssertion(
+              action: () => rpcHandler.signInWithIdp(
                   postBody:
                       'id_token=googleIdToken&access_token=accessToken&provider_id=google.com',
                   requestUri: 'http://localhost'),
             );
           });
-          test('verifyAssertion: need confirmation error: nonce id token',
+          test('signInWithIdp: need confirmation error: nonce id token',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
             var credential = OAuthProvider.credential(
@@ -1241,14 +1242,14 @@ void main() {
               },
               expectedError: FirebaseAuthException.needConfirmation()
                   .replace(email: 'user@example.com', credential: credential),
-              action: () => rpcHandler.verifyAssertion(
+              action: () => rpcHandler.signInWithIdp(
                   postBody:
                       'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
                   requestUri: 'http://localhost'),
             );
           });
 
-          test('verifyAssertion: need confirmation error: id token session id',
+          test('signInWithIdp: need confirmation error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
             var credential = OAuthProvider.credential(
@@ -1272,13 +1273,13 @@ void main() {
               },
               expectedError: FirebaseAuthException.needConfirmation()
                   .replace(email: 'user@example.com', credential: credential),
-              action: () => rpcHandler.verifyAssertion(
+              action: () => rpcHandler.signInWithIdp(
                   postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
                   sessionId: 'NONCE',
                   requestUri: 'http://localhost'),
             );
           });
-          test('verifyAssertion: need confirmation error: pending token',
+          test('signInWithIdp: need confirmation error: pending token',
               () async {
             // Expected error thrown with OIDC credential containing pending token and
             // no nonce.
@@ -1305,13 +1306,13 @@ void main() {
                 },
                 expectedError: FirebaseAuthException.needConfirmation()
                     .replace(email: 'user@example.com', credential: credential),
-                action: () => rpcHandler.verifyAssertion(
+                action: () => rpcHandler.signInWithIdp(
                     postBody:
                         'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost'));
           });
 
-          test('verifyAssertion: need confirmation error: pending token',
+          test('signInWithIdp: need confirmation error: pending token',
               () async {
             // Test Auth linking error when need confirmation flag is returned.
 
@@ -1331,14 +1332,14 @@ void main() {
                 },
                 expectedError: FirebaseAuthException.needConfirmation()
                     .replace(email: 'user@example.com'),
-                action: () => rpcHandler.verifyAssertion(
+                action: () => rpcHandler.signInWithIdp(
                     postBody:
                         'id_token=googleIdToken&access_token=accessToken&provider_id'
                         '=google.com',
                     requestUri: 'http://localhost'));
           });
 
-          test('verifyAssertion: need confirmation error: no extra info',
+          test('signInWithIdp: need confirmation error: no extra info',
               () async {
             // Test Auth error when need confirmation flag is returned but OAuth response
             // missing.
@@ -1355,16 +1356,16 @@ void main() {
                   'needConfirmation': true
                 },
                 expectedError: FirebaseAuthException.needConfirmation(),
-                action: () => rpcHandler.verifyAssertion(
+                action: () => rpcHandler.signInWithIdp(
                     postBody:
                         'id_token=googleIdToken&access_token=accessToken&provider_id=google.com',
                     requestUri: 'http://localhost'));
           });
         });
 
-        group('verifyAssertion: credentials already in use error', () {
+        group('signInWithIdp: credentials already in use error', () {
           test(
-              'verifyAssertion: credentials already in use error: oauth response and email',
+              'signInWithIdp: credentials already in use error: oauth response and email',
               () async {
             // Test Auth linking error when FEDERATED_USER_ID_ALREADY_LINKED errorMessage
             // is returned.
@@ -1388,13 +1389,13 @@ void main() {
                 },
                 expectedError: FirebaseAuthException.credentialAlreadyInUse()
                     .replace(email: 'user@example.com', credential: credential),
-                action: () => rpcHandler.verifyAssertion(
+                action: () => rpcHandler.signInWithIdp(
                     postBody:
                         'id_token=googleIdToken&access_token=accessToken&provider_id=google.com',
                     requestUri: 'http://localhost'));
           });
           test(
-              'verifyAssertion: credentials already in use error: nonce id token',
+              'signInWithIdp: credentials already in use error: nonce id token',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
             var credential = OAuthProvider.credential(
@@ -1418,13 +1419,13 @@ void main() {
                 },
                 expectedError: FirebaseAuthException.credentialAlreadyInUse()
                     .replace(email: 'user@example.com', credential: credential),
-                action: () => rpcHandler.verifyAssertion(
+                action: () => rpcHandler.signInWithIdp(
                     postBody:
                         'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost'));
           });
           test(
-              'verifyAssertion: credentials already in use error: id token session id',
+              'signInWithIdp: credentials already in use error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
             var credential = OAuthProvider.credential(
@@ -1448,14 +1449,13 @@ void main() {
               },
               expectedError: FirebaseAuthException.credentialAlreadyInUse()
                   .replace(email: 'user@example.com', credential: credential),
-              action: () => rpcHandler.verifyAssertion(
+              action: () => rpcHandler.signInWithIdp(
                   postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
                   sessionId: 'NONCE',
                   requestUri: 'http://localhost'),
             );
           });
-          test(
-              'verifyAssertion: credentials already in use error: pending token',
+          test('signInWithIdp: credentials already in use error: pending token',
               () async {
             // Expected error thrown with OIDC credential containing pending token and no
             // nonce.
@@ -1482,7 +1482,7 @@ void main() {
               },
               expectedError: FirebaseAuthException.credentialAlreadyInUse()
                   .replace(email: 'user@example.com', credential: credential),
-              action: () => rpcHandler.verifyAssertion(
+              action: () => rpcHandler.signInWithIdp(
                   postBody:
                       'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
                   requestUri: 'http://localhost'),
@@ -1490,8 +1490,8 @@ void main() {
           });
         });
 
-        group('verifyAssertion: email exists error', () {
-          test('verifyAssertion: email exists error: oauth response and email',
+        group('signInWithIdp: email exists error', () {
+          test('signInWithIdp: email exists error: oauth response and email',
               () async {
             // Test Auth linking error when EMAIL_EXISTS errorMessage is returned.
             var credential =
@@ -1512,12 +1512,12 @@ void main() {
               },
               expectedError: FirebaseAuthException.emailExists()
                   .replace(email: 'user@example.com', credential: credential),
-              action: () => rpcHandler.verifyAssertion(
+              action: () => rpcHandler.signInWithIdp(
                   postBody: 'access_token=accessToken&provider_id=facebook.com',
                   requestUri: 'http://localhost'),
             );
           });
-          test('verifyAssertion: email exists error: nonce id token', () async {
+          test('signInWithIdp: email exists error: nonce id token', () async {
             // Expected error thrown with OIDC credential containing nonce.
             var credential = OAuthProvider.credential(
                 providerId: 'oidc.provider',
@@ -1540,12 +1540,12 @@ void main() {
                 },
                 expectedError: FirebaseAuthException.emailExists()
                     .replace(email: 'user@example.com', credential: credential),
-                action: () => rpcHandler.verifyAssertion(
+                action: () => rpcHandler.signInWithIdp(
                     postBody:
                         'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost'));
           });
-          test('verifyAssertion: email exists error: id token session id',
+          test('signInWithIdp: email exists error: id token session id',
               () async {
             // Expected error thrown with OIDC credential containing nonce.
             var credential = OAuthProvider.credential(
@@ -1569,13 +1569,13 @@ void main() {
               },
               expectedError: FirebaseAuthException.emailExists()
                   .replace(email: 'user@example.com', credential: credential),
-              action: () => rpcHandler.verifyAssertion(
+              action: () => rpcHandler.signInWithIdp(
                   postBody: 'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider',
                   sessionId: 'NONCE',
                   requestUri: 'http://localhost'),
             );
           });
-          test('verifyAssertion: email exists error: pending token', () async {
+          test('signInWithIdp: email exists error: pending token', () async {
             // Expected error thrown with OIDC credential containing no nonce since
             // pending token returned from server.
             var credential = OAuthCredential(
@@ -1602,7 +1602,7 @@ void main() {
               },
               expectedError: FirebaseAuthException.emailExists()
                   .replace(email: 'user@example.com', credential: credential),
-              action: () => rpcHandler.verifyAssertion(
+              action: () => rpcHandler.signInWithIdp(
                   postBody:
                       'id_token=OIDC_ID_TOKEN&provider_id=oidc.provider&nonce=NONCE',
                   requestUri: 'http://localhost'),
@@ -1611,7 +1611,7 @@ void main() {
         });
       });
 
-      group('verifyAssertionForLinking', () {
+      group('signInWithIdpForLinking', () {
         var tester = Tester(
           path: 'accounts:signInWithIdp',
           expectedBody: {
@@ -1621,12 +1621,12 @@ void main() {
             'returnIdpCredential': true,
             'returnSecureToken': true
           },
-          action: () => rpcHandler.verifyAssertionForLinking(
+          action: () => rpcHandler.signInWithIdpForLinking(
               idToken: 'existingIdToken',
               sessionId: 'SESSION_ID',
               requestUri: 'http://localhost/callback#oauthResponse'),
         );
-        test('verifyAssertionForLinking: success', () async {
+        test('signInWithIdpForLinking: success', () async {
           await tester.shouldSucceed(serverResponse: {
             'idToken': 'ID_TOKEN',
             'oauthAccessToken': 'ACCESS_TOKEN',
@@ -1635,7 +1635,7 @@ void main() {
           });
         });
 
-        group('verifyAssertionForLinking: withSessionIdNonce', () {
+        group('signInWithIdpForLinking: withSessionIdNonce', () {
           var t = tester.replace(
               expectedBody: {
                 'idToken': 'existingIdToken',
@@ -1645,12 +1645,12 @@ void main() {
                 'returnIdpCredential': true,
                 'returnSecureToken': true
               },
-              action: () => rpcHandler.verifyAssertionForLinking(
+              action: () => rpcHandler.signInWithIdpForLinking(
                   idToken: 'existingIdToken',
                   sessionId: 'NONCE',
                   requestUri:
                       'http://localhost/callback#id_token=ID_TOKEN&state=STATE'));
-          test('verifyAssertionForLinking: withSessionIdNonce: success',
+          test('signInWithIdpForLinking: withSessionIdNonce: success',
               () async {
             await t.shouldSucceed(
                 serverResponse: {
@@ -1669,7 +1669,7 @@ void main() {
           });
         });
 
-        group('verifyAssertionForLinking: with post body nonce', () {
+        group('signInWithIdpForLinking: with post body nonce', () {
           var t = tester.replace(
             expectedBody: {
               'idToken': 'existingIdToken',
@@ -1679,13 +1679,13 @@ void main() {
               'returnIdpCredential': true,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.verifyAssertionForLinking(
+            action: () => rpcHandler.signInWithIdpForLinking(
                 idToken: 'existingIdToken',
                 postBody:
                     'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
                 requestUri: 'http://localhost'),
           );
-          test('verifyAssertionForLinking: with post body nonce: success',
+          test('signInWithIdpForLinking: with post body nonce: success',
               () async {
             await t.shouldSucceed(
               serverResponse: {
@@ -1705,7 +1705,7 @@ void main() {
           });
         });
 
-        group('verifyAssertionForLinking: pending token response', () {
+        group('signInWithIdpForLinking: pending token response', () {
           var t = tester.replace(
             expectedBody: {
               'idToken': 'existingIdToken',
@@ -1715,13 +1715,13 @@ void main() {
               'returnIdpCredential': true,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.verifyAssertionForLinking(
+            action: () => rpcHandler.signInWithIdpForLinking(
                 idToken: 'existingIdToken',
                 postBody:
                     'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
                 requestUri: 'http://localhost'),
           );
-          test('verifyAssertionForLinking: pending token response: success',
+          test('signInWithIdpForLinking: pending token response: success',
               () async {
             await t.shouldSucceed(
               serverResponse: {
@@ -1734,7 +1734,7 @@ void main() {
             );
           });
         });
-        group('verifyAssertionForLinking: pending token request', () {
+        group('signInWithIdpForLinking: pending token request', () {
           var t = tester.replace(
             expectedBody: {
               'idToken': 'existingIdToken',
@@ -1743,12 +1743,12 @@ void main() {
               'returnIdpCredential': true,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.verifyAssertionForLinking(
+            action: () => rpcHandler.signInWithIdpForLinking(
                 idToken: 'existingIdToken',
                 pendingToken: 'PENDING_TOKEN',
                 requestUri: 'http://localhost'),
           );
-          test('verifyAssertionForLinking: pending token request: success',
+          test('signInWithIdpForLinking: pending token request: success',
               () async {
             await t.shouldSucceed(
               serverResponse: {
@@ -1760,7 +1760,7 @@ void main() {
             );
           });
         });
-        group('verifyAssertionForLinking: return idp credential', () {
+        group('signInWithIdpForLinking: return idp credential', () {
           var t = tester.replace(
             expectedBody: {
               'idToken': 'ID_TOKEN',
@@ -1769,13 +1769,13 @@ void main() {
               'returnIdpCredential': true,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.verifyAssertionForLinking(
+            action: () => rpcHandler.signInWithIdpForLinking(
                 idToken: 'ID_TOKEN',
                 sessionId: 'SESSION_ID',
                 requestUri: 'http://localhost/callback#oauthResponse'),
           );
           test(
-              'verifyAssertionForLinking: return idp credential: no recovery error',
+              'signInWithIdpForLinking: return idp credential: no recovery error',
               () async {
             await t.shouldFail(
               serverResponse: {
@@ -1793,16 +1793,16 @@ void main() {
           });
         });
 
-        test('verifyAssertionForLinking: error', () async {
+        test('signInWithIdpForLinking: error', () async {
           expect(
-              () => rpcHandler.verifyAssertionForLinking(
+              () => rpcHandler.signInWithIdpForLinking(
                   sessionId: 'SESSION_ID',
                   requestUri: 'http://localhost/callback#oauthResponse'),
               throwsA(FirebaseAuthException.internalError()));
         });
       });
 
-      group('verifyAssertionForExisting', () {
+      group('signInWithIdpForExisting', () {
         var tester = Tester(
           path: 'accounts:signInWithIdp',
           expectedBody: {
@@ -1813,11 +1813,11 @@ void main() {
             'autoCreate': false,
             'returnSecureToken': true
           },
-          action: () => rpcHandler.verifyAssertionForExisting(
+          action: () => rpcHandler.signInWithIdpForExisting(
               sessionId: 'SESSION_ID',
               requestUri: 'http://localhost/callback#oauthResponse'),
         );
-        test('verifyAssertionForExisting: success', () async {
+        test('signInWithIdpForExisting: success', () async {
           await tester.shouldSucceed(
             serverResponse: {
               'idToken': 'ID_TOKEN',
@@ -1828,7 +1828,7 @@ void main() {
           );
         });
 
-        group('verifyAssertionForExisting: with session id nonce', () {
+        group('signInWithIdpForExisting: with session id nonce', () {
           var t = tester.replace(
             expectedBody: {
               'sessionId': 'NONCE',
@@ -1839,12 +1839,12 @@ void main() {
               'autoCreate': false,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.verifyAssertionForExisting(
+            action: () => rpcHandler.signInWithIdpForExisting(
                 sessionId: 'NONCE',
                 requestUri:
                     'http://localhost/callback#id_token=ID_TOKEN&state=STATE'),
           );
-          test('verifyAssertionForExisting: with session id nonce: success',
+          test('signInWithIdpForExisting: with session id nonce: success',
               () async {
             await t.shouldSucceed(
               serverResponse: {
@@ -1863,7 +1863,7 @@ void main() {
             );
           });
         });
-        group('verifyAssertionForExisting: with post body nonce', () {
+        group('signInWithIdpForExisting: with post body nonce', () {
           var t = tester.replace(
             expectedBody: {
               'postBody':
@@ -1874,12 +1874,12 @@ void main() {
               'autoCreate': false,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.verifyAssertionForExisting(
+            action: () => rpcHandler.signInWithIdpForExisting(
                 postBody:
                     'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
                 requestUri: 'http://localhost'),
           );
-          test('verifyAssertionForExisting: with post body nonce: success',
+          test('signInWithIdpForExisting: with post body nonce: success',
               () async {
             await t.shouldSucceed(
               serverResponse: {
@@ -1898,7 +1898,7 @@ void main() {
             );
           });
         });
-        group('verifyAssertionForExisting: pending token response', () {
+        group('signInWithIdpForExisting: pending token response', () {
           var t = tester.replace(
             expectedBody: {
               'postBody':
@@ -1909,12 +1909,12 @@ void main() {
               'autoCreate': false,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.verifyAssertionForExisting(
+            action: () => rpcHandler.signInWithIdpForExisting(
                 postBody:
                     'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
                 requestUri: 'http://localhost'),
           );
-          test('verifyAssertionForExisting: pending token response: success',
+          test('signInWithIdpForExisting: pending token response: success',
               () async {
             await t.shouldSucceed(
               serverResponse: {
@@ -1927,7 +1927,7 @@ void main() {
             );
           });
         });
-        group('verifyAssertionForExisting: pending token request', () {
+        group('signInWithIdpForExisting: pending token request', () {
           var t = tester.replace(
             expectedBody: {
               'pendingIdToken': 'PENDING_TOKEN',
@@ -1937,10 +1937,10 @@ void main() {
               'autoCreate': false,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.verifyAssertionForExisting(
+            action: () => rpcHandler.signInWithIdpForExisting(
                 pendingToken: 'PENDING_TOKEN', requestUri: 'http://localhost'),
           );
-          test('verifyAssertionForExisting: pending token request: success',
+          test('signInWithIdpForExisting: pending token request: success',
               () async {
             await t.shouldSucceed(
               serverResponse: {
@@ -1952,7 +1952,7 @@ void main() {
             );
           });
         });
-        group('verifyAssertionForExisting: return idp credential', () {
+        group('signInWithIdpForExisting: return idp credential', () {
           var t = tester.replace(
             expectedBody: {
               'sessionId': 'SESSION_ID',
@@ -1961,12 +1961,12 @@ void main() {
               'autoCreate': false,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.verifyAssertionForExisting(
+            action: () => rpcHandler.signInWithIdpForExisting(
                 sessionId: 'SESSION_ID',
                 requestUri: 'http://localhost/callback#oauthResponse'),
           );
           test(
-              'verifyAssertionForExisting: return idp credential: no recovery error',
+              'signInWithIdpForExisting: return idp credential: no recovery error',
               () async {
             await t.shouldFail(
               serverResponse: {
@@ -1984,7 +1984,7 @@ void main() {
           });
         });
 
-        group('verifyAssertionForExisting: error', () {
+        group('signInWithIdpForExisting: error', () {
           var t = tester.replace(
             expectedBody: {
               'sessionId': 'SESSION_ID',
@@ -1994,18 +1994,18 @@ void main() {
               'autoCreate': false,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.verifyAssertionForExisting(
+            action: () => rpcHandler.signInWithIdpForExisting(
                 sessionId: 'SESSION_ID',
                 requestUri: 'http://localhost/callback#oauthResponse'),
           );
-          test('verifyAssertionForExisting: error', () async {
-            // Same client side validation as verifyAssertion.
+          test('signInWithIdpForExisting: error', () async {
+            // Same client side validation as signInWithIdp.
             expect(
-                () => rpcHandler.verifyAssertionForExisting(
+                () => rpcHandler.signInWithIdpForExisting(
                     requestUri: 'http://localhost/callback#oauthResponse'),
                 throwsA(FirebaseAuthException.internalError()));
           });
-          test('verifyAssertionForExisting: error: user not found', () async {
+          test('signInWithIdpForExisting: error: user not found', () async {
             // No user is found. No idToken returned.
             await t.shouldFail(
               serverResponse: {
@@ -2017,7 +2017,7 @@ void main() {
               expectedError: FirebaseAuthException.userDeleted(),
             );
           });
-          test('verifyAssertionForExisting: error: no idToken', () async {
+          test('signInWithIdpForExisting: error: no idToken', () async {
             // No idToken returned for whatever reason.
             await t.shouldFail(
               serverResponse: {
@@ -2029,12 +2029,12 @@ void main() {
             );
           });
         });
-        test('verifyAssertionForExisting: invalid request error', () async {
+        test('signInWithIdpForExisting: invalid request error', () async {
           // Test when request is invalid.
-          expect(() => rpcHandler.verifyAssertionForExisting(postBody: '....'),
+          expect(() => rpcHandler.signInWithIdpForExisting(postBody: '....'),
               throwsA(FirebaseAuthException.internalError()));
         });
-        test('verifyAssertionForExisting: server caught error', () async {
+        test('signInWithIdpForExisting: server caught error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
             'INVALID_IDP_RESPONSE': FirebaseAuthException.invalidIdpResponse(),
             'USER_DISABLED': FirebaseAuthException.userDisabled(),
@@ -2632,7 +2632,7 @@ void main() {
         });
       });
 
-      group('emailLinkSignInForLinking', () {
+      group('signInWithEmailLinkForLinking', () {
         var tester = Tester(
           path: 'accounts:signInWithEmailLink',
           expectedBody: {
@@ -2640,16 +2640,16 @@ void main() {
             'email': 'user@example.com',
             'oobCode': 'OTP_CODE',
           },
-          action: () => rpcHandler.emailLinkSignInForLinking(
+          action: () => rpcHandler.signInWithEmailLinkForLinking(
               'ID_TOKEN', 'user@example.com', 'OTP_CODE'),
         );
-        test('emailLinkSignInForLinking: success', () async {
+        test('signInWithEmailLinkForLinking: success', () async {
           await tester.shouldSucceed(
             serverResponse: {'idToken': 'ID_TOKEN'},
           );
         });
 
-        test('emailLinkSignInForLinking: server caught error', () async {
+        test('signInWithEmailLinkForLinking: server caught error', () async {
           await tester.shouldFailWithServerErrors(
             errorMap: {
               'INVALID_EMAIL': FirebaseAuthException.invalidEmail(),
@@ -2660,7 +2660,8 @@ void main() {
           );
         });
 
-        test('emailLinkSignInForLinking: unknown server response', () async {
+        test('signInWithEmailLinkForLinking: unknown server response',
+            () async {
           // Test when server returns unexpected response with no error message.
 
           await tester.shouldFail(
@@ -2669,27 +2670,28 @@ void main() {
           );
         });
 
-        test('emailLinkSignInForLinking: empty action code error', () async {
-          // Test when empty action code is passed in emailLinkSignInForLinking request.
+        test('signInWithEmailLinkForLinking: empty action code error',
+            () async {
+          // Test when empty action code is passed in signInWithEmailLinkForLinking request.
 
           expect(
-              () => rpcHandler.emailLinkSignInForLinking(
+              () => rpcHandler.signInWithEmailLinkForLinking(
                   'ID_TOKEN', 'user@example.com', ''),
               throwsA(FirebaseAuthException.internalError()));
         });
-        test('emailLinkSignInForLinking: invalid email error', () async {
-          // Test when invalid email is passed in emailLinkSignInForLinking request.
+        test('signInWithEmailLinkForLinking: invalid email error', () async {
+          // Test when invalid email is passed in signInWithEmailLinkForLinking request.
 
           expect(
-              () => rpcHandler.emailLinkSignInForLinking(
+              () => rpcHandler.signInWithEmailLinkForLinking(
                   'ID_TOKEN', 'user.invalid', 'OTP_CODE'),
               throwsA(FirebaseAuthException.invalidEmail()));
         });
-        test('emailLinkSignInForLinking: empty idToken error', () async {
-          // Test when empty ID token is passed in emailLinkSignInForLinking request.
+        test('signInWithEmailLinkForLinking: empty idToken error', () async {
+          // Test when empty ID token is passed in signInWithEmailLinkForLinking request.
 
           expect(
-              () => rpcHandler.emailLinkSignInForLinking(
+              () => rpcHandler.signInWithEmailLinkForLinking(
                   '', 'user@example.com', 'OTP_CODE'),
               throwsA(FirebaseAuthException.internalError()));
         });
@@ -2942,7 +2944,7 @@ void main() {
         });
       });
 
-      group('verifyPhoneNumber', () {
+      group('signInWithPhoneNumber', () {
         // Token response with expiresIn.
         var tokenResponseWithExpiresIn = {
           'idToken': createMockJwt(uid: 'uid123', providerId: 'phone'),
@@ -2957,21 +2959,22 @@ void main() {
             return {'id_token': response['idToken']};
           },
           action: () => rpcHandler
-              .verifyPhoneNumber(sessionInfo: 'SESSION_INFO', code: '123456')
+              .signInWithPhoneNumber(
+                  sessionInfo: 'SESSION_INFO', code: '123456')
               .then((v) => {'id_token': v.response!['id_token']}),
         );
 
-        group('verifyPhoneNumber: using code', () {
-          test('verifyPhoneNumber: success using code', () async {
-            // Tests successful verifyPhoneNumber RPC call using an SMS code.
+        group('signInWithPhoneNumber: using code', () {
+          test('signInWithPhoneNumber: success using code', () async {
+            // Tests successful signInWithPhoneNumber RPC call using an SMS code.
 
             await tester.shouldSucceed(
               serverResponse: tokenResponseWithExpiresIn,
             );
           });
 
-          test('verifyPhoneNumber: success custom locale using code', () async {
-            // Tests successful verifyPhoneNumber RPC call using an SMS code and passing
+          test('signInWithPhoneNumber: success custom locale using code', () async {
+            // Tests successful signInWithPhoneNumber RPC call using an SMS code and passing
             // custom locale.
             httpClient.locale = 'ru';
             await tester.shouldSucceed(
@@ -2981,24 +2984,25 @@ void main() {
                   'X-Firebase-Locale': 'ru'
                 });
           });
-          test('verifyPhoneNumber: invalid request missing session info',
+          test('signInWithPhoneNumber: invalid request missing session info',
               () async {
-            expect(() => rpcHandler.verifyPhoneNumber(code: '123456'),
+            expect(() => rpcHandler.signInWithPhoneNumber(code: '123456'),
                 throwsA(FirebaseAuthException.missingSessionInfo()));
           });
-          test('verifyPhoneNumber: invalid request missing code', () async {
+          test('signInWithPhoneNumber: invalid request missing code', () async {
             expect(
-                () => rpcHandler.verifyPhoneNumber(sessionInfo: 'SESSION_INFO'),
+                () => rpcHandler.signInWithPhoneNumber(
+                    sessionInfo: 'SESSION_INFO'),
                 throwsA(FirebaseAuthException.missingCode()));
           });
-          test('verifyPhoneNumber: unknown server response', () async {
+          test('signInWithPhoneNumber: unknown server response', () async {
             await tester.shouldFail(
               serverResponse: {},
               expectedError: FirebaseAuthException.internalError(),
             );
           });
 
-          test('verifyPhoneNumber: caught server error', () async {
+          test('signInWithPhoneNumber: caught server error', () async {
             await tester.shouldFailWithServerErrors(errorMap: {
               'INVALID_CODE': FirebaseAuthException.invalidCode(),
               'INVALID_SESSION_INFO':
@@ -3014,40 +3018,41 @@ void main() {
           });
         });
 
-        group('verifyPhoneNumber: using temporary proof', () {
+        group('signInWithPhoneNumber: using temporary proof', () {
           var t = tester.replace(
             expectedBody: {
               'phoneNumber': '16505550101',
               'temporaryProof': 'TEMPORARY_PROOF'
             },
             action: () => rpcHandler
-                .verifyPhoneNumber(
+                .signInWithPhoneNumber(
                     phoneNumber: '16505550101',
                     temporaryProof: 'TEMPORARY_PROOF')
                 .then((v) => {'id_token': v.response!['id_token']}),
           );
-          test('verifyPhoneNumber: success using temporary proof', () async {
-            // Tests successful verifyPhoneNumber RPC call using a temporary proof.
+          test('signInWithPhoneNumber: success using temporary proof', () async {
+            // Tests successful signInWithPhoneNumber RPC call using a temporary proof.
             await t.shouldSucceed(
               serverResponse: tokenResponseWithExpiresIn,
             );
           });
 
-          test('verifyPhoneNumber: error no phone number', () async {
+          test('signInWithPhoneNumber: error no phone number', () async {
             expect(
-                () => rpcHandler.verifyPhoneNumber(
+                () => rpcHandler.signInWithPhoneNumber(
                     temporaryProof: 'TEMPORARY_PROOF'),
                 throwsA(FirebaseAuthException.internalError()));
           });
-          test('verifyPhoneNumber: error no temporary proof', () async {
+          test('signInWithPhoneNumber: error no temporary proof', () async {
             expect(
-                () => rpcHandler.verifyPhoneNumber(phoneNumber: '16505550101'),
+                () => rpcHandler.signInWithPhoneNumber(
+                    phoneNumber: '16505550101'),
                 throwsA(FirebaseAuthException.internalError()));
           });
         });
       });
 
-      group('verifyPhoneNumberForLinking', () {
+      group('signInWithPhoneNumberForLinking', () {
         // Token response with expiresIn.
         var tokenResponseWithExpiresIn = {
           'idToken': createMockJwt(uid: 'uid123', providerId: 'phone'),
@@ -3066,51 +3071,51 @@ void main() {
             return {'id_token': response['idToken']};
           },
           action: () => rpcHandler
-              .verifyPhoneNumberForLinking(
+              .signInWithPhoneNumberForLinking(
                   idToken: 'ID_TOKEN',
                   sessionInfo: 'SESSION_INFO',
                   code: '123456')
               .then((v) => {'id_token': v.response!['id_token']}),
         );
-        test('verifyPhoneNumberForLinking: success using code', () async {
+        test('signInWithPhoneNumberForLinking: success using code', () async {
           await tester.shouldSucceed(
             serverResponse: tokenResponseWithExpiresIn,
           );
         });
 
         test(
-            'verifyPhoneNumberForLinking: invalid request missing session info',
+            'signInWithPhoneNumberForLinking: invalid request missing session info',
             () async {
           expect(
-              () => rpcHandler.verifyPhoneNumberForLinking(
+              () => rpcHandler.signInWithPhoneNumberForLinking(
                   code: '123456', idToken: 'ID_TOKEN'),
               throwsA(FirebaseAuthException.missingSessionInfo()));
         });
 
-        test('verifyPhoneNumberForLinking: invalid request missing code',
+        test('signInWithPhoneNumberForLinking: invalid request missing code',
             () async {
           expect(
-              () => rpcHandler.verifyPhoneNumberForLinking(
+              () => rpcHandler.signInWithPhoneNumberForLinking(
                   sessionInfo: 'SESSION_INFO', idToken: 'ID_TOKEN'),
               throwsA(FirebaseAuthException.missingCode()));
         });
 
-        test('verifyPhoneNumberForLinking: invalid request missing id token',
+        test('signInWithPhoneNumberForLinking: invalid request missing id token',
             () async {
           expect(
-              () => rpcHandler.verifyPhoneNumberForLinking(
+              () => rpcHandler.signInWithPhoneNumberForLinking(
                   sessionInfo: 'SESSION_INFO', code: '123456'),
               throwsA(FirebaseAuthException.internalError()));
         });
 
-        test('verifyPhoneNumberForLinking: unknown server response', () async {
+        test('signInWithPhoneNumberForLinking: unknown server response', () async {
           await tester.shouldFail(
             serverResponse: {},
             expectedError: FirebaseAuthException.internalError(),
           );
         });
 
-        test('verifyPhoneNumberForLinking: caught server error', () async {
+        test('signInWithPhoneNumberForLinking: caught server error', () async {
           await tester.shouldFailWithServerErrors(errorMap: {
             'INVALID_CODE': FirebaseAuthException.invalidCode(),
             'INVALID_SESSION_INFO': FirebaseAuthException.invalidSessionInfo(),
@@ -3122,7 +3127,7 @@ void main() {
           });
         });
 
-        test('verifyPhoneNumberForLinking: credential already in use error',
+        test('signInWithPhoneNumberForLinking: credential already in use error',
             () async {
           await tester.shouldFail(
             serverResponse: {
@@ -3139,7 +3144,7 @@ void main() {
         });
       });
 
-      group('verifyPhoneNumberForExisting', () {
+      group('signInWithPhoneNumberForExisting', () {
         // Token response with expiresIn.
         var tokenResponseWithExpiresIn = {
           'idToken': createMockJwt(uid: 'uid123', providerId: 'phone'),
@@ -3158,38 +3163,38 @@ void main() {
             return {'id_token': response['idToken']};
           },
           action: () => rpcHandler
-              .verifyPhoneNumberForExisting(
+              .signInWithPhoneNumberForExisting(
                   sessionInfo: 'SESSION_INFO', code: '123456')
               .then((v) => {'id_token': v.response!['id_token']}),
         );
 
-        group('verifyPhoneNumberForExisting: using code', () {
-          test('verifyPhoneNumberForExisting: success using code', () async {
+        group('signInWithPhoneNumberForExisting: using code', () {
+          test('signInWithPhoneNumberForExisting: success using code', () async {
             await tester.shouldSucceed(
               serverResponse: tokenResponseWithExpiresIn,
             );
           });
 
           test(
-              'verifyPhoneNumberForExisting: invalid request missing session info',
+              'signInWithPhoneNumberForExisting: invalid request missing session info',
               () async {
             expect(
-                () => rpcHandler.verifyPhoneNumberForExisting(
+                () => rpcHandler.signInWithPhoneNumberForExisting(
                       code: '123456',
                     ),
                 throwsA(FirebaseAuthException.missingSessionInfo()));
           });
 
-          test('verifyPhoneNumberForExisting: invalid request missing code',
+          test('signInWithPhoneNumberForExisting: invalid request missing code',
               () async {
             expect(
-                () => rpcHandler.verifyPhoneNumberForExisting(
+                () => rpcHandler.signInWithPhoneNumberForExisting(
                       sessionInfo: 'SESSION_INFO',
                     ),
                 throwsA(FirebaseAuthException.missingCode()));
           });
 
-          test('verifyPhoneNumberForExisting: unknown server response',
+          test('signInWithPhoneNumberForExisting: unknown server response',
               () async {
             await tester.shouldFail(
               serverResponse: {},
@@ -3197,7 +3202,7 @@ void main() {
             );
           });
 
-          test('verifyPhoneNumberForExisting: caught server error', () async {
+          test('signInWithPhoneNumberForExisting: caught server error', () async {
             await tester.shouldFailWithServerErrors(errorMap: {
               // This should be overridden from the default error mapping.
               'USER_NOT_FOUND': FirebaseAuthException.userDeleted(),
@@ -3214,7 +3219,7 @@ void main() {
           });
         });
 
-        group('verifyPhoneNumberForExisting: using temporary proof', () {
+        group('signInWithPhoneNumberForExisting: using temporary proof', () {
           var t = tester.replace(
             expectedBody: {
               'phoneNumber': '16505550101',
@@ -3222,12 +3227,12 @@ void main() {
               'operation': 'REAUTH'
             },
             action: () => rpcHandler
-                .verifyPhoneNumberForExisting(
+                .signInWithPhoneNumberForExisting(
                     temporaryProof: 'TEMPORARY_PROOF',
                     phoneNumber: '16505550101')
                 .then((v) => {'id_token': v.response!['id_token']}),
           );
-          test('verifyPhoneNumberForExisting: success using temporary proof',
+          test('signInWithPhoneNumberForExisting: success using temporary proof',
               () async {
             await t.shouldSucceed(
               serverResponse: tokenResponseWithExpiresIn,
@@ -3235,20 +3240,20 @@ void main() {
           });
 
           test(
-              'verifyPhoneNumberForExisting: invalid request missing phone number',
+              'signInWithPhoneNumberForExisting: invalid request missing phone number',
               () async {
             expect(
-                () => rpcHandler.verifyPhoneNumberForExisting(
+                () => rpcHandler.signInWithPhoneNumberForExisting(
                       temporaryProof: 'TEMPORARY_PROOF',
                     ),
                 throwsA(FirebaseAuthException.internalError()));
           });
 
           test(
-              'verifyPhoneNumberForExisting: invalid request missing temp proof',
+              'signInWithPhoneNumberForExisting: invalid request missing temp proof',
               () async {
             expect(
-                () => rpcHandler.verifyPhoneNumberForExisting(
+                () => rpcHandler.signInWithPhoneNumberForExisting(
                       phoneNumber: '16505550101',
                     ),
                 throwsA(FirebaseAuthException.internalError()));

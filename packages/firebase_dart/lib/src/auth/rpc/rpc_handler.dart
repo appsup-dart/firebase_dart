@@ -135,10 +135,10 @@ class RpcHandler {
     return response;
   }
 
-  /// Verifies a custom token
+  /// Sign in with a custom token
   ///
   /// Returns a future that resolves with the ID token.
-  Future<openid.Credential> verifyCustomToken(String token) async {
+  Future<openid.Credential> signInWithCustomToken(String token) async {
     var response = await identitytoolkitApi.accounts.signInWithCustomToken(
         GoogleCloudIdentitytoolkitV1SignInWithCustomTokenRequest()
           ..token = token
@@ -153,10 +153,10 @@ class RpcHandler {
     );
   }
 
-  /// Verifies an email link OTP for sign-in
+  /// Sign in with an an email link OTP
   ///
   /// Returns a future that resolves with the ID token.
-  Future<openid.Credential> emailLinkSignIn(
+  Future<openid.Credential> signInWithEmailLink(
       String email, String oobCode) async {
     _validateEmail(email);
     if (oobCode.isEmpty) {
@@ -176,10 +176,10 @@ class RpcHandler {
     );
   }
 
-  /// Verifies a password
+  /// Sign in with a password
   ///
   /// Returns a future that resolves with the ID token.
-  Future<openid.Credential> verifyPassword(
+  Future<openid.Credential> signInWithPassword(
       String email, String? password) async {
     _validateEmail(email);
     _validatePassword(password);
@@ -202,8 +202,7 @@ class RpcHandler {
   /// Creates an email/password account.
   ///
   /// Returns a future that resolves with the ID token.
-  Future<openid.Credential> createAccount(
-      String email, String? password) async {
+  Future<openid.Credential> signUp(String email, String? password) async {
     _validateEmail(email);
     _validateStrongPassword(password);
     var response = await identitytoolkitApi.accounts
@@ -268,8 +267,8 @@ class RpcHandler {
     );
   }
 
-  /// Requests verifyAssertion endpoint
-  Future<openid.Credential> verifyAssertion(
+  /// Sign in with Identity Provider
+  Future<openid.Credential> signInWithIdp(
       {String? sessionId,
       String? requestUri,
       String? postBody,
@@ -286,7 +285,7 @@ class RpcHandler {
       request.autoCreate = false;
     }
 
-    var response = await _verifyAssertion(request);
+    var response = await _signInWithIdp(request);
 
     return _credentialFromIdToken(
         idToken: response.idToken!,
@@ -294,9 +293,9 @@ class RpcHandler {
         expiresIn: response.expiresIn);
   }
 
-  /// Requests verifyAssertion endpoint for federated account linking
+  /// Sign in with Identity Provider for federated account linking
   Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse>
-      verifyAssertionForLinking(
+      signInWithIdpForLinking(
           {String? idToken,
           String? sessionId,
           String? requestUri,
@@ -305,7 +304,7 @@ class RpcHandler {
     if (idToken == null) {
       throw FirebaseAuthException.internalError();
     }
-    return _verifyAssertion(GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
+    return _signInWithIdp(GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
       ..postBody = postBody
       ..pendingIdToken = pendingToken
       ..idToken = idToken
@@ -313,14 +312,14 @@ class RpcHandler {
       ..requestUri = requestUri);
   }
 
-  /// Requests verifyAssertion endpoint for an existing federated account
+  /// Sign in with Identity Platform for an existing federated account
   Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse>
-      verifyAssertionForExisting(
+      signInWithIdpForExisting(
           {String? sessionId,
           String? requestUri,
           String? postBody,
           String? pendingToken}) async {
-    return _verifyAssertion(GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
+    return _signInWithIdp(GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
       ..returnIdpCredential = true
       ..autoCreate = false
       ..postBody = postBody
@@ -329,20 +328,20 @@ class RpcHandler {
       ..sessionId = sessionId);
   }
 
-  Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse> _verifyAssertion(
+  Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse> _signInWithIdp(
       GoogleCloudIdentitytoolkitV1SignInWithIdpRequest request) async {
     // Force Auth credential to be returned on the following errors:
     // FEDERATED_USER_ID_ALREADY_LINKED
     // EMAIL_EXISTS
-    _validateVerifyAssertionRequest(request);
+    _validateSignInWithIdpRequest(request);
     var response = await identitytoolkitApi.accounts.signInWithIdp(request
       ..returnIdpCredential = true
       ..returnSecureToken = true);
     if (response.errorMessage == 'USER_NOT_FOUND') {
       throw FirebaseAuthException.userDeleted();
     }
-    response = _processVerifyAssertionResponse(request, response);
-    _validateVerifyAssertionResponse(response);
+    response = _processSignInWithIdpResponse(request, response);
+    _validateSignInWithIdpResponse(response);
     return response;
   }
 
@@ -622,7 +621,7 @@ class RpcHandler {
   /// Verifies an email link OTP for linking and returns a Promise that resolves
   /// with the ID token.
   Future<GoogleCloudIdentitytoolkitV1SignInWithEmailLinkResponse>
-      emailLinkSignInForLinking(
+      signInWithEmailLinkForLinking(
           String idToken, String email, String oobCode) async {
     if (idToken.isEmpty || oobCode.isEmpty) {
       throw FirebaseAuthException.internalError();
@@ -716,9 +715,8 @@ class RpcHandler {
     return response.sessionInfo!;
   }
 
-  /// Requests verifyPhoneNumber endpoint for sign in/sign up phone number
-  /// authentication flow and resolves with the STS token response.
-  Future<openid.Credential> verifyPhoneNumber(
+  /// Sign in with phone number
+  Future<openid.Credential> signInWithPhoneNumber(
       {String? sessionInfo,
       String? code,
       String? temporaryProof,
@@ -731,7 +729,7 @@ class RpcHandler {
       ..phoneNumber = phoneNumber;
 
     if (reauth) request.operation = 'REAUTH';
-    _validateVerifyPhoneNumberRequest(request);
+    _validateSignInWithPhoneNumberRequest(request);
 
     var response =
         await identitytoolkitApi.accounts.signInWithPhoneNumber(request);
@@ -743,9 +741,8 @@ class RpcHandler {
     );
   }
 
-  /// Requests verifyPhoneNumber endpoint for link/update phone number
-  /// authentication flow and resolves with the STS token response.
-  Future<openid.Credential> verifyPhoneNumberForLinking(
+  /// Sign in with phone number for linking
+  Future<openid.Credential> signInWithPhoneNumberForLinking(
       {String? sessionInfo,
       String? code,
       String? temporaryProof,
@@ -761,7 +758,7 @@ class RpcHandler {
       ..temporaryProof = temporaryProof
       ..phoneNumber = phoneNumber
       ..idToken = idToken;
-    _validateVerifyPhoneNumberRequest(request);
+    _validateSignInWithPhoneNumberRequest(request);
 
     var response =
         await identitytoolkitApi.accounts.signInWithPhoneNumber(request);
@@ -778,9 +775,8 @@ class RpcHandler {
     );
   }
 
-  /// Requests verifyPhoneNumber endpoint for reauthenticating with a phone number
-  /// and resolves with the STS token response.
-  Future<openid.Credential> verifyPhoneNumberForExisting(
+  /// Sign in with phone number for reauthentication
+  Future<openid.Credential> signInWithPhoneNumberForExisting(
       {String? sessionInfo,
       String? code,
       String? temporaryProof,
@@ -791,7 +787,7 @@ class RpcHandler {
       ..temporaryProof = temporaryProof
       ..phoneNumber = phoneNumber
       ..operation = 'REAUTH';
-    _validateVerifyPhoneNumberRequest(request);
+    _validateSignInWithPhoneNumberRequest(request);
 
     var response =
         await identitytoolkitApi.accounts.signInWithPhoneNumber(request);
@@ -810,7 +806,7 @@ class RpcHandler {
 
   /// Validates a request that sends the verification ID and code for a sign in/up
   /// phone Auth flow.
-  void _validateVerifyPhoneNumberRequest(
+  void _validateSignInWithPhoneNumberRequest(
       GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberRequest request) {
     // There are 2 cases here:
     // case 1: sessionInfo and code
@@ -854,7 +850,7 @@ class RpcHandler {
     }
   }
 
-  FirebaseAuthException? _errorFromVerifyAssertionResponse(
+  FirebaseAuthException? _errorFromSignInWithIdpResponse(
       GoogleCloudIdentitytoolkitV1SignInWithIdpResponse response) {
     if (response.needConfirmation ?? false) {
       // Account linking required, previously logged in to another account
@@ -894,11 +890,11 @@ class RpcHandler {
     return null;
   }
 
-  /// Validates a response from verifyAssertion.
-  void _validateVerifyAssertionResponse(
+  /// Validates a response from signInWithIdp.
+  void _validateSignInWithIdpResponse(
       GoogleCloudIdentitytoolkitV1SignInWithIdpResponse response) {
     var error = _errorInfoFromResponse(
-        _errorFromVerifyAssertionResponse(response), response);
+        _errorFromSignInWithIdpResponse(response), response);
     if (error != null) {
       throw error;
     }
@@ -1014,10 +1010,10 @@ class RpcHandler {
     });
   }
 
-  /// Processes the verifyAssertion response and injects the same raw nonce
+  /// Processes the signInWithIdp response and injects the same raw nonce
   /// if available in request.
   GoogleCloudIdentitytoolkitV1SignInWithIdpResponse
-      _processVerifyAssertionResponse(
+      _processSignInWithIdpResponse(
           GoogleCloudIdentitytoolkitV1SignInWithIdpRequest request,
           GoogleCloudIdentitytoolkitV1SignInWithIdpResponse response) {
     // This makes it possible for OIDC providers to:
@@ -1050,8 +1046,8 @@ class RpcHandler {
     return response;
   }
 
-  /// Validates a verifyAssertion request.
-  void _validateVerifyAssertionRequest(
+  /// Validates a signInWithIdp request.
+  void _validateSignInWithIdpRequest(
       GoogleCloudIdentitytoolkitV1SignInWithIdpRequest request) {
     // Either (requestUri and sessionId), (requestUri and postBody) or
     // (requestUri and pendingToken) are required.

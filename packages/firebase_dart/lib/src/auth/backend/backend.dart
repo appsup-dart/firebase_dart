@@ -39,8 +39,9 @@ class BackendConnection {
       ..refreshToken = refreshToken;
   }
 
-  Future<GoogleCloudIdentitytoolkitV1SignInWithPasswordResponse> verifyPassword(
-      GoogleCloudIdentitytoolkitV1SignInWithPasswordRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1SignInWithPasswordResponse>
+      signInWithPassword(
+          GoogleCloudIdentitytoolkitV1SignInWithPasswordRequest request) async {
     var email = request.email;
     if (email == null) {
       throw ArgumentError('Invalid request: missing email');
@@ -79,7 +80,7 @@ class BackendConnection {
   }
 
   Future<GoogleCloudIdentitytoolkitV1SignInWithCustomTokenResponse>
-      verifyCustomToken(
+      signInWithCustomToken(
           GoogleCloudIdentitytoolkitV1SignInWithCustomTokenRequest
               request) async {
     var user = await _userFromIdToken(request.token!);
@@ -214,7 +215,7 @@ class BackendConnection {
   }
 
   Future<GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberResponse>
-      verifyPhoneNumber(
+      signInWithPhoneNumber(
           GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberRequest
               request) async {
     var sessionInfo = request.sessionInfo;
@@ -225,7 +226,7 @@ class BackendConnection {
     if (code == null) {
       throw ArgumentError('Invalid request: missing code');
     }
-    var user = await backend.verifyPhoneNumber(sessionInfo, code);
+    var user = await backend.signInWithPhoneNumber(sessionInfo, code);
 
     var idToken = await backend.generateIdToken(
         uid: user.localId, providerId: 'password');
@@ -238,12 +239,12 @@ class BackendConnection {
       ..refreshToken = refreshToken;
   }
 
-  Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse> verifyAssertion(
+  Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse> signInWithIdp(
       GoogleCloudIdentitytoolkitV1SignInWithIdpRequest request) async {
     var args = Uri.parse('?${request.postBody}').queryParameters;
     try {
       var user =
-          await backend.verifyAssertion(args['providerId']!, args['id_token']!);
+          await backend.signInWithIdp(args['providerId']!, args['id_token']!);
       var idToken = await backend.generateIdToken(
           uid: user.localId, providerId: 'password');
       var refreshToken = await backend.generateRefreshToken(idToken);
@@ -298,7 +299,7 @@ class BackendConnection {
         var request =
             GoogleCloudIdentitytoolkitV1SignInWithPasswordRequest.fromJson(
                 body);
-        return verifyPassword(request);
+        return signInWithPassword(request);
       case 'accounts:createAuthUri':
         var request =
             GoogleCloudIdentitytoolkitV1CreateAuthUriRequest.fromJson(body);
@@ -307,7 +308,7 @@ class BackendConnection {
         var request =
             GoogleCloudIdentitytoolkitV1SignInWithCustomTokenRequest.fromJson(
                 body);
-        return verifyCustomToken(request);
+        return signInWithCustomToken(request);
       case 'accounts:delete':
         var request =
             GoogleCloudIdentitytoolkitV1DeleteAccountRequest.fromJson(body);
@@ -333,11 +334,11 @@ class BackendConnection {
         var request =
             GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberRequest.fromJson(
                 body);
-        return verifyPhoneNumber(request);
+        return signInWithPhoneNumber(request);
       case 'accounts:signInWithIdp':
         var request =
             GoogleCloudIdentitytoolkitV1SignInWithIdpRequest.fromJson(body);
-        return verifyAssertion(request);
+        return signInWithIdp(request);
       case 'accounts:signInWithEmailLink':
         var request =
             GoogleCloudIdentitytoolkitV1SignInWithEmailLinkRequest.fromJson(
@@ -388,9 +389,9 @@ abstract class AuthBackend {
 
   Future<String> sendVerificationCode(String phoneNumber);
 
-  Future<BackendUser> verifyPhoneNumber(String sessionInfo, String code);
+  Future<BackendUser> signInWithPhoneNumber(String sessionInfo, String code);
 
-  Future<BackendUser> verifyAssertion(String providerId, String idToken);
+  Future<BackendUser> signInWithIdp(String providerId, String idToken);
 
   Future<BackendUser> storeUser(BackendUser user);
 
