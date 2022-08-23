@@ -237,27 +237,26 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
   Future<openid.Credential> _getCredential(AuthCredential credential) async {
     if (credential is PhoneAuthCredential) {
-      return await _auth.rpcHandler.signInWithPhoneNumber(
+      return await _auth.rpcHandler.signInWithPhoneNumberForExisting(
           sessionInfo: credential.verificationId,
           code: credential.smsCode,
           phoneNumber: credential.phoneNumber,
-          temporaryProof: credential.temporaryProof,
-          reauth: true);
+          temporaryProof: credential.temporaryProof);
     }
 
     if (credential is OAuthCredential) {
-      return await _auth.rpcHandler.signInWithIdp(
-          postBody: Uri(queryParameters: {
-            if (credential.idToken != null) 'id_token': credential.idToken,
-            if (credential.accessToken != null)
-              'access_token': credential.accessToken,
-            if (credential.secret != null)
-              'oauth_token_secret': credential.secret,
-            'providerId': credential.providerId,
-            if (credential.rawNonce != null) 'nonce': credential.rawNonce
-          }).query,
-          requestUri: 'http://localhost',
-          autoCreate: false);
+      return await _auth.rpcHandler.signInWithIdpForExisting(
+        postBody: Uri(queryParameters: {
+          if (credential.idToken != null) 'id_token': credential.idToken,
+          if (credential.accessToken != null)
+            'access_token': credential.accessToken,
+          if (credential.secret != null)
+            'oauth_token_secret': credential.secret,
+          'providerId': credential.providerId,
+          if (credential.rawNonce != null) 'nonce': credential.rawNonce
+        }).query,
+        requestUri: 'http://localhost',
+      );
     }
 
     if (credential is EmailAuthCredential) {
@@ -276,10 +275,8 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     }
 
     if (credential is FirebaseAppAuthCredential) {
-      return await _auth.rpcHandler.signInWithIdp(
-          sessionId: credential.sessionId,
-          requestUri: credential.link,
-          autoCreate: false);
+      return await _auth.rpcHandler.signInWithIdpForExisting(
+          sessionId: credential.sessionId, requestUri: credential.link);
     }
 
     throw UnimplementedError();

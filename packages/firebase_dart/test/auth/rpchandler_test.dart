@@ -1813,14 +1813,17 @@ void main() {
             'autoCreate': false,
             'returnSecureToken': true
           },
-          action: () => rpcHandler.signInWithIdpForExisting(
-              sessionId: 'SESSION_ID',
-              requestUri: 'http://localhost/callback#oauthResponse'),
+          expectedResult: (v) => v['idToken'],
+          action: () => rpcHandler
+              .signInWithIdpForExisting(
+                  sessionId: 'SESSION_ID',
+                  requestUri: 'http://localhost/callback#oauthResponse')
+              .then((v) => v.idToken.toCompactSerialization()),
         );
         test('signInWithIdpForExisting: success', () async {
           await tester.shouldSucceed(
             serverResponse: {
-              'idToken': 'ID_TOKEN',
+              'idToken': createMockJwt(uid: 'my_id'),
               'oauthAccessToken': 'ACCESS_TOKEN',
               'oauthExpireIn': 3600,
               'oauthAuthorizationCode': 'AUTHORIZATION_CODE'
@@ -1839,26 +1842,22 @@ void main() {
               'autoCreate': false,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.signInWithIdpForExisting(
-                sessionId: 'NONCE',
-                requestUri:
-                    'http://localhost/callback#id_token=ID_TOKEN&state=STATE'),
+            expectedResult: (v) => v['idToken'],
+            action: () => rpcHandler
+                .signInWithIdpForExisting(
+                    sessionId: 'NONCE',
+                    requestUri:
+                        'http://localhost/callback#id_token=ID_TOKEN&state=STATE')
+                .then((v) => v.idToken.toCompactSerialization()),
           );
           test('signInWithIdpForExisting: with session id nonce: success',
               () async {
             await t.shouldSucceed(
               serverResponse: {
-                'idToken': 'ID_TOKEN',
+                'idToken': createMockJwt(uid: 'my_id'),
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'oauthExpireIn': 3600,
                 'providerId': 'oidc.provider'
-              },
-              expectedResult: (_) => {
-                'idToken': 'ID_TOKEN',
-                'oauthIdToken': 'OIDC_ID_TOKEN',
-                'oauthExpireIn': 3600,
-                'providerId': 'oidc.provider',
-                'nonce': 'NONCE'
               },
             );
           });
@@ -1867,33 +1866,29 @@ void main() {
           var t = tester.replace(
             expectedBody: {
               'postBody':
-                  'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                  'id_token=${createMockJwt(uid: 'my_id')}&providerId=oidc.provider&nonce=NONCE',
               'requestUri': 'http://localhost',
               'returnIdpCredential': true,
               // autoCreate flag should be passed and set to false.
               'autoCreate': false,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.signInWithIdpForExisting(
-                postBody:
-                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
-                requestUri: 'http://localhost'),
+            expectedResult: (v) => v['idToken'],
+            action: () => rpcHandler
+                .signInWithIdpForExisting(
+                    postBody:
+                        'id_token=${createMockJwt(uid: 'my_id')}&providerId=oidc.provider&nonce=NONCE',
+                    requestUri: 'http://localhost')
+                .then((v) => v.idToken.toCompactSerialization()),
           );
           test('signInWithIdpForExisting: with post body nonce: success',
               () async {
             await t.shouldSucceed(
               serverResponse: {
-                'idToken': 'ID_TOKEN',
+                'idToken': createMockJwt(uid: 'my_id'),
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'oauthExpireIn': 3600,
                 'providerId': 'oidc.provider',
-              },
-              expectedResult: (_) => {
-                'idToken': 'ID_TOKEN',
-                'oauthIdToken': 'OIDC_ID_TOKEN',
-                'oauthExpireIn': 3600,
-                'providerId': 'oidc.provider',
-                'nonce': 'NONCE'
               },
             );
           });
@@ -1902,23 +1897,26 @@ void main() {
           var t = tester.replace(
             expectedBody: {
               'postBody':
-                  'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                  'id_token=${createMockJwt(uid: 'my_id')}&providerId=oidc.provider&nonce=NONCE',
               'requestUri': 'http://localhost',
               'returnIdpCredential': true,
               // autoCreate flag should be passed and set to false.
               'autoCreate': false,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.signInWithIdpForExisting(
-                postBody:
-                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
-                requestUri: 'http://localhost'),
+            expectedResult: (v) => v['idToken'],
+            action: () => rpcHandler
+                .signInWithIdpForExisting(
+                    postBody:
+                        'id_token=${createMockJwt(uid: 'my_id')}&providerId=oidc.provider&nonce=NONCE',
+                    requestUri: 'http://localhost')
+                .then((v) => v.idToken.toCompactSerialization()),
           );
           test('signInWithIdpForExisting: pending token response: success',
               () async {
             await t.shouldSucceed(
               serverResponse: {
-                'idToken': 'ID_TOKEN',
+                'idToken': createMockJwt(uid: 'my_id'),
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'pendingToken': 'PENDING_TOKEN',
                 'oauthExpireIn': 3600,
@@ -1937,14 +1935,18 @@ void main() {
               'autoCreate': false,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.signInWithIdpForExisting(
-                pendingToken: 'PENDING_TOKEN', requestUri: 'http://localhost'),
+            expectedResult: (v) => v['idToken'],
+            action: () => rpcHandler
+                .signInWithIdpForExisting(
+                    pendingToken: 'PENDING_TOKEN',
+                    requestUri: 'http://localhost')
+                .then((v) => v.idToken.toCompactSerialization()),
           );
           test('signInWithIdpForExisting: pending token request: success',
               () async {
             await t.shouldSucceed(
               serverResponse: {
-                'idToken': 'ID_TOKEN',
+                'idToken': createMockJwt(uid: 'my_id'),
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'pendingToken': 'PENDING_TOKEN2',
                 'oauthExpireIn': 3600
@@ -2973,7 +2975,8 @@ void main() {
             );
           });
 
-          test('signInWithPhoneNumber: success custom locale using code', () async {
+          test('signInWithPhoneNumber: success custom locale using code',
+              () async {
             // Tests successful signInWithPhoneNumber RPC call using an SMS code and passing
             // custom locale.
             httpClient.locale = 'ru';
@@ -3030,7 +3033,8 @@ void main() {
                     temporaryProof: 'TEMPORARY_PROOF')
                 .then((v) => {'id_token': v.response!['id_token']}),
           );
-          test('signInWithPhoneNumber: success using temporary proof', () async {
+          test('signInWithPhoneNumber: success using temporary proof',
+              () async {
             // Tests successful signInWithPhoneNumber RPC call using a temporary proof.
             await t.shouldSucceed(
               serverResponse: tokenResponseWithExpiresIn,
@@ -3100,7 +3104,8 @@ void main() {
               throwsA(FirebaseAuthException.missingCode()));
         });
 
-        test('signInWithPhoneNumberForLinking: invalid request missing id token',
+        test(
+            'signInWithPhoneNumberForLinking: invalid request missing id token',
             () async {
           expect(
               () => rpcHandler.signInWithPhoneNumberForLinking(
@@ -3108,7 +3113,8 @@ void main() {
               throwsA(FirebaseAuthException.internalError()));
         });
 
-        test('signInWithPhoneNumberForLinking: unknown server response', () async {
+        test('signInWithPhoneNumberForLinking: unknown server response',
+            () async {
           await tester.shouldFail(
             serverResponse: {},
             expectedError: FirebaseAuthException.internalError(),
@@ -3169,7 +3175,8 @@ void main() {
         );
 
         group('signInWithPhoneNumberForExisting: using code', () {
-          test('signInWithPhoneNumberForExisting: success using code', () async {
+          test('signInWithPhoneNumberForExisting: success using code',
+              () async {
             await tester.shouldSucceed(
               serverResponse: tokenResponseWithExpiresIn,
             );
@@ -3202,7 +3209,8 @@ void main() {
             );
           });
 
-          test('signInWithPhoneNumberForExisting: caught server error', () async {
+          test('signInWithPhoneNumberForExisting: caught server error',
+              () async {
             await tester.shouldFailWithServerErrors(errorMap: {
               // This should be overridden from the default error mapping.
               'USER_NOT_FOUND': FirebaseAuthException.userDeleted(),
@@ -3232,7 +3240,8 @@ void main() {
                     phoneNumber: '16505550101')
                 .then((v) => {'id_token': v.response!['id_token']}),
           );
-          test('signInWithPhoneNumberForExisting: success using temporary proof',
+          test(
+              'signInWithPhoneNumberForExisting: success using temporary proof',
               () async {
             await t.shouldSucceed(
               serverResponse: tokenResponseWithExpiresIn,

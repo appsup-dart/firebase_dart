@@ -272,18 +272,13 @@ class RpcHandler {
       {String? sessionId,
       String? requestUri,
       String? postBody,
-      String? pendingIdToken,
-      bool autoCreate = true}) async {
+      String? pendingIdToken}) async {
     var request = GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
       ..postBody = postBody
       ..sessionId = sessionId
       ..requestUri = requestUri
       ..returnSecureToken = true
       ..pendingIdToken = pendingIdToken;
-
-    if (!autoCreate) {
-      request.autoCreate = false;
-    }
 
     var response = await _signInWithIdp(request);
 
@@ -313,19 +308,24 @@ class RpcHandler {
   }
 
   /// Sign in with Identity Platform for an existing federated account
-  Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse>
-      signInWithIdpForExisting(
-          {String? sessionId,
-          String? requestUri,
-          String? postBody,
-          String? pendingToken}) async {
-    return _signInWithIdp(GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
-      ..returnIdpCredential = true
-      ..autoCreate = false
-      ..postBody = postBody
-      ..pendingIdToken = pendingToken
-      ..requestUri = requestUri
-      ..sessionId = sessionId);
+  Future<openid.Credential> signInWithIdpForExisting(
+      {String? sessionId,
+      String? requestUri,
+      String? postBody,
+      String? pendingToken}) async {
+    var response =
+        await _signInWithIdp(GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
+          ..returnIdpCredential = true
+          ..autoCreate = false
+          ..postBody = postBody
+          ..pendingIdToken = pendingToken
+          ..requestUri = requestUri
+          ..sessionId = sessionId);
+
+    return _credentialFromIdToken(
+        idToken: response.idToken!,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn);
   }
 
   Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse> _signInWithIdp(
@@ -720,15 +720,13 @@ class RpcHandler {
       {String? sessionInfo,
       String? code,
       String? temporaryProof,
-      String? phoneNumber,
-      bool reauth = false}) async {
+      String? phoneNumber}) async {
     var request = GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberRequest()
       ..sessionInfo = sessionInfo
       ..code = code
       ..temporaryProof = temporaryProof
       ..phoneNumber = phoneNumber;
 
-    if (reauth) request.operation = 'REAUTH';
     _validateSignInWithPhoneNumberRequest(request);
 
     var response =
