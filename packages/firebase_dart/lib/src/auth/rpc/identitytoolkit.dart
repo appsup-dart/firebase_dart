@@ -92,14 +92,6 @@ class _MyApiRequester extends commons.ApiRequester {
 }
 
 class IdentityToolkitApi implements id.IdentityToolkitApi {
-  /// See, edit, configure, and delete your Google Cloud data and see the email
-  /// address for your Google Account.
-  static const cloudPlatformScope =
-      'https://www.googleapis.com/auth/cloud-platform';
-
-  /// View and administer all your Firebase data and settings
-  static const firebaseScope = 'https://www.googleapis.com/auth/firebase';
-
   final commons.ApiRequester _requester;
 
   @override
