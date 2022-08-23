@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:firebase_dart/auth.dart';
+import 'package:firebase_dart/src/auth/rpc/http_util.dart';
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:test/test.dart';
@@ -13,7 +14,7 @@ import 'util.dart';
 
 class Tester {
   static const identityToolkitBaseUrl =
-      'https://www.googleapis.com/identitytoolkit/v3/relyingparty';
+      'https://identitytoolkit.googleapis.com/v1';
 
   final String url;
   final dynamic expectedBody;
@@ -110,14 +111,17 @@ void main() {
   mockOpenidResponses();
 
   group('RpcHandler', () {
-    var rpcHandler = RpcHandler('apiKey', httpClient: mockHttpClient);
+    var httpClient = MetadataClient(mockHttpClient, firebaseAppId: 'app-id');
+    var rpcHandler = RpcHandler('apiKey', httpClient: httpClient);
 
     var pendingCredResponse = {
-      'mfaInfo': {
-        'mfaEnrollmentId': 'ENROLLMENT_UID1',
-        'enrolledAt': clock.now().toIso8601String(),
-        'phoneInfo': '+16505551234'
-      },
+      'mfaInfo': [
+        {
+          'mfaEnrollmentId': 'ENROLLMENT_UID1',
+          'enrolledAt': clock.now().toIso8601String(),
+          'phoneInfo': '+16505551234'
+        }
+      ],
       'mfaPendingCredential': 'PENDING_CREDENTIAL'
     };
 
@@ -128,9 +132,9 @@ void main() {
         isMobile: false,
         isOnline: true) as WebPlatform);
     setUp(() {
-      rpcHandler
-        ..tenantId = null
-        ..updateCustomLocaleHeader(null);
+      rpcHandler.tenantId = null;
+
+      httpClient.locale = null;
 
       initPlatform(platform = Platform.web(
           currentUrl: 'http://localhost',
@@ -141,8 +145,8 @@ void main() {
     group('identitytoolkit', () {
       group('identitytoolkit general', () {
         var tester = Tester(
-          path: 'signupNewUser',
-          expectedBody: {'returnSecureToken': true},
+          path: 'accounts:signUp',
+          expectedBody: {},
           expectedResult: (response) => {'id_token': response['idToken']},
           action: () => rpcHandler
               .signInAnonymously()
@@ -233,7 +237,7 @@ void main() {
 
       group('getAuthorizedDomains', () {
         var tester = Tester(
-            path: 'getProjectConfig',
+            path: 'projects',
             expectedBody: null,
             expectedResult: (response) => response['authorizedDomains'],
             action: () => rpcHandler.getAuthorizedDomains(),
@@ -250,7 +254,7 @@ void main() {
 
       group('getRecaptchaParam', () {
         var tester = Tester(
-            path: 'getRecaptchaParam',
+            path: 'recaptchaParams',
             expectedBody: null,
             action: () => rpcHandler.getRecaptchaParam(),
             method: 'GET');
@@ -272,7 +276,7 @@ void main() {
       });
       group('getDynamicLinkDomain', () {
         var tester = Tester(
-          path: 'getProjectConfig',
+          path: 'projects',
           expectedBody: {'returnDynamicLink': 'true'},
           action: () => rpcHandler.getDynamicLinkDomain(),
           expectedResult: (r) => r['dynamicLinksDomain'],
@@ -315,7 +319,7 @@ void main() {
 
       group('isIosBundleIdValid', () {
         var tester = Tester(
-          path: 'getProjectConfig',
+          path: 'projects',
           expectedBody: {'iosBundleId': 'com.example.app'},
           action: () => rpcHandler.isIosBundleIdValid('com.example.app'),
           expectedResult: (r) => null,
@@ -341,7 +345,7 @@ void main() {
 
       group('isAndroidPackageNameValid', () {
         var tester = Tester(
-          path: 'getProjectConfig',
+          path: 'projects',
           expectedBody: {'androidPackageName': 'com.example.app'},
           expectedResult: (r) => null,
           method: 'GET',
@@ -398,7 +402,7 @@ void main() {
 
       group('isOAuthCliendIdValid', () {
         var tester = Tester(
-          path: 'getProjectConfig',
+          path: 'projects',
           expectedBody: {'clientId': '123456.apps.googleusercontent.com'},
           action: () => rpcHandler
               .isOAuthClientIdValid('123456.apps.googleusercontent.com'),
@@ -425,7 +429,7 @@ void main() {
       group('fetchSignInMethodsForIdentifier', () {
         var identifier = 'user@example.com';
         var tester = Tester(
-          path: 'createAuthUri',
+          path: 'accounts:createAuthUri',
           expectedBody: () =>
               {'identifier': identifier, 'continueUri': platform.currentUrl},
           action: () => rpcHandler.fetchSignInMethodsForIdentifier(identifier),
@@ -505,7 +509,7 @@ void main() {
       group('fetchProvidersForIdentifier', () {
         var identifier = 'MY_ID';
         var tester = Tester(
-          path: 'createAuthUri',
+          path: 'accounts:createAuthUri',
           expectedBody: () =>
               {'identifier': identifier, 'continueUri': platform.currentUrl},
           action: () => rpcHandler.fetchProvidersForIdentifier(identifier),
@@ -579,7 +583,7 @@ void main() {
       });
       group('getAccountInfoByIdToken', () {
         var tester = Tester(
-          path: 'getAccountInfo',
+          path: 'accounts:lookup',
           expectedBody: {'idToken': 'ID_TOKEN'},
           action: () => rpcHandler.getAccountInfoByIdToken('ID_TOKEN'),
         );
@@ -620,7 +624,7 @@ void main() {
       });
       group('verifyCustomToken', () {
         var tester = Tester(
-          path: 'verifyCustomToken',
+          path: 'accounts:signInWithCustomToken',
           expectedBody: {'token': 'CUSTOM_TOKEN', 'returnSecureToken': true},
           expectedResult: (response) {
             return {'id_token': response['idToken']};
@@ -633,13 +637,6 @@ void main() {
         test('verifyCustomToken: success', () async {
           await tester.shouldSucceed(
             serverResponse: {'idToken': createMockJwt(uid: 'my_id')},
-          );
-        });
-
-        test('verifyCustomToken: multi factor required', () async {
-          await tester.shouldFail(
-            expectedError: FirebaseAuthException.mfaRequired(),
-            serverResponse: pendingCredResponse,
           );
         });
 
@@ -691,11 +688,10 @@ void main() {
 
       group('emailLinkSignIn', () {
         var tester = Tester(
-            path: 'emailLinkSignin',
+            path: 'accounts:signInWithEmailLink',
             expectedBody: {
               'email': 'user@example.com',
               'oobCode': 'OTP_CODE',
-              'returnSecureToken': true
             },
             expectedResult: (response) {
               return {'id_token': response['idToken']};
@@ -722,7 +718,6 @@ void main() {
             expectedBody: {
               'email': 'user@example.com',
               'oobCode': 'OTP_CODE',
-              'returnSecureToken': true,
               'tenantId': 'TENANT_ID'
             },
             serverResponse: {'idToken': createMockJwt(uid: 'user1')},
@@ -756,11 +751,10 @@ void main() {
 
       group('createAccount', () {
         var tester = Tester(
-          path: 'signupNewUser',
+          path: 'accounts:signUp',
           expectedBody: {
             'email': 'uid123@fake.com',
             'password': 'mysupersecretpassword',
-            'returnSecureToken': true
           },
           expectedResult: (response) {
             return {'id_token': response['idToken']};
@@ -780,7 +774,6 @@ void main() {
             expectedBody: {
               'email': 'uid123@fake.com',
               'password': 'mysupersecretpassword',
-              'returnSecureToken': true,
               'tenantId': '123456789012'
             },
             serverResponse: {'idToken': createMockJwt(uid: 'user1')},
@@ -824,7 +817,7 @@ void main() {
 
       group('deleteAccount', () {
         var tester = Tester(
-            path: 'deleteAccount',
+            path: 'accounts:delete',
             expectedBody: {'idToken': 'ID_TOKEN'},
             action: () => rpcHandler.deleteAccount('ID_TOKEN'),
             expectedResult: (_) => null);
@@ -857,7 +850,7 @@ void main() {
 
       group('verifyPassword', () {
         var tester = Tester(
-            path: 'verifyPassword',
+            path: 'accounts:signInWithPassword',
             expectedBody: {
               'email': 'uid123@fake.com',
               'password': 'mysupersecretpassword',
@@ -943,8 +936,8 @@ void main() {
 
       group('signInAnonymously', () {
         var tester = Tester(
-          path: 'signupNewUser',
-          expectedBody: {'returnSecureToken': true},
+          path: 'accounts:signUp',
+          expectedBody: {},
           expectedResult: (response) => {'id_token': response['idToken']},
           action: () => rpcHandler
               .signInAnonymously()
@@ -961,10 +954,7 @@ void main() {
         test('signInAnonymously: tenant id', () async {
           rpcHandler.tenantId = '123456789012';
           await tester.shouldSucceed(
-            expectedBody: {
-              'returnSecureToken': true,
-              'tenantId': '123456789012'
-            },
+            expectedBody: {'tenantId': '123456789012'},
             serverResponse: {
               'idToken': createMockJwt(
                   uid: generateRandomString(24), providerId: 'anonymous')
@@ -974,10 +964,7 @@ void main() {
         test('signInAnonymously: unsupported tenant operation', () async {
           rpcHandler.tenantId = '123456789012';
           await tester.shouldFailWithServerErrors(
-            expectedBody: {
-              'returnSecureToken': true,
-              'tenantId': '123456789012'
-            },
+            expectedBody: {'tenantId': '123456789012'},
             errorMap: {
               'UNSUPPORTED_TENANT_OPERATION':
                   FirebaseAuthException.unsupportedTenantOperation(),
@@ -994,7 +981,7 @@ void main() {
       });
       group('verifyAssertion', () {
         var tester = Tester(
-          path: 'verifyAssertion',
+          path: 'accounts:signInWithIdp',
           expectedBody: {
             'sessionId': 'SESSION_ID',
             'requestUri': 'http://localhost/callback#oauthResponse',
@@ -1641,7 +1628,7 @@ void main() {
 
       group('verifyAssertionForLinking', () {
         var tester = Tester(
-          path: 'verifyAssertion',
+          path: 'accounts:signInWithIdp',
           expectedBody: {
             'idToken': 'existingIdToken',
             'sessionId': 'SESSION_ID',
@@ -1832,7 +1819,7 @@ void main() {
 
       group('verifyAssertionForExisting', () {
         var tester = Tester(
-          path: 'verifyAssertion',
+          path: 'accounts:signInWithIdp',
           expectedBody: {
             'sessionId': 'SESSION_ID',
             'requestUri': 'http://localhost/callback#oauthResponse',
@@ -2076,7 +2063,7 @@ void main() {
       group('sendSignInLinkToEmail', () {
         var userEmail = 'user@example.com';
         var tester = Tester(
-          path: 'getOobConfirmationCode',
+          path: 'accounts:sendOobCode',
           expectedBody: {
             'requestType': 'EMAIL_SIGNIN',
             'email': userEmail,
@@ -2108,7 +2095,7 @@ void main() {
             );
           });
           test('sendSignInLinkToEmail: success: custom locale', () async {
-            rpcHandler.updateCustomLocaleHeader('es');
+            httpClient.locale = 'es';
             await tester.shouldSucceed(
               serverResponse: {'email': userEmail},
               expectedHeaders: {
@@ -2155,7 +2142,7 @@ void main() {
       group('sendPasswordResetEmail', () {
         var userEmail = 'user@example.com';
         var tester = Tester(
-            path: 'getOobConfirmationCode',
+            path: 'accounts:sendOobCode',
             expectedBody: {
               'requestType': 'PASSWORD_RESET',
               'email': userEmail,
@@ -2202,7 +2189,7 @@ void main() {
 
           test('sendPasswordResetEmail: success: custom locale: no action code',
               () async {
-            rpcHandler.updateCustomLocaleHeader('es');
+            httpClient.locale = 'es';
 
             await tester.shouldSucceed(
               serverResponse: {'email': userEmail},
@@ -2249,7 +2236,7 @@ void main() {
         var idToken = 'ID_TOKEN';
         var userEmail = 'user@example.com';
         var tester = Tester(
-          path: 'getOobConfirmationCode',
+          path: 'accounts:sendOobCode',
           expectedBody: {
             'requestType': 'VERIFY_EMAIL',
             'idToken': idToken,
@@ -2293,7 +2280,7 @@ void main() {
           test(
               'sendEmailVerification: success: custom locale: no action code settings',
               () async {
-            rpcHandler.updateCustomLocaleHeader('ar');
+            httpClient.locale = 'ar';
             await t.shouldSucceed(
               serverResponse: {'email': userEmail},
               expectedHeaders: {
@@ -2332,7 +2319,7 @@ void main() {
         var newPassword = 'newPass';
         var code = 'PASSWORD_RESET_OOB_CODE';
         var tester = Tester(
-          path: 'resetPassword',
+          path: 'accounts:resetPassword',
           expectedBody: {'oobCode': code, 'newPassword': newPassword},
           expectedResult: (_) => userEmail,
           action: () => rpcHandler.confirmPasswordReset(code, newPassword),
@@ -2366,7 +2353,7 @@ void main() {
       group('checkActionCode', () {
         var code = 'REVOKE_EMAIL_OOB_CODE';
         var tester = Tester(
-          path: 'resetPassword',
+          path: 'accounts:resetPassword',
           expectedBody: {'oobCode': code},
           action: () => rpcHandler.checkActionCode(code),
         );
@@ -2424,7 +2411,7 @@ void main() {
         var userEmail = 'user@example.com';
         var code = 'EMAIL_VERIFICATION_OOB_CODE';
         var tester = Tester(
-          path: 'setAccountInfo',
+          path: 'accounts:update',
           expectedBody: {'oobCode': code},
           action: () => rpcHandler.applyActionCode(code),
           expectedResult: (_) => userEmail,
@@ -2460,7 +2447,7 @@ void main() {
       });
       group('deleteLinkedAccounts', () {
         var tester = Tester(
-          path: 'setAccountInfo',
+          path: 'accounts:update',
           expectedBody: {
             'idToken': 'ID_TOKEN',
             'deleteProvider': ['github.com', 'facebook.com']
@@ -2493,7 +2480,7 @@ void main() {
 
       group('updateProfile', () {
         var tester = Tester(
-          path: 'setAccountInfo',
+          path: 'accounts:update',
           expectedBody: {
             'idToken': 'ID_TOKEN',
             'displayName': 'John Doe',
@@ -2575,7 +2562,7 @@ void main() {
 
       group('updateEmail', () {
         var tester = Tester(
-          path: 'setAccountInfo',
+          path: 'accounts:update',
           expectedBody: {
             'idToken': 'ID_TOKEN',
             'email': 'newuser@example.com',
@@ -2591,7 +2578,7 @@ void main() {
         });
 
         test('updateEmail: custom locale success', () async {
-          rpcHandler.updateCustomLocaleHeader('tr');
+          httpClient.locale = 'tr';
           await tester.shouldSucceed(
             serverResponse: {'email': 'newuser@example.com'},
             expectedHeaders: {
@@ -2609,7 +2596,7 @@ void main() {
 
       group('updatePassword', () {
         var tester = Tester(
-          path: 'setAccountInfo',
+          path: 'accounts:update',
           expectedBody: {
             'idToken': 'ID_TOKEN',
             'password': 'newPassword',
@@ -2631,7 +2618,7 @@ void main() {
 
       group('updateEmailAndPassword', () {
         var tester = Tester(
-          path: 'setAccountInfo',
+          path: 'accounts:update',
           expectedBody: {
             'idToken': 'ID_TOKEN',
             'email': 'me@gmail.com',
@@ -2662,12 +2649,11 @@ void main() {
 
       group('emailLinkSignInForLinking', () {
         var tester = Tester(
-          path: 'emailLinkSignin',
+          path: 'accounts:signInWithEmailLink',
           expectedBody: {
             'idToken': 'ID_TOKEN',
             'email': 'user@example.com',
             'oobCode': 'OTP_CODE',
-            'returnSecureToken': true
           },
           action: () => rpcHandler.emailLinkSignInForLinking(
               'ID_TOKEN', 'user@example.com', 'OTP_CODE'),
@@ -2730,7 +2716,7 @@ void main() {
           'login_hint': 'user@example.com'
         };
         var tester = Tester(
-          path: 'createAuthUri',
+          path: 'accounts:createAuthUri',
           expectedBody: {
             'identifier': 'user@example.com',
             'providerId': 'google.com',
@@ -2918,7 +2904,7 @@ void main() {
 
       group('sendVerificationCode', () {
         var tester = Tester(
-          path: 'sendVerificationCode',
+          path: 'accounts:sendVerificationCode',
           expectedBody: {
             'phoneNumber': '15551234567',
             'recaptchaToken': 'RECAPTCHA_TOKEN'
@@ -2980,7 +2966,7 @@ void main() {
         };
 
         var tester = Tester(
-          path: 'verifyPhoneNumber',
+          path: 'accounts:signInWithPhoneNumber',
           expectedBody: {'sessionInfo': 'SESSION_INFO', 'code': '123456'},
           expectedResult: (response) {
             return {'id_token': response['idToken']};
@@ -3002,7 +2988,7 @@ void main() {
           test('verifyPhoneNumber: success custom locale using code', () async {
             // Tests successful verifyPhoneNumber RPC call using an SMS code and passing
             // custom locale.
-            rpcHandler.updateCustomLocaleHeader('ru');
+            httpClient.locale = 'ru';
             await tester.shouldSucceed(
                 serverResponse: tokenResponseWithExpiresIn,
                 expectedHeaders: {
@@ -3085,7 +3071,7 @@ void main() {
         };
 
         var tester = Tester(
-          path: 'verifyPhoneNumber',
+          path: 'accounts:signInWithPhoneNumber',
           expectedBody: {
             'sessionInfo': 'SESSION_INFO',
             'code': '123456',
@@ -3177,7 +3163,7 @@ void main() {
         };
 
         var tester = Tester(
-          path: 'verifyPhoneNumber',
+          path: 'accounts:signInWithPhoneNumber',
           expectedBody: {
             'sessionInfo': 'SESSION_INFO',
             'code': '123456',
@@ -3288,7 +3274,7 @@ void main() {
       group('Send Firebase backend request', () {
         var identifier = 'user@example.com';
         var tester = Tester(
-          path: 'createAuthUri',
+          path: 'accounts:createAuthUri',
           expectedBody: {
             'identifier': identifier,
             'continueUri': platform.currentUrl

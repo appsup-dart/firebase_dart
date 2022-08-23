@@ -26,7 +26,7 @@ abstract class BaseRecaptchaVerifier implements ApplicationVerifier {
 
   Future<String?> getRecaptchaParameters(FirebaseAuthImpl auth) async {
     var rpcHandler = auth.rpcHandler;
-    var response = await rpcHandler.relyingparty.getRecaptchaParam();
+    var response = await rpcHandler.getRecaptchaParam();
     return response.recaptchaSiteKey;
   }
 

@@ -8,13 +8,13 @@ import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart' as auth_lib;
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
-import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:firebase_dart/src/database/impl/memory_backend.dart'
     as database;
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/isolate.dart';
 import 'package:firebase_dart/src/implementation/isolate/util.dart';
+import 'package:firebaseapis/identitytoolkit/v1.dart';
 import 'package:test/test.dart';
 
 import 'jwt_util.dart';
@@ -671,8 +671,8 @@ class Tester {
       ..email = 'user@example.com'
       ..rawPassword = 'password'
       ..providerUserInfo = [
-        UserInfoProviderUserInfo()..providerId = 'password',
-        UserInfoProviderUserInfo()
+        GoogleCloudIdentitytoolkitV1ProviderUserInfo()..providerId = 'password',
+        GoogleCloudIdentitytoolkitV1ProviderUserInfo()
           ..providerId = 'google.com'
           ..rawId = 'google_user_1',
       ]);

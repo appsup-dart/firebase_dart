@@ -44,6 +44,29 @@ class MetadataClient extends http.BaseClient {
   }
 }
 
+class ApiKeyClient extends http.BaseClient {
+  final http.Client baseClient;
+
+  final String apiKey;
+
+  ApiKeyClient(this.baseClient, {required this.apiKey});
+
+  @override
+  void close() {
+    baseClient.close();
+  }
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    final modifiedRequest = RequestImpl(
+        request.method,
+        request.url.replace(
+            queryParameters: {...request.url.queryParameters, 'key': apiKey}),
+        request.finalize());
+    return baseClient.send(modifiedRequest);
+  }
+}
+
 class RequestImpl extends http.BaseRequest {
   final Stream<List<int>> _stream;
 

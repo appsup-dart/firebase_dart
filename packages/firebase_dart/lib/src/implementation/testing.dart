@@ -165,7 +165,8 @@ class TestClient extends http.BaseClient {
 
     var httpClient = ProxyClient({
       ...openIdClient.clients,
-      RegExp('https://www.googleapis.com/.*'): http.MockClient((r) async {
+      RegExp('https://identitytoolkit.googleapis.com/.*'):
+          http.MockClient((r) async {
         var apiKey = r.url.queryParameters['key'];
         if (apiKey == null) {
           throw FirebaseAuthException.invalidApiKey();

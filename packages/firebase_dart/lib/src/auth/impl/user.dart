@@ -3,9 +3,8 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/rpc/error.dart';
-import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart'
-    show SetAccountInfoResponse;
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
+import 'package:firebaseapis/identitytoolkit/v1.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 import 'package:rxdart/rxdart.dart';
 
@@ -427,9 +426,15 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   /// Updates the current tokens using a server response, if new tokens are
   /// present and are different from the current ones, and notify the Auth
   /// listeners.
-  void _updateTokensIfPresent(SetAccountInfoResponse response) async {
+  void _updateTokensIfPresent(
+      GoogleCloudIdentitytoolkitV1SetAccountInfoResponse response) async {
     if (response.idToken != null && _lastAccessToken != response.idToken) {
-      _credential = await _rpcHandler.handleIdTokenResponse(response);
+      _credential = await _rpcHandler.handleIdTokenResponse(
+        idToken: response.idToken,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn,
+        mfaPendingCredential: null,
+      );
 
       _lastAccessToken = response.idToken;
 

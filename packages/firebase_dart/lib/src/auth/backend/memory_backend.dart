@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:firebase_dart/src/auth/error.dart';
-import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:firebase_dart/src/util/store.dart';
+import 'package:firebaseapis/identitytoolkit/v1.dart';
 import 'package:jose/jose.dart';
 import 'package:openid_client/openid_client.dart';
 import 'package:collection/collection.dart';
@@ -44,7 +44,8 @@ class StoreBackend extends BaseBackend {
           .firstWhereOrNull((element) => element.providerId == 'password');
 
       if (info == null) {
-        info = UserInfoProviderUserInfo()..providerId = 'password';
+        info = GoogleCloudIdentitytoolkitV1ProviderUserInfo()
+          ..providerId = 'password';
         providerUserInfo.add(info);
       }
 

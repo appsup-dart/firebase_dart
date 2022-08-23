@@ -3,21 +3,20 @@ import 'dart:convert';
 import 'package:firebase_dart/src/auth/providers/saml.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/util/proxy.dart';
-import 'package:googleapis_auth/auth_browser.dart'
-    if (dart.library.io) 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 import 'package:openid_client/openid_client.dart' as openid;
+import 'identitytoolkit.dart';
 
 import '../action_code.dart';
 import '../auth_credential.dart';
 import '../auth_provider.dart';
 import '../error.dart';
 import 'error.dart';
-import 'identitytoolkit.dart';
+import 'http_util.dart';
 
 class RpcHandler {
-  final IdentitytoolkitApi identitytoolkitApi;
+  final IdentityToolkitApi identitytoolkitApi;
 
   final http.Client httpClient;
 
@@ -25,8 +24,6 @@ class RpcHandler {
 
   /// The tenant ID.
   String? tenantId;
-
-  RelyingpartyResource get relyingparty => identitytoolkitApi.relyingparty;
 
   RpcHandler(this.apiKey, {required http.Client? httpClient})
       : httpClient = ProxyClient({
@@ -50,18 +47,19 @@ class RpcHandler {
           }),
           RegExp('.*'): httpClient ?? http.Client(),
         }),
-        identitytoolkitApi =
-            IdentitytoolkitApi(clientViaApiKey(apiKey, baseClient: httpClient));
+        identitytoolkitApi = IdentityToolkitApi(
+            ApiKeyClient(httpClient ?? http.Client(), apiKey: apiKey));
 
   /// Gets the list of authorized domains for the specified project.
   Future<List<String>?> getAuthorizedDomains() async {
-    var response = await relyingparty.getProjectConfig();
+    var response = await identitytoolkitApi.v1.getProjects();
     return response.authorizedDomains;
   }
 
   /// reCAPTCHA.
-  Future<GetRecaptchaParamResponse> getRecaptchaParam() async {
-    var response = await relyingparty.getRecaptchaParam();
+  Future<GoogleCloudIdentitytoolkitV1GetRecaptchaParamResponse>
+      getRecaptchaParam() async {
+    var response = await identitytoolkitApi.v1.getRecaptchaParams();
 
     if (response.recaptchaSiteKey == null) {
       throw FirebaseAuthException.internalError();
@@ -72,8 +70,8 @@ class RpcHandler {
 
   /// Gets the list of authorized domains for the specified project.
   Future<String?> getDynamicLinkDomain() async {
-    var response = await relyingparty.getProjectConfig(
-        $fields: _toQueryString({'returnDynamicLink': 'true'}));
+    var response = await identitytoolkitApi.v1
+        .getProjects($fields: _toQueryString({'returnDynamicLink': 'true'}));
 
     if (response.dynamicLinksDomain == null) {
       throw FirebaseAuthException.internalError();
@@ -85,8 +83,8 @@ class RpcHandler {
   Future<void> isIosBundleIdValid(String iosBundleId) async {
     // This will either resolve if the identifier is valid or throw
     // INVALID_APP_ID if not.
-    await relyingparty.getProjectConfig(
-        $fields: _toQueryString({'iosBundleId': iosBundleId}));
+    await identitytoolkitApi.v1
+        .getProjects($fields: _toQueryString({'iosBundleId': iosBundleId}));
   }
 
   /// Checks if the provided Android package name belongs to the project.
@@ -96,7 +94,7 @@ class RpcHandler {
     // valid or throw INVALID_APP_ID if not.
     // When sha1Cert is also passed, this will either resolve or fail with an
     // INVALID_CERT_HASH error.
-    await relyingparty.getProjectConfig(
+    await identitytoolkitApi.v1.getProjects(
       $fields: _toQueryString({
         'androidPackageName': androidPackageName,
         // This is relevant for the native Android SDK flow.
@@ -111,8 +109,8 @@ class RpcHandler {
   Future<void> isOAuthClientIdValid(String clientId) async {
     // This will either resolve if the client ID is valid or throw
     // INVALID_OAUTH_CLIENT_ID if not.
-    await relyingparty.getProjectConfig(
-        $fields: _toQueryString({'clientId': clientId}));
+    await identitytoolkitApi.v1
+        .getProjects($fields: _toQueryString({'clientId': clientId}));
   }
 
   /// Returns the list of sign in methods for the given identifier.
@@ -129,9 +127,10 @@ class RpcHandler {
   }
 
   /// Requests getAccountInfo endpoint using an ID token.
-  Future<GetAccountInfoResponse> getAccountInfoByIdToken(String idToken) async {
-    var response = await _handle(() => identitytoolkitApi.relyingparty
-        .getAccountInfo(IdentitytoolkitRelyingpartyGetAccountInfoRequest()
+  Future<GoogleCloudIdentitytoolkitV1GetAccountInfoResponse>
+      getAccountInfoByIdToken(String idToken) async {
+    var response = await _handle(() => identitytoolkitApi.accounts.lookup(
+        GoogleCloudIdentitytoolkitV1GetAccountInfoRequest()
           ..idToken = idToken));
     return response;
   }
@@ -140,13 +139,18 @@ class RpcHandler {
   ///
   /// Returns a future that resolves with the ID token.
   Future<openid.Credential> verifyCustomToken(String token) async {
-    var response = await relyingparty
-        .verifyCustomToken(IdentitytoolkitRelyingpartyVerifyCustomTokenRequest()
+    var response = await identitytoolkitApi.accounts.signInWithCustomToken(
+        GoogleCloudIdentitytoolkitV1SignInWithCustomTokenRequest()
           ..token = token
           ..returnSecureToken = true
           ..tenantId = tenantId);
 
-    return handleIdTokenResponse(response);
+    return handleIdTokenResponse(
+      idToken: response.idToken,
+      refreshToken: response.refreshToken,
+      expiresIn: response.expiresIn,
+      mfaPendingCredential: null,
+    );
   }
 
   /// Verifies an email link OTP for sign-in
@@ -158,14 +162,18 @@ class RpcHandler {
     if (oobCode.isEmpty) {
       throw FirebaseAuthException.internalError();
     }
-    var response = await relyingparty
-        .emailLinkSignin(IdentitytoolkitRelyingpartyEmailLinkSigninRequest()
+    var response = await identitytoolkitApi.accounts.signInWithEmailLink(
+        GoogleCloudIdentitytoolkitV1SignInWithEmailLinkRequest()
           ..email = email
           ..oobCode = oobCode
-          ..returnSecureToken = true
           ..tenantId = tenantId);
 
-    return handleIdTokenResponse(response);
+    return handleIdTokenResponse(
+      idToken: response.idToken,
+      refreshToken: response.refreshToken,
+      expiresIn: response.expiresIn,
+      mfaPendingCredential: response.mfaPendingCredential,
+    );
   }
 
   /// Verifies a password
@@ -176,14 +184,19 @@ class RpcHandler {
     _validateEmail(email);
     _validatePassword(password);
 
-    var response = await relyingparty
-        .verifyPassword(IdentitytoolkitRelyingpartyVerifyPasswordRequest()
+    var response = await identitytoolkitApi.accounts.signInWithPassword(
+        GoogleCloudIdentitytoolkitV1SignInWithPasswordRequest()
           ..email = email
           ..password = password
           ..returnSecureToken = true
           ..tenantId = tenantId);
 
-    return handleIdTokenResponse(response);
+    return handleIdTokenResponse(
+      idToken: response.idToken,
+      refreshToken: response.refreshToken,
+      expiresIn: response.expiresIn,
+      mfaPendingCredential: response.mfaPendingCredential,
+    );
   }
 
   /// Creates an email/password account.
@@ -193,14 +206,18 @@ class RpcHandler {
       String email, String? password) async {
     _validateEmail(email);
     _validateStrongPassword(password);
-    var response = await relyingparty
-        .signupNewUser(IdentitytoolkitRelyingpartySignupNewUserRequest()
+    var response = await identitytoolkitApi.accounts
+        .signUp(GoogleCloudIdentitytoolkitV1SignUpRequest()
           ..email = email
           ..password = password
-          ..returnSecureToken = true
           ..tenantId = tenantId);
 
-    return handleIdTokenResponse(response);
+    return handleIdTokenResponse(
+      idToken: response.idToken,
+      refreshToken: response.refreshToken,
+      expiresIn: response.expiresIn,
+      mfaPendingCredential: null,
+    );
   }
 
   /// Deletes the user's account corresponding to the idToken given.
@@ -209,8 +226,9 @@ class RpcHandler {
       throw FirebaseAuthException.internalError();
     }
     try {
-      await relyingparty.deleteAccount(
-          IdentitytoolkitRelyingpartyDeleteAccountRequest()..idToken = idToken);
+      await identitytoolkitApi.accounts.delete(
+          GoogleCloudIdentitytoolkitV1DeleteAccountRequest()
+            ..idToken = idToken);
     } on FirebaseAuthException catch (e) {
       if (e.code == FirebaseAuthException.userDeleted().code) {
         throw FirebaseAuthException.tokenExpired();
@@ -223,10 +241,8 @@ class RpcHandler {
   ///
   /// Returns a future that resolves with the ID token.
   Future<openid.Credential> signInAnonymously() async {
-    var response = await relyingparty
-        .signupNewUser(IdentitytoolkitRelyingpartySignupNewUserRequest()
-          ..returnSecureToken = true
-          ..tenantId = tenantId);
+    var response = await identitytoolkitApi.accounts.signUp(
+        GoogleCloudIdentitytoolkitV1SignUpRequest()..tenantId = tenantId);
 
     if (response.idToken == null) {
       throw FirebaseAuthException.internalError();
@@ -259,10 +275,11 @@ class RpcHandler {
       String? postBody,
       String? pendingIdToken,
       bool autoCreate = true}) async {
-    var request = IdentitytoolkitRelyingpartyVerifyAssertionRequest()
+    var request = GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
       ..postBody = postBody
       ..sessionId = sessionId
       ..requestUri = requestUri
+      ..returnSecureToken = true
       ..pendingIdToken = pendingIdToken;
 
     if (!autoCreate) {
@@ -278,16 +295,17 @@ class RpcHandler {
   }
 
   /// Requests verifyAssertion endpoint for federated account linking
-  Future<VerifyAssertionResponse> verifyAssertionForLinking(
-      {String? idToken,
-      String? sessionId,
-      String? requestUri,
-      String? postBody,
-      String? pendingToken}) async {
+  Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse>
+      verifyAssertionForLinking(
+          {String? idToken,
+          String? sessionId,
+          String? requestUri,
+          String? postBody,
+          String? pendingToken}) async {
     if (idToken == null) {
       throw FirebaseAuthException.internalError();
     }
-    return _verifyAssertion(IdentitytoolkitRelyingpartyVerifyAssertionRequest()
+    return _verifyAssertion(GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
       ..postBody = postBody
       ..pendingIdToken = pendingToken
       ..idToken = idToken
@@ -296,12 +314,13 @@ class RpcHandler {
   }
 
   /// Requests verifyAssertion endpoint for an existing federated account
-  Future<VerifyAssertionResponse> verifyAssertionForExisting(
-      {String? sessionId,
-      String? requestUri,
-      String? postBody,
-      String? pendingToken}) async {
-    return _verifyAssertion(IdentitytoolkitRelyingpartyVerifyAssertionRequest()
+  Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse>
+      verifyAssertionForExisting(
+          {String? sessionId,
+          String? requestUri,
+          String? postBody,
+          String? pendingToken}) async {
+    return _verifyAssertion(GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
       ..returnIdpCredential = true
       ..autoCreate = false
       ..postBody = postBody
@@ -310,13 +329,13 @@ class RpcHandler {
       ..sessionId = sessionId);
   }
 
-  Future<VerifyAssertionResponse> _verifyAssertion(
-      IdentitytoolkitRelyingpartyVerifyAssertionRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse> _verifyAssertion(
+      GoogleCloudIdentitytoolkitV1SignInWithIdpRequest request) async {
     // Force Auth credential to be returned on the following errors:
     // FEDERATED_USER_ID_ALREADY_LINKED
     // EMAIL_EXISTS
     _validateVerifyAssertionRequest(request);
-    var response = await relyingparty.verifyAssertion(request
+    var response = await identitytoolkitApi.accounts.signInWithIdp(request
       ..returnIdpCredential = true
       ..returnSecureToken = true);
     if (response.errorMessage == 'USER_NOT_FOUND') {
@@ -330,7 +349,8 @@ class RpcHandler {
   static String _toQueryString(Map<String, String> queryParameters) =>
       Uri(queryParameters: queryParameters).query;
 
-  Future<CreateAuthUriResponse> _createAuthUri(String identifier) async {
+  Future<GoogleCloudIdentitytoolkitV1CreateAuthUriResponse> _createAuthUri(
+      String identifier) async {
     // createAuthUri returns an error if continue URI is not http or https.
     // For environments like Cordova, Chrome extensions, native frameworks, file
     // systems, etc, use http://localhost as continue URL.
@@ -340,8 +360,8 @@ class RpcHandler {
     if (!['http', 'https'].contains(Uri.parse(continueUri).scheme)) {
       continueUri = 'http://localhost';
     }
-    var response = await identitytoolkitApi.relyingparty
-        .createAuthUri(IdentitytoolkitRelyingpartyCreateAuthUriRequest()
+    var response = await identitytoolkitApi.accounts
+        .createAuthUri(GoogleCloudIdentitytoolkitV1CreateAuthUriRequest()
           ..identifier = identifier
           ..continueUri = continueUri
           ..tenantId = tenantId);
@@ -370,13 +390,18 @@ class RpcHandler {
     }
   }
 
-  Future<openid.Credential> handleIdTokenResponse(IdTokenResponse response) {
-    _validateIdTokenResponse(response);
+  Future<openid.Credential> handleIdTokenResponse(
+      {required String? idToken,
+      required String? refreshToken,
+      required String? expiresIn,
+      required String? mfaPendingCredential}) async {
+    _validateIdTokenResponse(
+      idToken: idToken,
+      mfaPendingCredential: mfaPendingCredential,
+    );
 
     return _credentialFromIdToken(
-        idToken: response.idToken!,
-        refreshToken: response.refreshToken,
-        expiresIn: response.expiresIn);
+        idToken: idToken!, refreshToken: refreshToken, expiresIn: expiresIn);
   }
 
   /// Requests getOobCode endpoint for passwordless email sign-in.
@@ -385,8 +410,8 @@ class RpcHandler {
   Future<String?> sendSignInLinkToEmail(
       {required String email, ActionCodeSettings? actionCodeSettings}) async {
     _validateEmail(email);
-    var response = await relyingparty
-        .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
+    var response = await identitytoolkitApi.accounts
+        .sendOobCode(_createGetOobCodeRequest(actionCodeSettings)
           ..requestType = 'EMAIL_SIGNIN'
           ..email = email);
 
@@ -396,9 +421,12 @@ class RpcHandler {
     return response.email;
   }
 
-  Relyingparty _createRelyingparty(ActionCodeSettings? actionCodeSettings) {
-    if (actionCodeSettings == null) return Relyingparty();
-    return Relyingparty()
+  GoogleCloudIdentitytoolkitV1GetOobCodeRequest _createGetOobCodeRequest(
+      ActionCodeSettings? actionCodeSettings) {
+    if (actionCodeSettings == null) {
+      return GoogleCloudIdentitytoolkitV1GetOobCodeRequest();
+    }
+    return GoogleCloudIdentitytoolkitV1GetOobCodeRequest()
       ..continueUrl = actionCodeSettings.url
       ..iOSBundleId = actionCodeSettings.iOSBundleId
       ..androidPackageName = actionCodeSettings.androidPackageName
@@ -414,8 +442,8 @@ class RpcHandler {
   Future<String?> sendPasswordResetEmail(
       {required String email, ActionCodeSettings? actionCodeSettings}) async {
     _validateEmail(email);
-    var response = await relyingparty
-        .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
+    var response = await identitytoolkitApi.accounts
+        .sendOobCode(_createGetOobCodeRequest(actionCodeSettings)
           ..requestType = 'PASSWORD_RESET'
           ..email = email);
 
@@ -430,8 +458,8 @@ class RpcHandler {
   /// Returns future that resolves with user's email.
   Future<String?> sendEmailVerification(
       {required String idToken, ActionCodeSettings? actionCodeSettings}) async {
-    var response = await relyingparty
-        .getOobConfirmationCode(_createRelyingparty(actionCodeSettings)
+    var response = await identitytoolkitApi.accounts
+        .sendOobCode(_createGetOobCodeRequest(actionCodeSettings)
           ..requestType = 'VERIFY_EMAIL'
           ..idToken = idToken);
 
@@ -446,8 +474,8 @@ class RpcHandler {
   /// Returns future that resolves with user's email.
   Future<String?> confirmPasswordReset(String code, String newPassword) async {
     _validateApplyActionCode(code);
-    var response = await relyingparty
-        .resetPassword(IdentitytoolkitRelyingpartyResetPasswordRequest()
+    var response = await identitytoolkitApi.accounts
+        .resetPassword(GoogleCloudIdentitytoolkitV1ResetPasswordRequest()
           ..oobCode = code
           ..newPassword = newPassword);
 
@@ -459,10 +487,11 @@ class RpcHandler {
 
   /// Checks the validity of an email action code and returns the response
   /// received.
-  Future<ResetPasswordResponse> checkActionCode(String code) async {
+  Future<GoogleCloudIdentitytoolkitV1ResetPasswordResponse> checkActionCode(
+      String code) async {
     _validateApplyActionCode(code);
-    var response = await relyingparty.resetPassword(
-        IdentitytoolkitRelyingpartyResetPasswordRequest()..oobCode = code);
+    var response = await identitytoolkitApi.accounts.resetPassword(
+        GoogleCloudIdentitytoolkitV1ResetPasswordRequest()..oobCode = code);
 
     _validateCheckActionCodeResponse(response);
     return response;
@@ -472,8 +501,8 @@ class RpcHandler {
   /// code.
   Future<String?> applyActionCode(String code) async {
     _validateApplyActionCode(code);
-    var response = await relyingparty.setAccountInfo(
-        IdentitytoolkitRelyingpartySetAccountInfoRequest()..oobCode = code);
+    var response = await identitytoolkitApi.accounts.update(
+        GoogleCloudIdentitytoolkitV1SetAccountInfoRequest()..oobCode = code);
 
     if (response.email == null) {
       throw FirebaseAuthException.internalError();
@@ -482,14 +511,15 @@ class RpcHandler {
   }
 
   /// Updates the providers for the account associated with the idToken.
-  Future<SetAccountInfoResponse> deleteLinkedAccounts(
-      String idToken, List<String>? providersToDelete) async {
+  Future<GoogleCloudIdentitytoolkitV1SetAccountInfoResponse>
+      deleteLinkedAccounts(
+          String idToken, List<String>? providersToDelete) async {
     if (providersToDelete == null) {
       throw FirebaseAuthException.internalError();
     }
     try {
-      return await relyingparty
-          .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
+      return await identitytoolkitApi.accounts
+          .update(GoogleCloudIdentitytoolkitV1SetAccountInfoRequest()
             ..idToken = idToken
             ..deleteProvider = providersToDelete);
     } on FirebaseAuthException catch (e) {
@@ -502,9 +532,9 @@ class RpcHandler {
 
   /// Updates the profile of the user. When resolved, promise returns a response
   /// similar to that of getAccountInfo.
-  Future<SetAccountInfoResponse> updateProfile(
+  Future<GoogleCloudIdentitytoolkitV1SetAccountInfoResponse> updateProfile(
       String idToken, Map<String, dynamic> profileData) async {
-    var request = IdentitytoolkitRelyingpartySetAccountInfoRequest()
+    var request = GoogleCloudIdentitytoolkitV1SetAccountInfoRequest()
       ..idToken = idToken
       ..returnSecureToken = true;
     var fieldsToDelete = <String?>[];
@@ -536,17 +566,17 @@ class RpcHandler {
     if (fieldsToDelete.isNotEmpty) {
       request.deleteAttribute = fieldsToDelete.whereType<String>().toList();
     }
-    var response = await relyingparty.setAccountInfo(request);
+    var response = await identitytoolkitApi.accounts.update(request);
 
     return response;
   }
 
   /// Requests setAccountInfo endpoint for updateEmail operation.
-  Future<SetAccountInfoResponse> updateEmail(
+  Future<GoogleCloudIdentitytoolkitV1SetAccountInfoResponse> updateEmail(
       String idToken, String newEmail) async {
     _validateEmail(newEmail);
-    var response = await relyingparty
-        .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
+    var response = await identitytoolkitApi.accounts
+        .update(GoogleCloudIdentitytoolkitV1SetAccountInfoRequest()
           ..idToken = idToken
           ..email = newEmail
           ..returnSecureToken = true);
@@ -554,55 +584,65 @@ class RpcHandler {
   }
 
   /// Requests setAccountInfo endpoint for updatePassword operation.
-  Future<SetAccountInfoResponse> updatePassword(
+  Future<GoogleCloudIdentitytoolkitV1SetAccountInfoResponse> updatePassword(
       String idToken, String newPassword) async {
     _validateStrongPassword(newPassword);
-    var response = await relyingparty
-        .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
+    var response = await identitytoolkitApi.accounts
+        .update(GoogleCloudIdentitytoolkitV1SetAccountInfoRequest()
           ..idToken = idToken
           ..password = newPassword
           ..returnSecureToken = true);
-    _validateIdTokenResponse(response);
+    _validateIdTokenResponse(
+      idToken: response.idToken,
+      mfaPendingCredential: null,
+    );
     return response;
   }
 
   /// Requests setAccountInfo endpoint to set the email and password. This can be
   /// used to link an existing account to a email and password account.
-  Future<SetAccountInfoResponse> updateEmailAndPassword(
-      String idToken, String newEmail, String newPassword) async {
+  Future<GoogleCloudIdentitytoolkitV1SetAccountInfoResponse>
+      updateEmailAndPassword(
+          String idToken, String newEmail, String newPassword) async {
     _validateEmail(newEmail);
     _validateStrongPassword(newPassword);
-    var response = await relyingparty
-        .setAccountInfo(IdentitytoolkitRelyingpartySetAccountInfoRequest()
+    var response = await identitytoolkitApi.accounts
+        .update(GoogleCloudIdentitytoolkitV1SetAccountInfoRequest()
           ..idToken = idToken
           ..email = newEmail
           ..password = newPassword
           ..returnSecureToken = true);
-    _validateIdTokenResponse(response);
+    _validateIdTokenResponse(
+      idToken: response.idToken,
+      mfaPendingCredential: null,
+    );
     return response;
   }
 
   /// Verifies an email link OTP for linking and returns a Promise that resolves
   /// with the ID token.
-  Future<EmailLinkSigninResponse> emailLinkSignInForLinking(
-      String idToken, String email, String oobCode) async {
+  Future<GoogleCloudIdentitytoolkitV1SignInWithEmailLinkResponse>
+      emailLinkSignInForLinking(
+          String idToken, String email, String oobCode) async {
     if (idToken.isEmpty || oobCode.isEmpty) {
       throw FirebaseAuthException.internalError();
     }
     _validateEmail(email);
-    var response = await relyingparty
-        .emailLinkSignin(IdentitytoolkitRelyingpartyEmailLinkSigninRequest()
+    var response = await identitytoolkitApi.accounts.signInWithEmailLink(
+        GoogleCloudIdentitytoolkitV1SignInWithEmailLinkRequest()
           ..idToken = idToken
           ..email = email
-          ..oobCode = oobCode
-          ..returnSecureToken = true);
-    _validateIdTokenResponse(response);
+          ..oobCode = oobCode);
+    _validateIdTokenResponse(
+      idToken: response.idToken,
+      mfaPendingCredential: response.mfaPendingCredential,
+    );
     return response;
   }
 
   /// Requests createAuthUri endpoint to retrieve the authUri and session ID for
   /// the start of an OAuth handshake.
-  Future<CreateAuthUriResponse> getAuthUri(
+  Future<GoogleCloudIdentitytoolkitV1CreateAuthUriResponse> getAuthUri(
       String? providerId, String? continueUri,
       [Map<String, dynamic>? customParameters,
       List<String>? additionalScopes,
@@ -619,7 +659,7 @@ class RpcHandler {
 
     var scopes = _getAdditionalScopes(providerId, additionalScopes);
     // SAML provider request is constructed differently than OAuth requests.
-    var request = IdentitytoolkitRelyingpartyCreateAuthUriRequest()
+    var request = GoogleCloudIdentitytoolkitV1CreateAuthUriRequest()
       ..providerId = providerId
       ..continueUri = continueUri
       ..customParameter = customParameters as Map<String, String>? ?? {};
@@ -639,7 +679,7 @@ class RpcHandler {
     if (sessionId != null && providerId == GoogleAuthProvider.id) {
       request.authFlowType = 'CODE_FLOW';
     }
-    var response = await relyingparty.createAuthUri(request);
+    var response = await identitytoolkitApi.accounts.createAuthUri(request);
     _validateGetAuthResponse(response);
     return response;
   }
@@ -658,14 +698,18 @@ class RpcHandler {
         (recaptchaToken == null && safetyNetToken == null)) {
       throw FirebaseAuthException.internalError();
     }
-    var request = IdentitytoolkitRelyingpartySendVerificationCodeRequest()
+
+    var request = GoogleCloudIdentitytoolkitV1SendVerificationCodeRequest()
       ..phoneNumber = phoneNumber
       ..autoRetrievalInfo = appSignatureHash == null
           ? null
-          : {'appSignatureHash': appSignatureHash}
+          : (GoogleCloudIdentitytoolkitV1AutoRetrievalInfo()
+            ..appSignatureHash = appSignatureHash)
       ..recaptchaToken = recaptchaToken
       ..safetyNetToken = safetyNetToken;
-    var response = await relyingparty.sendVerificationCode(request);
+
+    var response =
+        await identitytoolkitApi.accounts.sendVerificationCode(request);
     if (response.sessionInfo == null) {
       throw FirebaseAuthException.internalError();
     }
@@ -680,7 +724,7 @@ class RpcHandler {
       String? temporaryProof,
       String? phoneNumber,
       bool reauth = false}) async {
-    var request = IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest()
+    var request = GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberRequest()
       ..sessionInfo = sessionInfo
       ..code = code
       ..temporaryProof = temporaryProof
@@ -689,8 +733,14 @@ class RpcHandler {
     if (reauth) request.operation = 'REAUTH';
     _validateVerifyPhoneNumberRequest(request);
 
-    var response = await relyingparty.verifyPhoneNumber(request);
-    return handleIdTokenResponse(response);
+    var response =
+        await identitytoolkitApi.accounts.signInWithPhoneNumber(request);
+    return handleIdTokenResponse(
+      idToken: response.idToken,
+      refreshToken: response.refreshToken,
+      expiresIn: response.expiresIn,
+      mfaPendingCredential: null,
+    );
   }
 
   /// Requests verifyPhoneNumber endpoint for link/update phone number
@@ -705,7 +755,7 @@ class RpcHandler {
     if (idToken == null) {
       throw FirebaseAuthException.internalError();
     }
-    var request = IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest()
+    var request = GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberRequest()
       ..sessionInfo = sessionInfo
       ..code = code
       ..temporaryProof = temporaryProof
@@ -713,14 +763,19 @@ class RpcHandler {
       ..idToken = idToken;
     _validateVerifyPhoneNumberRequest(request);
 
-    var response = await relyingparty.verifyPhoneNumber(request);
+    var response =
+        await identitytoolkitApi.accounts.signInWithPhoneNumber(request);
 
     if (response.temporaryProof != null) {
       throw _errorInfoFromResponse(
           FirebaseAuthException.credentialAlreadyInUse(), response)!;
     }
-
-    return handleIdTokenResponse(response);
+    return handleIdTokenResponse(
+      idToken: response.idToken,
+      refreshToken: response.refreshToken,
+      expiresIn: response.expiresIn,
+      mfaPendingCredential: null,
+    );
   }
 
   /// Requests verifyPhoneNumber endpoint for reauthenticating with a phone number
@@ -730,7 +785,7 @@ class RpcHandler {
       String? code,
       String? temporaryProof,
       String? phoneNumber}) async {
-    var request = IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest()
+    var request = GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberRequest()
       ..sessionInfo = sessionInfo
       ..code = code
       ..temporaryProof = temporaryProof
@@ -738,25 +793,25 @@ class RpcHandler {
       ..operation = 'REAUTH';
     _validateVerifyPhoneNumberRequest(request);
 
-    var response = await relyingparty.verifyPhoneNumber(request);
+    var response =
+        await identitytoolkitApi.accounts.signInWithPhoneNumber(request);
 
     if (response.temporaryProof != null) {
       throw _errorInfoFromResponse(
           FirebaseAuthException.credentialAlreadyInUse(), response)!;
     }
-
-    return handleIdTokenResponse(response);
-  }
-
-  /// Updates the custom locale header.
-  void updateCustomLocaleHeader(String? languageCode) {
-    identitytoolkitApi.updateCustomLocaleHeader(languageCode);
+    return handleIdTokenResponse(
+      idToken: response.idToken,
+      refreshToken: response.refreshToken,
+      expiresIn: response.expiresIn,
+      mfaPendingCredential: null,
+    );
   }
 
   /// Validates a request that sends the verification ID and code for a sign in/up
   /// phone Auth flow.
   void _validateVerifyPhoneNumberRequest(
-      IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest request) {
+      GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberRequest request) {
     // There are 2 cases here:
     // case 1: sessionInfo and code
     // case 2: phoneNumber and temporaryProof
@@ -787,7 +842,8 @@ class RpcHandler {
   }
 
   /// Validates a response from getAuthUri.
-  void _validateGetAuthResponse(CreateAuthUriResponse response) {
+  void _validateGetAuthResponse(
+      GoogleCloudIdentitytoolkitV1CreateAuthUriResponse response) {
     if (response.authUri == null) {
       throw FirebaseAuthException.internalError().replace(
           message:
@@ -799,7 +855,7 @@ class RpcHandler {
   }
 
   FirebaseAuthException? _errorFromVerifyAssertionResponse(
-      VerifyAssertionResponse response) {
+      GoogleCloudIdentitytoolkitV1SignInWithIdpResponse response) {
     if (response.needConfirmation ?? false) {
       // Account linking required, previously logged in to another account
       // with same email. User must authenticate they are owners of the
@@ -839,7 +895,8 @@ class RpcHandler {
   }
 
   /// Validates a response from verifyAssertion.
-  void _validateVerifyAssertionResponse(VerifyAssertionResponse response) {
+  void _validateVerifyAssertionResponse(
+      GoogleCloudIdentitytoolkitV1SignInWithIdpResponse response) {
     var error = _errorInfoFromResponse(
         _errorFromVerifyAssertionResponse(response), response);
     if (error != null) {
@@ -848,12 +905,12 @@ class RpcHandler {
   }
 
   FirebaseAuthException? _errorInfoFromResponse(
-      FirebaseAuthException? error, IdTokenResponse response) {
+      FirebaseAuthException? error, Object response) {
     String? message, email, phoneNumber;
-    if (response is VerifyAssertionResponse) {
+    if (response is GoogleCloudIdentitytoolkitV1SignInWithIdpResponse) {
       email = response.email;
     } else if (response
-        is IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse) {
+        is GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberResponse) {
       phoneNumber = response.phoneNumber;
     } else {
       // TODO check callers
@@ -871,13 +928,13 @@ class RpcHandler {
   AuthCredential? _getCredentialFromResponse(dynamic response) {
     // Handle phone Auth credential responses, as they have a different format
     // from other backend responses (i.e. no providerId).
-    if (response is IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse) {
+    if (response is GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberResponse) {
       return PhoneAuthProvider.credentialFromTemporaryProof(
           temporaryProof: response.temporaryProof!,
           phoneNumber: response.phoneNumber!);
     }
 
-    if (response is VerifyAssertionResponse) {
+    if (response is GoogleCloudIdentitytoolkitV1SignInWithIdpResponse) {
       // Get all OAuth response parameters from response.
       var providerId = response.providerId;
 
@@ -929,7 +986,9 @@ class RpcHandler {
                 providerId: providerId,
                 idToken: response.oauthIdToken,
                 accessToken: response.oauthAccessToken,
-                rawNonce: response.nonce);
+                rawNonce: (response
+                        as GoogleCloudIdentitytoolkitV1SignInWithIdpResponseWithNonce)
+                    .nonce);
         }
       } catch (e) {
         return null;
@@ -957,9 +1016,10 @@ class RpcHandler {
 
   /// Processes the verifyAssertion response and injects the same raw nonce
   /// if available in request.
-  VerifyAssertionResponse _processVerifyAssertionResponse(
-      IdentitytoolkitRelyingpartyVerifyAssertionRequest request,
-      VerifyAssertionResponse response) {
+  GoogleCloudIdentitytoolkitV1SignInWithIdpResponse
+      _processVerifyAssertionResponse(
+          GoogleCloudIdentitytoolkitV1SignInWithIdpRequest request,
+          GoogleCloudIdentitytoolkitV1SignInWithIdpResponse response) {
     // This makes it possible for OIDC providers to:
     // 1. Initialize an OIDC Auth credential on successful response.
     // 2. Initialize an OIDC Auth credential within the recovery error.
@@ -973,12 +1033,16 @@ class RpcHandler {
         response.pendingToken == null) {
       if (request.sessionId != null) {
         // For full OAuth flow, the nonce is in the session ID.
-        response.nonce = request.sessionId;
+        response =
+            GoogleCloudIdentitytoolkitV1SignInWithIdpResponseWithNonce.from(
+                response, request.sessionId!);
       } else if (request.postBody != null) {
         // For credential flow, the nonce is in the postBody nonce field.
         var queryData = Uri(query: request.postBody).queryParameters;
         if (queryData.containsKey('nonce')) {
-          response.nonce = queryData['nonce'];
+          response =
+              GoogleCloudIdentitytoolkitV1SignInWithIdpResponseWithNonce.from(
+                  response, queryData['nonce']!);
         }
       }
     }
@@ -988,7 +1052,7 @@ class RpcHandler {
 
   /// Validates a verifyAssertion request.
   void _validateVerifyAssertionRequest(
-      IdentitytoolkitRelyingpartyVerifyAssertionRequest request) {
+      GoogleCloudIdentitytoolkitV1SignInWithIdpRequest request) {
     // Either (requestUri and sessionId), (requestUri and postBody) or
     // (requestUri and pendingToken) are required.
     if (request.requestUri == null ||
@@ -1001,7 +1065,8 @@ class RpcHandler {
 
   /// Validates that a checkActionCode response contains the email and requestType
   /// fields.
-  void _validateCheckActionCodeResponse(ResetPasswordResponse response) {
+  void _validateCheckActionCodeResponse(
+      GoogleCloudIdentitytoolkitV1ResetPasswordResponse response) {
     // If the code is invalid, usually a clear error would be returned.
     // In this case, something unexpected happened.
     // Email could be empty only if the request type is EMAIL_SIGNIN.
@@ -1037,11 +1102,12 @@ class RpcHandler {
   ///
   /// If no ID token is available, it checks if a multi-factor pending credential
   /// is available instead. In that case, it throws the MFA_REQUIRED error code.
-  void _validateIdTokenResponse(IdTokenResponse response) {
-    if (response.idToken == null) {
+  void _validateIdTokenResponse(
+      {String? idToken, String? mfaPendingCredential}) {
+    if (idToken == null) {
       // User could be a second factor user.
       // When second factor is required, a pending credential is returned.
-      if (response.mfaPendingCredential != null) {
+      if (mfaPendingCredential != null) {
         throw FirebaseAuthException.mfaRequired();
       }
       throw FirebaseAuthException.internalError();
@@ -1054,4 +1120,19 @@ class RpcHandler {
       throw FirebaseAuthException.weakPassword();
     }
   }
+}
+
+class GoogleCloudIdentitytoolkitV1SignInWithIdpResponseWithNonce
+    extends GoogleCloudIdentitytoolkitV1SignInWithIdpResponse {
+  final String nonce;
+
+  GoogleCloudIdentitytoolkitV1SignInWithIdpResponseWithNonce.from(
+      GoogleCloudIdentitytoolkitV1SignInWithIdpResponse other, this.nonce)
+      : super.fromJson(other.toJson());
+
+  @override
+  Map<String, dynamic> toJson() => {
+        ...super.toJson(),
+        'nonce': nonce,
+      };
 }

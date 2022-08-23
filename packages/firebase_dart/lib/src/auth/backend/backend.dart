@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/rpc/error.dart';
-import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
+import 'package:firebaseapis/identitytoolkit/v1.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
 
@@ -13,16 +13,16 @@ class BackendConnection {
 
   BackendConnection(this.backend);
 
-  Future<GetAccountInfoResponse> getAccountInfo(
-      IdentitytoolkitRelyingpartyGetAccountInfoRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1GetAccountInfoResponse> getAccountInfo(
+      GoogleCloudIdentitytoolkitV1GetAccountInfoRequest request) async {
     var user = await _userFromIdToken(request.idToken!);
-    return GetAccountInfoResponse()
+    return GoogleCloudIdentitytoolkitV1GetAccountInfoResponse()
       ..kind = 'identitytoolkit#GetAccountInfoResponse'
       ..users = [user];
   }
 
-  Future<SignupNewUserResponse> signupNewUser(
-      IdentitytoolkitRelyingpartySignupNewUserRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1SignUpResponse> signupNewUser(
+      GoogleCloudIdentitytoolkitV1SignUpRequest request) async {
     var user = await backend.createUser(
       email: request.email,
       password: request.password,
@@ -35,15 +35,15 @@ class BackendConnection {
     var refreshToken = await backend.generateRefreshToken(idToken);
 
     var tokenExpiresIn = await backend.getTokenExpiresIn();
-    return SignupNewUserResponse()
+    return GoogleCloudIdentitytoolkitV1SignUpResponse()
       ..expiresIn = '${tokenExpiresIn.inSeconds}'
       ..kind = 'identitytoolkit#SignupNewUserResponse'
       ..idToken = idToken
       ..refreshToken = refreshToken;
   }
 
-  Future<VerifyPasswordResponse> verifyPassword(
-      IdentitytoolkitRelyingpartyVerifyPasswordRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1SignInWithPasswordResponse> verifyPassword(
+      GoogleCloudIdentitytoolkitV1SignInWithPasswordRequest request) async {
     var email = request.email;
     if (email == null) {
       throw ArgumentError('Invalid request: missing email');
@@ -58,7 +58,7 @@ class BackendConnection {
       var refreshToken =
           idToken == null ? null : await backend.generateRefreshToken(idToken);
       var tokenExpiresIn = await backend.getTokenExpiresIn();
-      return VerifyPasswordResponse()
+      return GoogleCloudIdentitytoolkitV1SignInWithPasswordResponse()
         ..kind = 'identitytoolkit#VerifyPasswordResponse'
         ..localId = user.localId
         ..idToken = idToken
@@ -69,22 +69,24 @@ class BackendConnection {
     throw FirebaseAuthException.invalidPassword();
   }
 
-  Future<CreateAuthUriResponse> createAuthUri(
-      IdentitytoolkitRelyingpartyCreateAuthUriRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1CreateAuthUriResponse> createAuthUri(
+      GoogleCloudIdentitytoolkitV1CreateAuthUriRequest request) async {
     var email = request.identifier;
     if (email == null) {
       throw ArgumentError('Invalid request: missing identifier');
     }
     var user = await backend.getUserByEmail(email);
 
-    return CreateAuthUriResponse()
+    return GoogleCloudIdentitytoolkitV1CreateAuthUriResponse()
       ..kind = 'identitytoolkit#CreateAuthUriResponse'
       ..allProviders = [for (var p in user.providerUserInfo!) p.providerId!]
       ..signinMethods = [for (var p in user.providerUserInfo!) p.providerId!];
   }
 
-  Future<VerifyCustomTokenResponse> verifyCustomToken(
-      IdentitytoolkitRelyingpartyVerifyCustomTokenRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1SignInWithCustomTokenResponse>
+      verifyCustomToken(
+          GoogleCloudIdentitytoolkitV1SignInWithCustomTokenRequest
+              request) async {
     var user = await _userFromIdToken(request.token!);
 
     var idToken = request.returnSecureToken == true
@@ -93,17 +95,17 @@ class BackendConnection {
     var refreshToken =
         idToken == null ? null : await backend.generateRefreshToken(idToken);
     var tokenExpiresIn = await backend.getTokenExpiresIn();
-    return VerifyCustomTokenResponse()
+    return GoogleCloudIdentitytoolkitV1SignInWithCustomTokenResponse()
       ..idToken = idToken
       ..expiresIn = '${tokenExpiresIn.inSeconds}'
       ..refreshToken = refreshToken;
   }
 
-  Future<DeleteAccountResponse> deleteAccount(
-      IdentitytoolkitRelyingpartyDeleteAccountRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1DeleteAccountResponse> deleteAccount(
+      GoogleCloudIdentitytoolkitV1DeleteAccountRequest request) async {
     var user = await _userFromIdToken(request.idToken!);
     await backend.deleteUser(user.localId);
-    return DeleteAccountResponse()
+    return GoogleCloudIdentitytoolkitV1DeleteAccountResponse()
       ..kind = 'identitytoolkit#DeleteAccountResponse';
   }
 
@@ -118,8 +120,8 @@ class BackendConnection {
     return user;
   }
 
-  Future<GetOobConfirmationCodeResponse> getOobConfirmationCode(
-      Relyingparty request) async {
+  Future<GoogleCloudIdentitytoolkitV1GetOobCodeResponse> getOobConfirmationCode(
+      GoogleCloudIdentitytoolkitV1GetOobCodeRequest request) async {
     var idToken = request.idToken;
     var email = request.email;
     var user = idToken != null
@@ -127,18 +129,18 @@ class BackendConnection {
         : email != null
             ? await backend.getUserByEmail(email)
             : throw ArgumentError('Invalid request: missing idToken or email');
-    return GetOobConfirmationCodeResponse()
+    return GoogleCloudIdentitytoolkitV1GetOobCodeResponse()
       ..kind = 'identitytoolkit#GetOobConfirmationCodeResponse'
       ..email = user.email;
   }
 
-  Future<ResetPasswordResponse> resetPassword(
-      IdentitytoolkitRelyingpartyResetPasswordRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1ResetPasswordResponse> resetPassword(
+      GoogleCloudIdentitytoolkitV1ResetPasswordRequest request) async {
     try {
       var jwt = JsonWebToken.unverified(request.oobCode!);
       var user = await backend.getUserById(jwt.claims['sub']);
       await backend.updateUser(user..rawPassword = request.newPassword);
-      return ResetPasswordResponse()
+      return GoogleCloudIdentitytoolkitV1ResetPasswordResponse()
         ..kind = 'identitytoolkit#ResetPasswordResponse'
         ..requestType = jwt.claims['operation']
         ..email = user.email;
@@ -147,8 +149,8 @@ class BackendConnection {
     }
   }
 
-  Future<SetAccountInfoResponse> setAccountInfo(
-      IdentitytoolkitRelyingpartySetAccountInfoRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1SetAccountInfoResponse> setAccountInfo(
+      GoogleCloudIdentitytoolkitV1SetAccountInfoRequest request) async {
     BackendUser user;
     try {
       user = await _userFromIdToken(request.idToken ?? request.oobCode!);
@@ -190,7 +192,7 @@ class BackendConnection {
 
     await backend.updateUser(user);
 
-    return SetAccountInfoResponse()
+    return GoogleCloudIdentitytoolkitV1SetAccountInfoResponse()
       ..kind = 'identitytoolkit#SetAccountInfoResponse'
       ..displayName = user.displayName
       ..photoUrl = user.photoUrl
@@ -201,29 +203,30 @@ class BackendConnection {
           : null
       ..providerUserInfo = [
         for (var u in user.providerUserInfo!)
-          SetAccountInfoResponseProviderUserInfo()
+          GoogleCloudIdentitytoolkitV1ProviderUserInfo()
             ..providerId = u.providerId
             ..photoUrl = u.photoUrl
             ..displayName = u.displayName
       ];
   }
 
-  Future<IdentitytoolkitRelyingpartySendVerificationCodeResponse>
+  Future<GoogleCloudIdentitytoolkitV1SendVerificationCodeResponse>
       sendVerificationCode(
-          IdentitytoolkitRelyingpartySendVerificationCodeRequest
+          GoogleCloudIdentitytoolkitV1SendVerificationCodeRequest
               request) async {
     var phoneNumber = request.phoneNumber;
     if (phoneNumber == null) {
       throw ArgumentError('Invalid request: missing phoneNumber');
     }
     var token = await backend.sendVerificationCode(phoneNumber);
-    return IdentitytoolkitRelyingpartySendVerificationCodeResponse()
+    return GoogleCloudIdentitytoolkitV1SendVerificationCodeResponse()
       ..sessionInfo = token;
   }
 
-  Future<IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse>
+  Future<GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberResponse>
       verifyPhoneNumber(
-          IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest request) async {
+          GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberRequest
+              request) async {
     var sessionInfo = request.sessionInfo;
     if (sessionInfo == null) {
       throw ArgumentError('Invalid request: missing sessionInfo');
@@ -238,15 +241,15 @@ class BackendConnection {
         uid: user.localId, providerId: 'password');
     var refreshToken = await backend.generateRefreshToken(idToken);
     var tokenExpiresIn = await backend.getTokenExpiresIn();
-    return IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse()
+    return GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberResponse()
       ..localId = user.localId
       ..idToken = idToken
       ..expiresIn = '${tokenExpiresIn.inSeconds}'
       ..refreshToken = refreshToken;
   }
 
-  Future<VerifyAssertionResponse> verifyAssertion(
-      IdentitytoolkitRelyingpartyVerifyAssertionRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse> verifyAssertion(
+      GoogleCloudIdentitytoolkitV1SignInWithIdpRequest request) async {
     var args = Uri.parse('?${request.postBody}').queryParameters;
     try {
       var user =
@@ -255,21 +258,24 @@ class BackendConnection {
           uid: user.localId, providerId: 'password');
       var refreshToken = await backend.generateRefreshToken(idToken);
       var tokenExpiresIn = await backend.getTokenExpiresIn();
-      return VerifyAssertionResponse()
+      return GoogleCloudIdentitytoolkitV1SignInWithIdpResponse()
         ..localId = user.localId
         ..idToken = idToken
         ..expiresIn = '${tokenExpiresIn.inSeconds}'
         ..refreshToken = refreshToken;
     } on FirebaseAuthException catch (e) {
       if (e.code == FirebaseAuthException.needConfirmation().code) {
-        return VerifyAssertionResponse()..needConfirmation = true;
+        return GoogleCloudIdentitytoolkitV1SignInWithIdpResponse()
+          ..needConfirmation = true;
       }
       rethrow;
     }
   }
 
-  Future<EmailLinkSigninResponse> emailLinkSignin(
-      IdentitytoolkitRelyingpartyEmailLinkSigninRequest request) async {
+  Future<GoogleCloudIdentitytoolkitV1SignInWithEmailLinkResponse>
+      emailLinkSignin(
+          GoogleCloudIdentitytoolkitV1SignInWithEmailLinkRequest
+              request) async {
     var email = request.email;
     if (email == null) {
       throw ArgumentError('Invalid request: missing email');
@@ -278,14 +284,11 @@ class BackendConnection {
     var jwt = JsonWebToken.unverified(request.oobCode!);
     var user = await backend.getUserById(jwt.claims['sub']);
 
-    var idToken = request.returnSecureToken == true
-        ? await backend.generateIdToken(
-            uid: user.localId, providerId: 'password')
-        : null;
-    var refreshToken =
-        idToken == null ? null : await backend.generateRefreshToken(idToken);
+    var idToken = await backend.generateIdToken(
+        uid: user.localId, providerId: 'password');
+    var refreshToken = await backend.generateRefreshToken(idToken);
     var tokenExpiresIn = await backend.getTokenExpiresIn();
-    return EmailLinkSigninResponse()
+    return GoogleCloudIdentitytoolkitV1SignInWithEmailLinkResponse()
       ..kind = 'identitytoolkit#EmailLinkSigninResponse'
       ..localId = user.localId
       ..idToken = idToken
@@ -295,57 +298,61 @@ class BackendConnection {
 
   Future<dynamic> _handle(String method, dynamic body) async {
     switch (method) {
-      case 'signupNewUser':
-        var request =
-            IdentitytoolkitRelyingpartySignupNewUserRequest.fromJson(body);
+      case 'accounts:signUp':
+        var request = GoogleCloudIdentitytoolkitV1SignUpRequest.fromJson(body);
         return signupNewUser(request);
-      case 'getAccountInfo':
+      case 'accounts:lookup':
         var request =
-            IdentitytoolkitRelyingpartyGetAccountInfoRequest.fromJson(body);
+            GoogleCloudIdentitytoolkitV1GetAccountInfoRequest.fromJson(body);
         return getAccountInfo(request);
-      case 'verifyPassword':
+      case 'accounts:signInWithPassword':
         var request =
-            IdentitytoolkitRelyingpartyVerifyPasswordRequest.fromJson(body);
+            GoogleCloudIdentitytoolkitV1SignInWithPasswordRequest.fromJson(
+                body);
         return verifyPassword(request);
-      case 'createAuthUri':
+      case 'accounts:createAuthUri':
         var request =
-            IdentitytoolkitRelyingpartyCreateAuthUriRequest.fromJson(body);
+            GoogleCloudIdentitytoolkitV1CreateAuthUriRequest.fromJson(body);
         return createAuthUri(request);
-      case 'verifyCustomToken':
+      case 'accounts:signInWithCustomToken':
         var request =
-            IdentitytoolkitRelyingpartyVerifyCustomTokenRequest.fromJson(body);
+            GoogleCloudIdentitytoolkitV1SignInWithCustomTokenRequest.fromJson(
+                body);
         return verifyCustomToken(request);
-      case 'deleteAccount':
+      case 'accounts:delete':
         var request =
-            IdentitytoolkitRelyingpartyDeleteAccountRequest.fromJson(body);
+            GoogleCloudIdentitytoolkitV1DeleteAccountRequest.fromJson(body);
         return deleteAccount(request);
-      case 'getOobConfirmationCode':
-        var request = Relyingparty.fromJson(body);
+      case 'accounts:sendOobCode':
+        var request =
+            GoogleCloudIdentitytoolkitV1GetOobCodeRequest.fromJson(body);
         return getOobConfirmationCode(request);
-      case 'resetPassword':
+      case 'accounts:resetPassword':
         var request =
-            IdentitytoolkitRelyingpartyResetPasswordRequest.fromJson(body);
+            GoogleCloudIdentitytoolkitV1ResetPasswordRequest.fromJson(body);
         return resetPassword(request);
-      case 'setAccountInfo':
+      case 'accounts:update':
         var request =
-            IdentitytoolkitRelyingpartySetAccountInfoRequest.fromJson(body);
+            GoogleCloudIdentitytoolkitV1SetAccountInfoRequest.fromJson(body);
         return setAccountInfo(request);
-      case 'sendVerificationCode':
+      case 'accounts:sendVerificationCode':
         var request =
-            IdentitytoolkitRelyingpartySendVerificationCodeRequest.fromJson(
+            GoogleCloudIdentitytoolkitV1SendVerificationCodeRequest.fromJson(
                 body);
         return sendVerificationCode(request);
-      case 'verifyPhoneNumber':
+      case 'accounts:signInWithPhoneNumber':
         var request =
-            IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest.fromJson(body);
+            GoogleCloudIdentitytoolkitV1SignInWithPhoneNumberRequest.fromJson(
+                body);
         return verifyPhoneNumber(request);
-      case 'verifyAssertion':
+      case 'accounts:signInWithIdp':
         var request =
-            IdentitytoolkitRelyingpartyVerifyAssertionRequest.fromJson(body);
+            GoogleCloudIdentitytoolkitV1SignInWithIdpRequest.fromJson(body);
         return verifyAssertion(request);
-      case 'emailLinkSignin':
+      case 'accounts:signInWithEmailLink':
         var request =
-            IdentitytoolkitRelyingpartyEmailLinkSigninRequest.fromJson(body);
+            GoogleCloudIdentitytoolkitV1SignInWithEmailLinkRequest.fromJson(
+                body);
         return emailLinkSignin(request);
       default:
         throw UnsupportedError('Unsupported method $method');
@@ -427,7 +434,7 @@ abstract class BaseBackend extends AuthBackend {
       ..rawPassword = password
       ..providerUserInfo = [
         if (password != null)
-          UserInfoProviderUserInfo()
+          GoogleCloudIdentitytoolkitV1ProviderUserInfo()
             ..providerId = 'password'
             ..email = email
       ]);
@@ -515,7 +522,7 @@ abstract class BaseBackend extends AuthBackend {
   }
 }
 
-class BackendUser extends UserInfo {
+class BackendUser extends GoogleCloudIdentitytoolkitV1UserInfo {
   BackendUser(String localId) {
     this.localId = localId;
   }

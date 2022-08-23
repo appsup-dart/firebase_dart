@@ -1,290 +1,16 @@
 import 'dart:convert';
 
-import 'package:_discoveryapis_commons/_discoveryapis_commons.dart' as commons;
-import 'package:googleapis/identitytoolkit/v3.dart' as it;
-import 'package:http/http.dart' as http;
+import 'package:firebaseapis/identitytoolkit/v1.dart';
+import 'package:firebaseapis/identitytoolkit/v1.dart' as id;
 
+import 'package:http/http.dart' as http;
+import 'package:_discoveryapis_commons/_discoveryapis_commons.dart' as commons;
+
+import '../../../implementation/pure_dart.dart';
 import '../error.dart';
-import '../utils.dart';
 import 'error.dart';
 
-export 'package:googleapis/identitytoolkit/v3.dart';
-
-mixin JsonSerializable {
-  void _read(Map<String, dynamic> json) {}
-  Map<String, dynamic> _write(Map<String, dynamic> json) => json;
-}
-mixin _ReturnSecureTokenProperty on JsonSerializable {
-  /// Whether return sts id token and refresh token instead of gitkit token.
-  bool? returnSecureToken;
-
-  @override
-  Map<String, dynamic> _write(Map<String, dynamic> json) {
-    json = super._write(json);
-    if (returnSecureToken != null) {
-      json['returnSecureToken'] = returnSecureToken;
-    }
-    return json;
-  }
-
-  @override
-  void _read(Map<String, dynamic> json) {
-    super._read(json);
-    if (json.containsKey('returnSecureToken')) {
-      returnSecureToken = json['returnSecureToken'];
-    }
-  }
-}
-
-mixin IdTokenResponse on JsonSerializable {
-  String? get idToken;
-
-  String? get refreshToken;
-
-  String? get expiresIn;
-
-  dynamic get mfaPendingCredential => _mfaPendingCredential;
-
-  dynamic _mfaPendingCredential;
-
-  @override
-  Map<String, dynamic> _write(Map<String, dynamic> json) {
-    json = super._write(json);
-    if (mfaPendingCredential != null) {
-      json['mfaPendingCredential'] = mfaPendingCredential;
-    }
-    return json;
-  }
-
-  @override
-  void _read(Map<String, dynamic> json) {
-    super._read(json);
-    if (json.containsKey('mfaPendingCredential')) {
-      _mfaPendingCredential = json['mfaPendingCredential'];
-    }
-  }
-}
-
-mixin _TenantIdProperty on JsonSerializable {
-  /// For multi-tenant use cases, in order to construct sign-in URL with the
-  /// correct IDP parameters, Firebear needs to know which Tenant to retrieve
-  /// IDP configs from.
-  String? tenantId;
-
-  @override
-  Map<String, dynamic> _write(Map<String, dynamic> json) {
-    json = super._write(json);
-    if (tenantId != null) {
-      json['tenantId'] = tenantId;
-      if (json.containsKey('tenantId')) {
-        tenantId = json['tenantId'];
-      }
-    }
-    return json;
-  }
-}
-
-class ResetPasswordResponse extends it.ResetPasswordResponse {
-  /// The multi-factor info to unenroll for revert second factor addition action.
-  Map<String, dynamic>? mfaInfo;
-
-  ResetPasswordResponse();
-
-  ResetPasswordResponse.fromJson(Map json)
-      : mfaInfo = json['mfaInfo'],
-        super.fromJson(json);
-
-  @override
-  Map<String, Object?> toJson() =>
-      {...super.toJson(), if (mfaInfo != null) 'mfaInfo': mfaInfo};
-}
-
-class SetAccountInfoResponse extends it.SetAccountInfoResponse
-    with JsonSerializable, IdTokenResponse {
-  SetAccountInfoResponse();
-
-  SetAccountInfoResponse.fromJson(Map json) : super.fromJson(json) {
-    _read(json as Map<String, dynamic>);
-  }
-
-  @override
-  Map<String, Object?> toJson() => _write(super.toJson());
-}
-
-class VerifyPasswordResponse extends it.VerifyPasswordResponse
-    with JsonSerializable, IdTokenResponse {
-  VerifyPasswordResponse();
-
-  VerifyPasswordResponse.fromJson(Map json) : super.fromJson(json) {
-    _read(json as Map<String, dynamic>);
-  }
-
-  @override
-  Map<String, Object?> toJson() => _write(super.toJson());
-}
-
-class IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse
-    extends it.IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse
-    with JsonSerializable, IdTokenResponse {
-  IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse();
-
-  IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse.fromJson(Map json)
-      : super.fromJson(json) {
-    _read(json as Map<String, dynamic>);
-  }
-
-  @override
-  Map<String, Object?> toJson() => _write(super.toJson());
-}
-
-class IdentitytoolkitRelyingpartySendVerificationCodeRequest
-    extends it.IdentitytoolkitRelyingpartySendVerificationCodeRequest {
-  String? safetyNetToken;
-
-  Map<String, dynamic>? autoRetrievalInfo;
-
-  IdentitytoolkitRelyingpartySendVerificationCodeRequest();
-
-  IdentitytoolkitRelyingpartySendVerificationCodeRequest.fromJson(Map json)
-      : safetyNetToken = json['safetyNetToken'],
-        autoRetrievalInfo = json['autoRetrievalInfo'],
-        super.fromJson(json);
-
-  @override
-  Map<String, Object?> toJson() => {
-        ...super.toJson(),
-        if (safetyNetToken != null) 'safetyNetToken': safetyNetToken,
-        if (autoRetrievalInfo != null) 'autoRetrievalInfo': autoRetrievalInfo,
-      };
-}
-
-class VerifyCustomTokenResponse extends it.VerifyCustomTokenResponse
-    with JsonSerializable, IdTokenResponse {
-  VerifyCustomTokenResponse();
-
-  VerifyCustomTokenResponse.fromJson(Map json) : super.fromJson(json) {
-    _read(json as Map<String, dynamic>);
-  }
-
-  @override
-  Map<String, Object?> toJson() => _write(super.toJson());
-}
-
-class EmailLinkSigninResponse extends it.EmailLinkSigninResponse
-    with JsonSerializable, IdTokenResponse {
-  EmailLinkSigninResponse();
-
-  EmailLinkSigninResponse.fromJson(Map json) : super.fromJson(json) {
-    _read(json as Map<String, dynamic>);
-  }
-
-  @override
-  Map<String, Object?> toJson() => _write(super.toJson());
-}
-
-class SignupNewUserResponse extends it.SignupNewUserResponse
-    with JsonSerializable, IdTokenResponse {
-  SignupNewUserResponse();
-
-  SignupNewUserResponse.fromJson(Map json) : super.fromJson(json) {
-    _read(json as Map<String, dynamic>);
-  }
-
-  @override
-  Map<String, Object?> toJson() => _write(super.toJson());
-}
-
-class VerifyAssertionResponse extends it.VerifyAssertionResponse
-    with JsonSerializable, IdTokenResponse {
-  String? _pendingToken;
-
-  String? nonce;
-
-  String? get pendingToken => _pendingToken;
-
-  VerifyAssertionResponse();
-
-  VerifyAssertionResponse.fromJson(Map json) : super.fromJson(json) {
-    _read(json as Map<String, dynamic>);
-  }
-
-  @override
-  void _read(Map<String, dynamic> json) {
-    super._read(json);
-    _pendingToken = json['pendingToken'];
-    nonce = json['nonce'];
-  }
-
-  @override
-  Map<String, dynamic> _write(Map<String, dynamic> json) {
-    return {
-      ...super._write(json),
-      if (pendingToken != null) 'pendingToken': pendingToken,
-      if (nonce != null) 'nonce': nonce
-    };
-  }
-
-  @override
-  Map<String, Object?> toJson() => _write(super.toJson());
-}
-
-class Relyingparty extends it.Relyingparty {
-  String? dynamicLinkDomain;
-
-  Relyingparty();
-
-  Relyingparty.fromJson(Map json) : super.fromJson(json) {
-    dynamicLinkDomain = json['dynamicLinkDomain'];
-  }
-
-  @override
-  Map<String, Object?> toJson() => {
-        ...super.toJson(),
-        if (dynamicLinkDomain != null) 'dynamicLinkDomain': dynamicLinkDomain
-      };
-}
-
-class IdentitytoolkitRelyingpartyEmailLinkSigninRequest
-    extends it.IdentitytoolkitRelyingpartyEmailLinkSigninRequest
-    with JsonSerializable, _ReturnSecureTokenProperty, _TenantIdProperty {
-  IdentitytoolkitRelyingpartyEmailLinkSigninRequest();
-
-  IdentitytoolkitRelyingpartyEmailLinkSigninRequest.fromJson(Map json)
-      : super.fromJson(json) {
-    _read(json as Map<String, dynamic>);
-  }
-
-  @override
-  Map<String, Object?> toJson() => _write(super.toJson());
-}
-
-class IdentitytoolkitRelyingpartySignupNewUserRequest
-    extends it.IdentitytoolkitRelyingpartySignupNewUserRequest
-    with JsonSerializable, _ReturnSecureTokenProperty {
-  IdentitytoolkitRelyingpartySignupNewUserRequest();
-
-  IdentitytoolkitRelyingpartySignupNewUserRequest.fromJson(Map json)
-      : super.fromJson(json) {
-    _read(json as Map<String, dynamic>);
-  }
-
-  @override
-  Map<String, Object?> toJson() => _write(super.toJson());
-}
-
-class IdentitytoolkitRelyingpartyVerifyCustomTokenRequest
-    extends it.IdentitytoolkitRelyingpartyVerifyCustomTokenRequest
-    with JsonSerializable, _TenantIdProperty {
-  IdentitytoolkitRelyingpartyVerifyCustomTokenRequest();
-
-  IdentitytoolkitRelyingpartyVerifyCustomTokenRequest.fromJson(Map json)
-      : super.fromJson(json) {
-    _read(json as Map<String, dynamic>);
-  }
-
-  @override
-  Map<String, Object?> toJson() => _write(super.toJson());
-}
+export 'package:firebaseapis/identitytoolkit/v1.dart';
 
 class _MyApiRequester extends commons.ApiRequester {
   _MyApiRequester(http.Client httpClient, String rootUrl, String basePath)
@@ -342,7 +68,7 @@ class _MyApiRequester extends commons.ApiRequester {
           .timeout(timeoutDuration,
               onTimeout: () =>
                   throw FirebaseAuthException.networkRequestFailed());
-    } on it.DetailedApiRequestError catch (e) {
+    } on commons.DetailedApiRequestError catch (e) {
       var errorCode = e.message;
       String? errorMessage;
       FirebaseAuthException? error;
@@ -365,121 +91,26 @@ class _MyApiRequester extends commons.ApiRequester {
   }
 }
 
-class _Client extends http.BaseClient {
-  final http.Client baseClient;
+class IdentityToolkitApi implements id.IdentityToolkitApi {
+  /// See, edit, configure, and delete your Google Cloud data and see the email
+  /// address for your Google Account.
+  static const cloudPlatformScope =
+      'https://www.googleapis.com/auth/cloud-platform';
 
-  _Client(this.baseClient);
+  /// View and administer all your Firebase data and settings
+  static const firebaseScope = 'https://www.googleapis.com/auth/firebase';
 
-  String? locale;
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    if (locale != null) request.headers['X-Firebase-Locale'] = locale!;
-    return baseClient.send(request);
-  }
-}
-
-class IdentitytoolkitApi implements it.IdentityToolkitApi {
-  final commons.ApiRequester _requester;
-  final _Client _client;
-
-  /// Updates the custom locale header.
-  void updateCustomLocaleHeader(String? languageCode) {
-    _client.locale = languageCode;
-  }
-
-  @override
-  RelyingpartyResource get relyingparty => RelyingpartyResource(_requester);
-
-  IdentitytoolkitApi._(this._client,
-      {String rootUrl = 'https://www.googleapis.com/',
-      String servicePath = 'identitytoolkit/v3/relyingparty/'})
-      : _requester = _MyApiRequester(_client, rootUrl, servicePath);
-
-  IdentitytoolkitApi(http.Client client,
-      {String rootUrl = 'https://www.googleapis.com/',
-      String servicePath = 'identitytoolkit/v3/relyingparty/'})
-      : this._(_Client(client), rootUrl: rootUrl, servicePath: servicePath);
-}
-
-class RelyingpartyResource extends it.RelyingpartyResource {
   final commons.ApiRequester _requester;
 
-  RelyingpartyResource(this._requester) : super(_requester);
-
   @override
-  Future<VerifyPasswordResponse> verifyPassword(
-      it.IdentitytoolkitRelyingpartyVerifyPasswordRequest request,
-      {String? $fields}) async {
-    return VerifyPasswordResponse.fromJson(
-        await _do('verifyPassword', request, $fields: $fields));
-  }
-
+  AccountsResource get accounts => AccountsResource(_requester);
   @override
-  Future<IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse>
-      verifyPhoneNumber(
-          it.IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest request,
-          {String? $fields}) async {
-    return IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse.fromJson(
-        await _do('verifyPhoneNumber', request, $fields: $fields));
-  }
-
+  ProjectsResource get projects => ProjectsResource(_requester);
   @override
-  Future<SetAccountInfoResponse> setAccountInfo(
-      it.IdentitytoolkitRelyingpartySetAccountInfoRequest request,
-      {String? $fields}) async {
-    return SetAccountInfoResponse.fromJson(
-        await _do('setAccountInfo', request, $fields: $fields));
-  }
+  V1Resource get v1 => V1Resource(_requester);
 
-  @override
-  Future<ResetPasswordResponse> resetPassword(
-      it.IdentitytoolkitRelyingpartyResetPasswordRequest request,
-      {String? $fields}) async {
-    return ResetPasswordResponse.fromJson(
-        await _do('resetPassword', request, $fields: $fields));
-  }
-
-  @override
-  Future<VerifyCustomTokenResponse> verifyCustomToken(
-      it.IdentitytoolkitRelyingpartyVerifyCustomTokenRequest request,
-      {String? $fields}) async {
-    return VerifyCustomTokenResponse.fromJson(
-        await _do('verifyCustomToken', request, $fields: $fields));
-  }
-
-  @override
-  Future<EmailLinkSigninResponse> emailLinkSignin(
-      it.IdentitytoolkitRelyingpartyEmailLinkSigninRequest request,
-      {String? $fields}) async {
-    return EmailLinkSigninResponse.fromJson(
-        await _do('emailLinkSignin', request, $fields: $fields));
-  }
-
-  @override
-  Future<SignupNewUserResponse> signupNewUser(
-      it.IdentitytoolkitRelyingpartySignupNewUserRequest request,
-      {String? $fields}) async {
-    return SignupNewUserResponse.fromJson(
-        await _do('signupNewUser', request, $fields: $fields));
-  }
-
-  @override
-  Future<VerifyAssertionResponse> verifyAssertion(
-      it.IdentitytoolkitRelyingpartyVerifyAssertionRequest request,
-      {String? $fields}) async {
-    return VerifyAssertionResponse.fromJson(
-        await _do('verifyAssertion', request, $fields: $fields));
-  }
-
-  Future<dynamic> _do(String url, dynamic request, {String? $fields}) {
-    var body = json.encode(request);
-
-    return _requester.request(url, 'POST',
-        body: body,
-        queryParams: {
-          if ($fields != null) 'fields': [$fields]
-        },
-        downloadOptions: commons.DownloadOptions.metadata);
-  }
+  IdentityToolkitApi(http.Client client,
+      {String rootUrl = 'https://identitytoolkit.googleapis.com/',
+      String servicePath = ''})
+      : _requester = _MyApiRequester(client, rootUrl, servicePath);
 }

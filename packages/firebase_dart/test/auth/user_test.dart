@@ -2,8 +2,8 @@ import 'package:clock/clock.dart';
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
-import 'package:firebase_dart/src/auth/rpc/identitytoolkit.dart';
 import 'package:firebase_dart/src/implementation/isolate/auth.dart';
+import 'package:firebaseapis/identitytoolkit/v1.dart';
 import 'package:test/test.dart';
 
 import 'auth_test.dart';
@@ -158,21 +158,21 @@ void runUserTests({bool isolated = false}) {
           ..phoneNumber = '+16505550101'
           // User on server has two federated providers and one phone provider linked.
           ..providerUserInfo = [
-            UserInfoProviderUserInfo.fromJson({
+            GoogleCloudIdentitytoolkitV1ProviderUserInfo.fromJson({
               'providerId': 'providerId1',
               'displayName': 'user1',
               'email': 'user1@example.com',
               'photoUrl': 'https://www.example.com/user1/photo.png',
               'rawId': 'providerUserId1'
             }),
-            UserInfoProviderUserInfo.fromJson({
+            GoogleCloudIdentitytoolkitV1ProviderUserInfo.fromJson({
               'providerId': 'providerId2',
               'displayName': 'user2',
               'email': 'user2@example.com',
               'photoUrl': 'https://www.example.com/user2/photo.png',
               'rawId': 'providerUserId2'
             }),
-            UserInfoProviderUserInfo.fromJson({
+            GoogleCloudIdentitytoolkitV1ProviderUserInfo.fromJson({
               'providerId': 'phone',
               'rawId': '+16505550101',
               'phoneNumber': '+16505550101'
