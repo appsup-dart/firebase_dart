@@ -110,14 +110,12 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       {required openid.Credential openidCredential,
       String? provider,
       AuthCredential? credential,
-      bool? isNewUser,
-      String? kind}) async {
+      bool? isNewUser}) async {
     // Get additional IdP data if available in the response.
     var additionalUserInfo = createAdditionalUserInfo(
         credential: openidCredential,
         providerId: provider,
-        isNewUser: isNewUser,
-        kind: kind);
+        isNewUser: isNewUser);
 
     // When custom token is exchanged for idToken, continue sign in with
     // ID token and return firebase Auth user.

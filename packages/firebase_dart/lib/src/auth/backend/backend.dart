@@ -16,9 +16,7 @@ class BackendConnection {
   Future<GoogleCloudIdentitytoolkitV1GetAccountInfoResponse> getAccountInfo(
       GoogleCloudIdentitytoolkitV1GetAccountInfoRequest request) async {
     var user = await _userFromIdToken(request.idToken!);
-    return GoogleCloudIdentitytoolkitV1GetAccountInfoResponse()
-      ..kind = 'identitytoolkit#GetAccountInfoResponse'
-      ..users = [user];
+    return GoogleCloudIdentitytoolkitV1GetAccountInfoResponse()..users = [user];
   }
 
   Future<GoogleCloudIdentitytoolkitV1SignUpResponse> signupNewUser(
@@ -37,7 +35,6 @@ class BackendConnection {
     var tokenExpiresIn = await backend.getTokenExpiresIn();
     return GoogleCloudIdentitytoolkitV1SignUpResponse()
       ..expiresIn = '${tokenExpiresIn.inSeconds}'
-      ..kind = 'identitytoolkit#SignupNewUserResponse'
       ..idToken = idToken
       ..refreshToken = refreshToken;
   }
@@ -59,7 +56,6 @@ class BackendConnection {
           idToken == null ? null : await backend.generateRefreshToken(idToken);
       var tokenExpiresIn = await backend.getTokenExpiresIn();
       return GoogleCloudIdentitytoolkitV1SignInWithPasswordResponse()
-        ..kind = 'identitytoolkit#VerifyPasswordResponse'
         ..localId = user.localId
         ..idToken = idToken
         ..expiresIn = '${tokenExpiresIn.inSeconds}'
@@ -78,7 +74,6 @@ class BackendConnection {
     var user = await backend.getUserByEmail(email);
 
     return GoogleCloudIdentitytoolkitV1CreateAuthUriResponse()
-      ..kind = 'identitytoolkit#CreateAuthUriResponse'
       ..allProviders = [for (var p in user.providerUserInfo!) p.providerId!]
       ..signinMethods = [for (var p in user.providerUserInfo!) p.providerId!];
   }
@@ -105,8 +100,7 @@ class BackendConnection {
       GoogleCloudIdentitytoolkitV1DeleteAccountRequest request) async {
     var user = await _userFromIdToken(request.idToken!);
     await backend.deleteUser(user.localId);
-    return GoogleCloudIdentitytoolkitV1DeleteAccountResponse()
-      ..kind = 'identitytoolkit#DeleteAccountResponse';
+    return GoogleCloudIdentitytoolkitV1DeleteAccountResponse();
   }
 
   Future<BackendUser> _userFromIdToken(String idToken) async {
@@ -129,9 +123,7 @@ class BackendConnection {
         : email != null
             ? await backend.getUserByEmail(email)
             : throw ArgumentError('Invalid request: missing idToken or email');
-    return GoogleCloudIdentitytoolkitV1GetOobCodeResponse()
-      ..kind = 'identitytoolkit#GetOobConfirmationCodeResponse'
-      ..email = user.email;
+    return GoogleCloudIdentitytoolkitV1GetOobCodeResponse()..email = user.email;
   }
 
   Future<GoogleCloudIdentitytoolkitV1ResetPasswordResponse> resetPassword(
@@ -141,7 +133,6 @@ class BackendConnection {
       var user = await backend.getUserById(jwt.claims['sub']);
       await backend.updateUser(user..rawPassword = request.newPassword);
       return GoogleCloudIdentitytoolkitV1ResetPasswordResponse()
-        ..kind = 'identitytoolkit#ResetPasswordResponse'
         ..requestType = jwt.claims['operation']
         ..email = user.email;
     } on ArgumentError {
@@ -193,7 +184,6 @@ class BackendConnection {
     await backend.updateUser(user);
 
     return GoogleCloudIdentitytoolkitV1SetAccountInfoResponse()
-      ..kind = 'identitytoolkit#SetAccountInfoResponse'
       ..displayName = user.displayName
       ..photoUrl = user.photoUrl
       ..email = user.email
@@ -289,7 +279,6 @@ class BackendConnection {
     var refreshToken = await backend.generateRefreshToken(idToken);
     var tokenExpiresIn = await backend.getTokenExpiresIn();
     return GoogleCloudIdentitytoolkitV1SignInWithEmailLinkResponse()
-      ..kind = 'identitytoolkit#EmailLinkSigninResponse'
       ..localId = user.localId
       ..idToken = idToken
       ..expiresIn = '${tokenExpiresIn.inSeconds}'

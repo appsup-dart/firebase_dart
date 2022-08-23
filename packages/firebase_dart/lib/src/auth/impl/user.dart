@@ -626,8 +626,7 @@ class IdTokenResultImpl extends IdTokenResult {
 AdditionalUserInfo createAdditionalUserInfo(
     {openid.Credential? credential,
     String? providerId,
-    required bool? isNewUser,
-    String? kind}) {
+    required bool? isNewUser}) {
   // Provider ID already present.
   if (providerId != null) {
     // TODO
@@ -635,10 +634,10 @@ AdditionalUserInfo createAdditionalUserInfo(
     // For all other ID token responses with no providerId, get the required
     // providerId from the ID token itself.
     return GenericAdditionalUserInfo(
-        providerId: GenericAdditionalUserInfo._providerIdFromInfo(
-            idToken: credential!.idToken.toCompactSerialization()),
-        isNewUser: GenericAdditionalUserInfo._isNewUserFromInfo(
-            isNewUser: isNewUser, kind: kind));
+      providerId: GenericAdditionalUserInfo._providerIdFromInfo(
+          idToken: credential!.idToken.toCompactSerialization()),
+      isNewUser: isNewUser ?? false,
+    );
   }
   return GenericAdditionalUserInfo(
       providerId: providerId, isNewUser: isNewUser!);
@@ -693,18 +692,5 @@ class GenericAdditionalUserInfo implements AdditionalUserInfo {
     }
 
     return providerId;
-  }
-
-  static bool _isNewUserFromInfo(
-      {required String? kind, required bool? isNewUser}) {
-    // Check whether user is new. Temporary Solution since backend does not return
-    // isNewUser field for SignupNewUserResponse.
-    if (isNewUser != null) return isNewUser;
-
-    if (kind == 'identitytoolkit#SignupNewUserResponse') {
-      //For SignupNewUserResponse, always set isNewUser to true.
-      return true;
-    }
-    return false;
   }
 }

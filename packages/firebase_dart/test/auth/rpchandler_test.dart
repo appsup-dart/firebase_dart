@@ -439,7 +439,6 @@ void main() {
         test('fetchSignInMethodsForIdentifier: success', () async {
           await tester.shouldSucceed(
             serverResponse: {
-              'kind': 'identitytoolkit#CreateAuthUriResponse',
               'allProviders': ['google.com', 'password'],
               'signinMethods': ['google.com', 'emailLink'],
               'registered': true,
@@ -452,7 +451,6 @@ void main() {
           rpcHandler.tenantId = '123456789012';
           await tester.shouldSucceed(
               serverResponse: {
-                'kind': 'identitytoolkit#CreateAuthUriResponse',
                 'allProviders': ['google.com', 'password'],
                 'signinMethods': ['google.com', 'emailLink'],
                 'registered': true,
@@ -469,7 +467,6 @@ void main() {
             () async {
           await tester.shouldSucceed(
             serverResponse: {
-              'kind': 'identitytoolkit#CreateAuthUriResponse',
               'registered': true,
               'sessionId': 'AXT8iKR2x89y2o7zRnroApio_uo'
             },
@@ -489,7 +486,6 @@ void main() {
               'continueUri': 'http://localhost'
             },
             serverResponse: {
-              'kind': 'identitytoolkit#CreateAuthUriResponse',
               'allProviders': ['google.com', 'password'],
               'signinMethods': ['google.com', 'emailLink'],
               'registered': true,
@@ -519,7 +515,6 @@ void main() {
         test('fetchProvidersForIdentifier: success', () async {
           await tester.shouldSucceed(
             serverResponse: {
-              'kind': 'identitytoolkit#CreateAuthUriResponse',
               'authUri': 'https://accounts.google.com/o/oauth2/auth?foo=bar',
               'providerId': 'google.com',
               'allProviders': ['google.com', 'myauthprovider.com'],
@@ -534,7 +529,6 @@ void main() {
           rpcHandler.tenantId = '123456789012';
           await tester.shouldSucceed(
               serverResponse: {
-                'kind': 'identitytoolkit#CreateAuthUriResponse',
                 'authUri': 'https://accounts.google.com/o/oauth2/auth?foo=bar',
                 'providerId': 'google.com',
                 'allProviders': ['google.com', 'myauthprovider.com'],
@@ -563,7 +557,6 @@ void main() {
               'continueUri': 'http://localhost'
             },
             serverResponse: {
-              'kind': 'identitytoolkit#CreateAuthUriResponse',
               'authUri': 'https://accounts.google.com/o/oauth2/auth?foo=bar',
               'providerId': 'google.com',
               'allProviders': ['google.com', 'myauthprovider.com'],
@@ -1387,7 +1380,6 @@ void main() {
                   'returnSecureToken': true
                 },
                 serverResponse: {
-                  'kind': 'identitytoolkit#VerifyAssertionResponse',
                   'errorMessage': 'FEDERATED_USER_ID_ALREADY_LINKED',
                   'email': 'user@example.com',
                   'oauthAccessToken': 'googleAccessToken',
@@ -1418,7 +1410,6 @@ void main() {
                   'returnSecureToken': true
                 },
                 serverResponse: {
-                  'kind': 'identitytoolkit#VerifyAssertionResponse',
                   'errorMessage': 'FEDERATED_USER_ID_ALREADY_LINKED',
                   'email': 'user@example.com',
                   'oauthExpireIn': 5183999,
@@ -1449,7 +1440,6 @@ void main() {
                 'returnSecureToken': true
               },
               serverResponse: {
-                'kind': 'identitytoolkit#VerifyAssertionResponse',
                 'errorMessage': 'FEDERATED_USER_ID_ALREADY_LINKED',
                 'email': 'user@example.com',
                 'oauthExpireIn': 5183999,
@@ -1483,7 +1473,6 @@ void main() {
                 'returnSecureToken': true
               },
               serverResponse: {
-                'kind': 'identitytoolkit#VerifyAssertionResponse',
                 'errorMessage': 'FEDERATED_USER_ID_ALREADY_LINKED',
                 'email': 'user@example.com',
                 'oauthExpireIn': 5183999,
@@ -1515,7 +1504,6 @@ void main() {
                 'returnSecureToken': true
               },
               serverResponse: {
-                'kind': 'identitytoolkit#VerifyAssertionResponse',
                 'errorMessage': 'EMAIL_EXISTS',
                 'email': 'user@example.com',
                 'oauthAccessToken': 'facebookAccessToken',
@@ -1544,7 +1532,6 @@ void main() {
                   'returnSecureToken': true
                 },
                 serverResponse: {
-                  'kind': 'identitytoolkit#VerifyAssertionResponse',
                   'errorMessage': 'EMAIL_EXISTS',
                   'email': 'user@example.com',
                   'oauthExpireIn': 5183999,
@@ -1574,7 +1561,6 @@ void main() {
                 'returnSecureToken': true
               },
               serverResponse: {
-                'kind': 'identitytoolkit#VerifyAssertionResponse',
                 'errorMessage': 'EMAIL_EXISTS',
                 'email': 'user@example.com',
                 'oauthExpireIn': 5183999,
@@ -1607,7 +1593,6 @@ void main() {
                 'returnSecureToken': true
               },
               serverResponse: {
-                'kind': 'identitytoolkit#VerifyAssertionResponse',
                 'errorMessage': 'EMAIL_EXISTS',
                 'email': 'user@example.com',
                 'oauthExpireIn': 5183999,
@@ -3308,7 +3293,6 @@ void main() {
                 serverResponse: Future.delayed(
                     Duration(milliseconds: 4999),
                     () => {
-                          'kind': 'identitytoolkit#CreateAuthUriResponse',
                           'authUri':
                               'https://accounts.google.com/o/oauth2/auth?foo=bar',
                           'providerId': 'google.com',
@@ -3329,7 +3313,6 @@ void main() {
                 serverResponse: Future.delayed(
                     Duration(milliseconds: 5001),
                     () => {
-                          'kind': 'identitytoolkit#CreateAuthUriResponse',
                           'authUri':
                               'https://accounts.google.com/o/oauth2/auth?foo=bar',
                           'providerId': 'google.com',
