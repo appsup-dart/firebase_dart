@@ -570,15 +570,19 @@ class RpcHandler {
   }
 
   /// Requests setAccountInfo endpoint for updateEmail operation.
-  Future<GoogleCloudIdentitytoolkitV1SetAccountInfoResponse> updateEmail(
-      String idToken, String newEmail) async {
+  Future<SignInResult> updateEmail(String idToken, String newEmail) async {
     _validateEmail(newEmail);
     var response = await identitytoolkitApi.accounts
         .update(GoogleCloudIdentitytoolkitV1SetAccountInfoRequest()
           ..idToken = idToken
           ..email = newEmail
           ..returnSecureToken = true);
-    return response;
+
+    return handleIdTokenResponse(
+        idToken: response.idToken,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn,
+        mfaPendingCredential: null);
   }
 
   /// Requests setAccountInfo endpoint for updatePassword operation.

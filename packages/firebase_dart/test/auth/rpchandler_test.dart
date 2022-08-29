@@ -2548,26 +2548,32 @@ void main() {
       });
 
       group('updateEmail', () {
+        var token = createMockJwt(uid: 'uid123');
+
         var tester = Tester(
           path: 'accounts:update',
           expectedBody: {
-            'idToken': 'ID_TOKEN',
+            'idToken': token,
             'email': 'newuser@example.com',
             'returnSecureToken': true
           },
-          action: () =>
-              rpcHandler.updateEmail('ID_TOKEN', 'newuser@example.com'),
+          expectedResult: (response) {
+            return {'id_token': response['idToken']};
+          },
+          action: () => rpcHandler
+              .updateEmail(token, 'newuser@example.com')
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
         );
         test('updateEmail: success', () async {
           await tester.shouldSucceed(
-            serverResponse: {'email': 'newuser@example.com'},
+            serverResponse: {'email': 'newuser@example.com', 'idToken': token},
           );
         });
 
         test('updateEmail: custom locale success', () async {
           httpClient.locale = 'tr';
           await tester.shouldSucceed(
-            serverResponse: {'email': 'newuser@example.com'},
+            serverResponse: {'email': 'newuser@example.com', 'idToken': token},
             expectedHeaders: {
               'Content-Type': 'application/json',
               'X-Firebase-Locale': 'tr'
