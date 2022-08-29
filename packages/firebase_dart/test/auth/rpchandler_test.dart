@@ -2609,37 +2609,6 @@ void main() {
         });
       });
 
-      group('updateEmailAndPassword', () {
-        var tester = Tester(
-          path: 'accounts:update',
-          expectedBody: {
-            'idToken': 'ID_TOKEN',
-            'email': 'me@gmail.com',
-            'password': 'newPassword',
-            'returnSecureToken': true
-          },
-          action: () => rpcHandler.updateEmailAndPassword(
-              'ID_TOKEN', 'me@gmail.com', 'newPassword'),
-        );
-        test('updateEmailAndPassword: success', () async {
-          await tester.shouldSucceed(
-            serverResponse: {'email': 'user@example.com', 'idToken': 'idToken'},
-          );
-        });
-
-        test('updateEmailAndPassword: no email', () async {
-          expect(
-              rpcHandler.updateEmailAndPassword('ID_TOKEN', '', 'newPassword'),
-              throwsA(FirebaseAuthException.invalidEmail()));
-        });
-        test('updateEmailAndPassword: no password', () async {
-          expect(
-              () => rpcHandler.updateEmailAndPassword(
-                  'ID_TOKEN', 'me@gmail.com', ''),
-              throwsA(FirebaseAuthException.weakPassword()));
-        });
-      });
-
       group('signInWithEmailLinkForLinking', () {
         var tester = Tester(
           path: 'accounts:signInWithEmailLink',

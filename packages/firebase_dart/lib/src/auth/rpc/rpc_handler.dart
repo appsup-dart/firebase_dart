@@ -598,26 +598,6 @@ class RpcHandler {
         mfaPendingCredential: null);
   }
 
-  /// Requests setAccountInfo endpoint to set the email and password. This can be
-  /// used to link an existing account to a email and password account.
-  Future<GoogleCloudIdentitytoolkitV1SetAccountInfoResponse>
-      updateEmailAndPassword(
-          String idToken, String newEmail, String newPassword) async {
-    _validateEmail(newEmail);
-    _validateStrongPassword(newPassword);
-    var response = await identitytoolkitApi.accounts
-        .update(GoogleCloudIdentitytoolkitV1SetAccountInfoRequest()
-          ..idToken = idToken
-          ..email = newEmail
-          ..password = newPassword
-          ..returnSecureToken = true);
-    _validateIdTokenResponse(
-      idToken: response.idToken,
-      mfaPendingCredential: null,
-    );
-    return response;
-  }
-
   /// Verifies an email link OTP for linking and returns a Promise that resolves
   /// with the ID token.
   Future<GoogleCloudIdentitytoolkitV1SignInWithEmailLinkResponse>
