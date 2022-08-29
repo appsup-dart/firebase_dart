@@ -235,7 +235,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     throw UnimplementedError();
   }
 
-  Future<openid.Credential> _getCredential(AuthCredential credential) async {
+  Future<SignInResult> _signInForExisting(AuthCredential credential) async {
     if (credential is PhoneAuthCredential) {
       return await _auth.rpcHandler.signInWithPhoneNumberForExisting(
           sessionInfo: credential.verificationId,
@@ -287,7 +287,8 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       AuthCredential credential) async {
     openid.Credential c;
     try {
-      c = await _getCredential(credential);
+      var r = await _signInForExisting(credential);
+      c = r.credential;
     } on FirebaseAuthException catch (e) {
       if (e.code == FirebaseAuthException.userDeleted().code) {
         throw FirebaseAuthException.userMismatch();
@@ -426,12 +427,14 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   void _updateTokensIfPresent(
       GoogleCloudIdentitytoolkitV1SetAccountInfoResponse response) async {
     if (response.idToken != null && _lastAccessToken != response.idToken) {
-      _credential = await _rpcHandler.handleIdTokenResponse(
+      var result = await _rpcHandler.handleIdTokenResponse(
         idToken: response.idToken,
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn,
         mfaPendingCredential: null,
       );
+
+      _credential = result.credential;
 
       _lastAccessToken = response.idToken;
 

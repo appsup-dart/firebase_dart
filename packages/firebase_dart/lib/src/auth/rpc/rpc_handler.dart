@@ -138,7 +138,7 @@ class RpcHandler {
   /// Sign in with a custom token
   ///
   /// Returns a future that resolves with the ID token.
-  Future<openid.Credential> signInWithCustomToken(String token) async {
+  Future<SignInResult> signInWithCustomToken(String token) async {
     var response = await identitytoolkitApi.accounts.signInWithCustomToken(
         GoogleCloudIdentitytoolkitV1SignInWithCustomTokenRequest()
           ..token = token
@@ -156,8 +156,7 @@ class RpcHandler {
   /// Sign in with an an email link OTP
   ///
   /// Returns a future that resolves with the ID token.
-  Future<openid.Credential> signInWithEmailLink(
-      String email, String oobCode) async {
+  Future<SignInResult> signInWithEmailLink(String email, String oobCode) async {
     _validateEmail(email);
     if (oobCode.isEmpty) {
       throw FirebaseAuthException.internalError();
@@ -179,7 +178,7 @@ class RpcHandler {
   /// Sign in with a password
   ///
   /// Returns a future that resolves with the ID token.
-  Future<openid.Credential> signInWithPassword(
+  Future<SignInResult> signInWithPassword(
       String email, String? password) async {
     _validateEmail(email);
     _validatePassword(password);
@@ -202,7 +201,7 @@ class RpcHandler {
   /// Creates an email/password account.
   ///
   /// Returns a future that resolves with the ID token.
-  Future<openid.Credential> signUp(String email, String? password) async {
+  Future<SignInResult> signUp(String email, String? password) async {
     _validateEmail(email);
     _validateStrongPassword(password);
     var response = await identitytoolkitApi.accounts
@@ -239,7 +238,7 @@ class RpcHandler {
   /// Signs in a user as anonymous.
   ///
   /// Returns a future that resolves with the ID token.
-  Future<openid.Credential> signInAnonymously() async {
+  Future<SignInResult> signInAnonymously() async {
     var response = await identitytoolkitApi.accounts.signUp(
         GoogleCloudIdentitytoolkitV1SignUpRequest()..tenantId = tenantId);
 
@@ -247,10 +246,10 @@ class RpcHandler {
       throw FirebaseAuthException.internalError();
     }
 
-    return _credentialFromIdToken(
+    return SignInResult.success(await _credentialFromIdToken(
         idToken: response.idToken!,
         refreshToken: response.refreshToken,
-        expiresIn: response.expiresIn);
+        expiresIn: response.expiresIn));
   }
 
   Future<openid.Credential> _credentialFromIdToken(
@@ -268,7 +267,7 @@ class RpcHandler {
   }
 
   /// Sign in with Identity Provider
-  Future<openid.Credential> signInWithIdp(
+  Future<SignInResult> signInWithIdp(
       {String? sessionId,
       String? requestUri,
       String? postBody,
@@ -282,10 +281,10 @@ class RpcHandler {
 
     var response = await _signInWithIdp(request);
 
-    return _credentialFromIdToken(
+    return SignInResult.success(await _credentialFromIdToken(
         idToken: response.idToken!,
         refreshToken: response.refreshToken,
-        expiresIn: response.expiresIn);
+        expiresIn: response.expiresIn));
   }
 
   /// Sign in with Identity Provider for federated account linking
@@ -308,7 +307,7 @@ class RpcHandler {
   }
 
   /// Sign in with Identity Platform for an existing federated account
-  Future<openid.Credential> signInWithIdpForExisting(
+  Future<SignInResult> signInWithIdpForExisting(
       {String? sessionId,
       String? requestUri,
       String? postBody,
@@ -322,10 +321,10 @@ class RpcHandler {
           ..requestUri = requestUri
           ..sessionId = sessionId);
 
-    return _credentialFromIdToken(
+    return SignInResult.success(await _credentialFromIdToken(
         idToken: response.idToken!,
         refreshToken: response.refreshToken,
-        expiresIn: response.expiresIn);
+        expiresIn: response.expiresIn));
   }
 
   Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse> _signInWithIdp(
@@ -389,7 +388,7 @@ class RpcHandler {
     }
   }
 
-  Future<openid.Credential> handleIdTokenResponse(
+  Future<SignInResult> handleIdTokenResponse(
       {required String? idToken,
       required String? refreshToken,
       required String? expiresIn,
@@ -399,8 +398,8 @@ class RpcHandler {
       mfaPendingCredential: mfaPendingCredential,
     );
 
-    return _credentialFromIdToken(
-        idToken: idToken!, refreshToken: refreshToken, expiresIn: expiresIn);
+    return SignInResult.success(await _credentialFromIdToken(
+        idToken: idToken!, refreshToken: refreshToken, expiresIn: expiresIn));
   }
 
   /// Requests getOobCode endpoint for passwordless email sign-in.
@@ -716,7 +715,7 @@ class RpcHandler {
   }
 
   /// Sign in with phone number
-  Future<openid.Credential> signInWithPhoneNumber(
+  Future<SignInResult> signInWithPhoneNumber(
       {String? sessionInfo,
       String? code,
       String? temporaryProof,
@@ -740,7 +739,7 @@ class RpcHandler {
   }
 
   /// Sign in with phone number for linking
-  Future<openid.Credential> signInWithPhoneNumberForLinking(
+  Future<SignInResult> signInWithPhoneNumberForLinking(
       {String? sessionInfo,
       String? code,
       String? temporaryProof,
@@ -774,7 +773,7 @@ class RpcHandler {
   }
 
   /// Sign in with phone number for reauthentication
-  Future<openid.Credential> signInWithPhoneNumberForExisting(
+  Future<SignInResult> signInWithPhoneNumberForExisting(
       {String? sessionInfo,
       String? code,
       String? temporaryProof,
@@ -1129,4 +1128,10 @@ class GoogleCloudIdentitytoolkitV1SignInWithIdpResponseWithNonce
         ...super.toJson(),
         'nonce': nonce,
       };
+}
+
+class SignInResult {
+  final openid.Credential credential;
+
+  SignInResult.success(this.credential);
 }

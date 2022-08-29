@@ -150,7 +150,7 @@ void main() {
           expectedResult: (response) => {'id_token': response['idToken']},
           action: () => rpcHandler
               .signInAnonymously()
-              .then((v) => {'id_token': v.response!['id_token']}),
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
         );
         group('server provided error message', () {
           test('server provided error message: known error code', () async {
@@ -624,7 +624,7 @@ void main() {
           },
           action: () => rpcHandler
               .signInWithCustomToken('CUSTOM_TOKEN')
-              .then((v) => {'id_token': v.response!['id_token']}),
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
         );
 
         test('signInWithCustomToken: success', () async {
@@ -691,7 +691,7 @@ void main() {
             },
             action: () => rpcHandler
                 .signInWithEmailLink('user@example.com', 'OTP_CODE')
-                .then((v) => {'id_token': v.response!['id_token']}));
+                .then((v) => {'id_token': v.credential.response!['id_token']}));
         test('signInWithEmailLink: success', () async {
           await tester.shouldSucceed(
             serverResponse: {'idToken': createMockJwt(uid: 'user1')},
@@ -755,7 +755,7 @@ void main() {
           },
           action: () => rpcHandler
               .signUp('uid123@fake.com', 'mysupersecretpassword')
-              .then((v) => {'id_token': v.response!['id_token']}),
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
         );
         test('signUp: success', () async {
           await tester.shouldSucceed(
@@ -855,7 +855,7 @@ void main() {
             },
             action: () => rpcHandler
                 .signInWithPassword('uid123@fake.com', 'mysupersecretpassword')
-                .then((v) => {'id_token': v.response!['id_token']}));
+                .then((v) => {'id_token': v.credential.response!['id_token']}));
         test('signInWithPassword: success', () async {
           await tester.shouldSucceed(
             serverResponse: {
@@ -935,7 +935,7 @@ void main() {
           expectedResult: (response) => {'id_token': response['idToken']},
           action: () => rpcHandler
               .signInAnonymously()
-              .then((v) => {'id_token': v.response!['id_token']}),
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
         );
         test('signInAnonymously: success', () async {
           await tester.shouldSucceed(
@@ -987,7 +987,7 @@ void main() {
               .signInWithIdp(
                   sessionId: 'SESSION_ID',
                   requestUri: 'http://localhost/callback#oauthResponse')
-              .then((v) => v.idToken.toCompactSerialization()),
+              .then((v) => v.credential.idToken.toCompactSerialization()),
         );
         test('signInWithIdp: success', () async {
           await tester.shouldSucceed(
@@ -1020,7 +1020,7 @@ void main() {
                     sessionId: 'NONCE',
                     requestUri:
                         'http://localhost/callback#id_token=ID_TOKEN&state=STATE')
-                .then((v) => v.idToken.toCompactSerialization()),
+                .then((v) => v.credential.idToken.toCompactSerialization()),
           );
         });
         test('signInWithIdp: with post body nonce: success', () async {
@@ -1044,7 +1044,7 @@ void main() {
                     postBody:
                         'id_token=$token&providerId=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost')
-                .then((v) => v.idToken.toCompactSerialization()),
+                .then((v) => v.credential.idToken.toCompactSerialization()),
           );
         });
         test('signInWithIdp: pending token response: success', () async {
@@ -1070,7 +1070,7 @@ void main() {
                     postBody:
                         'id_token=$token&providerId=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost')
-                .then((v) => v.idToken.toCompactSerialization()),
+                .then((v) => v.credential.idToken.toCompactSerialization()),
           );
         });
         group('signInWithIdp: pending token request', () {
@@ -1092,7 +1092,7 @@ void main() {
                   .signInWithIdp(
                       pendingIdToken: 'PENDING_TOKEN',
                       requestUri: 'http://localhost')
-                  .then((v) => v.idToken.toCompactSerialization()),
+                  .then((v) => v.credential.idToken.toCompactSerialization()),
             );
           });
 
@@ -1818,7 +1818,7 @@ void main() {
               .signInWithIdpForExisting(
                   sessionId: 'SESSION_ID',
                   requestUri: 'http://localhost/callback#oauthResponse')
-              .then((v) => v.idToken.toCompactSerialization()),
+              .then((v) => v.credential.idToken.toCompactSerialization()),
         );
         test('signInWithIdpForExisting: success', () async {
           await tester.shouldSucceed(
@@ -1848,7 +1848,7 @@ void main() {
                     sessionId: 'NONCE',
                     requestUri:
                         'http://localhost/callback#id_token=ID_TOKEN&state=STATE')
-                .then((v) => v.idToken.toCompactSerialization()),
+                .then((v) => v.credential.idToken.toCompactSerialization()),
           );
           test('signInWithIdpForExisting: with session id nonce: success',
               () async {
@@ -1879,7 +1879,7 @@ void main() {
                     postBody:
                         'id_token=${createMockJwt(uid: 'my_id')}&providerId=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost')
-                .then((v) => v.idToken.toCompactSerialization()),
+                .then((v) => v.credential.idToken.toCompactSerialization()),
           );
           test('signInWithIdpForExisting: with post body nonce: success',
               () async {
@@ -1910,7 +1910,7 @@ void main() {
                     postBody:
                         'id_token=${createMockJwt(uid: 'my_id')}&providerId=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost')
-                .then((v) => v.idToken.toCompactSerialization()),
+                .then((v) => v.credential.idToken.toCompactSerialization()),
           );
           test('signInWithIdpForExisting: pending token response: success',
               () async {
@@ -1940,7 +1940,7 @@ void main() {
                 .signInWithIdpForExisting(
                     pendingToken: 'PENDING_TOKEN',
                     requestUri: 'http://localhost')
-                .then((v) => v.idToken.toCompactSerialization()),
+                .then((v) => v.credential.idToken.toCompactSerialization()),
           );
           test('signInWithIdpForExisting: pending token request: success',
               () async {
@@ -2963,7 +2963,7 @@ void main() {
           action: () => rpcHandler
               .signInWithPhoneNumber(
                   sessionInfo: 'SESSION_INFO', code: '123456')
-              .then((v) => {'id_token': v.response!['id_token']}),
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
         );
 
         group('signInWithPhoneNumber: using code', () {
@@ -3031,7 +3031,7 @@ void main() {
                 .signInWithPhoneNumber(
                     phoneNumber: '16505550101',
                     temporaryProof: 'TEMPORARY_PROOF')
-                .then((v) => {'id_token': v.response!['id_token']}),
+                .then((v) => {'id_token': v.credential.response!['id_token']}),
           );
           test('signInWithPhoneNumber: success using temporary proof',
               () async {
@@ -3079,7 +3079,7 @@ void main() {
                   idToken: 'ID_TOKEN',
                   sessionInfo: 'SESSION_INFO',
                   code: '123456')
-              .then((v) => {'id_token': v.response!['id_token']}),
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
         );
         test('signInWithPhoneNumberForLinking: success using code', () async {
           await tester.shouldSucceed(
@@ -3171,7 +3171,7 @@ void main() {
           action: () => rpcHandler
               .signInWithPhoneNumberForExisting(
                   sessionInfo: 'SESSION_INFO', code: '123456')
-              .then((v) => {'id_token': v.response!['id_token']}),
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
         );
 
         group('signInWithPhoneNumberForExisting: using code', () {
@@ -3238,7 +3238,7 @@ void main() {
                 .signInWithPhoneNumberForExisting(
                     temporaryProof: 'TEMPORARY_PROOF',
                     phoneNumber: '16505550101')
-                .then((v) => {'id_token': v.response!['id_token']}),
+                .then((v) => {'id_token': v.credential.response!['id_token']}),
           );
           test(
               'signInWithPhoneNumberForExisting: success using temporary proof',

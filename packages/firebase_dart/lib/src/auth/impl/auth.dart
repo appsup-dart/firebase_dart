@@ -80,7 +80,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       var r = await rpcHandler.signInAnonymously();
 
       var result = await _signInWithIdTokenProvider(
-          openidCredential: r, isNewUser: true);
+          openidCredential: r.credential, isNewUser: true);
 
       await _handleUserStateChange(result.user);
       return result;
@@ -94,8 +94,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }) async {
     var r = await rpcHandler.signInWithPassword(email, password);
 
-    var result =
-        await _signInWithIdTokenProvider(openidCredential: r, isNewUser: false);
+    var result = await _signInWithIdTokenProvider(
+        openidCredential: r.credential, isNewUser: false);
 
     return result;
   }
@@ -168,8 +168,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
     var r = await rpcHandler.signUp(email, password);
 
-    var result =
-        await _signInWithIdTokenProvider(openidCredential: r, isNewUser: true);
+    var result = await _signInWithIdTokenProvider(
+        openidCredential: r.credential, isNewUser: true);
 
     return result;
   }
@@ -244,10 +244,10 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     await _onReady;
 
     if (credential is PhoneAuthCredential) {
-      var openidCredential = await rpcHandler.signInWithPhoneNumber(
+      var result = await rpcHandler.signInWithPhoneNumber(
           sessionInfo: credential.verificationId, code: credential.smsCode);
       return _signInWithIdTokenProvider(
-        openidCredential: openidCredential,
+        openidCredential: result.credential,
         credential: credential,
         isNewUser: false,
         provider: credential.providerId,
@@ -255,7 +255,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     }
 
     if (credential is OAuthCredential) {
-      var openidCredential = await rpcHandler.signInWithIdp(
+      var result = await rpcHandler.signInWithIdp(
           postBody: Uri(queryParameters: {
             if (credential.idToken != null) 'id_token': credential.idToken,
             if (credential.accessToken != null)
@@ -267,7 +267,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
           }).query,
           requestUri: 'http://localhost');
       return _signInWithIdTokenProvider(
-        openidCredential: openidCredential,
+        openidCredential: result.credential,
         credential: credential,
         isNewUser: false,
         provider: credential.providerId,
@@ -285,11 +285,11 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     }
 
     if (credential is FirebaseAppAuthCredential) {
-      var openidCredential = await rpcHandler.signInWithIdp(
+      var result = await rpcHandler.signInWithIdp(
           sessionId: credential.sessionId, requestUri: credential.link);
 
       return _signInWithIdTokenProvider(
-        openidCredential: openidCredential,
+        openidCredential: result.credential,
         isNewUser: false,
       );
     }
@@ -304,8 +304,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     // of after.
     await _onReady;
     var r = await rpcHandler.signInWithCustomToken(token);
-    var result =
-        await _signInWithIdTokenProvider(openidCredential: r, isNewUser: false);
+    var result = await _signInWithIdTokenProvider(
+        openidCredential: r.credential, isNewUser: false);
 
     return result;
   }
@@ -471,8 +471,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     }
  */
     var r = await rpcHandler.signInWithEmailLink(email!, actionCodeUrl.code);
-    var result =
-        await _signInWithIdTokenProvider(openidCredential: r, isNewUser: false);
+    var result = await _signInWithIdTokenProvider(
+        openidCredential: r.credential, isNewUser: false);
 
     return result;
   }
