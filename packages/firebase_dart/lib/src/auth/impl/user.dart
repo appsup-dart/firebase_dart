@@ -376,9 +376,9 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   @override
   Future<void> updatePassword(String newPassword) async {
     var idToken = await getIdToken();
-    var response = await _rpcHandler.updatePassword(idToken, newPassword);
+    var result = await _rpcHandler.updatePassword(idToken, newPassword);
     // Calls to SetAccountInfo may invalidate old tokens.
-    _updateTokensIfPresent(response);
+    _updateTokens(result);
     // Reloads the user in case email has also been updated and the user
     // was anonymous.
     return reload();
@@ -440,6 +440,14 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
 
       _tokenUpdates.add(response.idToken);
     }
+  }
+
+  void _updateTokens(SignInResult result) {
+    _credential = result.credential;
+
+    _lastAccessToken = _credential.idToken.toCompactSerialization();
+
+    _tokenUpdates.add(_lastAccessToken);
   }
 
   @override

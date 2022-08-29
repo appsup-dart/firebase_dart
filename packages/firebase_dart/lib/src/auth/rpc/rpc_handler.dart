@@ -582,7 +582,7 @@ class RpcHandler {
   }
 
   /// Requests setAccountInfo endpoint for updatePassword operation.
-  Future<GoogleCloudIdentitytoolkitV1SetAccountInfoResponse> updatePassword(
+  Future<SignInResult> updatePassword(
       String idToken, String newPassword) async {
     _validateStrongPassword(newPassword);
     var response = await identitytoolkitApi.accounts
@@ -590,11 +590,12 @@ class RpcHandler {
           ..idToken = idToken
           ..password = newPassword
           ..returnSecureToken = true);
-    _validateIdTokenResponse(
-      idToken: response.idToken,
-      mfaPendingCredential: null,
-    );
-    return response;
+
+    return handleIdTokenResponse(
+        idToken: response.idToken,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn,
+        mfaPendingCredential: null);
   }
 
   /// Requests setAccountInfo endpoint to set the email and password. This can be

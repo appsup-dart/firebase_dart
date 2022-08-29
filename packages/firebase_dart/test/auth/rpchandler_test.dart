@@ -2582,18 +2582,24 @@ void main() {
       });
 
       group('updatePassword', () {
+        var token = createMockJwt(uid: 'uid123');
         var tester = Tester(
           path: 'accounts:update',
           expectedBody: {
-            'idToken': 'ID_TOKEN',
+            'idToken': token,
             'password': 'newPassword',
             'returnSecureToken': true
           },
-          action: () => rpcHandler.updatePassword('ID_TOKEN', 'newPassword'),
+          expectedResult: (response) {
+            return {'id_token': response['idToken']};
+          },
+          action: () => rpcHandler
+              .updatePassword(token, 'newPassword')
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
         );
         test('updatePassword: success', () async {
           await tester.shouldSucceed(
-            serverResponse: {'email': 'user@example.com', 'idToken': 'idToken'},
+            serverResponse: {'email': 'user@example.com', 'idToken': token},
           );
         });
 
