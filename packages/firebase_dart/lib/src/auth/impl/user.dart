@@ -368,7 +368,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     var idToken = await getIdToken();
     var result = await _rpcHandler.updateEmail(idToken, newEmail);
     // Calls to SetAccountInfo may invalidate old tokens.
-    _updateTokens(result);
+    await _updateTokens(result);
     // Reloads the user to update emailVerified.
     return reload();
   }
@@ -378,7 +378,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     var idToken = await getIdToken();
     var result = await _rpcHandler.updatePassword(idToken, newPassword);
     // Calls to SetAccountInfo may invalidate old tokens.
-    _updateTokens(result);
+    await _updateTokens(result);
     // Reloads the user in case email has also been updated and the user
     // was anonymous.
     return reload();
@@ -397,7 +397,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     });
 
     // Calls to SetAccountInfo may invalidate old tokens.
-    _updateTokensIfPresent(response);
+    await _updateTokensIfPresent(response);
 
     // Update properties.
     _accountInfo = AccountInfo.fromJson({
@@ -424,7 +424,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   /// Updates the current tokens using a server response, if new tokens are
   /// present and are different from the current ones, and notify the Auth
   /// listeners.
-  void _updateTokensIfPresent(
+  Future<void> _updateTokensIfPresent(
       GoogleCloudIdentitytoolkitV1SetAccountInfoResponse response) async {
     if (response.idToken != null && _lastAccessToken != response.idToken) {
       var result = await _rpcHandler.handleIdTokenResponse(
@@ -434,20 +434,18 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         mfaPendingCredential: null,
       );
 
-      _credential = result.credential;
-
-      _lastAccessToken = response.idToken;
-
-      _tokenUpdates.add(response.idToken);
+      await _updateTokens(result);
     }
   }
 
-  void _updateTokens(SignInResult result) {
+  Future<void> _updateTokens(SignInResult result) async {
     _credential = result.credential;
 
     _lastAccessToken = _credential.idToken.toCompactSerialization();
 
     _tokenUpdates.add(_lastAccessToken);
+
+    await Future.microtask(() => null);
   }
 
   @override
