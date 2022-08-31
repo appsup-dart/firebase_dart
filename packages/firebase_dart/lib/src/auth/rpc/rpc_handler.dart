@@ -57,15 +57,14 @@ class RpcHandler {
   }
 
   /// reCAPTCHA.
-  Future<GoogleCloudIdentitytoolkitV1GetRecaptchaParamResponse>
-      getRecaptchaParam() async {
+  Future<String> getRecaptchaParam() async {
     var response = await identitytoolkitApi.v1.getRecaptchaParams();
 
     if (response.recaptchaSiteKey == null) {
       throw FirebaseAuthException.internalError();
     }
 
-    return response;
+    return response.recaptchaSiteKey!;
   }
 
   /// Gets the list of authorized domains for the specified project.
@@ -127,12 +126,16 @@ class RpcHandler {
   }
 
   /// Requests getAccountInfo endpoint using an ID token.
-  Future<GoogleCloudIdentitytoolkitV1GetAccountInfoResponse>
-      getAccountInfoByIdToken(String idToken) async {
+  Future<GoogleCloudIdentitytoolkitV1UserInfo> getAccountInfoByIdToken(
+      String idToken) async {
     var response = await _handle(() => identitytoolkitApi.accounts.lookup(
         GoogleCloudIdentitytoolkitV1GetAccountInfoRequest()
           ..idToken = idToken));
-    return response;
+
+    if (response.users!.isEmpty) {
+      throw FirebaseAuthException.internalError();
+    }
+    return response.users!.first;
   }
 
   /// Sign in with a custom token

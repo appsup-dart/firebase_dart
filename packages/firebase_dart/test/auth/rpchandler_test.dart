@@ -257,6 +257,7 @@ void main() {
             path: 'recaptchaParams',
             expectedBody: null,
             action: () => rpcHandler.getRecaptchaParam(),
+            expectedResult: (v) => v['recaptchaSiteKey'],
             method: 'GET');
 
         test('getRecaptchaParam: success', () async {
@@ -578,6 +579,7 @@ void main() {
         var tester = Tester(
           path: 'accounts:lookup',
           expectedBody: {'idToken': 'ID_TOKEN'},
+          expectedResult: (v) => (v['users'] as List).first,
           action: () => rpcHandler.getAccountInfoByIdToken('ID_TOKEN'),
         );
         test('getAccountInfoByIdToken: success', () async {

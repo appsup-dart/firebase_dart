@@ -137,12 +137,8 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   /// Queries the backend using the provided ID token for all linked accounts to
   /// build the Firebase user object.
   Future<void> _setUserAccountInfoFromToken(IdTokenResult idToken) async {
-    var resp = await _rpcHandler.getAccountInfoByIdToken(idToken.token!);
+    var user = await _rpcHandler.getAccountInfoByIdToken(idToken.token!);
 
-    if (resp.users!.isEmpty) {
-      throw FirebaseAuthException.internalError();
-    }
-    var user = resp.users!.first;
     var accountInfo = AccountInfo(
         uid: user.localId,
         displayName: user.displayName,
