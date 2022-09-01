@@ -77,12 +77,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
           operationType: UserCredentialImpl.operationTypeSignIn);
     } else {
       // No anonymous user currently signed in.
-      var r = await rpcHandler.signInAnonymously();
-
-      var result = await _signInWithIdTokenProvider(
-          openidCredential: r.credential, isNewUser: true);
-
-      return result;
+      return await _handleSignInResult(await rpcHandler.signInAnonymously(),
+          isNewUser: true);
     }
   }
 
@@ -91,10 +87,9 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     required String email,
     String? password,
   }) async {
-    var r = await rpcHandler.signInWithPassword(email, password);
-
-    return await _signInWithIdTokenProvider(
-        openidCredential: r.credential, isNewUser: false);
+    return await _handleSignInResult(
+        await rpcHandler.signInWithPassword(email, password),
+        isNewUser: false);
   }
 
   /// Handles user state changes.
@@ -102,12 +97,9 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     await userStorageManager.setCurrentUser(user);
   }
 
-  /// Signs in with ID token promise provider.
-  Future<UserCredential> _signInWithIdTokenProvider(
-      {required openid.Credential openidCredential,
-      String? provider,
-      AuthCredential? credential,
-      bool? isNewUser}) async {
+  Future<UserCredential> _handleSignInResult(SignInResult signInResult,
+      {String? provider, AuthCredential? credential, bool? isNewUser}) async {
+    var openidCredential = signInResult.credential;
     // Get additional IdP data if available in the response.
     var additionalUserInfo = createAdditionalUserInfo(
         credential: openidCredential,
@@ -163,10 +155,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       {required String email, String? password}) async {
     await _onReady;
 
-    var r = await rpcHandler.signUp(email, password);
-
-    return await _signInWithIdTokenProvider(
-        openidCredential: r.credential, isNewUser: true);
+    return await _handleSignInResult(await rpcHandler.signUp(email, password),
+        isNewUser: true);
   }
 
   @override
@@ -239,10 +229,9 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     await _onReady;
 
     if (credential is PhoneAuthCredential) {
-      var result = await rpcHandler.signInWithPhoneNumber(
-          sessionInfo: credential.verificationId, code: credential.smsCode);
-      return _signInWithIdTokenProvider(
-        openidCredential: result.credential,
+      return _handleSignInResult(
+        await rpcHandler.signInWithPhoneNumber(
+            sessionInfo: credential.verificationId, code: credential.smsCode),
         credential: credential,
         isNewUser: false,
         provider: credential.providerId,
@@ -261,8 +250,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
             if (credential.rawNonce != null) 'nonce': credential.rawNonce
           }).query,
           requestUri: 'http://localhost');
-      return _signInWithIdTokenProvider(
-        openidCredential: result.credential,
+      return _handleSignInResult(
+        result,
         credential: credential,
         isNewUser: false,
         provider: credential.providerId,
@@ -283,8 +272,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       var result = await rpcHandler.signInWithIdp(
           sessionId: credential.sessionId, requestUri: credential.link);
 
-      return _signInWithIdTokenProvider(
-        openidCredential: result.credential,
+      return _handleSignInResult(
+        result,
         isNewUser: false,
       );
     }
@@ -298,9 +287,9 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     // errors like web storage unsupported are detected, fail before RPC, instead
     // of after.
     await _onReady;
-    var r = await rpcHandler.signInWithCustomToken(token);
-    return await _signInWithIdTokenProvider(
-        openidCredential: r.credential, isNewUser: false);
+    return await _handleSignInResult(
+        await rpcHandler.signInWithCustomToken(token),
+        isNewUser: false);
   }
 
   @override
@@ -463,9 +452,9 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       throw FirebaseAuthException.tenantIdMismatch();
     }
  */
-    var r = await rpcHandler.signInWithEmailLink(email!, actionCodeUrl.code);
-    return await _signInWithIdTokenProvider(
-        openidCredential: r.credential, isNewUser: false);
+    return await _handleSignInResult(
+        await rpcHandler.signInWithEmailLink(email!, actionCodeUrl.code),
+        isNewUser: false);
   }
 
   Future<void> _signIn(AuthProvider provider, bool isPopup) async {
