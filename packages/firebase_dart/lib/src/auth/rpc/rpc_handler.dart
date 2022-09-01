@@ -282,31 +282,23 @@ class RpcHandler {
       ..returnSecureToken = true
       ..pendingIdToken = pendingIdToken;
 
-    var response = await _signInWithIdp(request);
-
-    return SignInResult.success(await _credentialFromIdToken(
-        idToken: response.idToken!,
-        refreshToken: response.refreshToken,
-        expiresIn: response.expiresIn));
+    return await _signInWithIdp(request);
   }
 
   /// Sign in with Identity Provider for federated account linking
-  Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse>
-      signInWithIdpForLinking(
-          {String? idToken,
-          String? sessionId,
-          String? requestUri,
-          String? postBody,
-          String? pendingToken}) async {
-    if (idToken == null) {
-      throw FirebaseAuthException.internalError();
-    }
-    return _signInWithIdp(GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
-      ..postBody = postBody
-      ..pendingIdToken = pendingToken
-      ..idToken = idToken
-      ..sessionId = sessionId
-      ..requestUri = requestUri);
+  Future<SignInResult> signInWithIdpForLinking(
+      {required String idToken,
+      String? sessionId,
+      String? requestUri,
+      String? postBody,
+      String? pendingToken}) async {
+    return await _signInWithIdp(
+        GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
+          ..postBody = postBody
+          ..pendingIdToken = pendingToken
+          ..idToken = idToken
+          ..sessionId = sessionId
+          ..requestUri = requestUri);
   }
 
   /// Sign in with Identity Platform for an existing federated account
@@ -315,22 +307,17 @@ class RpcHandler {
       String? requestUri,
       String? postBody,
       String? pendingToken}) async {
-    var response =
-        await _signInWithIdp(GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
+    return await _signInWithIdp(
+        GoogleCloudIdentitytoolkitV1SignInWithIdpRequest()
           ..returnIdpCredential = true
           ..autoCreate = false
           ..postBody = postBody
           ..pendingIdToken = pendingToken
           ..requestUri = requestUri
           ..sessionId = sessionId);
-
-    return SignInResult.success(await _credentialFromIdToken(
-        idToken: response.idToken!,
-        refreshToken: response.refreshToken,
-        expiresIn: response.expiresIn));
   }
 
-  Future<GoogleCloudIdentitytoolkitV1SignInWithIdpResponse> _signInWithIdp(
+  Future<SignInResult> _signInWithIdp(
       GoogleCloudIdentitytoolkitV1SignInWithIdpRequest request) async {
     // Force Auth credential to be returned on the following errors:
     // FEDERATED_USER_ID_ALREADY_LINKED
@@ -344,7 +331,11 @@ class RpcHandler {
     }
     response = _processSignInWithIdpResponse(request, response);
     _validateSignInWithIdpResponse(response);
-    return response;
+
+    return SignInResult.success(await _credentialFromIdToken(
+        idToken: response.idToken!,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn));
   }
 
   static String _toQueryString(Map<String, String> queryParameters) =>

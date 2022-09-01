@@ -1614,23 +1614,29 @@ void main() {
       });
 
       group('signInWithIdpForLinking', () {
+        var existingIdToken =
+            createMockJwt(uid: 'my_id', providerId: 'password');
+
         var tester = Tester(
           path: 'accounts:signInWithIdp',
           expectedBody: {
-            'idToken': 'existingIdToken',
+            'idToken': existingIdToken,
             'sessionId': 'SESSION_ID',
             'requestUri': 'http://localhost/callback#oauthResponse',
             'returnIdpCredential': true,
             'returnSecureToken': true
           },
-          action: () => rpcHandler.signInWithIdpForLinking(
-              idToken: 'existingIdToken',
-              sessionId: 'SESSION_ID',
-              requestUri: 'http://localhost/callback#oauthResponse'),
+          expectedResult: (v) => v['idToken'],
+          action: () => rpcHandler
+              .signInWithIdpForLinking(
+                  idToken: existingIdToken,
+                  sessionId: 'SESSION_ID',
+                  requestUri: 'http://localhost/callback#oauthResponse')
+              .then((v) => v.credential.idToken.toCompactSerialization()),
         );
         test('signInWithIdpForLinking: success', () async {
           await tester.shouldSucceed(serverResponse: {
-            'idToken': 'ID_TOKEN',
+            'idToken': createMockJwt(uid: 'my_id'),
             'oauthAccessToken': 'ACCESS_TOKEN',
             'oauthExpireIn': 3600,
             'oauthAuthorizationCode': 'AUTHORIZATION_CODE'
@@ -1639,69 +1645,66 @@ void main() {
 
         group('signInWithIdpForLinking: withSessionIdNonce', () {
           var t = tester.replace(
-              expectedBody: {
-                'idToken': 'existingIdToken',
-                'sessionId': 'NONCE',
-                'requestUri':
-                    'http://localhost/callback#id_token=ID_TOKEN&state=STATE',
-                'returnIdpCredential': true,
-                'returnSecureToken': true
-              },
-              action: () => rpcHandler.signInWithIdpForLinking(
-                  idToken: 'existingIdToken',
-                  sessionId: 'NONCE',
-                  requestUri:
-                      'http://localhost/callback#id_token=ID_TOKEN&state=STATE'));
+            expectedBody: {
+              'idToken': existingIdToken,
+              'sessionId': 'NONCE',
+              'requestUri':
+                  'http://localhost/callback#id_token=ID_TOKEN&state=STATE',
+              'returnIdpCredential': true,
+              'returnSecureToken': true
+            },
+            expectedResult: (v) => v['idToken'],
+            action: () => rpcHandler
+                .signInWithIdpForLinking(
+                    idToken: existingIdToken,
+                    sessionId: 'NONCE',
+                    requestUri:
+                        'http://localhost/callback#id_token=ID_TOKEN&state=STATE')
+                .then((v) => v.credential.idToken.toCompactSerialization()),
+          );
           test('signInWithIdpForLinking: withSessionIdNonce: success',
               () async {
+            var token = createMockJwt(uid: 'my_id', providerId: 'idp');
             await t.shouldSucceed(
-                serverResponse: {
-                  'idToken': 'ID_TOKEN',
-                  'oauthIdToken': 'OIDC_ID_TOKEN',
-                  'oauthExpireIn': 3600,
-                  'providerId': 'oidc.provider'
-                },
-                expectedResult: (_) => {
-                      'idToken': 'ID_TOKEN',
-                      'oauthIdToken': 'OIDC_ID_TOKEN',
-                      'oauthExpireIn': 3600,
-                      'providerId': 'oidc.provider',
-                      'nonce': 'NONCE'
-                    });
+              serverResponse: {
+                'idToken': token,
+                'oauthIdToken': 'OIDC_ID_TOKEN',
+                'oauthExpireIn': 3600,
+                'providerId': 'oidc.provider'
+              },
+            );
           });
         });
 
         group('signInWithIdpForLinking: with post body nonce', () {
           var t = tester.replace(
             expectedBody: {
-              'idToken': 'existingIdToken',
+              'idToken': existingIdToken,
               'postBody':
                   'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
               'requestUri': 'http://localhost',
               'returnIdpCredential': true,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.signInWithIdpForLinking(
-                idToken: 'existingIdToken',
-                postBody:
-                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
-                requestUri: 'http://localhost'),
+            expectedResult: (v) => v['idToken'],
+            action: () => rpcHandler
+                .signInWithIdpForLinking(
+                    idToken: existingIdToken,
+                    postBody:
+                        'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                    requestUri: 'http://localhost')
+                .then((v) => v.credential.idToken.toCompactSerialization()),
           );
           test('signInWithIdpForLinking: with post body nonce: success',
               () async {
+            var token = createMockJwt(uid: 'my_id', providerId: 'idp');
+
             await t.shouldSucceed(
               serverResponse: {
-                'idToken': 'ID_TOKEN',
+                'idToken': token,
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'oauthExpireIn': 3600,
                 'providerId': 'oidc.provider',
-              },
-              expectedResult: (_) => {
-                'idToken': 'ID_TOKEN',
-                'oauthIdToken': 'OIDC_ID_TOKEN',
-                'oauthExpireIn': 3600,
-                'providerId': 'oidc.provider',
-                'nonce': 'NONCE'
               },
             );
           });
@@ -1710,24 +1713,28 @@ void main() {
         group('signInWithIdpForLinking: pending token response', () {
           var t = tester.replace(
             expectedBody: {
-              'idToken': 'existingIdToken',
+              'idToken': existingIdToken,
               'postBody':
                   'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
               'requestUri': 'http://localhost',
               'returnIdpCredential': true,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.signInWithIdpForLinking(
-                idToken: 'existingIdToken',
-                postBody:
-                    'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
-                requestUri: 'http://localhost'),
+            expectedResult: (v) => v['idToken'],
+            action: () => rpcHandler
+                .signInWithIdpForLinking(
+                    idToken: existingIdToken,
+                    postBody:
+                        'id_token=ID_TOKEN&providerId=oidc.provider&nonce=NONCE',
+                    requestUri: 'http://localhost')
+                .then((v) => v.credential.idToken.toCompactSerialization()),
           );
           test('signInWithIdpForLinking: pending token response: success',
               () async {
+            var token = createMockJwt(uid: 'my_id', providerId: 'idp');
             await t.shouldSucceed(
               serverResponse: {
-                'idToken': 'ID_TOKEN',
+                'idToken': token,
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'pendingToken': 'PENDING_TOKEN',
                 'oauthExpireIn': 3600,
@@ -1739,22 +1746,26 @@ void main() {
         group('signInWithIdpForLinking: pending token request', () {
           var t = tester.replace(
             expectedBody: {
-              'idToken': 'existingIdToken',
+              'idToken': existingIdToken,
               'pendingIdToken': 'PENDING_TOKEN',
               'requestUri': 'http://localhost',
               'returnIdpCredential': true,
               'returnSecureToken': true
             },
-            action: () => rpcHandler.signInWithIdpForLinking(
-                idToken: 'existingIdToken',
-                pendingToken: 'PENDING_TOKEN',
-                requestUri: 'http://localhost'),
+            expectedResult: (v) => v['idToken'],
+            action: () => rpcHandler
+                .signInWithIdpForLinking(
+                    idToken: existingIdToken,
+                    pendingToken: 'PENDING_TOKEN',
+                    requestUri: 'http://localhost')
+                .then((v) => v.credential.idToken.toCompactSerialization()),
           );
           test('signInWithIdpForLinking: pending token request: success',
               () async {
+            var token = createMockJwt(uid: 'my_id', providerId: 'idp');
             await t.shouldSucceed(
               serverResponse: {
-                'idToken': 'ID_TOKEN',
+                'idToken': token,
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'pendingToken': 'PENDING_TOKEN2',
                 'oauthExpireIn': 3600
@@ -1793,14 +1804,6 @@ void main() {
               expectedError: FirebaseAuthException.userDisabled(),
             );
           });
-        });
-
-        test('signInWithIdpForLinking: error', () async {
-          expect(
-              () => rpcHandler.signInWithIdpForLinking(
-                  sessionId: 'SESSION_ID',
-                  requestUri: 'http://localhost/callback#oauthResponse'),
-              throwsA(FirebaseAuthException.internalError()));
         });
       });
 
@@ -1865,10 +1868,11 @@ void main() {
           });
         });
         group('signInWithIdpForExisting: with post body nonce', () {
+          var token = createMockJwt(uid: 'my_id');
           var t = tester.replace(
             expectedBody: {
               'postBody':
-                  'id_token=${createMockJwt(uid: 'my_id')}&providerId=oidc.provider&nonce=NONCE',
+                  'id_token=$token&providerId=oidc.provider&nonce=NONCE',
               'requestUri': 'http://localhost',
               'returnIdpCredential': true,
               // autoCreate flag should be passed and set to false.
@@ -1879,7 +1883,7 @@ void main() {
             action: () => rpcHandler
                 .signInWithIdpForExisting(
                     postBody:
-                        'id_token=${createMockJwt(uid: 'my_id')}&providerId=oidc.provider&nonce=NONCE',
+                        'id_token=$token&providerId=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost')
                 .then((v) => v.credential.idToken.toCompactSerialization()),
           );
@@ -1887,7 +1891,7 @@ void main() {
               () async {
             await t.shouldSucceed(
               serverResponse: {
-                'idToken': createMockJwt(uid: 'my_id'),
+                'idToken': token,
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'oauthExpireIn': 3600,
                 'providerId': 'oidc.provider',
@@ -1896,10 +1900,11 @@ void main() {
           });
         });
         group('signInWithIdpForExisting: pending token response', () {
+          var token = createMockJwt(uid: 'my_id');
           var t = tester.replace(
             expectedBody: {
               'postBody':
-                  'id_token=${createMockJwt(uid: 'my_id')}&providerId=oidc.provider&nonce=NONCE',
+                  'id_token=$token&providerId=oidc.provider&nonce=NONCE',
               'requestUri': 'http://localhost',
               'returnIdpCredential': true,
               // autoCreate flag should be passed and set to false.
@@ -1910,7 +1915,7 @@ void main() {
             action: () => rpcHandler
                 .signInWithIdpForExisting(
                     postBody:
-                        'id_token=${createMockJwt(uid: 'my_id')}&providerId=oidc.provider&nonce=NONCE',
+                        'id_token=$token&providerId=oidc.provider&nonce=NONCE',
                     requestUri: 'http://localhost')
                 .then((v) => v.credential.idToken.toCompactSerialization()),
           );
@@ -1918,7 +1923,7 @@ void main() {
               () async {
             await t.shouldSucceed(
               serverResponse: {
-                'idToken': createMockJwt(uid: 'my_id'),
+                'idToken': token,
                 'oauthIdToken': 'OIDC_ID_TOKEN',
                 'pendingToken': 'PENDING_TOKEN',
                 'oauthExpireIn': 3600,
