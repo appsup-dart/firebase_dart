@@ -408,13 +408,17 @@ class RpcHandler {
       required String? refreshToken,
       required String? expiresIn,
       required String? mfaPendingCredential}) async {
-    _validateIdTokenResponse(
-      idToken: idToken,
-      mfaPendingCredential: mfaPendingCredential,
-    );
+    if (idToken == null) {
+      // User could be a second factor user.
+      // When second factor is required, a pending credential is returned.
+      if (mfaPendingCredential != null) {
+        return SignInResult.mfaRequired(mfaPendingCredential);
+      }
+      throw FirebaseAuthException.internalError();
+    }
 
     return SignInResult.success(await _credentialFromIdToken(
-        idToken: idToken!, refreshToken: refreshToken, expiresIn: expiresIn));
+        idToken: idToken, refreshToken: refreshToken, expiresIn: expiresIn));
   }
 
   /// Requests getOobCode endpoint for passwordless email sign-in.
@@ -1070,22 +1074,6 @@ class RpcHandler {
     }
   }
 
-  /// Validates a response that should contain an ID token.
-  ///
-  /// If no ID token is available, it checks if a multi-factor pending credential
-  /// is available instead. In that case, it throws the MFA_REQUIRED error code.
-  void _validateIdTokenResponse(
-      {String? idToken, String? mfaPendingCredential}) {
-    if (idToken == null) {
-      // User could be a second factor user.
-      // When second factor is required, a pending credential is returned.
-      if (mfaPendingCredential != null) {
-        throw FirebaseAuthException.mfaRequired();
-      }
-      throw FirebaseAuthException.internalError();
-    }
-  }
-
   /// Validates a password
   void _validateStrongPassword(String? password) {
     if (password == null || password.isEmpty) {
@@ -1110,7 +1098,17 @@ class GoogleCloudIdentitytoolkitV1SignInWithIdpResponseWithNonce
 }
 
 class SignInResult {
-  final openid.Credential credential;
+  final openid.Credential? _credential;
 
-  SignInResult.success(this.credential);
+  final String? mfaPendingCredential;
+
+  SignInResult.success(openid.Credential credential)
+      : _credential = credential,
+        mfaPendingCredential = null;
+
+  SignInResult.mfaRequired(this.mfaPendingCredential) : _credential = null;
+
+  openid.Credential get credential => _credential == null
+      ? throw FirebaseAuthException.mfaRequired()
+      : _credential!;
 }
