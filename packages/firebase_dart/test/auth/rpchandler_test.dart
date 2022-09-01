@@ -2623,19 +2623,23 @@ void main() {
       });
 
       group('signInWithEmailLinkForLinking', () {
+        var token = createMockJwt(uid: 'my_id');
         var tester = Tester(
           path: 'accounts:signInWithEmailLink',
           expectedBody: {
-            'idToken': 'ID_TOKEN',
+            'idToken': token,
             'email': 'user@example.com',
             'oobCode': 'OTP_CODE',
           },
-          action: () => rpcHandler.signInWithEmailLinkForLinking(
-              'ID_TOKEN', 'user@example.com', 'OTP_CODE'),
+          expectedResult: (v) => v['idToken'],
+          action: () => rpcHandler
+              .signInWithEmailLinkForLinking(
+                  token, 'user@example.com', 'OTP_CODE')
+              .then((v) => v.credential.idToken.toCompactSerialization()),
         );
         test('signInWithEmailLinkForLinking: success', () async {
           await tester.shouldSucceed(
-            serverResponse: {'idToken': 'ID_TOKEN'},
+            serverResponse: {'idToken': token},
           );
         });
 

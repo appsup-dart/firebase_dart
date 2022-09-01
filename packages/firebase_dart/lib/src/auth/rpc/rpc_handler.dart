@@ -164,11 +164,32 @@ class RpcHandler {
     if (oobCode.isEmpty) {
       throw FirebaseAuthException.internalError();
     }
-    var response = await identitytoolkitApi.accounts.signInWithEmailLink(
+    return _signInWithEmailLink(
         GoogleCloudIdentitytoolkitV1SignInWithEmailLinkRequest()
           ..email = email
           ..oobCode = oobCode
           ..tenantId = tenantId);
+  }
+
+  /// Verifies an email link OTP for linking and returns a Promise that resolves
+  /// with the ID token.
+  Future<SignInResult> signInWithEmailLinkForLinking(
+      String idToken, String email, String oobCode) async {
+    if (idToken.isEmpty || oobCode.isEmpty) {
+      throw FirebaseAuthException.internalError();
+    }
+    _validateEmail(email);
+    return _signInWithEmailLink(
+        GoogleCloudIdentitytoolkitV1SignInWithEmailLinkRequest()
+          ..idToken = idToken
+          ..email = email
+          ..oobCode = oobCode);
+  }
+
+  Future<SignInResult> _signInWithEmailLink(
+      GoogleCloudIdentitytoolkitV1SignInWithEmailLinkRequest request) async {
+    var response =
+        await identitytoolkitApi.accounts.signInWithEmailLink(request);
 
     return handleIdTokenResponse(
       idToken: response.idToken,
@@ -594,27 +615,6 @@ class RpcHandler {
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn,
         mfaPendingCredential: null);
-  }
-
-  /// Verifies an email link OTP for linking and returns a Promise that resolves
-  /// with the ID token.
-  Future<GoogleCloudIdentitytoolkitV1SignInWithEmailLinkResponse>
-      signInWithEmailLinkForLinking(
-          String idToken, String email, String oobCode) async {
-    if (idToken.isEmpty || oobCode.isEmpty) {
-      throw FirebaseAuthException.internalError();
-    }
-    _validateEmail(email);
-    var response = await identitytoolkitApi.accounts.signInWithEmailLink(
-        GoogleCloudIdentitytoolkitV1SignInWithEmailLinkRequest()
-          ..idToken = idToken
-          ..email = email
-          ..oobCode = oobCode);
-    _validateIdTokenResponse(
-      idToken: response.idToken,
-      mfaPendingCredential: response.mfaPendingCredential,
-    );
-    return response;
   }
 
   /// Requests createAuthUri endpoint to retrieve the authUri and session ID for
