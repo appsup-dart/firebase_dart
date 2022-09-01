@@ -82,7 +82,6 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       var result = await _signInWithIdTokenProvider(
           openidCredential: r.credential, isNewUser: true);
 
-      await _handleUserStateChange(result.user);
       return result;
     }
   }
@@ -94,15 +93,13 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   }) async {
     var r = await rpcHandler.signInWithPassword(email, password);
 
-    var result = await _signInWithIdTokenProvider(
+    return await _signInWithIdTokenProvider(
         openidCredential: r.credential, isNewUser: false);
-
-    return result;
   }
 
   /// Handles user state changes.
   Future<void> _handleUserStateChange(User? user) async {
-    return userStorageManager.setCurrentUser(user);
+    await userStorageManager.setCurrentUser(user);
   }
 
   /// Signs in with ID token promise provider.
@@ -168,10 +165,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
     var r = await rpcHandler.signUp(email, password);
 
-    var result = await _signInWithIdTokenProvider(
+    return await _signInWithIdTokenProvider(
         openidCredential: r.credential, isNewUser: true);
-
-    return result;
   }
 
   @override
@@ -304,10 +299,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     // of after.
     await _onReady;
     var r = await rpcHandler.signInWithCustomToken(token);
-    var result = await _signInWithIdTokenProvider(
+    return await _signInWithIdTokenProvider(
         openidCredential: r.credential, isNewUser: false);
-
-    return result;
   }
 
   @override
@@ -471,10 +464,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     }
  */
     var r = await rpcHandler.signInWithEmailLink(email!, actionCodeUrl.code);
-    var result = await _signInWithIdTokenProvider(
+    return await _signInWithIdTokenProvider(
         openidCredential: r.credential, isNewUser: false);
-
-    return result;
   }
 
   Future<void> _signIn(AuthProvider provider, bool isPopup) async {

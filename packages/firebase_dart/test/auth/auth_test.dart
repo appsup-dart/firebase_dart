@@ -322,15 +322,18 @@ void runAuthTests({bool isolated = false}) {
 
         // when signing in, should emit a User instance
         await auth.signInAnonymously();
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.single, isA<User>());
         values.clear();
 
         // reload should not emit event
         await auth.currentUser!.reload();
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.isEmpty, true);
 
         // refresh id token should not emit event
         await auth.currentUser!.getIdToken(true);
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.isEmpty, true);
 
         // signing out should emit event
@@ -354,11 +357,13 @@ void runAuthTests({bool isolated = false}) {
 
         // when signing in, should emit a User instance
         await auth.signInAnonymously();
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.single, isA<User>());
         values.clear();
 
         // reload should not emit event
         await auth.currentUser!.reload();
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.isEmpty, true);
 
         // refresh id token should emit an event
@@ -387,6 +392,7 @@ void runAuthTests({bool isolated = false}) {
 
         // when signing in, should emit a User instance
         await auth.signInAnonymously();
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.single, isA<User>());
         values.clear();
 
@@ -398,6 +404,7 @@ void runAuthTests({bool isolated = false}) {
 
         // updating user data should emit an event
         await auth.currentUser!.updateProfile(displayName: 'Jane Doe');
+        await Future.delayed(Duration(milliseconds: 1));
         expect(values.isEmpty, false);
         values.clear();
 
