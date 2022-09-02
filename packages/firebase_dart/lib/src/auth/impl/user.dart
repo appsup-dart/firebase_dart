@@ -428,6 +428,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn,
         mfaPendingCredential: null,
+        mfaInfo: null,
       );
 
       await _updateTokens(result);

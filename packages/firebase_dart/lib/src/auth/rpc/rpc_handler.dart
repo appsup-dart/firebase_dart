@@ -13,6 +13,7 @@ import '../action_code.dart';
 import '../auth_credential.dart';
 import '../auth_provider.dart';
 import '../error.dart';
+import '../multi_factor.dart';
 import 'error.dart';
 import 'http_util.dart';
 
@@ -154,6 +155,7 @@ class RpcHandler {
       refreshToken: response.refreshToken,
       expiresIn: response.expiresIn,
       mfaPendingCredential: null,
+      mfaInfo: null,
     );
   }
 
@@ -197,6 +199,7 @@ class RpcHandler {
       refreshToken: response.refreshToken,
       expiresIn: response.expiresIn,
       mfaPendingCredential: response.mfaPendingCredential,
+      mfaInfo: response.mfaInfo,
     );
   }
 
@@ -220,6 +223,7 @@ class RpcHandler {
       refreshToken: response.refreshToken,
       expiresIn: response.expiresIn,
       mfaPendingCredential: response.mfaPendingCredential,
+      mfaInfo: response.mfaInfo,
     );
   }
 
@@ -240,6 +244,7 @@ class RpcHandler {
       refreshToken: response.refreshToken,
       expiresIn: response.expiresIn,
       mfaPendingCredential: null,
+      mfaInfo: null,
     );
   }
 
@@ -408,12 +413,22 @@ class RpcHandler {
       {required String? idToken,
       required String? refreshToken,
       required String? expiresIn,
-      required String? mfaPendingCredential}) async {
+      required String? mfaPendingCredential,
+      required List<GoogleCloudIdentitytoolkitV1MfaEnrollment>?
+          mfaInfo}) async {
     if (idToken == null) {
       // User could be a second factor user.
       // When second factor is required, a pending credential is returned.
       if (mfaPendingCredential != null) {
-        return SignInResult.mfaRequired(mfaPendingCredential);
+        return SignInResult.mfaRequired(mfaPendingCredential, [
+          for (var i in mfaInfo!)
+            MultiFactorInfo(
+                displayName: i.displayName,
+                enrollmentTimestamp:
+                    DateTime.parse(i.enrolledAt!).millisecondsSinceEpoch / 1000,
+                uid: i.mfaEnrollmentId!,
+                factorId: i.mfaEnrollmentId!)
+        ]);
       }
       throw FirebaseAuthException.internalError();
     }
@@ -602,7 +617,8 @@ class RpcHandler {
         idToken: response.idToken,
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn,
-        mfaPendingCredential: null);
+        mfaPendingCredential: null,
+        mfaInfo: null);
   }
 
   /// Requests setAccountInfo endpoint for updatePassword operation.
@@ -619,7 +635,8 @@ class RpcHandler {
         idToken: response.idToken,
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn,
-        mfaPendingCredential: null);
+        mfaPendingCredential: null,
+        mfaInfo: null);
   }
 
   /// Requests createAuthUri endpoint to retrieve the authUri and session ID for
@@ -719,6 +736,7 @@ class RpcHandler {
       refreshToken: response.refreshToken,
       expiresIn: response.expiresIn,
       mfaPendingCredential: null,
+      mfaInfo: null,
     );
   }
 
@@ -753,6 +771,7 @@ class RpcHandler {
       refreshToken: response.refreshToken,
       expiresIn: response.expiresIn,
       mfaPendingCredential: null,
+      mfaInfo: null,
     );
   }
 
@@ -782,6 +801,7 @@ class RpcHandler {
       refreshToken: response.refreshToken,
       expiresIn: response.expiresIn,
       mfaPendingCredential: null,
+      mfaInfo: null,
     );
   }
 
@@ -1131,11 +1151,15 @@ class SignInResult {
 
   final String? mfaPendingCredential;
 
+  final List<MultiFactorInfo>? mfaInfo;
+
   SignInResult.success(openid.Credential credential)
       : _credential = credential,
-        mfaPendingCredential = null;
+        mfaPendingCredential = null,
+        mfaInfo = null;
 
-  SignInResult.mfaRequired(this.mfaPendingCredential) : _credential = null;
+  SignInResult.mfaRequired(this.mfaPendingCredential, this.mfaInfo)
+      : _credential = null;
 
   openid.Credential get credential => _credential == null
       ? throw FirebaseAuthException.mfaRequired()
