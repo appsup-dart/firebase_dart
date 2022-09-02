@@ -114,6 +114,7 @@ This implementation does not yet support all functionalities of the firebase aut
 | FirebaseAuth.signInWithPhoneNumber | ❌
 | FirebaseAuth.signInWithPopup | ❌
 | FirebaseAuth.signInWithRedirect | ❌
+| FirebaseAuth.signInWithAuthProvider | ❌
 | FirebaseAuth.signOut | ✅
 | FirebaseAuth.userChanges | ✅
 | FirebaseAuth.verifyPasswordResetCode | ✅
@@ -132,6 +133,7 @@ This implementation does not yet support all functionalities of the firebase aut
 | User.updatePhoneNumber | ❌
 | User.updateProfile | ✅
 | User.verifyBeforeUpdateEmail | ❌
+| User.multiFactor | ❌
 
 
 [Multi-tenancy](https://cloud.google.com/identity-platform/docs/multi-tenancy) is currently not supported.

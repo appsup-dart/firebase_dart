@@ -24,13 +24,13 @@ class PhoneAuthProvider extends AuthProvider {
 
   /// Create a new [PhoneAuthCredential] from a provided [verificationId] and
   /// [smsCode].
-  static AuthCredential credential(
+  static PhoneAuthCredential credential(
       {required String verificationId, required String smsCode}) {
     return PhoneAuthCredential(
         verificationId: verificationId, smsCode: smsCode);
   }
 
-  static AuthCredential credentialFromTemporaryProof({
+  static PhoneAuthCredential credentialFromTemporaryProof({
     required String temporaryProof,
     required String phoneNumber,
   }) {

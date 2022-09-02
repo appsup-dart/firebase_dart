@@ -7,6 +7,7 @@ import '../implementation.dart';
 import 'auth_credential.dart';
 import 'auth_provider.dart';
 import 'error.dart';
+import 'multi_factor.dart';
 import 'user.dart';
 import 'action_code.dart';
 
@@ -15,6 +16,7 @@ export 'auth_provider.dart';
 export 'error.dart';
 export 'user.dart';
 export 'action_code.dart';
+export 'multi_factor.dart' hide PhoneMultiFactorAssertion;
 
 /// The entry point of the Firebase Authentication SDK.
 abstract class FirebaseAuth {
@@ -141,9 +143,27 @@ abstract class FirebaseAuth {
   /// This method is only support on web platforms.
   Future<UserCredential> getRedirectResult();
 
-  /// Triggers the Firebase Authentication backend to send a password-reset
-  /// email to the given email address, which must correspond to an existing
-  /// user of your app.
+  /// Sends a password reset email to the given email address.
+  ///
+  /// To complete the password reset, call [confirmPasswordReset] with the code supplied
+  /// in the email sent to the user, along with the new password specified by the user.
+  ///
+  /// May throw a [FirebaseAuthException] with the following error codes:
+  ///
+  /// - **auth/invalid-email**\
+  ///   Thrown if the email address is not valid.
+  /// - **auth/missing-android-pkg-name**\
+  ///   An Android package name must be provided if the Android app is required to be installed.
+  /// - **auth/missing-continue-uri**\
+  ///   A continue URL must be provided in the request.
+  /// - **auth/missing-ios-bundle-id**\
+  ///   An iOS Bundle ID must be provided if an App Store ID is provided.
+  /// - **auth/invalid-continue-uri**\
+  ///   The continue URL provided in the request is invalid.
+  /// - **auth/unauthorized-continue-uri**\
+  ///   The domain of the continue URL is not whitelisted. Whitelist the domain in the Firebase console.
+  /// - **auth/user-not-found**\
+  ///   Thrown if there is no user corresponding to the email address.
   Future<void> sendPasswordResetEmail({
     required String email,
     ActionCodeSettings? actionCodeSettings,
@@ -259,6 +279,13 @@ abstract class FirebaseAuth {
   ///    verification ID of the credential is not valid.id.
   Future<UserCredential> signInWithCredential(AuthCredential credential);
 
+  /// Signs in with an AuthProvider using native authentication flow.
+  ///
+  /// A [FirebaseAuthException] maybe thrown with the following error code:
+  /// - **user-disabled**:
+  ///  - Thrown if the user corresponding to the given email has been disabled.
+  Future<UserCredential> signInWithAuthProvider(AuthProvider provider);
+
   /// Authenticates a Firebase client using a popup-based OAuth authentication
   /// flow.
   ///
@@ -340,6 +367,13 @@ abstract class FirebaseAuth {
   /// [phoneNumber] The phone number for the account the user is signing up
   ///   for or signing into. Make sure to pass in a phone number with country
   ///   code prefixed with plus sign ('+').
+  ///   Should be null if it's a multi-factor sign in.
+  ///
+  /// [multiFactorInfo] The multi factor info you're using to verify the phone number.
+  ///   Should be set if a [multiFactorSession] is provided.
+  ///
+  /// [multiFactorSession] The multi factor session you're using to verify the phone number.
+  ///   Should be set if a [multiFactorInfo] is provided.
   ///
   /// [timeout] The maximum amount of time you are willing to wait for SMS
   ///   auto-retrieval to be completed by the library. Maximum allowed value
@@ -364,7 +398,8 @@ abstract class FirebaseAuth {
   /// [codeAutoRetrievalTimeout] Triggered when SMS auto-retrieval times out and
   ///   provide a [verificationId].
   Future<void> verifyPhoneNumber({
-    required String phoneNumber,
+    String? phoneNumber,
+    PhoneMultiFactorInfo? multiFactorInfo,
     required PhoneVerificationCompleted verificationCompleted,
     required PhoneVerificationFailed verificationFailed,
     required PhoneCodeSent codeSent,
@@ -372,14 +407,15 @@ abstract class FirebaseAuth {
     @visibleForTesting String? autoRetrievedSmsCodeForTesting,
     Duration timeout = const Duration(seconds: 30),
     int? forceResendingToken,
+    MultiFactorSession? multiFactorSession,
   });
 
   /// Returns the current [User] if they are currently signed-in, or `null` if
   /// not.
   ///
-  /// You should not use this getter to determine the users current state,
-  /// instead use [authStateChanges], [idTokenChanges] or [userChanges] to
-  /// subscribe to updates.
+  /// This getter only provides a snapshot of user state. Applictions that need
+  /// to react to changes in user state should instead use [authStateChanges],
+  /// [idTokenChanges] or [userChanges] to subscribe to updates.
   User? get currentUser;
 
   /// The current Auth instance's language code.

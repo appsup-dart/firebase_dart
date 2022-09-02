@@ -72,7 +72,10 @@ abstract class User {
   /// Returns a [IdTokenResult] containing the users JSON Web Token (JWT) and
   /// other metadata.
   ///
-  /// If [forceRefresh] is `true`, the token returned will be refresh regardless
+  /// Returns the current token if it has not expired. Otherwise, this will
+  /// refresh the token and return a new one.
+  ///
+  /// If [forceRefresh] is `true`, the token returned will be refreshed regardless
   /// of token expiration.
   Future<IdTokenResult> getIdTokenResult([bool forceRefresh = false]);
 
@@ -251,6 +254,8 @@ abstract class User {
   }
 
   Map<String, dynamic> toJson();
+
+  MultiFactor get multiFactor;
 }
 
 /// Represents user data returned from an identity provider.
@@ -360,6 +365,10 @@ abstract class IdTokenResult {
   /// The sign-in provider through which the ID token was obtained (anonymous,
   /// custom, phone, password, etc). Note, this does not map to provider IDs.
   String? get signInProvider;
+
+  /// The type of second factor associated with this session, provided the user
+  /// was multi-factor authenticated (eg. phone, etc).
+  String? get signInSecondFactor;
 
   /// The entire payload claims of the ID token including the standard reserved
   /// claims as well as the custom claims.

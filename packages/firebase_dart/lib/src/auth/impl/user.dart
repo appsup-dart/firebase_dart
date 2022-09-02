@@ -518,6 +518,10 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     };
     return completer.future;
   }
+
+  @override
+  // TODO: implement multiFactor
+  MultiFactor get multiFactor => throw UnimplementedError();
 }
 
 abstract class DelegatingUserInfo implements UserInfo {
@@ -623,6 +627,10 @@ class IdTokenResultImpl extends IdTokenResult {
 
   @override
   bool operator ==(other) => other is IdTokenResultImpl && other.token == token;
+
+  @override
+  // TODO: implement signInSecondFactor
+  String? get signInSecondFactor => throw UnimplementedError();
 }
 
 AdditionalUserInfo createAdditionalUserInfo(

@@ -190,6 +190,35 @@ class IsolateUser extends UserBase implements User {
       [ActionCodeSettings? actionCodeSettings]) {
     return invoke(#verifyBeforeUpdateEmail, [newEmail, actionCodeSettings]);
   }
+
+  @override
+  late final MultiFactor multiFactor = IsolateMultiFactor();
+}
+
+class IsolateMultiFactor extends MultiFactor {
+  @override
+  Future<void> enroll(MultiFactorAssertion assertion, {String? displayName}) {
+    // TODO: implement enroll
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<MultiFactorInfo>> getEnrolledFactors() {
+    // TODO: implement getEnrolledFactors
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<MultiFactorSession> getSession() {
+    // TODO: implement getSession
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> unenroll({String? factorUid, MultiFactorInfo? multiFactorInfo}) {
+    // TODO: implement unenroll
+    throw UnimplementedError();
+  }
 }
 
 class EncodeCall<T> extends BaseFunctionCall<Future> {
@@ -371,15 +400,18 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
-  Future<void> verifyPhoneNumber(
-      {required String phoneNumber,
-      required PhoneVerificationCompleted verificationCompleted,
-      required PhoneVerificationFailed verificationFailed,
-      required PhoneCodeSent codeSent,
-      required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
-      String? autoRetrievedSmsCodeForTesting,
-      Duration timeout = const Duration(seconds: 30),
-      int? forceResendingToken}) async {
+  Future<void> verifyPhoneNumber({
+    String? phoneNumber,
+    required PhoneVerificationCompleted verificationCompleted,
+    required PhoneVerificationFailed verificationFailed,
+    required PhoneCodeSent codeSent,
+    required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
+    String? autoRetrievedSmsCodeForTesting,
+    Duration timeout = const Duration(seconds: 30),
+    int? forceResendingToken,
+    MultiFactorSession? multiFactorSession,
+    MultiFactorInfo? multiFactorInfo,
+  }) async {
     var worker = IsolateWorker()
       ..registerFunction(#verificationCompleted, verificationCompleted)
       ..registerFunction(#verificationFailed, verificationFailed)
@@ -391,7 +423,9 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     ], {
       #phoneNumber: phoneNumber,
       #timeout: timeout,
-      #forceResendingToken: forceResendingToken
+      #forceResendingToken: forceResendingToken,
+      #multiFactorSession: multiFactorSession,
+      #multiFactorInfo: multiFactorInfo,
     });
   }
 
@@ -421,6 +455,12 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
           ..registerFunction(#askUserForEmail, askUserForEmail));
 
     return invoke(#trySignInWithEmailLink, [worker?.commander]);
+  }
+
+  @override
+  Future<UserCredential> signInWithAuthProvider(AuthProvider provider) {
+    // TODO: implement signInWithAuthProvider
+    throw UnimplementedError();
   }
 }
 
@@ -535,12 +575,16 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
       case #verifyPhoneNumber:
         return (
           IsolateCommander commander, {
-          required String phoneNumber,
+          String? phoneNumber,
           Duration timeout = const Duration(seconds: 30),
           int? forceResendingToken,
+          PhoneMultiFactorInfo? mutliFactorInfo,
+          MultiFactorSession? multiFactorSession,
         }) {
           return auth.verifyPhoneNumber(
               phoneNumber: phoneNumber,
+              multiFactorInfo: mutliFactorInfo,
+              multiFactorSession: multiFactorSession,
               timeout: timeout,
               forceResendingToken: forceResendingToken,
               codeAutoRetrievalTimeout: (verificationId) => commander.execute(

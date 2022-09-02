@@ -310,7 +310,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   @override
   Future<void> verifyPhoneNumber({
-    required String phoneNumber,
+    String? phoneNumber,
+    PhoneMultiFactorInfo? multiFactorInfo,
     required PhoneVerificationCompleted verificationCompleted,
     required PhoneVerificationFailed verificationFailed,
     required PhoneCodeSent codeSent,
@@ -318,7 +319,12 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     @visibleForTesting String? autoRetrievedSmsCodeForTesting,
     Duration timeout = const Duration(seconds: 30),
     int? forceResendingToken,
+    MultiFactorSession? multiFactorSession,
   }) async {
+    if (phoneNumber == null) {
+      throw UnimplementedError();
+    }
+
     var impl =
         FirebaseImplementation.installation as PureDartFirebaseImplementation;
     var appSignatureHash = await impl.smsRetriever.getAppSignatureHash();
@@ -504,6 +510,12 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     await _storageManagerUserChangedSubscription.cancel();
     await _currentUser.close();
     await super.delete();
+  }
+
+  @override
+  Future<UserCredential> signInWithAuthProvider(AuthProvider provider) {
+    // TODO: implement signInWithAuthProvider
+    throw UnimplementedError();
   }
 }
 
