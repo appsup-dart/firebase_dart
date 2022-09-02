@@ -13,8 +13,10 @@ import 'jwt_util.dart';
 import 'util.dart';
 
 class Tester {
-  static const identityToolkitBaseUrl =
+  static const identityToolkitBaseUrlV1 =
       'https://identitytoolkit.googleapis.com/v1';
+  static const identityToolkitBaseUrlV2 =
+      'https://identitytoolkit.googleapis.com/v2';
 
   final String url;
   final dynamic expectedBody;
@@ -28,7 +30,15 @@ class Tester {
       this.method = 'POST',
       this.action,
       this.expectedResult})
-      : url = '$identityToolkitBaseUrl/$path';
+      : url = '$identityToolkitBaseUrlV1/$path';
+
+  Tester.v2(
+      {String? path,
+      this.expectedBody,
+      this.method = 'POST',
+      this.action,
+      this.expectedResult})
+      : url = '$identityToolkitBaseUrlV2/$path';
 
   Tester replace(
           {String? path,
@@ -3259,6 +3269,50 @@ void main() {
                     ),
                 throwsA(FirebaseAuthException.internalError()));
           });
+        });
+      });
+
+      group('startMultiFactorEnrollment', () {
+        var token = createMockJwt(uid: 'uid123', providerId: 'password');
+        var tester = Tester.v2(
+          path: 'accounts/mfaEnrollment:start',
+          expectedBody: {
+            'idToken': token,
+            'phoneEnrollmentInfo': {
+              'phoneNumber': 'phone-number',
+              'recaptchaToken': 'captcha-token'
+            }
+          },
+          expectedResult: (response) {
+            return response['phoneSessionInfo']?['sessionInfo'];
+          },
+          action: () => rpcHandler.startMultiFactorEnrollment(
+            idToken: token,
+            phoneNumber: 'phone-number',
+            recaptchaToken: 'captcha-token',
+          ),
+        );
+
+        test('startMultiFactorEnrollment: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'phoneSessionInfo': {'sessionInfo': 'session-info'}
+            },
+          );
+        });
+
+        test('startMultiFactorEnrollment: invalid token', () async {
+          await tester.shouldFail(
+              expectedError: FirebaseAuthException.invalidAuth(),
+              serverResponse: {
+                'error': {
+                  'code': 400,
+                  'message': 'INVALID_ID_TOKEN',
+                  'errors': [
+                    {'message': 'INVALID_ID_TOKEN'}
+                  ]
+                }
+              });
         });
       });
 

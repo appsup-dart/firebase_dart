@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:firebaseapis/identitytoolkit/v1.dart';
 import 'package:firebaseapis/identitytoolkit/v1.dart' as id;
+import 'package:firebaseapis/identitytoolkit/v2.dart' as v2;
 
 import 'package:http/http.dart' as http;
 import 'package:_discoveryapis_commons/_discoveryapis_commons.dart' as commons;
@@ -100,6 +101,9 @@ class IdentityToolkitApi implements id.IdentityToolkitApi {
   ProjectsResource get projects => ProjectsResource(_requester);
   @override
   V1Resource get v1 => V1Resource(_requester);
+
+  v2.AccountsMfaEnrollmentResource get mfaEnrollment =>
+      v2.AccountsMfaEnrollmentResource(_requester);
 
   IdentityToolkitApi(http.Client client,
       {String rootUrl = 'https://identitytoolkit.googleapis.com/',

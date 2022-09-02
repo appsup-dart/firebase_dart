@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:firebase_dart/src/auth/providers/saml.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/util/proxy.dart';
+import 'package:firebaseapis/identitytoolkit/v2.dart' hide IdentityToolkitApi;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 import 'package:openid_client/openid_client.dart' as openid;
@@ -782,6 +783,34 @@ class RpcHandler {
       expiresIn: response.expiresIn,
       mfaPendingCredential: null,
     );
+  }
+
+  Future<String> startMultiFactorEnrollment(
+      {required String idToken,
+      String? phoneNumber,
+      String? appSignatureHash,
+      String? recaptchaToken,
+      String? safetyNetToken}) async {
+    if (phoneNumber == null ||
+        (recaptchaToken == null && safetyNetToken == null)) {
+      throw FirebaseAuthException.internalError();
+    }
+    var info = GoogleCloudIdentitytoolkitV2StartMfaPhoneRequestInfo()
+      ..phoneNumber = phoneNumber
+      ..autoRetrievalInfo = appSignatureHash == null
+          ? null
+          : (GoogleCloudIdentitytoolkitV2AutoRetrievalInfo()
+            ..appSignatureHash = appSignatureHash)
+      ..recaptchaToken = recaptchaToken
+      ..safetyNetToken = safetyNetToken;
+
+    var request = GoogleCloudIdentitytoolkitV2StartMfaEnrollmentRequest()
+      ..idToken = idToken
+      ..phoneEnrollmentInfo = info;
+
+    var response = await identitytoolkitApi.mfaEnrollment.start(request);
+
+    return response.phoneSessionInfo!.sessionInfo!;
   }
 
   /// Validates a request that sends the verification ID and code for a sign in/up
