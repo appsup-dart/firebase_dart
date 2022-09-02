@@ -3402,6 +3402,93 @@ void main() {
         });
       });
 
+      group('startMultiFactorSignIn', () {
+        var tester = Tester.v2(
+          path: 'accounts/mfaSignIn:start',
+          expectedBody: {
+            'mfaPendingCredential': 'my-creds',
+            'mfaEnrollmentId': 'my-enrollment-id',
+            'phoneSignInInfo': {'recaptchaToken': 'catpcha-token'}
+          },
+          expectedResult: (response) {
+            return response['phoneResponseInfo']?['sessionInfo'];
+          },
+          action: () => rpcHandler.startMultiFactorSignIn(
+            mfaPendingCredential: 'my-creds',
+            mfaEnrollmentId: 'my-enrollment-id',
+            recaptchaToken: 'catpcha-token',
+          ),
+        );
+
+        test('startMultiFactorSignIn: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {
+              'phoneResponseInfo': {'sessionInfo': 'session-info'}
+            },
+          );
+        });
+
+        test('startMultiFactorSignIn: invalid pending token', () async {
+          await tester.shouldFail(
+              expectedError: FirebaseAuthException.invalidIdpResponse(),
+              serverResponse: {
+                'error': {
+                  'code': 400,
+                  'message': 'INVALID_PENDING_TOKEN',
+                  'errors': [
+                    {'message': 'INVALID_PENDING_TOKEN'}
+                  ]
+                }
+              });
+        });
+      });
+
+      group('finalizeMultiFactorSignIn', () {
+        var token = createMockJwt(uid: 'uid123', providerId: 'password');
+        var tester = Tester.v2(
+          path: 'accounts/mfaSignIn:finalize',
+          expectedBody: {
+            'mfaPendingCredential': 'pending-cred',
+            'phoneVerificationInfo': {
+              'phoneNumber': '123456789',
+              'sessionInfo': 'session-info',
+              'code': 'my-code'
+            }
+          },
+          expectedResult: (response) {
+            return {'id_token': response['idToken']};
+          },
+          action: () => rpcHandler
+              .finalizeMultiFactorSignIn(
+                mfaPendingCredential: 'pending-cred',
+                code: 'my-code',
+                phoneNumber: '123456789',
+                sessionInfo: 'session-info',
+              )
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
+        );
+
+        test('finalizeMultiFactorSignIn: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'idToken': token, 'refreshToken': 'refresh-token'},
+          );
+        });
+
+        test('finalizeMultiFactorSignIn: invalid code', () async {
+          await tester.shouldFail(
+              expectedError: FirebaseAuthException.invalidCode(),
+              serverResponse: {
+                'error': {
+                  'code': 400,
+                  'message': 'INVALID_CODE',
+                  'errors': [
+                    {'message': 'INVALID_CODE'}
+                  ]
+                }
+              });
+        });
+      });
+
       group('Send Firebase backend request', () {
         var identifier = 'user@example.com';
         var tester = Tester(

@@ -881,6 +881,53 @@ class RpcHandler {
     );
   }
 
+  Future<String> startMultiFactorSignIn(
+      {required String mfaPendingCredential,
+      required String mfaEnrollmentId,
+      String? appSignatureHash,
+      String? recaptchaToken,
+      String? safetyNetToken}) async {
+    var info = GoogleCloudIdentitytoolkitV2StartMfaPhoneRequestInfo()
+      ..autoRetrievalInfo = appSignatureHash == null
+          ? null
+          : (GoogleCloudIdentitytoolkitV2AutoRetrievalInfo()
+            ..appSignatureHash = appSignatureHash)
+      ..recaptchaToken = recaptchaToken
+      ..safetyNetToken = safetyNetToken;
+
+    var request = GoogleCloudIdentitytoolkitV2StartMfaSignInRequest()
+      ..mfaPendingCredential = mfaPendingCredential
+      ..mfaEnrollmentId = mfaEnrollmentId
+      ..phoneSignInInfo = info;
+    var response = await identitytoolkitApi.mfaSignIn.start(request);
+
+    return response.phoneResponseInfo!.sessionInfo!;
+  }
+
+  Future<SignInResult> finalizeMultiFactorSignIn(
+      {required String mfaPendingCredential,
+      String? sessionInfo,
+      String? code,
+      String? phoneNumber}) async {
+    var info = GoogleCloudIdentitytoolkitV2FinalizeMfaPhoneRequestInfo()
+      ..sessionInfo = sessionInfo
+      ..code = code
+      ..phoneNumber = phoneNumber;
+
+    var request = GoogleCloudIdentitytoolkitV2FinalizeMfaSignInRequest()
+      ..mfaPendingCredential = mfaPendingCredential
+      ..phoneVerificationInfo = info;
+    var response = await identitytoolkitApi.mfaSignIn.finalize(request);
+
+    return handleIdTokenResponse(
+      idToken: response.idToken,
+      refreshToken: response.refreshToken,
+      expiresIn: null,
+      mfaPendingCredential: null,
+      mfaInfo: null,
+    );
+  }
+
   /// Validates a request that sends the verification ID and code for a sign in/up
   /// phone Auth flow.
   void _validateSignInWithPhoneNumberRequest(

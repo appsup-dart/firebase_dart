@@ -104,6 +104,8 @@ class IdentityToolkitApi implements id.IdentityToolkitApi {
 
   v2.AccountsMfaEnrollmentResource get mfaEnrollment =>
       v2.AccountsMfaEnrollmentResource(_requester);
+  v2.AccountsMfaSignInResource get mfaSignIn =>
+      v2.AccountsMfaSignInResource(_requester);
 
   IdentityToolkitApi(http.Client client,
       {String rootUrl = 'https://identitytoolkit.googleapis.com/',
