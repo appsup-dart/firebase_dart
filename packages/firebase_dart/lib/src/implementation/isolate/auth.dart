@@ -410,7 +410,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     Duration timeout = const Duration(seconds: 30),
     int? forceResendingToken,
     MultiFactorSession? multiFactorSession,
-    MultiFactorInfo? multiFactorInfo,
+    PhoneMultiFactorInfo? multiFactorInfo,
   }) async {
     var worker = IsolateWorker()
       ..registerFunction(#verificationCompleted, verificationCompleted)
@@ -578,12 +578,12 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
           String? phoneNumber,
           Duration timeout = const Duration(seconds: 30),
           int? forceResendingToken,
-          PhoneMultiFactorInfo? mutliFactorInfo,
+          PhoneMultiFactorInfo? multiFactorInfo,
           MultiFactorSession? multiFactorSession,
         }) {
           return auth.verifyPhoneNumber(
               phoneNumber: phoneNumber,
-              multiFactorInfo: mutliFactorInfo,
+              multiFactorInfo: multiFactorInfo,
               multiFactorSession: multiFactorSession,
               timeout: timeout,
               forceResendingToken: forceResendingToken,
