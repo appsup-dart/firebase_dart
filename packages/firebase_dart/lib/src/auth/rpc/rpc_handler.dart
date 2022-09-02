@@ -833,6 +833,54 @@ class RpcHandler {
     return response.phoneSessionInfo!.sessionInfo!;
   }
 
+  Future<SignInResult> finalizeMultiFactorEnrollment(
+      {required String idToken,
+      String? displayName,
+      String? sessionInfo,
+      String? code,
+      String? phoneNumber}) async {
+    var info = GoogleCloudIdentitytoolkitV2FinalizeMfaPhoneRequestInfo()
+      ..sessionInfo = sessionInfo
+      ..code = code
+      ..phoneNumber = phoneNumber;
+
+    var request = GoogleCloudIdentitytoolkitV2FinalizeMfaEnrollmentRequest()
+      ..idToken = idToken
+      ..displayName = displayName
+      ..phoneVerificationInfo = info;
+
+    var response = await identitytoolkitApi.mfaEnrollment.finalize(request);
+
+    return handleIdTokenResponse(
+      idToken: response.idToken,
+      refreshToken: response.refreshToken,
+      expiresIn: null,
+      mfaPendingCredential: null,
+      mfaInfo: null,
+    );
+  }
+
+  Future<SignInResult> withdrawMultiFactorEnrollment({
+    required String idToken,
+    required String mfaEnrollmentId,
+    String? tenantId,
+  }) async {
+    var request = GoogleCloudIdentitytoolkitV2WithdrawMfaRequest()
+      ..idToken = idToken
+      ..mfaEnrollmentId = mfaEnrollmentId
+      ..tenantId = tenantId;
+
+    var response = await identitytoolkitApi.mfaEnrollment.withdraw(request);
+
+    return handleIdTokenResponse(
+      idToken: response.idToken,
+      refreshToken: response.refreshToken,
+      expiresIn: null,
+      mfaPendingCredential: null,
+      mfaInfo: null,
+    );
+  }
+
   /// Validates a request that sends the verification ID and code for a sign in/up
   /// phone Auth flow.
   void _validateSignInWithPhoneNumberRequest(

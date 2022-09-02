@@ -3316,6 +3316,92 @@ void main() {
         });
       });
 
+      group('finalizeMultiFactorEnrollment', () {
+        var token = createMockJwt(uid: 'uid123', providerId: 'password');
+        var tester = Tester.v2(
+          path: 'accounts/mfaEnrollment:finalize',
+          expectedBody: {
+            'idToken': token,
+            'phoneVerificationInfo': {
+              'phoneNumber': 'phone-number',
+              'sessionInfo': 'session-info',
+              'code': 'code'
+            }
+          },
+          expectedResult: (response) {
+            return {'id_token': response['idToken']};
+          },
+          action: () => rpcHandler
+              .finalizeMultiFactorEnrollment(
+                idToken: token,
+                phoneNumber: 'phone-number',
+                sessionInfo: 'session-info',
+                code: 'code',
+              )
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
+        );
+
+        test('finalizeMultiFactorEnrollment: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'idToken': token, 'refreshToken': 'refresh-token'},
+          );
+        });
+
+        test('finalizeMultiFactorEnrollment: invalid session', () async {
+          await tester.shouldFail(
+              expectedError: FirebaseAuthException.invalidSessionInfo(),
+              serverResponse: {
+                'error': {
+                  'code': 400,
+                  'message': 'INVALID_SESSION_INFO',
+                  'errors': [
+                    {'message': 'INVALID_SESSION_INFO'}
+                  ]
+                }
+              });
+        });
+      });
+
+      group('withdrawMultiFactorEnrollment', () {
+        var token = createMockJwt(uid: 'uid123', providerId: 'password');
+        var tester = Tester.v2(
+          path: 'accounts/mfaEnrollment:withdraw',
+          expectedBody: {
+            'idToken': token,
+            'mfaEnrollmentId': 'mfa-enrollment-id',
+          },
+          expectedResult: (response) {
+            return {'id_token': response['idToken']};
+          },
+          action: () => rpcHandler
+              .withdrawMultiFactorEnrollment(
+                idToken: token,
+                mfaEnrollmentId: 'mfa-enrollment-id',
+              )
+              .then((v) => {'id_token': v.credential.response!['id_token']}),
+        );
+
+        test('withdrawMultiFactorEnrollment: success', () async {
+          await tester.shouldSucceed(
+            serverResponse: {'idToken': token, 'refreshToken': 'refresh-token'},
+          );
+        });
+
+        test('withdrawMultiFactorEnrollment: invalid session', () async {
+          await tester.shouldFail(
+              expectedError: FirebaseAuthException.invalidAuth(),
+              serverResponse: {
+                'error': {
+                  'code': 400,
+                  'message': 'INVALID_ID_TOKEN',
+                  'errors': [
+                    {'message': 'INVALID_ID_TOKEN'}
+                  ]
+                }
+              });
+        });
+      });
+
       group('Send Firebase backend request', () {
         var identifier = 'user@example.com';
         var tester = Tester(
