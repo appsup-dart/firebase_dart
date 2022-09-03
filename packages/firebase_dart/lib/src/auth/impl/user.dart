@@ -666,8 +666,8 @@ class IdTokenResultImpl extends IdTokenResult {
   bool operator ==(other) => other is IdTokenResultImpl && other.token == token;
 
   @override
-  // TODO: implement signInSecondFactor
-  String? get signInSecondFactor => throw UnimplementedError();
+  String? get signInSecondFactor =>
+      (_idToken.claims['firebase'] ?? {})['sign_in_second_factor'];
 }
 
 AdditionalUserInfo createAdditionalUserInfo(
