@@ -224,8 +224,8 @@ class IsolateMultiFactor extends MultiFactor {
 
   @override
   Future<void> unenroll({String? factorUid, MultiFactorInfo? multiFactorInfo}) {
-    // TODO: implement unenroll
-    throw UnimplementedError();
+    return invoke(#multiFactor_unenroll, [],
+        {#factorUid: factorUid, #multiFactorInfo: multiFactorInfo});
   }
 
   @override
@@ -544,9 +544,11 @@ class CurrentUserFunctionCall<T> extends BaseFunctionCall<T> {
       case #setAccountInfo:
         return (user as FirebaseUserImpl).setAccountInfo;
       case #multiFactor_getSession:
-        return (user as FirebaseUserImpl).multiFactor.getSession;
+        return user.multiFactor.getSession;
       case #multiFactor_enroll:
-        return (user as FirebaseUserImpl).multiFactor.enroll;
+        return user.multiFactor.enroll;
+      case #multiFactor_unenroll:
+        return user.multiFactor.unenroll;
     }
     return null;
   }
