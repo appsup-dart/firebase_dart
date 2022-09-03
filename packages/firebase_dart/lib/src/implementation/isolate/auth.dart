@@ -210,7 +210,8 @@ class IsolateMultiFactor extends MultiFactor {
 
   @override
   Future<void> enroll(MultiFactorAssertion assertion, {String? displayName}) {
-    return invoke(#multiFactor_enroll, [assertion], {#displayName: displayName});
+    return invoke(
+        #multiFactor_enroll, [assertion], {#displayName: displayName});
   }
 
   @override
@@ -226,9 +227,11 @@ class IsolateMultiFactor extends MultiFactor {
     // TODO: implement unenroll
     throw UnimplementedError();
   }
-  
+
   @override
-  List<MultiFactorInfo> get enrolledFactors => (_user._json['mfaInfo'] as List).map((v) => MultiFactorInfo.fromJson(v)).toList();
+  List<MultiFactorInfo> get enrolledFactors => (_user._json['mfaInfo'] as List)
+      .map((v) => MultiFactorInfo.fromJson(v))
+      .toList();
 }
 
 class EncodeCall<T> extends BaseFunctionCall<Future> {
@@ -237,8 +240,12 @@ class EncodeCall<T> extends BaseFunctionCall<Future> {
   @override
   Function get function {
     return (FunctionCall<FutureOr<T>> baseCall) async {
-      var v = await baseCall.run();
-      return encode(v);
+      try {
+        var v = await baseCall.run();
+        return encode(v);
+      } catch (e) {
+        throw encodeException(e);
+      }
     };
   }
 
@@ -252,6 +259,17 @@ class EncodeCall<T> extends BaseFunctionCall<Future> {
       return UserCredentialX.fromJson(auth as IsolateFirebaseAuth, value) as T;
     }
     return value;
+  }
+
+  Object encodeException(Object error) {
+    if (error is FirebaseAuthMultiFactorException) {
+      var resolver = error.resolver as MultiFactorResolverImpl;
+      return FirebaseAuthMultiFactorException(IsolateMultiFactorResolver(
+          resolver.firebaseAuth.app.name,
+          hints: resolver.hints,
+          session: resolver.session));
+    }
+    return error;
   }
 }
 
@@ -626,8 +644,31 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
                           .execute(RegisteredFunctionCall(#askUserForEmail));
                     });
         };
+      case #signInWithMultiFactorAssertion:
+        return (auth as FirebaseAuthImpl).signInWithMultiFactorAssertion;
     }
     throw UnsupportedError(
         'FirebaseAuthFunctionCall with reference $functionName not supported');
+  }
+}
+
+class IsolateMultiFactorResolver extends MultiFactorResolver {
+  final String appName;
+
+  @override
+  final List<MultiFactorInfo> hints;
+
+  @override
+  final MultiFactorSession session;
+
+  IsolateMultiFactorResolver(this.appName,
+      {required this.hints, required this.session});
+
+  FirebaseAuth get auth => FirebaseAuth.instanceFor(app: Firebase.app(appName));
+
+  @override
+  Future<UserCredential> resolveSignIn(MultiFactorAssertion assertion) {
+    return (auth as IsolateFirebaseAuth)
+        .invoke(#signInWithMultiFactorAssertion, [assertion, session]);
   }
 }
