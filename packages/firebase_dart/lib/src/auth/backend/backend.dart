@@ -5,8 +5,10 @@ import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/auth/error.dart';
 import 'package:firebase_dart/src/auth/rpc/error.dart';
 import 'package:firebaseapis/identitytoolkit/v1.dart';
+import 'package:firebaseapis/identitytoolkit/v2.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
+import 'package:quiver/iterables.dart';
 
 class BackendConnection {
   final AuthBackend backend;
@@ -226,7 +228,8 @@ class BackendConnection {
     if (code == null) {
       throw ArgumentError('Invalid request: missing code');
     }
-    var user = await backend.signInWithPhoneNumber(sessionInfo, code);
+    var phoneNumber = await backend.signInWithPhoneNumber(sessionInfo, code);
+    var user = await backend.getUserByPhoneNumber(phoneNumber);
 
     var idToken = await backend.generateIdToken(
         uid: user.localId, providerId: 'password');
@@ -283,6 +286,51 @@ class BackendConnection {
       ..localId = user.localId
       ..idToken = idToken
       ..expiresIn = '${tokenExpiresIn.inSeconds}'
+      ..refreshToken = refreshToken;
+  }
+
+  Future<GoogleCloudIdentitytoolkitV2StartMfaEnrollmentResponse>
+      startMfaEnrollment(
+          GoogleCloudIdentitytoolkitV2StartMfaEnrollmentRequest request) async {
+    var user = await _userFromIdToken(request.idToken!);
+    var token = await backend.sendVerificationCode(
+        request.phoneEnrollmentInfo!.phoneNumber!,
+        uid: user.localId);
+
+    var info = GoogleCloudIdentitytoolkitV2StartMfaPhoneResponseInfo()
+      ..sessionInfo = token;
+    return GoogleCloudIdentitytoolkitV2StartMfaEnrollmentResponse()
+      ..phoneSessionInfo = info;
+  }
+
+  Future<GoogleCloudIdentitytoolkitV2FinalizeMfaEnrollmentResponse>
+      finalizeMfaEnrollment(
+          GoogleCloudIdentitytoolkitV2FinalizeMfaEnrollmentRequest
+              request) async {
+    var sessionInfo = request.phoneVerificationInfo!.sessionInfo;
+    if (sessionInfo == null) {
+      throw ArgumentError('Invalid request: missing sessionInfo');
+    }
+    var code = request.phoneVerificationInfo!.code;
+    if (code == null) {
+      throw ArgumentError('Invalid request: missing code');
+    }
+
+    var userId = JsonWebSignature.fromCompactSerialization(sessionInfo)
+        .unverifiedPayload
+        .jsonContent['uid'];
+
+    var user = await backend.getUserById(userId);
+
+    var phoneNumber = await backend.signInWithPhoneNumber(sessionInfo, code);
+    user.phoneNumber = phoneNumber;
+    await backend.updateUser(user);
+
+    var idToken = await backend.generateIdToken(
+        uid: user.localId, providerId: 'password');
+    var refreshToken = await backend.generateRefreshToken(idToken);
+    return GoogleCloudIdentitytoolkitV2FinalizeMfaEnrollmentResponse()
+      ..idToken = idToken
       ..refreshToken = refreshToken;
   }
 
@@ -344,6 +392,16 @@ class BackendConnection {
             GoogleCloudIdentitytoolkitV1SignInWithEmailLinkRequest.fromJson(
                 body);
         return emailLinkSignin(request);
+      case 'mfaEnrollment:start':
+        var request =
+            GoogleCloudIdentitytoolkitV2StartMfaEnrollmentRequest.fromJson(
+                body);
+        return startMfaEnrollment(request);
+      case 'mfaEnrollment:finalize':
+        var request =
+            GoogleCloudIdentitytoolkitV2FinalizeMfaEnrollmentRequest.fromJson(
+                body);
+        return finalizeMfaEnrollment(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }
@@ -387,9 +445,9 @@ abstract class AuthBackend {
 
   Future<String> verifyRefreshToken(String token);
 
-  Future<String> sendVerificationCode(String phoneNumber);
+  Future<String> sendVerificationCode(String phoneNumber, {String? uid});
 
-  Future<BackendUser> signInWithPhoneNumber(String sessionInfo, String code);
+  Future<String> signInWithPhoneNumber(String sessionInfo, String code);
 
   Future<BackendUser> signInWithIdp(String providerId, String idToken);
 

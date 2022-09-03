@@ -10,6 +10,9 @@ import 'package:rxdart/rxdart.dart';
 
 import '../auth.dart';
 import '../authhandlers.dart';
+import '../multi_factor.dart';
+
+part 'multi_factor.dart';
 
 class FirebaseUserImpl extends User with DelegatingUserInfo {
   final FirebaseAuthImpl _auth;
@@ -278,6 +281,19 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     throw UnimplementedError();
   }
 
+  Future<void> _updateCredential(openid.Credential credential) async {
+    if (uid != credential.idToken.claims.subject) {
+      throw FirebaseAuthException.userMismatch();
+    }
+
+    _credential = credential;
+
+    _lastAccessToken = _credential.idToken.toCompactSerialization();
+    _tokenUpdates.add(_lastAccessToken);
+
+    await reload();
+  }
+
   @override
   Future<UserCredential> reauthenticateWithCredential(
       AuthCredential credential) async {
@@ -521,8 +537,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   }
 
   @override
-  // TODO: implement multiFactor
-  MultiFactor get multiFactor => throw UnimplementedError();
+  late final MultiFactor multiFactor = MultiFactorImpl(this);
 }
 
 abstract class DelegatingUserInfo implements UserInfo {

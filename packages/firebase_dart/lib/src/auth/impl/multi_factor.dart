@@ -1,0 +1,80 @@
+part of 'user.dart';
+
+class MultiFactorImpl extends MultiFactor {
+  final FirebaseUserImpl user;
+
+  MultiFactorImpl(this.user);
+
+  @override
+  Future<void> enroll(MultiFactorAssertion assertion,
+      {String? displayName}) async {
+    var session = await getSession();
+
+    var phoneCredential = (assertion as PhoneMultiFactorAssertion).credential;
+    var r = await user._rpcHandler.finalizeMultiFactorEnrollment(
+        idToken: session.credential,
+        code: phoneCredential.smsCode,
+        phoneNumber: phoneCredential.phoneNumber,
+        sessionInfo: phoneCredential.verificationId);
+
+    await user._updateCredential(r.credential);
+  }
+
+  @override
+  Future<List<MultiFactorInfo>> getEnrolledFactors() {
+    // TODO: implement getEnrolledFactors
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<MultiFactorSessionImpl> getSession() async {
+    return MultiFactorSessionImpl.fromIdtoken(await user.getIdToken());
+  }
+
+  @override
+  Future<void> unenroll({String? factorUid, MultiFactorInfo? multiFactorInfo}) {
+    // TODO: implement unenroll
+    throw UnimplementedError();
+  }
+}
+
+enum MultiFactorSessionType {
+  /// The session is for a second factor enrollment operation.
+  enrollment,
+
+  /// The session is for a second factor sign in operation.
+  signIn,
+}
+
+class MultiFactorSessionImpl extends MultiFactorSession {
+  final MultiFactorSessionType type;
+
+  final String credential;
+
+  MultiFactorSessionImpl(this.type, this.credential);
+
+  MultiFactorSessionImpl.fromIdtoken(String idToken)
+      : this(MultiFactorSessionType.enrollment, idToken);
+
+  factory MultiFactorSessionImpl.fromJson(Map<String, dynamic> obj) {
+    var v = obj['multiFactorSession'] as Map;
+    if (v.containsKey('pendingCredential')) {
+      return MultiFactorSessionImpl.fromMfaPendingCredential(
+          v['pendingCredential']);
+    } else {
+      return MultiFactorSessionImpl.fromIdtoken(v['idToken']);
+    }
+  }
+
+  MultiFactorSessionImpl.fromMfaPendingCredential(String mfaPendingCredential)
+      : this(MultiFactorSessionType.signIn, mfaPendingCredential);
+
+  Map<String, dynamic> toJson() {
+    var key = type == MultiFactorSessionType.enrollment
+        ? 'idToken'
+        : 'pendingCredential';
+    return {
+      'multiFactorSession': {key: credential}
+    };
+  }
+}

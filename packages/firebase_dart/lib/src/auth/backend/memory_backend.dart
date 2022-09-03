@@ -80,30 +80,27 @@ class StoreBackend extends BaseBackend {
   }
 
   @override
-  Future<String> sendVerificationCode(String phoneNumber) async {
-    var user = await getUserByPhoneNumber(phoneNumber);
-
+  Future<String> sendVerificationCode(String phoneNumber, {String? uid}) async {
     var max = 100000;
     var code = (Random.secure().nextInt(max) + max).toString().substring(1);
     await smsCodes.set(phoneNumber, code);
     var builder = JsonWebSignatureBuilder()
-      ..jsonContent = user.phoneNumber
+      ..jsonContent = {if (uid != null) 'uid': uid, 'phoneNumber': phoneNumber}
       ..addRecipient(await getTokenSigningKey());
     return builder.build().toCompactSerialization();
   }
 
   @override
-  Future<BackendUser> signInWithPhoneNumber(
-      String sessionInfo, String code) async {
+  Future<String> signInWithPhoneNumber(String sessionInfo, String code) async {
     var s = JsonWebSignature.fromCompactSerialization(sessionInfo);
 
-    var phoneNumber = s.unverifiedPayload.jsonContent;
+    var phoneNumber = s.unverifiedPayload.jsonContent['phoneNumber'];
 
     var v = await smsCodes.remove(phoneNumber);
     if (v != code) {
       throw FirebaseAuthException.invalidCode();
     }
-    return getUserByPhoneNumber(phoneNumber);
+    return phoneNumber;
   }
 
   @override

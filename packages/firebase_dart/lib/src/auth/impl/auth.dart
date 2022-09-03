@@ -321,24 +321,38 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     int? forceResendingToken,
     MultiFactorSession? multiFactorSession,
   }) async {
-    if (phoneNumber == null) {
-      throw UnimplementedError();
-    }
-
     var impl =
         FirebaseImplementation.installation as PureDartFirebaseImplementation;
     var appSignatureHash = await impl.smsRetriever.getAppSignatureHash();
 
-    var assertion = await impl.applicationVerifier.verify(this, phoneNumber);
-
+    var assertion =
+        await impl.applicationVerifier.verify(this, phoneNumber ?? '');
     var smsFuture = impl.smsRetriever.retrieveSms();
 
-    var verificationId = await rpcHandler.sendVerificationCode(
-      phoneNumber: phoneNumber,
-      appSignatureHash: appSignatureHash,
-      recaptchaToken: assertion.type == 'recaptcha' ? assertion.token : null,
-      safetyNetToken: assertion.type == 'safetynet' ? assertion.token : null,
-    );
+    String verificationId;
+    if (multiFactorSession != null) {
+      if ((multiFactorSession as MultiFactorSessionImpl).type ==
+          MultiFactorSessionType.enrollment) {
+        verificationId = await rpcHandler.startMultiFactorEnrollment(
+          idToken: multiFactorSession.credential,
+          phoneNumber: phoneNumber,
+          appSignatureHash: appSignatureHash,
+          recaptchaToken:
+              assertion.type == 'recaptcha' ? assertion.token : null,
+          safetyNetToken:
+              assertion.type == 'safetynet' ? assertion.token : null,
+        );
+      } else {
+        throw UnimplementedError();
+      }
+    } else {
+      verificationId = await rpcHandler.sendVerificationCode(
+        phoneNumber: phoneNumber,
+        appSignatureHash: appSignatureHash,
+        recaptchaToken: assertion.type == 'recaptcha' ? assertion.token : null,
+        safetyNetToken: assertion.type == 'safetynet' ? assertion.token : null,
+      );
+    }
 
     codeSent(verificationId, 0 /*TODO*/);
 

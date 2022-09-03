@@ -306,6 +306,48 @@ void runAuthTests({bool isolated = false}) {
         expect(r.user!.uid, 'user1');
         expect(r.user!.phoneNumber, phoneNumber);
       });
+
+      test('FirebaseAuth.verifyPhoneNumber with mfa session: success',
+          () async {
+        var phoneNumber = '+15551234567';
+
+        var expectedEmail = 'user@example.com';
+        var expectedPass = 'password';
+
+        var result = await auth.signInWithEmailAndPassword(
+            email: expectedEmail, password: expectedPass);
+        var user = result.user!;
+
+        final session = await user.multiFactor.getSession();
+
+        var credential = Completer<PhoneAuthCredential>();
+
+        await auth.verifyPhoneNumber(
+            phoneNumber: phoneNumber,
+            multiFactorSession: session,
+            timeout: Duration(),
+            verificationCompleted: (value) {
+              credential.complete(value);
+            },
+            verificationFailed: (e) {
+              throw e;
+            },
+            codeSent: (a, b) {},
+            codeAutoRetrievalTimeout: (verificationId) async {
+              var code = await tester.backend.receiveSmsCode(phoneNumber);
+              credential.complete(PhoneAuthProvider.credential(
+                  verificationId: verificationId, smsCode: code!));
+            });
+
+        await user.multiFactor.enroll(
+          PhoneMultiFactorGenerator.getAssertion(
+            await credential.future,
+          ),
+        );
+
+        expect(user.uid, 'user1');
+        expect(user.phoneNumber, phoneNumber);
+      });
     });
 
     group('FirebaseAuth.authStateChanges', () {
