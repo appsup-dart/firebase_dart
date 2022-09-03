@@ -338,12 +338,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       throw FirebaseAuthException.userMismatch();
     }
 
-    _credential = c;
-
-    _lastAccessToken = _credential.idToken.toCompactSerialization();
-    _tokenUpdates.add(_lastAccessToken);
-
-    await reload();
+    await _updateCredential(c);
 
     return UserCredentialImpl(
         user: this,
