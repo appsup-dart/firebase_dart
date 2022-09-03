@@ -9,6 +9,7 @@ import 'package:firebaseapis/identitytoolkit/v2.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
 import 'package:quiver/iterables.dart';
+import 'package:uuid/uuid.dart';
 
 class BackendConnection {
   final AuthBackend backend;
@@ -324,6 +325,16 @@ class BackendConnection {
 
     var phoneNumber = await backend.signInWithPhoneNumber(sessionInfo, code);
     user.phoneNumber = phoneNumber;
+    user.mfaInfo = [
+      ...?user.mfaInfo,
+      GoogleCloudIdentitytoolkitV1MfaEnrollment()
+        ..displayName = request.displayName
+        ..phoneInfo = phoneNumber
+        ..unobfuscatedPhoneInfo = phoneNumber
+        ..enrolledAt = DateTime.now().toIso8601String()
+        ..mfaEnrollmentId = Uuid().v4()
+    ];
+
     await backend.updateUser(user);
 
     var idToken = await backend.generateIdToken(

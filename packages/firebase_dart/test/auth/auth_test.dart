@@ -104,7 +104,8 @@ void runAuthTests({bool isolated = false}) {
               'providerId': 'providerId2',
               'phoneNumber': null
             }
-          ]
+          ],
+          'mfaInfo': [],
         };
 
         // Save anonymous user as current in storage.
@@ -343,10 +344,18 @@ void runAuthTests({bool isolated = false}) {
           PhoneMultiFactorGenerator.getAssertion(
             await credential.future,
           ),
+          displayName: 'my phone',
         );
 
         expect(user.uid, 'user1');
         expect(user.phoneNumber, phoneNumber);
+
+        var factors = await user.multiFactor.getEnrolledFactors();
+
+        expect(factors.length, 1);
+        expect(factors[0].factorId, isNotEmpty);
+        expect(factors[0].uid, phoneNumber);
+        expect(factors[0].displayName, 'my phone');
       });
     });
 

@@ -24,6 +24,9 @@ abstract class MultiFactor {
 
   /// Returns a list of the [MultiFactorInfo] already associated with this user.
   Future<List<MultiFactorInfo>> getEnrolledFactors();
+
+  /// Returns a list of the [MultiFactorInfo] already associated with this user.
+  List<MultiFactorInfo> get enrolledFactors;
 }
 
 /// Provider for generating a PhoneMultiFactorAssertion.
@@ -84,6 +87,12 @@ class MultiFactorInfo {
     required this.uid,
   });
 
+  MultiFactorInfo.fromJson(Map<String, dynamic> obj)
+      : factorId = obj['factorId'],
+        enrollmentTimestamp = obj['enrollmentTimestamp'],
+        displayName = obj['displayName'],
+        uid = obj['uid'];
+
   /// User-given display name for this second factor.
   final String? displayName;
 
@@ -95,6 +104,13 @@ class MultiFactorInfo {
 
   /// The unique identifier for this second factor.
   final String uid;
+
+  Map<String, dynamic> toJson() => {
+        'displayName': displayName,
+        'enrollmentTimestamp': enrollmentTimestamp,
+        'factorId': factorId,
+        'uid': uid,
+      };
 }
 
 /// Represents the information for a phone second factor.

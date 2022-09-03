@@ -214,10 +214,7 @@ class IsolateMultiFactor extends MultiFactor {
   }
 
   @override
-  Future<List<MultiFactorInfo>> getEnrolledFactors() {
-    // TODO: implement getEnrolledFactors
-    throw UnimplementedError();
-  }
+  Future<List<MultiFactorInfo>> getEnrolledFactors() async => enrolledFactors;
 
   @override
   Future<MultiFactorSession> getSession() {
@@ -229,6 +226,9 @@ class IsolateMultiFactor extends MultiFactor {
     // TODO: implement unenroll
     throw UnimplementedError();
   }
+  
+  @override
+  List<MultiFactorInfo> get enrolledFactors => (_user._json['mfaInfo'] as List).map((v) => MultiFactorInfo.fromJson(v)).toList();
 }
 
 class EncodeCall<T> extends BaseFunctionCall<Future> {

@@ -22,10 +22,7 @@ class MultiFactorImpl extends MultiFactor {
   }
 
   @override
-  Future<List<MultiFactorInfo>> getEnrolledFactors() {
-    // TODO: implement getEnrolledFactors
-    throw UnimplementedError();
-  }
+  Future<List<MultiFactorInfo>> getEnrolledFactors() async => enrolledFactors;
 
   @override
   Future<MultiFactorSessionImpl> getSession() async {
@@ -37,6 +34,9 @@ class MultiFactorImpl extends MultiFactor {
     // TODO: implement unenroll
     throw UnimplementedError();
   }
+
+  @override
+  List<MultiFactorInfo> get enrolledFactors => [...user._enrolledFactors];
 }
 
 enum MultiFactorSessionType {

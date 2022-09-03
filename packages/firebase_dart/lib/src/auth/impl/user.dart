@@ -26,6 +26,8 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   @override
   late AccountInfo _accountInfo;
 
+  final List<MultiFactorInfo> _enrolledFactors = [];
+
   String? _lastAccessToken;
 
   bool _destroyed = false;
@@ -59,6 +61,14 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         if (userInfo != null) {
           firebaseUser._providerData
               .add(UserInfo.fromJson((userInfo as Map).cast()));
+        }
+      }
+    }
+    if (user['mfaInfo'] is List) {
+      for (var mfaInfo in user['mfaInfo']) {
+        if (mfaInfo != null) {
+          firebaseUser._enrolledFactors
+              .add(MultiFactorInfo.fromJson((mfaInfo as Map).cast()));
         }
       }
     }
@@ -157,6 +167,17 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
             ? null
             : DateTime.fromMillisecondsSinceEpoch(int.parse(user.createdAt!)));
     setAccountInfo(accountInfo);
+    _enrolledFactors.addAll([
+      if (user.mfaInfo != null)
+        for (var info in user.mfaInfo!)
+          MultiFactorInfo(
+            displayName: info.displayName,
+            enrollmentTimestamp:
+                DateTime.parse(info.enrolledAt!).millisecondsSinceEpoch / 1000,
+            factorId: info.mfaEnrollmentId!,
+            uid: info.phoneInfo!,
+          ),
+    ]);
 
     _providerData.addAll((user.providerUserInfo ?? []).map((v) => UserInfo(
         providerId: v.providerId!,
@@ -181,6 +202,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   void setAccountInfo(AccountInfo accountInfo) {
     _accountInfo = accountInfo;
     _providerData.clear();
+    _enrolledFactors.clear();
     _updates.add(this);
   }
 
@@ -195,6 +217,9 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       return;
     }
     setAccountInfo(other!._accountInfo);
+    for (var mfaInfo in other._enrolledFactors) {
+      _enrolledFactors.add(mfaInfo);
+    }
 
     for (var userInfo in other.providerData) {
       _providerData.add(userInfo);
@@ -208,7 +233,8 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
         if (_authDomain != null) 'authDomain': _authDomain,
         ..._accountInfo.toJson(),
         'credential': _credential.toJson(),
-        'providerData': [...providerData.map((v) => v.toJson())]
+        'providerData': [...providerData.map((v) => v.toJson())],
+        'mfaInfo': [..._enrolledFactors.map((v) => v.toJson())],
       };
 
   @override

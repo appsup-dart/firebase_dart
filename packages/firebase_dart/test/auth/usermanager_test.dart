@@ -55,7 +55,8 @@ void main() async {
           'providerId': 'providerId2',
           'phoneNumber': null
         }
-      ]
+      ],
+      'mfaInfo': [],
     };
 
     late Box storage;
