@@ -15,7 +15,8 @@ class MultiFactorImpl extends MultiFactor {
         idToken: session.credential,
         code: phoneCredential.smsCode,
         phoneNumber: phoneCredential.phoneNumber,
-        sessionInfo: phoneCredential.verificationId);
+        sessionInfo: phoneCredential.verificationId,
+        displayName: displayName);
 
     await user._updateCredential(r.credential);
   }

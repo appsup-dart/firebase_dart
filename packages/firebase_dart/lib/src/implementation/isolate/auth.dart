@@ -192,14 +192,25 @@ class IsolateUser extends UserBase implements User {
   }
 
   @override
-  late final MultiFactor multiFactor = IsolateMultiFactor();
+  late final MultiFactor multiFactor = IsolateMultiFactor(this);
 }
 
 class IsolateMultiFactor extends MultiFactor {
+  final IsolateUser _user;
+
+  IsolateMultiFactor(this._user);
+
+  Future<T> invoke<T>(Symbol method,
+      [List<dynamic>? positionalArguments,
+      Map<Symbol, dynamic>? namedArguments]) {
+    return _user._auth.app.commander.execute(
+        CurrentUserFunctionCall<FutureOr<T>>(method, _user._auth.app.name,
+            _user.uid, positionalArguments, namedArguments));
+  }
+
   @override
   Future<void> enroll(MultiFactorAssertion assertion, {String? displayName}) {
-    // TODO: implement enroll
-    throw UnimplementedError();
+    return invoke(#multiFactor_enroll, [assertion], {#displayName: displayName});
   }
 
   @override
@@ -210,8 +221,7 @@ class IsolateMultiFactor extends MultiFactor {
 
   @override
   Future<MultiFactorSession> getSession() {
-    // TODO: implement getSession
-    throw UnimplementedError();
+    return invoke(#multiFactor_getSession, []);
   }
 
   @override
@@ -515,6 +525,10 @@ class CurrentUserFunctionCall<T> extends BaseFunctionCall<T> {
         return user.verifyBeforeUpdateEmail;
       case #setAccountInfo:
         return (user as FirebaseUserImpl).setAccountInfo;
+      case #multiFactor_getSession:
+        return (user as FirebaseUserImpl).multiFactor.getSession;
+      case #multiFactor_enroll:
+        return (user as FirebaseUserImpl).multiFactor.enroll;
     }
     return null;
   }
