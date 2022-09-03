@@ -154,7 +154,20 @@ class AndroidAuthHandler extends FirebaseAppAuthHandler {
         var v = uri!.queryParameters;
         _lastRecaptchaResult = null;
 
-        return Uri.parse(v['deep_link_id']!).queryParameters['recaptchaToken']!;
+        var deepLink = Uri.parse(v['deep_link_id']!);
+        v = deepLink.queryParameters;
+
+        Map<String, dynamic>? error = v['firebaseError'] == null
+            ? null
+            : json.decode(v['firebaseError']!);
+        if (error != null) {
+          var code = error['code'];
+          if (code.startsWith('auth/')) {
+            code = code.substring('auth/'.length);
+          }
+          throw FirebaseAuthException(code, error['message']);
+        }
+        return v['recaptchaToken']!;
       });
     }
     throw UnimplementedError();
