@@ -334,10 +334,6 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       rethrow;
     }
 
-    if (uid != c.idToken.claims.subject) {
-      throw FirebaseAuthException.userMismatch();
-    }
-
     await _updateCredential(c);
 
     return UserCredentialImpl(
