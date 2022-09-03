@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart';
@@ -5,6 +7,7 @@ import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/implementation/isolate/auth.dart';
 import 'package:firebaseapis/identitytoolkit/v1.dart';
 import 'package:test/test.dart';
+import 'package:uuid/uuid.dart';
 
 import 'auth_test.dart';
 import 'jwt_util.dart';
@@ -449,6 +452,68 @@ void runUserTests({bool isolated = false}) {
 
         expect(() => r.user!.reload(),
             throwsA(FirebaseAuthException.userDeleted()));
+      });
+    });
+
+    group('multiFactor', () {
+      group('multiFactor.unenroll', () {
+        test('unenroll: success', () async {
+          var phoneNumber = '+15551234567';
+
+          var u = await tester.backend.getUserById('user1');
+          u.mfaInfo = [
+            GoogleCloudIdentitytoolkitV1MfaEnrollment()
+              ..phoneInfo = phoneNumber
+              ..enrolledAt = DateTime.now().toIso8601String()
+              ..displayName = 'my phone'
+              ..mfaEnrollmentId = Uuid().v4()
+          ];
+          await tester.backend.storeUser(u);
+
+          try {
+            await auth.signInWithEmailAndPassword(
+              email: u.email!,
+              password: u.rawPassword!,
+            );
+            throw Exception();
+          } on FirebaseAuthMultiFactorException catch (e) {
+            expect(e.resolver.hints, isNotEmpty);
+            expect(e.resolver.hints[0].displayName, 'my phone');
+            expect(e.resolver.hints[0].uid, isNotEmpty);
+            expect(e.resolver.hints[0].factorId, 'phone');
+
+            var credential = Completer<PhoneAuthCredential>();
+
+            await auth.verifyPhoneNumber(
+                multiFactorSession: e.resolver.session,
+                multiFactorInfo: e.resolver.hints.first as PhoneMultiFactorInfo,
+                timeout: Duration(),
+                verificationCompleted: (value) {
+                  credential.complete(value);
+                },
+                verificationFailed: (e) {
+                  throw e;
+                },
+                codeSent: (a, b) {},
+                codeAutoRetrievalTimeout: (verificationId) async {
+                  var code = await tester.backend.receiveSmsCode(phoneNumber);
+                  credential.complete(PhoneAuthProvider.credential(
+                      verificationId: verificationId, smsCode: code!));
+                });
+
+            var r = await e.resolver.resolveSignIn(
+                PhoneMultiFactorGenerator.getAssertion(
+                    await credential.future));
+
+            var user = r.user!;
+            expect(user.uid, 'user1');
+
+            var factor = user.multiFactor.enrolledFactors.first;
+            await user.multiFactor.unenroll(factorUid: factor.uid);
+
+            expect(user.multiFactor.enrolledFactors, isEmpty);
+          }
+        });
       });
     });
   });

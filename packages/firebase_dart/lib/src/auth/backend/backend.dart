@@ -357,6 +357,25 @@ class BackendConnection {
       ..refreshToken = refreshToken;
   }
 
+  Future<GoogleCloudIdentitytoolkitV2WithdrawMfaResponse> withdrawMfa(
+      GoogleCloudIdentitytoolkitV2WithdrawMfaRequest request) async {
+    var user = await _userFromIdToken(request.idToken!);
+
+    var info = user.mfaInfo!.firstWhere(
+        (element) => element.mfaEnrollmentId == request.mfaEnrollmentId);
+
+    user.mfaInfo!.remove(info);
+
+    await backend.updateUser(user);
+
+    var idToken = await backend.generateIdToken(
+        uid: user.localId, providerId: 'password');
+    var refreshToken = await backend.generateRefreshToken(idToken);
+    return GoogleCloudIdentitytoolkitV2WithdrawMfaResponse()
+      ..idToken = idToken
+      ..refreshToken = refreshToken;
+  }
+
   Future<GoogleCloudIdentitytoolkitV2StartMfaSignInResponse> startMfaSignIn(
       GoogleCloudIdentitytoolkitV2StartMfaSignInRequest request) async {
     var uid =
@@ -483,6 +502,10 @@ class BackendConnection {
             GoogleCloudIdentitytoolkitV2FinalizeMfaEnrollmentRequest.fromJson(
                 body);
         return finalizeMfaEnrollment(request);
+      case 'mfaEnrollment:withdraw':
+        var request =
+            GoogleCloudIdentitytoolkitV2WithdrawMfaRequest.fromJson(body);
+        return withdrawMfa(request);
       case 'mfaSignIn:start':
         var request =
             GoogleCloudIdentitytoolkitV2StartMfaSignInRequest.fromJson(body);

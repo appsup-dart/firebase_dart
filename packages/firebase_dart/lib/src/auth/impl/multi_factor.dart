@@ -30,9 +30,12 @@ class MultiFactorImpl extends MultiFactor {
   }
 
   @override
-  Future<void> unenroll({String? factorUid, MultiFactorInfo? multiFactorInfo}) {
-    // TODO: implement unenroll
-    throw UnimplementedError();
+  Future<void> unenroll(
+      {String? factorUid, MultiFactorInfo? multiFactorInfo}) async {
+    await user._rpcHandler.withdrawMultiFactorEnrollment(
+        idToken: await user.getIdToken(),
+        mfaEnrollmentId: multiFactorInfo?.factorId ?? factorUid!);
+    await user.reload();
   }
 
   @override
