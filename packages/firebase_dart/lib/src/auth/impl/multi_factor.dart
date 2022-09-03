@@ -34,7 +34,7 @@ class MultiFactorImpl extends MultiFactor {
       {String? factorUid, MultiFactorInfo? multiFactorInfo}) async {
     await user._rpcHandler.withdrawMultiFactorEnrollment(
         idToken: await user.getIdToken(),
-        mfaEnrollmentId: multiFactorInfo?.factorId ?? factorUid!);
+        mfaEnrollmentId: multiFactorInfo?.uid ?? factorUid!);
     await user.reload();
   }
 
