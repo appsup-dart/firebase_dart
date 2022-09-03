@@ -14,6 +14,7 @@ import 'package:openid_client/openid_client.dart' as openid;
 import 'package:rxdart/rxdart.dart';
 
 import '../auth.dart';
+import '../multi_factor.dart';
 import '../rpc/rpc_handler.dart';
 import '../usermanager.dart';
 import '../utils.dart';
@@ -99,6 +100,14 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
 
   Future<UserCredential> _handleSignInResult(SignInResult signInResult,
       {String? provider, AuthCredential? credential, bool? isNewUser}) async {
+    if (signInResult.mfaPendingCredential != null) {
+      throw FirebaseAuthMultiFactorException(MultiFactorResolverImpl(
+        this,
+        mfaPendingCredential: signInResult.mfaPendingCredential!,
+        hints: signInResult.mfaInfo!,
+      ));
+    }
+
     var openidCredential = signInResult.credential;
     // Get additional IdP data if available in the response.
     var additionalUserInfo = createAdditionalUserInfo(
@@ -343,7 +352,15 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
               assertion.type == 'safetynet' ? assertion.token : null,
         );
       } else {
-        throw UnimplementedError();
+        verificationId = await rpcHandler.startMultiFactorSignIn(
+          mfaPendingCredential: multiFactorSession.credential,
+          mfaEnrollmentId: multiFactorInfo!.uid,
+          appSignatureHash: appSignatureHash,
+          recaptchaToken:
+              assertion.type == 'recaptcha' ? assertion.token : null,
+          safetyNetToken:
+              assertion.type == 'safetynet' ? assertion.token : null,
+        );
       }
     } else {
       verificationId = await rpcHandler.sendVerificationCode(
@@ -451,6 +468,18 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
   Future<void> setPersistence(Persistence persistence) {
     // TODO: implement setPersistence
     throw UnimplementedError();
+  }
+
+  Future<UserCredential> signInWithMultiFactorAssertion(
+      MultiFactorAssertion assertion, MultiFactorSession session) async {
+    var phoneCredential = (assertion as PhoneMultiFactorAssertion).credential;
+    var r = await rpcHandler.finalizeMultiFactorSignIn(
+        mfaPendingCredential: (session as MultiFactorSessionImpl).credential,
+        code: phoneCredential.smsCode,
+        phoneNumber: phoneCredential.phoneNumber,
+        sessionInfo: phoneCredential.verificationId);
+
+    return _handleSignInResult(r, isNewUser: false);
   }
 
   @override

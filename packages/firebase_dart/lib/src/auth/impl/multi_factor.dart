@@ -79,3 +79,23 @@ class MultiFactorSessionImpl extends MultiFactorSession {
     };
   }
 }
+
+class MultiFactorResolverImpl extends MultiFactorResolver {
+  final FirebaseAuthImpl firebaseAuth;
+
+  @override
+  final List<MultiFactorInfo> hints;
+
+  @override
+  final MultiFactorSession session;
+
+  MultiFactorResolverImpl(this.firebaseAuth,
+      {required String mfaPendingCredential, required this.hints})
+      : session = MultiFactorSessionImpl.fromMfaPendingCredential(
+            mfaPendingCredential);
+
+  @override
+  Future<UserCredential> resolveSignIn(MultiFactorAssertion assertion) async {
+    return firebaseAuth.signInWithMultiFactorAssertion(assertion, session);
+  }
+}

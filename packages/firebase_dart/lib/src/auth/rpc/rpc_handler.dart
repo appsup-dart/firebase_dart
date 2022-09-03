@@ -422,12 +422,12 @@ class RpcHandler {
       if (mfaPendingCredential != null) {
         return SignInResult.mfaRequired(mfaPendingCredential, [
           for (var i in mfaInfo!)
-            MultiFactorInfo(
+            PhoneMultiFactorInfo(
                 displayName: i.displayName,
                 enrollmentTimestamp:
                     DateTime.parse(i.enrolledAt!).millisecondsSinceEpoch / 1000,
                 uid: i.mfaEnrollmentId!,
-                factorId: i.mfaEnrollmentId!)
+                phoneNumber: i.phoneInfo!)
         ]);
       }
       throw FirebaseAuthException.internalError();

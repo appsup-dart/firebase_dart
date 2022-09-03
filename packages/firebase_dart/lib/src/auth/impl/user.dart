@@ -68,7 +68,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
       for (var mfaInfo in user['mfaInfo']) {
         if (mfaInfo != null) {
           firebaseUser._enrolledFactors
-              .add(MultiFactorInfo.fromJson((mfaInfo as Map).cast()));
+              .add(PhoneMultiFactorInfo.fromJson((mfaInfo as Map).cast()));
         }
       }
     }
@@ -170,13 +170,13 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
     _enrolledFactors.addAll([
       if (user.mfaInfo != null)
         for (var info in user.mfaInfo!)
-          MultiFactorInfo(
-            displayName: info.displayName,
-            enrollmentTimestamp:
-                DateTime.parse(info.enrolledAt!).millisecondsSinceEpoch / 1000,
-            factorId: info.mfaEnrollmentId!,
-            uid: info.phoneInfo!,
-          ),
+          PhoneMultiFactorInfo(
+              displayName: info.displayName,
+              enrollmentTimestamp:
+                  DateTime.parse(info.enrolledAt!).millisecondsSinceEpoch /
+                      1000,
+              uid: info.mfaEnrollmentId!,
+              phoneNumber: info.phoneInfo!),
     ]);
 
     _providerData.addAll((user.providerUserInfo ?? []).map((v) => UserInfo(

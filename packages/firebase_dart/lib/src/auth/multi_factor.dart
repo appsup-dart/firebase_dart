@@ -79,7 +79,7 @@ class MultiFactorSession {}
 /// Represents a single second factor means for the user.
 ///
 /// See direct subclasses for type-specific information.
-class MultiFactorInfo {
+abstract class MultiFactorInfo {
   const MultiFactorInfo({
     required this.factorId,
     required this.enrollmentTimestamp,
@@ -87,11 +87,14 @@ class MultiFactorInfo {
     required this.uid,
   });
 
-  MultiFactorInfo.fromJson(Map<String, dynamic> obj)
-      : factorId = obj['factorId'],
-        enrollmentTimestamp = obj['enrollmentTimestamp'],
-        displayName = obj['displayName'],
-        uid = obj['uid'];
+  factory MultiFactorInfo.fromJson(Map<String, dynamic> obj) {
+    switch (obj['factorId']) {
+      case 'phone':
+        return PhoneMultiFactorInfo.fromJson(obj);
+      default:
+        throw UnimplementedError();
+    }
+  }
 
   /// User-given display name for this second factor.
   final String? displayName;
@@ -118,16 +121,28 @@ class PhoneMultiFactorInfo extends MultiFactorInfo {
   const PhoneMultiFactorInfo({
     required String? displayName,
     required double enrollmentTimestamp,
-    required String factorId,
     required String uid,
     required this.phoneNumber,
   }) : super(
           displayName: displayName,
           enrollmentTimestamp: enrollmentTimestamp,
-          factorId: factorId,
+          factorId: 'phone',
           uid: uid,
         );
 
+  PhoneMultiFactorInfo.fromJson(Map<String, dynamic> obj)
+      : this(
+            enrollmentTimestamp: obj['enrollmentTimestamp'],
+            displayName: obj['displayName'],
+            uid: obj['uid'],
+            phoneNumber: obj['phoneNumber']);
+
   /// The phone number associated with this second factor verification method.
   final String phoneNumber;
+
+  @override
+  Map<String, dynamic> toJson() => {
+        ...super.toJson(),
+        'phoneNumber': phoneNumber,
+      };
 }

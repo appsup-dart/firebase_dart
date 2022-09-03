@@ -52,6 +52,18 @@ class BackendConnection {
     var user = await backend.getUserByEmail(email);
 
     if (user.rawPassword == request.password) {
+      if (user.mfaInfo != null && user.mfaInfo!.isNotEmpty) {
+        return GoogleCloudIdentitytoolkitV1SignInWithPasswordResponse()
+          ..localId = user.localId
+          ..mfaPendingCredential = (JsonWebSignatureBuilder()
+                ..jsonContent = {
+                  'uid': user.localId,
+                }
+                ..addRecipient(await backend.getTokenSigningKey()))
+              .build()
+              .toCompactSerialization()
+          ..mfaInfo = user.mfaInfo;
+      }
       var idToken = request.returnSecureToken == true
           ? await backend.generateIdToken(
               uid: user.localId, providerId: 'password')
@@ -345,6 +357,64 @@ class BackendConnection {
       ..refreshToken = refreshToken;
   }
 
+  Future<GoogleCloudIdentitytoolkitV2StartMfaSignInResponse> startMfaSignIn(
+      GoogleCloudIdentitytoolkitV2StartMfaSignInRequest request) async {
+    var uid =
+        JsonWebSignature.fromCompactSerialization(request.mfaPendingCredential!)
+            .unverifiedPayload
+            .jsonContent['uid'];
+    var user = await backend.getUserById(uid);
+
+    var info = user.mfaInfo!
+        .firstWhere((v) => v.mfaEnrollmentId == request.mfaEnrollmentId);
+
+    var token = await backend.sendVerificationCode(info.phoneInfo!,
+        uid: request.mfaEnrollmentId);
+
+    var phoneResponseInfo =
+        GoogleCloudIdentitytoolkitV2StartMfaPhoneResponseInfo()
+          ..sessionInfo = token;
+    return GoogleCloudIdentitytoolkitV2StartMfaSignInResponse()
+      ..phoneResponseInfo = phoneResponseInfo;
+  }
+
+  Future<GoogleCloudIdentitytoolkitV2FinalizeMfaSignInResponse>
+      finalizeMfaSignIn(
+          GoogleCloudIdentitytoolkitV2FinalizeMfaSignInRequest request) async {
+    var sessionInfo = request.phoneVerificationInfo!.sessionInfo;
+    if (sessionInfo == null) {
+      throw ArgumentError('Invalid request: missing sessionInfo');
+    }
+    var code = request.phoneVerificationInfo!.code;
+    if (code == null) {
+      throw ArgumentError('Invalid request: missing code');
+    }
+    var uid =
+        JsonWebSignature.fromCompactSerialization(request.mfaPendingCredential!)
+            .unverifiedPayload
+            .jsonContent['uid'];
+    var user = await backend.getUserById(uid);
+    var phoneNumber = await backend.signInWithPhoneNumber(sessionInfo, code);
+
+    var mfaEnrollmentId = JsonWebSignature.fromCompactSerialization(sessionInfo)
+        .unverifiedPayload
+        .jsonContent['uid'];
+
+    var info =
+        user.mfaInfo!.firstWhere((v) => v.mfaEnrollmentId == mfaEnrollmentId);
+
+    if (info.phoneInfo != phoneNumber) {
+      throw ArgumentError('Invalid request: mismatching phone number');
+    }
+
+    var idToken = await backend.generateIdToken(
+        uid: user.localId, providerId: 'password');
+    var refreshToken = await backend.generateRefreshToken(idToken);
+    return GoogleCloudIdentitytoolkitV2FinalizeMfaSignInResponse()
+      ..idToken = idToken
+      ..refreshToken = refreshToken;
+  }
+
   Future<dynamic> _handle(String method, dynamic body) async {
     switch (method) {
       case 'accounts:signUp':
@@ -413,6 +483,14 @@ class BackendConnection {
             GoogleCloudIdentitytoolkitV2FinalizeMfaEnrollmentRequest.fromJson(
                 body);
         return finalizeMfaEnrollment(request);
+      case 'mfaSignIn:start':
+        var request =
+            GoogleCloudIdentitytoolkitV2StartMfaSignInRequest.fromJson(body);
+        return startMfaSignIn(request);
+      case 'mfaSignIn:finalize':
+        var request =
+            GoogleCloudIdentitytoolkitV2FinalizeMfaSignInRequest.fromJson(body);
+        return finalizeMfaSignIn(request);
       default:
         throw UnsupportedError('Unsupported method $method');
     }
