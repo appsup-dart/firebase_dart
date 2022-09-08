@@ -26,6 +26,13 @@ void main() {
       };
       expect(TreeStructuredData.fromJson(v).toJson(), w);
       expect(TreeStructuredData.fromExportJson(v).toJson(), w);
+
+      var x = {
+        'hello': 'world',
+        'object': ['test', 'test2'],
+      };
+      expect(TreeStructuredData.fromJson(x).toJson(), x);
+      expect(TreeStructuredData.fromExportJson(x).toJson(), x);
     });
     test('performance testing', () {
       var v = {

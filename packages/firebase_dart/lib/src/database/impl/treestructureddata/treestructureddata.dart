@@ -82,7 +82,9 @@ class Snapshot extends UnmodifiableMapBase<Name, Snapshot> {
 
     var v = isLeaf
         ? value!.toJson()
-        : map((k, v) => MapEntry(k.asString(), v.toJson(exportFormat)));
+        : keys.isList
+            ? values.map((v) => v.toJson(exportFormat)).toList()
+            : map((k, v) => MapEntry(k.asString(), v.toJson(exportFormat)));
 
     if (exportFormat && priority != null) {
       return {
@@ -356,6 +358,9 @@ class TreeStructuredDataImpl extends TreeStructuredData {
   @override
   dynamic toJson([bool exportFormat = false]) {
     if (isNil) return null;
+    if (children.keys.isList) {
+      return children.values.map((v) => v.toJson(exportFormat)).toList();
+    }
     var c = Map<String, dynamic>.fromIterables(
         children.keys.map((k) => k.toString()),
         children.values.map((v) => v.toJson(exportFormat)));
@@ -445,5 +450,22 @@ class UnmodifiableFilteredMap<K extends Comparable, V>
       bool reversed = false}) {
     return _map.subkeys(
         start: start, end: end, limit: limit, reversed: reversed);
+  }
+}
+
+extension on Iterable<Name> {
+  bool get isList {
+    try {
+      final keys = [
+        // Bail out early if all keys are not integers
+        for (final n in this) n.asInt() ?? (throw Exception('NotList'))
+      ].sorted((a, b) => a.compareTo(b));
+      if (keys.first == 0 && keys.last == keys.length - 1) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 }
