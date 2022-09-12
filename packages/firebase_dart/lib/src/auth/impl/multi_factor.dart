@@ -32,10 +32,11 @@ class MultiFactorImpl extends MultiFactor {
   @override
   Future<void> unenroll(
       {String? factorUid, MultiFactorInfo? multiFactorInfo}) async {
-    await user._rpcHandler.withdrawMultiFactorEnrollment(
+    var r = await user._rpcHandler.withdrawMultiFactorEnrollment(
         idToken: await user.getIdToken(),
         mfaEnrollmentId: multiFactorInfo?.uid ?? factorUid!);
-    await user.reload();
+
+    await user._updateCredential(r.credential);
   }
 
   @override
