@@ -79,12 +79,28 @@ class Snapshot extends UnmodifiableMapBase<Name, Snapshot> {
 
   dynamic toJson([bool exportFormat = false]) {
     if (isNil) return null;
-
-    var v = isLeaf
-        ? value!.toJson()
-        : keys.isList
-            ? values.map((v) => v.toJson(exportFormat)).toList()
-            : map((k, v) => MapEntry(k.asString(), v.toJson(exportFormat)));
+    Object? v;
+    if (isLeaf) {
+      v = value!.toJson();
+    } else {
+      if (exportFormat) {
+        v = map((k, v) => MapEntry(k.asString(), v.toJson(exportFormat)));
+      } else {
+        final listLength = keys.listLengthOrNull;
+        if (listLength != null) {
+          final l = List<Object?>.filled(listLength, null, growable: false);
+          final vIter = values.iterator;
+          for (final key in keys) {
+            final moved = vIter.moveNext();
+            assert(moved);
+            l[key.asInt()!] = vIter.current.toJson(exportFormat);
+          }
+          v = l;
+        } else {
+          v = map((k, v) => MapEntry(k.asString(), v.toJson(exportFormat)));
+        }
+      }
+    }
 
     if (exportFormat && priority != null) {
       return {
@@ -358,9 +374,15 @@ class TreeStructuredDataImpl extends TreeStructuredData {
   @override
   dynamic toJson([bool exportFormat = false]) {
     if (isNil) return null;
-    if (children.keys.isList) {
-      return children.values.map((v) => v.toJson(exportFormat)).toList();
+    if (!exportFormat) {
+      final listLength = children.keys.listLengthOrNull;
+      if (listLength != null) {
+        return [
+          for (var i = 0; i < listLength; i++) children[Name('$i')]?.toJson()
+        ];
+      }
     }
+
     var c = Map<String, dynamic>.fromIterables(
         children.keys.map((k) => k.toString()),
         children.values.map((v) => v.toJson(exportFormat)));
@@ -454,18 +476,23 @@ class UnmodifiableFilteredMap<K extends Comparable, V>
 }
 
 extension on Iterable<Name> {
-  bool get isList {
-    try {
-      final keys = [
-        // Bail out early if all keys are not integers
-        for (final n in this) n.asInt() ?? (throw Exception('NotList'))
-      ].sorted((a, b) => a.compareTo(b));
-      if (keys.first == 0 && keys.last == keys.length - 1) {
-        return true;
+  int? get listLengthOrNull {
+    var max = 0;
+    var numItems = 0;
+    for (final k in this) {
+      final ki = k.asInt();
+      // Key must be an integer greater or equal to 0
+      if (ki == null || ki < 0) {
+        return null;
       }
-      return false;
-    } catch (e) {
-      return false;
+
+      numItems++;
+      max = ki;
     }
+    // If the largest key is 1, there must at least be 2 non-null entries, so the max numItems is 4
+    if (max + 1 > numItems * 2) {
+      return null;
+    }
+    return max + 1; // List length is one more than the highest key
   }
 }
