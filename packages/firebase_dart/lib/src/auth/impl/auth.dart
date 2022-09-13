@@ -381,8 +381,8 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
       var code = RegExp(r'(?<!\d)\d{6}(?!\d)').firstMatch(v)!.group(0)!;
       var credential = PhoneAuthProvider.credential(
           verificationId: verificationId, smsCode: code);
-      var c = await signInWithCredential(credential);
-      verificationCompleted(c.credential as PhoneAuthCredential);
+
+      verificationCompleted(credential);
     }).ignore();
   }
 
