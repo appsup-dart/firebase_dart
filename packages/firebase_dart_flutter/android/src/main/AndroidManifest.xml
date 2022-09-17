@@ -4,6 +4,8 @@
     <application>
         <meta-data android:name="com.facebook.sdk.ApplicationId"
             android:value="@string/facebook_app_id"/>
+        <meta-data android:name="com.facebook.sdk.ClientToken" 
+            android:value="@string/facebook_client_token"/>
         <activity
             android:name="be.appsup.firebase_dart_flutter.AuthActivity"
             android:excludeFromRecents="true"

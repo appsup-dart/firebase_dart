@@ -110,9 +110,12 @@ class AndroidAuthHandler extends FirebaseAppAuthHandler {
 
   @override
   Future<AuthCredential?> getSignInResult(FirebaseApp app) async {
-    if (!kIsWeb && platform_info.Platform.instance.isAndroid) {
+    if (!kIsWeb) {
       return _lastAuthResult ??= Future(() async {
-        var v = await _getResult('getAuthResult');
+        var v = await (platform_info.Platform.instance.isAndroid
+            ? _getResult('getAuthResult')
+            : _getDeepLinkResult());
+        _lastAuthResult = null;
         return createCredential(
             sessionId: v['sessionId'],
             providerId: v['providerId'],
@@ -148,29 +151,34 @@ class AndroidAuthHandler extends FirebaseAppAuthHandler {
         return Uri.parse(v['link']!).queryParameters['recaptchaToken']!;
       });
     } else if (!kIsWeb) {
-      // TODO: can this replace the android implementation as well?
       return _lastRecaptchaResult ??= Future(() async {
-        var uri = await uriLinkStream.first;
-        var v = uri!.queryParameters;
+        var v = await _getDeepLinkResult();
         _lastRecaptchaResult = null;
 
-        var deepLink = Uri.parse(v['deep_link_id']!);
-        v = deepLink.queryParameters;
-
-        Map<String, dynamic>? error = v['firebaseError'] == null
-            ? null
-            : json.decode(v['firebaseError']!);
-        if (error != null) {
-          var code = error['code'];
-          if (code.startsWith('auth/')) {
-            code = code.substring('auth/'.length);
-          }
-          throw FirebaseAuthException(code, error['message']);
-        }
         return v['recaptchaToken']!;
       });
     }
     throw UnimplementedError();
+  }
+
+  Future<Map<String, String>> _getDeepLinkResult() async {
+    var uri = await uriLinkStream.first;
+    var v = uri!.queryParameters;
+    _lastRecaptchaResult = null;
+
+    var deepLink = Uri.parse(v['deep_link_id']!);
+    v = deepLink.queryParameters;
+
+    Map<String, dynamic>? error =
+        v['firebaseError'] == null ? null : json.decode(v['firebaseError']!);
+    if (error != null) {
+      var code = error['code'];
+      if (code.startsWith('auth/')) {
+        code = code.substring('auth/'.length);
+      }
+      throw FirebaseAuthException(code, error['message']);
+    }
+    return v;
   }
 
   @override
