@@ -1,30 +1,30 @@
-# Changelog
 
-# 1.0.12
+## 1.1.0-dev.1
 
 - Implemented `FirebaseUser.reauthenticateWithCredential` method.
+- Fix issue where database transaction on a path are no longer executed once a transaction has failed 
 
-# 1.0.11
+## 1.0.11
 
 - Fix incompatibility with `http` version 0.13.5
 - Merge pull request #25 from IgoKom/fix_custom_metadata
 - Merge pull request #23 from TimWhiting/develop
 
-# 1.0.10
+## 1.0.10
 
 - Upgrade dependencies
 - Basic support for sign in with phone number
 
-# 1.0.9
+## 1.0.9
 
 - bugfix: properly close persistence storage when deleting app
 
-# 1.0.8
+## 1.0.8
 
 - bugfixes and performance improvements on realtime database
 
 
-# 1.0.7
+## 1.0.7
 
 - add `DatabaseReference.path` getter
 - fix key ordering in case of integers overflowing 32-bit

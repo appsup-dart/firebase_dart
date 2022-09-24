@@ -343,6 +343,8 @@ class TransactionsNode extends ModifiableTreeNode<Name, List<Transaction>> {
   /// either because there are no more transactions or because we are waiting
   /// for user code to finish or for a response of the server.
   Future<bool> execute() async {
+    // remove completed (failed) transactions from the list
+    value = value.where((t) => !t.isComplete).toList();
     if (value.isNotEmpty) {
       var repo = value.first.repo;
       var path = value.first.path;

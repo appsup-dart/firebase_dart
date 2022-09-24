@@ -736,6 +736,19 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       ref = db1.reference().child('test/transactions');
     });
 
+    test('Failing transaction should be removed', () async {
+      await ref.set(null);
+      await Future.wait([
+        ref.runTransaction((v) async {
+          throw Exception();
+        }),
+        ref.runTransaction((v) async {
+          return v..value = 'hello';
+        })
+      ]);
+      expect(await ref.get(), 'hello');
+    });
+
     test('Counter', () async {
       await ref.set(0);
 
