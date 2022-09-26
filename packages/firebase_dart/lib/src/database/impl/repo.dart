@@ -57,6 +57,8 @@ class Repo {
 
   late StreamSubscription _authStateChangesSubscription;
 
+  bool _isClosed = false;
+
   factory Repo(firebase.BaseFirebaseDatabase db) {
     return _repos.putIfAbsent(db, () {
       var url = Uri.parse(db.databaseURL);
@@ -138,6 +140,7 @@ class Repo {
 
   /// Destroys this Repo permanently
   Future<void> close() async {
+    _isClosed = true;
     await _authStateChangesSubscription.cancel();
     await _connection.close();
     _syncTree.destroy();
@@ -250,6 +253,8 @@ class Repo {
     // database also received the auth event
     await Future.microtask(() => null);
 
+    if (_isClosed) return; // might have been closed in the mean time
+
     path = _preparePath(path);
 
     var p = Name.parsePath(path);
@@ -270,6 +275,8 @@ class Repo {
   /// unregistered at the server.
   void unlisten(
       String path, QueryFilter? filter, String type, EventListener cb) {
+    if (_isClosed) return; // might have been closed in the mean time
+
     path = _preparePath(path);
 
     var p = Name.parsePath(path);

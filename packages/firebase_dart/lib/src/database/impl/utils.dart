@@ -243,7 +243,7 @@ class DelayedCancellableFuture<T> extends DelegatingFuture<T> {
       Duration duration, FutureOr<T> Function() computation) {
     var c = Completer<T>();
     var t = Timer(duration, () {
-      c.complete(Future(computation));
+      c.complete(computation());
     });
 
     return DelayedCancellableFuture._(c.future, () {

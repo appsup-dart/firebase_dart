@@ -566,6 +566,8 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
 
   Future<void>? _handleFuture;
 
+  bool _isClosed = false;
+
   PrioritizedQueryRegistrar(this.delegateTo);
 
   void _handle() {
@@ -621,6 +623,8 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> register(QuerySpec query, String? hash) {
+    assert(!_isClosed);
+
     // if pendingDerigstration contains query, we don't remove it and add it again to the pendingRegistrations
     // if we would remove it, and not register again, the current value would not be advertised again to the client
 
@@ -646,6 +650,8 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> unregister(QuerySpec query) {
+    assert(!_isClosed);
+
     var c = highPriorityPendingRegistrations.remove(query) ??
         lowPriorityPendingRegistrations.remove(query)?.key;
 
@@ -662,6 +668,7 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> close() {
+    _isClosed = true;
     _handleFuture = null;
     return delegateTo.close();
   }
@@ -730,6 +737,8 @@ class SyncTree {
 
   final PersistenceManager persistenceManager;
 
+  bool _isDestroyed = false;
+
   SyncTree(String name,
       {QueryRegistrar? queryRegistrar, PersistenceManager? persistenceManager})
       : this._(name,
@@ -760,6 +769,7 @@ class SyncTree {
   }
 
   void handleInvalidPaths() {
+    assert(!_isDestroyed);
     for (var path in _invalidPaths) {
       var node = root.subtree(path, _createNode);
       var point = node.value;
@@ -778,6 +788,7 @@ class SyncTree {
   }
 
   void _invalidate(Path<Name> path) {
+    assert(!_isDestroyed);
     var node = root.subtree(path, _createNode);
     var point = node.value;
 
@@ -814,6 +825,7 @@ class SyncTree {
   /// filtered by [filter].
   Future<void> addEventListener(String type, Path<Name> path,
       QueryFilter filter, EventListener listener) {
+    assert(!_isDestroyed);
     return _doOnSyncPoint(path, (point) {
       point.addEventListener(type, filter, listener);
     });
@@ -823,6 +835,7 @@ class SyncTree {
   /// filtered by [filter].
   Future<void> removeEventListener(String type, Path<Name> path,
       QueryFilter filter, EventListener listener) {
+    assert(!_isDestroyed);
     return _doOnSyncPoint(path, (point) {
       point.removeEventListener(type, filter, listener);
     });
@@ -920,6 +933,7 @@ class SyncTree {
   }
 
   void destroy() {
+    _isDestroyed = true;
     _handleInvalidPointsFuture?.cancel();
     registrar.close();
     root.forEachNode((key, value) {
