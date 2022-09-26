@@ -482,29 +482,40 @@ abstract class QueryRegistrar {
 class SequentialQueryRegistrar extends QueryRegistrar {
   final QueryRegistrar delegateTo;
 
-  final Map<QuerySpec, Future<void>> _activeRegistrations = {};
+  final Map<QuerySpec, Future<bool>> _activeRegistrations = {};
 
   SequentialQueryRegistrar(this.delegateTo);
 
   @override
   Future<void> register(QuerySpec query, String? hash) {
+    if (_activeRegistrations[query] != null) {
+      // register should never be called twice for the same query without an unregister in between
+      throw StateError('Query $query already registered');
+    }
     return _activeRegistrations[query] ??= Future(() async {
-      if (_activeRegistrations[query] == null) return; // already closed
-      try {
-        await delegateTo.register(query, hash);
-      } catch (e) {
-        _activeRegistrations.remove(query); // ignore: unawaited_futures
-        rethrow;
+      if (_activeRegistrations[query] == null) {
+        // unregister was called before register completed
+        // we do not forward the call to the delegate and return false so that the unregister is also not forwarded
+        return false;
       }
+      await delegateTo.register(query, hash);
+      return true;
     });
   }
 
   @override
   Future<void> unregister(QuerySpec query) {
-    if (!_activeRegistrations.containsKey(query)) return Future.value();
+    if (_activeRegistrations[query] == null) {
+      // unregister should never be called when not registered
+      throw StateError('Query $query not registered');
+    }
+
     var f = _activeRegistrations.remove(query);
-    return f!.then((_) async {
-      await delegateTo.unregister(query);
+    return f!.then((v) async {
+      if (v) {
+        // only forward unregister if the register call was forwarded to the delegate
+        await delegateTo.unregister(query);
+      }
     });
   }
 
@@ -559,6 +570,19 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
 
   void _handle() {
     const maxOperations = 20;
+
+    // first handle deregistrations as it might happen that there is also a pending registration for the same query
+    // in that case the pending registration came from a register call after the unregister call
+    if (pendingDeregistrations.isNotEmpty) {
+      var queries = pendingDeregistrations.keys.take(maxOperations).toList();
+      for (var q in queries) {
+        var c = pendingDeregistrations.remove(q)!;
+
+        c.complete(delegateTo.unregister(q));
+      }
+      return;
+    }
+
     if (highPriorityPendingRegistrations.isNotEmpty) {
       var queries =
           highPriorityPendingRegistrations.keys.take(maxOperations).toList();
@@ -580,15 +604,6 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
       }
       return;
     }
-    if (pendingDeregistrations.isNotEmpty) {
-      var queries = pendingDeregistrations.keys.take(maxOperations).toList();
-      for (var q in queries) {
-        var c = pendingDeregistrations.remove(q)!;
-
-        c.complete(delegateTo.unregister(q));
-      }
-      return;
-    }
   }
 
   void _scheduleHandle() {
@@ -606,10 +621,13 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> register(QuerySpec query, String? hash) {
-    if (pendingDeregistrations.containsKey(query)) {
-      // still registered, remove and complete the pending deregistration
-      pendingDeregistrations.remove(query)?.complete();
-      return Future.value();
+    // if pendingDerigstration contains query, we don't remove it and add it again to the pendingRegistrations
+    // if we would remove it, and not register again, the current value would not be advertised again to the client
+
+    if (highPriorityPendingRegistrations.containsKey(query) ||
+        lowPriorityPendingRegistrations.containsKey(query)) {
+      // this means register was called for the same query twice without an unregister in between
+      throw StateError('Query $query registration already in progress');
     }
 
     var c = highPriorityPendingRegistrations.remove(query) ??

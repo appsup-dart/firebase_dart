@@ -3,6 +3,7 @@
 
 - Implemented `FirebaseUser.reauthenticateWithCredential` method.
 - Fix issue where database transaction on a path are no longer executed once a transaction has failed 
+- Fix issue where a database query never received a value
 
 ## 1.0.11
 
