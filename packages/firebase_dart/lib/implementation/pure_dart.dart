@@ -66,7 +66,8 @@ class FirebaseDart {
 
     setupPureDartImplementation(
       authHandler: authHandler ?? DefaultAuthHandler(),
-      applicationVerifier: applicationVerifier ?? RecaptchaVerifier(),
+      applicationVerifier:
+          applicationVerifier ?? RecaptchaApplicationVerifier(),
       smsRetriever: smsRetriever ?? DummySmsRetriever(),
       launchUrl: launchUrl ?? _defaultLaunchUrl,
       platform: platform,

@@ -2,6 +2,9 @@
 ## 1.1.0-dev.1
 
 - Implemented `FirebaseUser.reauthenticateWithCredential` method.
+- Implemented `FirebaseAuth.signInWithPhoneNumber` method.
+- Implemented `FirebaseAuth.verifyPhoneNumber` method.
+- Implemented `FirebaseUser.multiFactor` for mfa support.
 - Fix issue where database transaction on a path are no longer executed once a transaction has failed 
 - Fix issue where a database query never received a value
 

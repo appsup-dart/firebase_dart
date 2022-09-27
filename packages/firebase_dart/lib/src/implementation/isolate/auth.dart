@@ -8,6 +8,7 @@ import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/subjects.dart';
 
+import '../../auth/auth_mixin.dart';
 import '../isolate.dart';
 import 'util.dart';
 
@@ -274,7 +275,7 @@ class EncodeCall<T> extends BaseFunctionCall<Future> {
 }
 
 class IsolateFirebaseAuth extends IsolateFirebaseService
-    implements FirebaseAuth {
+    with FirebaseAuthMixin {
   final BehaviorSubject<User?> _subject = BehaviorSubject(sync: true);
 
   Future<T> invoke<T>(Symbol method,
@@ -439,6 +440,7 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     int? forceResendingToken,
     MultiFactorSession? multiFactorSession,
     PhoneMultiFactorInfo? multiFactorInfo,
+    RecaptchaVerifier? verifier,
   }) async {
     var worker = IsolateWorker()
       ..registerFunction(#verificationCompleted, verificationCompleted)

@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/auth/auth_mixin.dart';
 import 'package:firebase_dart/src/auth/authhandlers.dart';
 import 'package:firebase_dart/src/auth/rpc/http_util.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
@@ -21,7 +22,7 @@ import '../utils.dart';
 import 'user.dart';
 
 /// The entry point of the Firebase Authentication SDK.
-class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
+class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
   late final RpcHandler rpcHandler =
       RpcHandler(app.options.apiKey, httpClient: httpClient);
 
@@ -41,7 +42,7 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
             firebaseAppId: app.options.appId),
         super(app) {
     _onReady = _init();
-    getRedirectResult();
+    getRedirectResult().timeout(Duration(seconds: 5)).ignore();
   }
 
   Future<void> _init() async {
@@ -329,13 +330,16 @@ class FirebaseAuthImpl extends FirebaseService implements FirebaseAuth {
     Duration timeout = const Duration(seconds: 30),
     int? forceResendingToken,
     MultiFactorSession? multiFactorSession,
+    RecaptchaVerifier? verifier,
   }) async {
     var impl =
         FirebaseImplementation.installation as PureDartFirebaseImplementation;
     var appSignatureHash = await impl.smsRetriever.getAppSignatureHash();
 
-    var assertion =
-        await impl.applicationVerifier.verify(this, phoneNumber ?? '');
+    var assertion = await (verifier
+            ?.verify()
+            .then((v) => ApplicationVerificationResult(verifier.type, v)) ??
+        impl.applicationVerifier.verify(this, phoneNumber ?? ''));
     var smsFuture = impl.smsRetriever.retrieveSms();
 
     String verificationId;

@@ -10,6 +10,7 @@ import 'error.dart';
 import 'multi_factor.dart';
 import 'user.dart';
 import 'action_code.dart';
+import 'recaptcha_verifier.dart';
 
 export 'auth_credential.dart';
 export 'auth_provider.dart';
@@ -17,6 +18,7 @@ export 'error.dart';
 export 'user.dart';
 export 'action_code.dart';
 export 'multi_factor.dart' hide PhoneMultiFactorAssertion;
+export 'recaptcha_verifier.dart';
 
 /// The entry point of the Firebase Authentication SDK.
 abstract class FirebaseAuth {
@@ -286,6 +288,20 @@ abstract class FirebaseAuth {
   ///  - Thrown if the user corresponding to the given email has been disabled.
   Future<UserCredential> signInWithAuthProvider(AuthProvider provider);
 
+  /// Starts a sign-in flow for a phone number.
+  ///
+  /// You can optionally provide a [RecaptchaVerifier] instance to control the
+  /// reCAPTCHA widget appearance and behavior.
+  ///
+  /// Once the reCAPTCHA verification has completed, called [ConfirmationResult.confirm]
+  /// with the users SMS verification code to complete the authentication flow.
+  ///
+  /// This method is available on both web based platforms and other platforms.
+  Future<ConfirmationResult> signInWithPhoneNumber(
+    String phoneNumber, [
+    RecaptchaVerifier? verifier,
+  ]);
+
   /// Authenticates a Firebase client using a popup-based OAuth authentication
   /// flow.
   ///
@@ -397,6 +413,9 @@ abstract class FirebaseAuth {
   ///
   /// [codeAutoRetrievalTimeout] Triggered when SMS auto-retrieval times out and
   ///   provide a [verificationId].
+  ///
+  /// [verifier] The reCAPTCHA verifier instance to control the reCAPTCHA widget
+  /// appearance and behavior on web based platforms.
   Future<void> verifyPhoneNumber({
     String? phoneNumber,
     PhoneMultiFactorInfo? multiFactorInfo,
@@ -408,6 +427,7 @@ abstract class FirebaseAuth {
     Duration timeout = const Duration(seconds: 30),
     int? forceResendingToken,
     MultiFactorSession? multiFactorSession,
+    RecaptchaVerifier? verifier,
   });
 
   /// Returns the current [User] if they are currently signed-in, or `null` if
@@ -526,4 +546,19 @@ enum Persistence {
   /// Indicates that the state will only persist in current session/tab,
   /// relevant to web only, and will be cleared when the tab is closed.
   session,
+}
+
+/// A result from a phone number sign-in, link, or reauthenticate call.
+///
+/// This class is only usable on web based platforms.
+abstract class ConfirmationResult {
+  /// The phone number authentication operation's verification ID.
+  ///
+  /// This can be used along with the verification code to initialize a phone
+  /// auth credential.
+  String get verificationId;
+
+  /// Finishes a phone number sign-in, link, or reauthentication, given the code
+  /// that was sent to the user's mobile device.
+  Future<UserCredential> confirm(String verificationCode);
 }
