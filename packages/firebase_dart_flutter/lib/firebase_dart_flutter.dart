@@ -40,10 +40,10 @@ class FirebaseDartFlutter {
           GoogleAuthHandler(),
           FacebookAuthHandler(),
           AppleAuthHandler(),
-          AndroidAuthHandler(),
+          FlutterAuthHandler(),
           const AuthHandler(),
         ]),
-        applicationVerifier: kIsWeb ? null : AndroidAuthHandler(),
+        applicationVerifier: kIsWeb ? null : FlutterAuthHandler(),
         smsRetriever: AndroidSmsRetriever(),
         platform: await _getPlatform());
   }

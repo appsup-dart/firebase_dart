@@ -96,7 +96,7 @@ class AppleAuthHandler extends DirectAuthHandler<OAuthProvider> {
   Future<void> signOut(FirebaseApp app, User user) async {}
 }
 
-class AndroidAuthHandler extends FirebaseAppAuthHandler {
+class FlutterAuthHandler extends FirebaseAppAuthHandler {
   static const _channel = MethodChannel('firebase_dart_flutter');
 
   Future<AuthCredential?>? _lastAuthResult;
