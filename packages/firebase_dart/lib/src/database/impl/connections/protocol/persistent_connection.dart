@@ -88,7 +88,7 @@ class PersistentConnectionImpl extends PersistentConnection
     String? newHost;
     int? port;
     if (hostPort != null) {
-      newHost = hostPort.length >= 1 ? hostPort[0] : null;
+      newHost = hostPort.isNotEmpty ? hostPort[0] : null;
       port = hostPort.length > 1 ? int.parse(hostPort[1]) : null;
     }
     _url = _url.replace(host: newHost, port: port);
@@ -508,7 +508,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
     _requestFlush = Completer();
 
-    void _handleNext() {
+    void handleNext() {
       if (_requestQueue.isEmpty) {
         _requestFlush?.complete();
         _requestFlush = null;
@@ -518,11 +518,11 @@ class PersistentConnectionImpl extends PersistentConnection
       var request = _requestQueue.removeAt(0);
       Future.value(request).then((request) {
         _doRequest(request);
-        _handleNext();
+        handleNext();
       });
     }
 
-    _handleNext();
+    handleNext();
 
     return _requestFlush!.future;
   }

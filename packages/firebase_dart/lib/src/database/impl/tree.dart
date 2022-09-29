@@ -68,14 +68,14 @@ abstract class TreeNode<K, V> {
   String toString() => 'TreeNode[$value]$children';
 
   void forEachNode(void Function(Path<K> key, V value) f) {
-    void _forEach(TreeNode<K, V> node, Path<K> p) {
+    void forEach(TreeNode<K, V> node, Path<K> p) {
       f(p, node.value);
       node.children.forEach((c, v) {
-        _forEach(v, p.child(c));
+        forEach(v, p.child(c));
       });
     }
 
-    _forEach(this, Path());
+    forEach(this, Path());
   }
 }
 

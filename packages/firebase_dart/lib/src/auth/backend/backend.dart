@@ -8,7 +8,6 @@ import 'package:firebaseapis/identitytoolkit/v1.dart';
 import 'package:firebaseapis/identitytoolkit/v2.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
-import 'package:quiver/iterables.dart';
 import 'package:uuid/uuid.dart';
 
 class BackendConnection {

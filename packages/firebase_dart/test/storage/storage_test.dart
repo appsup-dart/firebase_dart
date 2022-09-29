@@ -202,7 +202,7 @@ void runStorageTests({bool isolated = false}) {
 
       test('Uses custom metadata', () async {
         var customMetadata = {'one': '1', 'two': '2'};
-        var t = await child.child('hello.bin').putData(
+        await child.child('hello.bin').putData(
               Uint8List(0),
               SettableMetadata(customMetadata: customMetadata),
             );
