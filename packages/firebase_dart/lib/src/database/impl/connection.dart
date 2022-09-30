@@ -29,6 +29,9 @@ class OperationEvent {
       if (v is Map) {
         return v.keys.every((k) => k is String) && v.values.every(_isBaseType);
       }
+      if (v is List) {
+        return v.every(_isBaseType);
+      }
       return false;
     }
 
