@@ -1,0 +1,23 @@
+
+name: firebase_dart
+
+packages:
+  - packages/**
+
+ide:
+  intellij: false
+
+command:
+  bootstrap:
+    usePubspecOverrides: true
+
+scripts:
+  preversion: 
+    exec: dart test -j 1
+    select-package:
+      flutter: false
+  version:
+    exec: "$PWD/remove-prereleases-from-changelog.sh"
+
+
+ 
