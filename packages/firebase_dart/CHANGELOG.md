@@ -1,12 +1,17 @@
+## 1.1.0-dev.2
+
+
+ - **BREAKING** **FIX**(database): `DataSnapshot.value` now returns a `List` when keys are integers ([#31](https://github.com/appsup-dart/firebase_dart/issues/31)). ([9016ae19](https://github.com/appsup-dart/firebase_dart/commit/9016ae19893fd1896f0026ce368447d26486cfc5))
+- **FEAT**(auth): Implemented `FirebaseAuth.signInWithPhoneNumber` method.
+- **FEAT**(auth): Implemented `FirebaseAuth.verifyPhoneNumber` method.
+- **FEAT**(auth): Implemented `FirebaseUser.multiFactor` for mfa support.
+
 
 ## 1.1.0-dev.1
 
-- Implemented `FirebaseUser.reauthenticateWithCredential` method.
-- Implemented `FirebaseAuth.signInWithPhoneNumber` method.
-- Implemented `FirebaseAuth.verifyPhoneNumber` method.
-- Implemented `FirebaseUser.multiFactor` for mfa support.
-- Fix issue where database transaction on a path are no longer executed once a transaction has failed 
-- Fix issue where a database query never received a value
+- **FEAT**(auth): Implemented `FirebaseUser.reauthenticateWithCredential` method.
+- **FIX**(database): Fix issue where database transaction on a path are no longer executed once a transaction has failed 
+- **FIX**(database): Fix issue where a database query never received a value
 
 ## 1.0.11
 

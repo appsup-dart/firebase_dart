@@ -1,3 +1,7 @@
+## 1.1.0-dev.0
+
+ - **FEAT**(database): Support for phone authentication
+
 
 ## 1.0.1
 
