@@ -37,6 +37,8 @@ class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
 
   final MetadataClient httpClient;
 
+  late StreamSubscription _userChangedSubscription;
+
   FirebaseAuthImpl(FirebaseApp app, {Client? httpClient})
       : httpClient = MetadataClient(httpClient ?? Client(),
             firebaseAppId: app.options.appId),
@@ -56,6 +58,10 @@ class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
         user?.initializeProactiveRefresh();
         _currentUser.add(user);
       }
+    });
+
+    _userChangedSubscription = this.userChanges().listen((v) {
+      userStorageManager.setCurrentUser(v);
     });
   }
 
@@ -555,6 +561,7 @@ class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
     currentUser?.destroy();
     await userStorageManager.close();
     await _storageManagerUserChangedSubscription.cancel();
+    await _userChangedSubscription.cancel();
     await _currentUser.close();
     await super.delete();
   }
