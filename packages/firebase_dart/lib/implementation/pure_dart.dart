@@ -12,7 +12,15 @@ import 'package:meta/meta.dart';
 
 import '../core.dart';
 
-export 'package:firebase_dart/src/auth/utils.dart' show Platform;
+export 'package:firebase_dart/src/auth/utils.dart'
+    show
+        Platform,
+        AndroidPlatform,
+        IOsPlatform,
+        LinuxPlatform,
+        MacOsPlatform,
+        WindowsPlatform,
+        WebPlatform;
 export 'package:firebase_dart/src/auth/authhandlers.dart'
     show FirebaseAppAuthHandler;
 export 'package:firebase_dart/src/auth/app_verifier.dart'
