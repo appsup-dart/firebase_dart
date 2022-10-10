@@ -1,3 +1,7 @@
+## 1.1.0-dev.4
+
+ - **FEAT**(setup): Platform.current now returns a platform specific subclass. ([64e023a3](https://github.com/appsup-dart/firebase_dart/commit/64e023a37ee4de5d103621a605788f65d2f8f3c1))
+
 ## 1.1.0-dev.3
 
  - **FIX**(auth): fix (token) updates on user not being stored in persistence memory. ([ca2f285b](https://github.com/appsup-dart/firebase_dart/commit/ca2f285bddb5e22dff4bb9f3072dec1c55af3e3c))
