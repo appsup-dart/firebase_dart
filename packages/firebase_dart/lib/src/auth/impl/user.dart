@@ -150,42 +150,51 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   /// Queries the backend using the provided ID token for all linked accounts to
   /// build the Firebase user object.
   Future<void> _setUserAccountInfoFromToken(IdTokenResult idToken) async {
-    var user = await _rpcHandler.getAccountInfoByIdToken(idToken.token!);
+    try {
+      var user = await _rpcHandler.getAccountInfoByIdToken(idToken.token!);
 
-    var accountInfo = AccountInfo(
-        uid: user.localId,
-        displayName: user.displayName,
-        photoUrl: user.photoUrl,
-        email: user.email,
-        emailVerified: user.emailVerified ?? false,
-        phoneNumber: user.phoneNumber,
-        isAnonymous: _credential.idToken.claims['provider_id'] == 'anonymous',
-        lastLoginAt: user.lastLoginAt == null
-            ? null
-            : DateTime.fromMillisecondsSinceEpoch(int.parse(user.lastLoginAt!)),
-        createdAt: user.createdAt == null
-            ? null
-            : DateTime.fromMillisecondsSinceEpoch(int.parse(user.createdAt!)));
-    setAccountInfo(accountInfo);
-    _enrolledFactors.addAll([
-      if (user.mfaInfo != null)
-        for (var info in user.mfaInfo!)
-          PhoneMultiFactorInfo(
-              displayName: info.displayName,
-              enrollmentTimestamp:
-                  DateTime.parse(info.enrolledAt!).millisecondsSinceEpoch /
-                      1000,
-              uid: info.mfaEnrollmentId!,
-              phoneNumber: info.phoneInfo!),
-    ]);
+      var accountInfo = AccountInfo(
+          uid: user.localId,
+          displayName: user.displayName,
+          photoUrl: user.photoUrl,
+          email: user.email,
+          emailVerified: user.emailVerified ?? false,
+          phoneNumber: user.phoneNumber,
+          isAnonymous: _credential.idToken.claims['provider_id'] == 'anonymous',
+          lastLoginAt: user.lastLoginAt == null
+              ? null
+              : DateTime.fromMillisecondsSinceEpoch(
+                  int.parse(user.lastLoginAt!)),
+          createdAt: user.createdAt == null
+              ? null
+              : DateTime.fromMillisecondsSinceEpoch(
+                  int.parse(user.createdAt!)));
+      setAccountInfo(accountInfo);
+      _enrolledFactors.addAll([
+        if (user.mfaInfo != null)
+          for (var info in user.mfaInfo!)
+            PhoneMultiFactorInfo(
+                displayName: info.displayName,
+                enrollmentTimestamp:
+                    DateTime.parse(info.enrolledAt!).millisecondsSinceEpoch /
+                        1000,
+                uid: info.mfaEnrollmentId!,
+                phoneNumber: info.phoneInfo!),
+      ]);
 
-    _providerData.addAll((user.providerUserInfo ?? []).map((v) => UserInfo(
-        providerId: v.providerId!,
-        displayName: v.displayName,
-        photoURL: v.photoUrl,
-        phoneNumber: v.phoneNumber,
-        email: v.email,
-        uid: v.rawId ?? '')));
+      _providerData.addAll((user.providerUserInfo ?? []).map((v) => UserInfo(
+          providerId: v.providerId!,
+          displayName: v.displayName,
+          photoURL: v.photoUrl,
+          phoneNumber: v.phoneNumber,
+          email: v.email,
+          uid: v.rawId ?? '')));
+    } on FirebaseAuthException catch (e) {
+      if (e.code == FirebaseAuthException.tokenExpired().code) {
+        await _auth.signOut();
+      }
+      rethrow;
+    }
   }
 
   final List<UserInfo> _providerData = [];
