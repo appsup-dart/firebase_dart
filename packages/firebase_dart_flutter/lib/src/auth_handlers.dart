@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_dart/implementation/pure_dart.dart';
@@ -11,6 +12,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
 import 'package:logging/logging.dart';
 import 'package:uni_links/uni_links.dart';
+import 'package:flutter_apns_only/flutter_apns_only.dart';
 
 class FacebookAuthHandler extends DirectAuthHandler {
   FacebookAuthHandler() : super(FacebookAuthProvider.PROVIDER_ID);
@@ -184,6 +186,11 @@ class FlutterAuthHandler extends FirebaseAppAuthHandler {
   @override
   Future<ApplicationVerificationResult> verify(
       FirebaseAuth auth, String nonce) async {
+    if (platform_info.Platform.instance.isIOS) {
+      var v = await verifyWithApns(auth, nonce);
+      if (v != null) return v;
+    }
+
     var available = await _isGooglePlayServicesAvailable;
 
     if (available) {
@@ -197,6 +204,42 @@ class FlutterAuthHandler extends FirebaseAppAuthHandler {
     }
 
     return super.verify(auth, nonce);
+  }
+
+  Future<ApplicationVerificationResult?> verifyWithApns(
+      FirebaseAuth auth, String nonce) async {
+    var apns = ApnsPushConnectorOnly();
+
+    var completer = Completer<ApplicationVerificationResult?>();
+    apns.configureApns(
+      onMessage: (message) async {
+        var v =
+            json.decode(message.payload['data']['com.google.firebase.auth']);
+
+        completer.complete(ApplicationVerificationResult(
+            'apns', '${v['receipt']}:${v['secret']}'));
+      },
+    );
+
+    var tokenCompleter = Completer<String>();
+    if (apns.token.value != null) {
+      tokenCompleter.complete(apns.token.value);
+    } else {
+      apns.token.addListener(() async {
+        if (tokenCompleter.isCompleted) return;
+        tokenCompleter.complete(apns.token.value);
+      });
+    }
+
+    var s = await apns.getAuthorizationStatus();
+    if (s != ApnsAuthorizationStatus.authorized) {
+      return null;
+    }
+
+    var timeout =
+        await verifyIosClient(auth, appToken: await tokenCompleter.future);
+
+    return completer.future.timeout(timeout, onTimeout: () => null);
   }
 
   Future<String> verifyWithSafetyNet(FirebaseAuth auth, String nonce) async {

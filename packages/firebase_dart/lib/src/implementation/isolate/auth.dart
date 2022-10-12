@@ -634,6 +634,8 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
               codeSent: (verificationId, forceResendingToken) => commander.execute(
                   RegisteredFunctionCall(#codeSent, [verificationId, forceResendingToken])));
         };
+      case #verifyIosClient:
+        return (auth as FirebaseAuthImpl).rpcHandler.verifyIosClient;
       case #userChanges:
         return () =>
             auth.userChanges().map<Map<String, dynamic>?>((v) => v?.toJson());

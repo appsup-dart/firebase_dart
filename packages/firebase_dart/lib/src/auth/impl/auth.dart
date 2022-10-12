@@ -18,7 +18,6 @@ import '../auth.dart';
 import '../multi_factor.dart';
 import '../rpc/rpc_handler.dart';
 import '../usermanager.dart';
-import '../utils.dart';
 import 'user.dart';
 
 /// The entry point of the Firebase Authentication SDK.
@@ -60,7 +59,7 @@ class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
       }
     });
 
-    _userChangedSubscription = this.userChanges().listen((v) {
+    _userChangedSubscription = userChanges().listen((v) {
       userStorageManager.setCurrentUser(v);
     });
   }
@@ -360,6 +359,11 @@ class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
               assertion.type == 'recaptcha' ? assertion.token : null,
           safetyNetToken:
               assertion.type == 'safetynet' ? assertion.token : null,
+          iosReceipt: assertion.type == 'apns'
+              ? assertion.token.split(':').first
+              : null,
+          iosSecret:
+              assertion.type == 'apns' ? assertion.token.split(':').last : null,
         );
       } else {
         verificationId = await rpcHandler.startMultiFactorSignIn(
@@ -370,6 +374,11 @@ class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
               assertion.type == 'recaptcha' ? assertion.token : null,
           safetyNetToken:
               assertion.type == 'safetynet' ? assertion.token : null,
+          iosReceipt: assertion.type == 'apns'
+              ? assertion.token.split(':').first
+              : null,
+          iosSecret:
+              assertion.type == 'apns' ? assertion.token.split(':').last : null,
         );
       }
     } else {
@@ -378,6 +387,10 @@ class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
         appSignatureHash: appSignatureHash,
         recaptchaToken: assertion.type == 'recaptcha' ? assertion.token : null,
         safetyNetToken: assertion.type == 'safetynet' ? assertion.token : null,
+        iosReceipt:
+            assertion.type == 'apns' ? assertion.token.split(':').first : null,
+        iosSecret:
+            assertion.type == 'apns' ? assertion.token.split(':').last : null,
       );
     }
 

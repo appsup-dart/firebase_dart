@@ -685,16 +685,21 @@ class RpcHandler {
 
   /// Requests sendVerificationCode endpoint for verifying the user's ownership of
   /// a phone number. It resolves with a sessionInfo (verificationId).
-  Future<String> sendVerificationCode(
-      {String? phoneNumber,
-      String? appSignatureHash,
-      String? recaptchaToken,
-      String? safetyNetToken}) async {
+  Future<String> sendVerificationCode({
+    String? phoneNumber,
+    String? appSignatureHash,
+    String? recaptchaToken,
+    String? safetyNetToken,
+    String? iosReceipt,
+    String? iosSecret,
+  }) async {
     // In the future, we could support other types of assertions so for now,
     // we are keeping the request an object.
 
     if (phoneNumber == null ||
-        (recaptchaToken == null && safetyNetToken == null)) {
+        (recaptchaToken == null &&
+            safetyNetToken == null &&
+            (iosReceipt == null || iosSecret == null))) {
       throw FirebaseAuthException.internalError();
     }
 
@@ -705,7 +710,9 @@ class RpcHandler {
           : (GoogleCloudIdentitytoolkitV1AutoRetrievalInfo()
             ..appSignatureHash = appSignatureHash)
       ..recaptchaToken = recaptchaToken
-      ..safetyNetToken = safetyNetToken;
+      ..safetyNetToken = safetyNetToken
+      ..iosReceipt = iosReceipt
+      ..iosSecret = iosSecret;
 
     var response =
         await identitytoolkitApi.accounts.sendVerificationCode(request);
@@ -810,7 +817,9 @@ class RpcHandler {
       String? phoneNumber,
       String? appSignatureHash,
       String? recaptchaToken,
-      String? safetyNetToken}) async {
+      String? safetyNetToken,
+      String? iosReceipt,
+      String? iosSecret}) async {
     if (phoneNumber == null ||
         (recaptchaToken == null && safetyNetToken == null)) {
       throw FirebaseAuthException.internalError();
@@ -822,7 +831,9 @@ class RpcHandler {
           : (GoogleCloudIdentitytoolkitV2AutoRetrievalInfo()
             ..appSignatureHash = appSignatureHash)
       ..recaptchaToken = recaptchaToken
-      ..safetyNetToken = safetyNetToken;
+      ..safetyNetToken = safetyNetToken
+      ..iosReceipt = iosReceipt
+      ..iosSecret = iosSecret;
 
     var request = GoogleCloudIdentitytoolkitV2StartMfaEnrollmentRequest()
       ..idToken = idToken
@@ -886,14 +897,18 @@ class RpcHandler {
       required String mfaEnrollmentId,
       String? appSignatureHash,
       String? recaptchaToken,
-      String? safetyNetToken}) async {
+      String? safetyNetToken,
+      String? iosReceipt,
+      String? iosSecret}) async {
     var info = GoogleCloudIdentitytoolkitV2StartMfaPhoneRequestInfo()
       ..autoRetrievalInfo = appSignatureHash == null
           ? null
           : (GoogleCloudIdentitytoolkitV2AutoRetrievalInfo()
             ..appSignatureHash = appSignatureHash)
       ..recaptchaToken = recaptchaToken
-      ..safetyNetToken = safetyNetToken;
+      ..safetyNetToken = safetyNetToken
+      ..iosReceipt = iosReceipt
+      ..iosSecret = iosSecret;
 
     var request = GoogleCloudIdentitytoolkitV2StartMfaSignInRequest()
       ..mfaPendingCredential = mfaPendingCredential
@@ -926,6 +941,19 @@ class RpcHandler {
       mfaPendingCredential: null,
       mfaInfo: null,
     );
+  }
+
+  Future<Duration> verifyIosClient({required String appToken}) async {
+    var response = await identitytoolkitApi.accounts.verifyIosClient(
+        GoogleCloudIdentitytoolkitV1VerifyIosClientRequest(
+            appToken: appToken, isSandbox: true));
+
+    var suggestedTimeout = response.suggestedTimeout;
+    return Duration(
+        seconds: (suggestedTimeout == null
+                ? null
+                : int.tryParse(suggestedTimeout)) ??
+            5);
   }
 
   /// Validates a request that sends the verification ID and code for a sign in/up
