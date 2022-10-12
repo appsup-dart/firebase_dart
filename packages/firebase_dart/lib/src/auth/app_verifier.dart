@@ -10,6 +10,11 @@ class ApplicationVerificationResult {
   final String token;
 
   ApplicationVerificationResult(this.type, this.token);
+  ApplicationVerificationResult.apns(String token) : this('apns', token);
+  ApplicationVerificationResult.recaptcha(String token)
+      : this('recaptcha', token);
+  ApplicationVerificationResult.safetyNet(String token)
+      : this('safetynet', token);
 
   @override
   String toString() {
@@ -25,7 +30,7 @@ class RecaptchaApplicationVerifier implements ApplicationVerifier {
       FirebaseAuth auth, String nonce) async {
     var verifier = RecaptchaVerifier(auth: auth);
 
-    return ApplicationVerificationResult('recaptcha', await verifier.verify());
+    return ApplicationVerificationResult.recaptcha(await verifier.verify());
   }
 }
 
@@ -33,7 +38,7 @@ class DummyApplicationVerifier implements ApplicationVerifier {
   @override
   Future<ApplicationVerificationResult> verify(
       FirebaseAuth auth, String nonce) async {
-    return ApplicationVerificationResult(
-        'recaptcha', 'this_will_only_work_on_testing');
+    return ApplicationVerificationResult.recaptcha(
+        'this_will_only_work_on_testing');
   }
 }

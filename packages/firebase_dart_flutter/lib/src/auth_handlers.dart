@@ -99,16 +99,7 @@ class AppleAuthHandler extends DirectAuthHandler<OAuthProvider> {
 }
 
 class FlutterAuthHandler extends FirebaseAppAuthHandler {
-  static const _channel = MethodChannel('firebase_dart_flutter');
-
   Future<AuthCredential?>? _lastAuthResult;
-  Future<String>? _lastRecaptchaResult;
-
-  late final Future<bool> _isGooglePlayServicesAvailable = Future(() async {
-    if (kIsWeb || !platform_info.Platform.instance.isAndroid) return false;
-    return await _channel.invokeMethod<bool>('isGooglePlayServicesAvailable') ??
-        false;
-  });
 
   @override
   Future<AuthCredential?> getSignInResult(FirebaseApp app) async {
@@ -126,22 +117,52 @@ class FlutterAuthHandler extends FirebaseAppAuthHandler {
     }
     return null;
   }
+}
 
-  Future<Map<String, dynamic>> _getResult(String type) async {
-    var v = (await _channel.invokeMapMethod<String, dynamic>(type))!;
-    _lastAuthResult = null;
+const _channel = MethodChannel('firebase_dart_flutter');
 
-    Map<String, dynamic>? error =
-        v['firebaseError'] == null ? null : json.decode(v['firebaseError']);
-    if (error != null) {
-      var code = error['code'];
-      if (code.startsWith('auth/')) {
-        code = code.substring('auth/'.length);
-      }
-      throw FirebaseAuthException(code, error['message']);
+Future<Map<String, dynamic>> _getResult(String type) async {
+  var v = (await _channel.invokeMapMethod<String, dynamic>(type))!;
+
+  Map<String, dynamic>? error =
+      v['firebaseError'] == null ? null : json.decode(v['firebaseError']);
+  if (error != null) {
+    var code = error['code'];
+    if (code.startsWith('auth/')) {
+      code = code.substring('auth/'.length);
     }
-    return v;
+    throw FirebaseAuthException(code, error['message']);
   }
+  return v;
+}
+
+Future<Map<String, String>> _getDeepLinkResult() async {
+  var uri = await uriLinkStream.first;
+  var v = uri!.queryParameters;
+
+  var deepLink = Uri.parse(v['deep_link_id']!);
+  v = deepLink.queryParameters;
+
+  Map<String, dynamic>? error =
+      v['firebaseError'] == null ? null : json.decode(v['firebaseError']!);
+  if (error != null) {
+    var code = error['code'];
+    if (code.startsWith('auth/')) {
+      code = code.substring('auth/'.length);
+    }
+    throw FirebaseAuthException(code, error['message']);
+  }
+  return v;
+}
+
+class FlutterApplicationVerifier extends BaseApplicationVerifier {
+  Future<String>? _lastRecaptchaResult;
+
+  late final Future<bool> _isGooglePlayServicesAvailable = Future(() async {
+    if (kIsWeb || !platform_info.Platform.instance.isAndroid) return false;
+    return await _channel.invokeMethod<bool>('isGooglePlayServicesAvailable') ??
+        false;
+  });
 
   @override
   Future<String> getVerifyResult(FirebaseApp app) {
@@ -163,61 +184,17 @@ class FlutterAuthHandler extends FirebaseAppAuthHandler {
     throw UnimplementedError();
   }
 
-  Future<Map<String, String>> _getDeepLinkResult() async {
-    var uri = await uriLinkStream.first;
-    var v = uri!.queryParameters;
-    _lastRecaptchaResult = null;
-
-    var deepLink = Uri.parse(v['deep_link_id']!);
-    v = deepLink.queryParameters;
-
-    Map<String, dynamic>? error =
-        v['firebaseError'] == null ? null : json.decode(v['firebaseError']!);
-    if (error != null) {
-      var code = error['code'];
-      if (code.startsWith('auth/')) {
-        code = code.substring('auth/'.length);
-      }
-      throw FirebaseAuthException(code, error['message']);
-    }
-    return v;
-  }
-
   @override
-  Future<ApplicationVerificationResult> verify(
-      FirebaseAuth auth, String nonce) async {
-    if (platform_info.Platform.instance.isIOS) {
-      var v = await verifyWithApns(auth, nonce);
-      if (v != null) return v;
-    }
-
-    var available = await _isGooglePlayServicesAvailable;
-
-    if (available) {
-      try {
-        return ApplicationVerificationResult(
-            'safetynet', await verifyWithSafetyNet(auth, nonce));
-      } catch (e, tr) {
-        Logger('AndroidAuthHandler')
-            .warning('Failed getting SafetyNet token', e, tr);
-      }
-    }
-
-    return super.verify(auth, nonce);
-  }
-
-  Future<ApplicationVerificationResult?> verifyWithApns(
-      FirebaseAuth auth, String nonce) async {
+  Future<String?> verifyWithApns(FirebaseAuth auth) async {
     var apns = ApnsPushConnectorOnly();
 
-    var completer = Completer<ApplicationVerificationResult?>();
+    var completer = Completer<String?>();
     apns.configureApns(
       onMessage: (message) async {
         var v =
             json.decode(message.payload['data']['com.google.firebase.auth']);
 
-        completer.complete(ApplicationVerificationResult(
-            'apns', '${v['receipt']}:${v['secret']}'));
+        completer.complete('${v['receipt']}:${v['secret']}');
       },
     );
 
@@ -242,12 +219,22 @@ class FlutterAuthHandler extends FirebaseAppAuthHandler {
     return completer.future.timeout(timeout, onTimeout: () => null);
   }
 
-  Future<String> verifyWithSafetyNet(FirebaseAuth auth, String nonce) async {
-    var token = await _channel.invokeMethod<String>('getSafetyNetToken', {
-      'apiKey': auth.app.options.apiKey,
-      'nonce': nonce,
-    });
-    return token!;
+  @override
+  Future<String?> verifyWithSafetyNet(FirebaseAuth auth, String nonce) async {
+    var available = await _isGooglePlayServicesAvailable;
+    if (!available) return null;
+
+    try {
+      var token = await _channel.invokeMethod<String>('getSafetyNetToken', {
+        'apiKey': auth.app.options.apiKey,
+        'nonce': nonce,
+      });
+      return token!;
+    } catch (e, tr) {
+      Logger('FlutterApplicationVerifier')
+          .warning('Failed getting SafetyNet token', e, tr);
+      return null;
+    }
   }
 }
 

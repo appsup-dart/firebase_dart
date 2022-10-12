@@ -22,7 +22,7 @@ export 'package:firebase_dart/src/auth/utils.dart'
         WindowsPlatform,
         WebPlatform;
 export 'package:firebase_dart/src/auth/authhandlers.dart'
-    show FirebaseAppAuthHandler;
+    show FirebaseAppAuthHandler, BaseApplicationVerifier;
 export 'package:firebase_dart/src/auth/app_verifier.dart'
     show ApplicationVerificationResult;
 export 'package:firebase_dart/src/auth/sms_retriever.dart' show SmsRetriever;

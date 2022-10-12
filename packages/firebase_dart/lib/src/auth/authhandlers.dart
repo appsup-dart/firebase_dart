@@ -24,8 +24,7 @@ class FirebaseAppAuthCredential extends AuthCredential {
   }) : super(providerId: providerId, signInMethod: providerId);
 }
 
-abstract class FirebaseAppAuthHandler
-    implements AuthHandler, ApplicationVerifier {
+abstract class FirebaseAppAuthHandler implements AuthHandler {
   const FirebaseAppAuthHandler();
   Future<FirebaseAppAuthCredential> createCredential(
       {String? eventId,
@@ -146,21 +145,23 @@ abstract class FirebaseAppAuthHandler
 
   @override
   Future<void> signOut(FirebaseApp app, User user) async {}
+}
 
+abstract class BaseApplicationVerifier implements ApplicationVerifier {
   @override
   Future<ApplicationVerificationResult> verify(
       FirebaseAuth auth, String nonce) async {
-    var url = createAuthHandlerUrl(
-      app: auth.app,
-      authType: 'verifyApp',
-    );
+    var p = Platform.current;
+    if (p is IOsPlatform || p is MacOsPlatform) {
+      var v = await verifyWithApns(auth);
+      if (v != null) return ApplicationVerificationResult.apns(v);
+    } else if (p is AndroidPlatform) {
+      var v = await verifyWithSafetyNet(auth, nonce);
+      if (v != null) return ApplicationVerificationResult.safetyNet(v);
+    }
 
-    var installation = FirebaseImplementation.installation;
-    var launchUrl = (installation as BaseFirebaseImplementation).launchUrl;
-    launchUrl(url);
-
-    return ApplicationVerificationResult(
-        'recaptcha', await getVerifyResult(auth.app));
+    var v = await verifyWithRecaptcha(auth);
+    return ApplicationVerificationResult.recaptcha(v);
   }
 
   @visibleForOverriding
@@ -175,5 +176,20 @@ abstract class FirebaseAppAuthHandler
       return auth.invoke(#verifyIosClient, [], {#appToken: appToken});
     }
     throw UnimplementedError();
+  }
+
+  Future<String?> verifyWithApns(FirebaseAuth auth);
+  Future<String?> verifyWithSafetyNet(FirebaseAuth auth, String nonce);
+  Future<String> verifyWithRecaptcha(FirebaseAuth auth) {
+    var url = FirebaseAppAuthHandler.createAuthHandlerUrl(
+      app: auth.app,
+      authType: 'verifyApp',
+    );
+
+    var installation = FirebaseImplementation.installation;
+    var launchUrl = (installation as BaseFirebaseImplementation).launchUrl;
+    launchUrl(url);
+
+    return getVerifyResult(auth.app);
   }
 }
