@@ -1,3 +1,9 @@
+## 1.1.0-dev.5
+
+ - **REFACTOR**(auth): refactor base application verifier. ([b842cbc2](https://github.com/appsup-dart/firebase_dart/commit/b842cbc295e8ffecbacf6b387cd77247be739941))
+ - **FIX**(auth): sign out when getting token expired response. ([d8bfb9c5](https://github.com/appsup-dart/firebase_dart/commit/d8bfb9c5845dc2f00de8914598f06bb09eca5b7b))
+ - **FEAT**(auth): application verification with silent APNs notifications on ios. ([82db724d](https://github.com/appsup-dart/firebase_dart/commit/82db724d3702324b8f442ec80202232f9ef29e3c))
+
 ## 1.1.0-dev.4
 
  - **FEAT**(setup): Platform.current now returns a platform specific subclass. ([64e023a3](https://github.com/appsup-dart/firebase_dart/commit/64e023a37ee4de5d103621a605788f65d2f8f3c1))
