@@ -169,11 +169,13 @@ abstract class BaseApplicationVerifier implements ApplicationVerifier {
 
   @protected
   Future<Duration> verifyIosClient(FirebaseAuth auth,
-      {required String appToken}) async {
+      {required String appToken, required bool isSandbox}) async {
     if (auth is FirebaseAuthImpl) {
-      return auth.rpcHandler.verifyIosClient(appToken: appToken);
+      return auth.rpcHandler
+          .verifyIosClient(appToken: appToken, isSandbox: isSandbox);
     } else if (auth is IsolateFirebaseAuth) {
-      return auth.invoke(#verifyIosClient, [], {#appToken: appToken});
+      return auth.invoke(
+          #verifyIosClient, [], {#appToken: appToken, #isSandbox: isSandbox});
     }
     throw UnimplementedError();
   }

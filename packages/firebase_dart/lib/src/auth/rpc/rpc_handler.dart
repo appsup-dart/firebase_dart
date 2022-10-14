@@ -943,10 +943,11 @@ class RpcHandler {
     );
   }
 
-  Future<Duration> verifyIosClient({required String appToken}) async {
+  Future<Duration> verifyIosClient(
+      {required String appToken, required bool isSandbox}) async {
     var response = await identitytoolkitApi.accounts.verifyIosClient(
         GoogleCloudIdentitytoolkitV1VerifyIosClientRequest(
-            appToken: appToken, isSandbox: true));
+            appToken: appToken, isSandbox: isSandbox));
 
     var suggestedTimeout = response.suggestedTimeout;
     return Duration(

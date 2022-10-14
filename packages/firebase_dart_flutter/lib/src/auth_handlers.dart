@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:io' as io;
 
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/core.dart';
@@ -218,7 +220,8 @@ class FlutterApplicationVerifier extends BaseApplicationVerifier {
       }
 
       var timeout = await verifyIosClient(auth,
-              appToken: await tokenCompleter.future.timeout(defaultTimeout))
+              appToken: await tokenCompleter.future.timeout(defaultTimeout),
+              isSandbox: !kReleaseMode)
           .timeout(defaultTimeout);
 
       return completer.future.timeout(timeout);
