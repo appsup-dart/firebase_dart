@@ -1,3 +1,7 @@
+## 1.1.0-dev.6
+
+ - **FIX**(auth): sandbox for apns on release mode. ([ab1ced6c](https://github.com/appsup-dart/firebase_dart/commit/ab1ced6cc08476fd0baa1d9cb183e2caf0da2fe3))
+
 ## 1.1.0-dev.5
 
  - **REFACTOR**(auth): refactor base application verifier. ([b842cbc2](https://github.com/appsup-dart/firebase_dart/commit/b842cbc295e8ffecbacf6b387cd77247be739941))
