@@ -186,37 +186,45 @@ class FlutterApplicationVerifier extends BaseApplicationVerifier {
 
   @override
   Future<String?> verifyWithApns(FirebaseAuth auth) async {
-    var apns = ApnsPushConnectorOnly();
+    try {
+      var apns = ApnsPushConnectorOnly();
 
-    var completer = Completer<String?>();
-    apns.configureApns(
-      onMessage: (message) async {
-        var v =
-            json.decode(message.payload['data']['com.google.firebase.auth']);
+      var completer = Completer<String>();
+      apns.configureApns(
+        onMessage: (message) async {
+          var v =
+              json.decode(message.payload['data']['com.google.firebase.auth']);
 
-        completer.complete('${v['receipt']}:${v['secret']}');
-      },
-    );
+          completer.complete('${v['receipt']}:${v['secret']}');
+        },
+      );
 
-    var tokenCompleter = Completer<String>();
-    if (apns.token.value != null) {
-      tokenCompleter.complete(apns.token.value);
-    } else {
-      apns.token.addListener(() async {
-        if (tokenCompleter.isCompleted) return;
+      var tokenCompleter = Completer<String>();
+      if (apns.token.value != null) {
         tokenCompleter.complete(apns.token.value);
-      });
-    }
+      } else {
+        apns.token.addListener(() async {
+          if (tokenCompleter.isCompleted) return;
+          tokenCompleter.complete(apns.token.value);
+        });
+      }
 
-    var s = await apns.getAuthorizationStatus();
-    if (s != ApnsAuthorizationStatus.authorized) {
+      var defaultTimeout = const Duration(seconds: 5);
+      var s = await apns.getAuthorizationStatus().timeout(defaultTimeout);
+      if (s != ApnsAuthorizationStatus.authorized) {
+        if (!await apns.requestNotificationPermissions()) {
+          return null;
+        }
+      }
+
+      var timeout = await verifyIosClient(auth,
+              appToken: await tokenCompleter.future.timeout(defaultTimeout))
+          .timeout(defaultTimeout);
+
+      return completer.future.timeout(timeout);
+    } catch (e) {
       return null;
     }
-
-    var timeout =
-        await verifyIosClient(auth, appToken: await tokenCompleter.future);
-
-    return completer.future.timeout(timeout, onTimeout: () => null);
   }
 
   @override
