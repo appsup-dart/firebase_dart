@@ -1,3 +1,7 @@
+## 1.1.0-dev.5
+
+ - Update a dependency to the latest release.
+
 ## 1.1.0-dev.4
 
  - **FIX**(auth): sandbox for apns on release mode. ([ab1ced6c](https://github.com/appsup-dart/firebase_dart/commit/ab1ced6cc08476fd0baa1d9cb183e2caf0da2fe3))
