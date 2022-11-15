@@ -3,6 +3,7 @@ import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
+import 'package:sortedmap/sortedmap.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -527,6 +528,41 @@ void main() {
           .applyOperation(TreeOperation.overwrite(
               Name.parsePath('child'), TreeStructuredData()));
       expect(v.toOperation().apply(TreeStructuredData()), leafNode);
+    });
+
+    test(
+        'a merge should remove children that do no longer comply with the filter',
+        () {
+      var v = empty.withFilter(QueryFilter(
+          ordering: TreeStructuredDataOrdering.byChild('isFinished'),
+          validInterval: KeyValueInterval(
+            Name.min,
+            TreeStructuredData.leaf(Value(false)),
+            Name.max,
+            TreeStructuredData.leaf(Value(false)),
+          )));
+
+      v = v.applyOperation(
+        TreeOperation.overwrite(
+            Path.from([]),
+            TreeStructuredData.fromJson({
+              'v1': {'isFinished': false, 'isCancelled': false},
+              'v2': {'isFinished': false, 'isCancelled': false},
+              'v3': {'isFinished': false, 'isCancelled': false},
+            })),
+      );
+
+      v = v.applyOperation(
+        TreeOperation.merge(Name.parsePath('v2'), {
+          Name.parsePath('isFinished'): TreeStructuredData.leaf(Value(true)),
+          Name.parsePath('isCancelled'): TreeStructuredData.leaf(Value(true)),
+        }),
+      );
+
+      expect(v.completeValue!.toJson(), {
+        'v1': {'isFinished': false, 'isCancelled': false},
+        'v3': {'isFinished': false, 'isCancelled': false},
+      });
     });
   });
 }

@@ -10,7 +10,7 @@ dependencies:
   quiver: ^3.0.0
   async: ^2.5.0
   logging: ^1.0.0
-  sortedmap: ^0.5.1
+  sortedmap: ^0.5.2
   web_socket_channel: ^2.0.0
   stream_channel: ^2.1.0
   collection: ^1.15.0
