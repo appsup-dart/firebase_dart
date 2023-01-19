@@ -1,3 +1,7 @@
+## 1.1.0-dev.8
+
+ - **FIX**(database): should throw permission denied error when permission changes while listening. ([b45a7a5e](https://github.com/appsup-dart/firebase_dart/commit/b45a7a5ec327b28871824515a41c5e23c42985f6))
+
 ## 1.1.0-dev.7
 
  - **FIX**: query result not always correctly updated after receiving new data. ([12b2b283](https://github.com/appsup-dart/firebase_dart/commit/12b2b2831490a4d3f522df1cb5e0ec957181649b))
