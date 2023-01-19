@@ -41,7 +41,9 @@ class SecuredBackend extends Backend {
               FirebaseDatabaseException.permissionDenied(), StackTrace.current);
         }
       } else {
-        completer.complete();
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
       }
     }); // TODO cancel subscription on unlisten
     await completer.future;

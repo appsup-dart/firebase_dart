@@ -252,7 +252,7 @@ class MessageBody {
   Map<String, dynamic> toJson() {
     var json = <String, dynamic>{};
     if (cred != null) json['cred'] = cred;
-    if (path != null) json['p'] = path;
+    if (path != null) json['p'] = path!.startsWith('/') ? path : '/$path';
     if (hash != null) json['h'] = hash;
     if (tag != null) json['t'] = tag;
     if (query != null) json['q'] = query!.toJson();

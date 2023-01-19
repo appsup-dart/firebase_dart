@@ -186,6 +186,37 @@ void runDatabaseTests({bool isolated = false}) {
 
   if (!isolated) {
     group('Permissions', () {
+      test('Change in data should re-evaluate security rules', () async {
+        var backend = MemoryBackend.getInstance('test_s');
+        backend.securityRules = {
+          'secure': {
+            '.read': 'data.child("isPublic").val() == true',
+            '.write': 'true'
+          },
+        };
+
+        var app = await core.Firebase.initializeApp(
+            name: 'my_app', options: getOptions());
+        var db = FirebaseDatabase(app: app, databaseURL: 'mem://test_s');
+
+        var ref = db.reference().child('secure');
+
+        await ref.child('isPublic').set(true);
+
+        FirebaseDatabaseException? exception;
+        ref.onValue.listen((v) {}, onError: (e) {
+          exception = e;
+        });
+
+        await Future.delayed(Duration(milliseconds: 400));
+
+        await ref.child('isPublic').set(false);
+        await Future.delayed(Duration(milliseconds: 400));
+
+        expect(
+            exception?.code, FirebaseDatabaseException.permissionDenied().code);
+      });
+
       test('Listening without read permission should throw permission denied',
           () async {
         var backend = MemoryBackend.getInstance('test_s');
@@ -195,7 +226,7 @@ void runDatabaseTests({bool isolated = false}) {
         };
 
         var app = await core.Firebase.initializeApp(
-            name: 'my_app', options: getOptions());
+            name: 'my_app2', options: getOptions());
         var db = FirebaseDatabase(app: app, databaseURL: 'mem://test_s');
         await db.reference().child('public').get();
         await expectLater(
@@ -384,6 +415,79 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       var t = (FirebaseTokenCodec(null).decode(token));
       expect(t.data!['uid'], '33e75f24-1910-4b52-ad2c-cfdd0aac728b');
     });
+  });
+
+  group('Permissions', () {
+    late DatabaseReference iref;
+
+    if (!isolated || testUrl.startsWith('https://')) {
+      setUp(() {
+        iref = dbAlt1.reference().child('secure');
+        if (iref.url.scheme == 'mem') {
+          var backend = MemoryBackend.getInstance(iref.url.host);
+          backend.securityRules = {
+            'secure': {
+              '.read': 'data.child("isPublic").val() == true',
+              '.write': 'true'
+            },
+            'test': {'.read': 'true'}
+          };
+        }
+      });
+
+      test('Change in data should re-evaluate security rules', () async {
+        var ref = db1.reference().child('secure');
+
+        await iref.child('isPublic').set(true);
+        await iref.child('value').set(1);
+
+        FirebaseDatabaseException? exception;
+        Object? value;
+        ref.onValue.listen((v) {
+          value = v.snapshot.value['value'];
+        }, onError: (e) {
+          exception = e;
+        });
+
+        await ref.get();
+
+        await iref.child('isPublic').set(false);
+        await iref.child('value').set(2);
+        await Future.delayed(Duration(milliseconds: 400));
+
+        expect(value, 1);
+        expect(
+            exception?.code, FirebaseDatabaseException.permissionDenied().code);
+      });
+
+      test(
+          'Change in data with limiting query should re-evaluate security rules',
+          () async {
+        var ref = db1.reference().child('secure').limitToFirst(5);
+
+        await iref.child('isPublic').set(true);
+        await iref.child('value').set(1);
+
+        FirebaseDatabaseException? exception;
+        Object? value;
+        ref.onValue.listen((v) {
+          value = v.snapshot.value['value'];
+        }, onError: (e) {
+          exception = e;
+        });
+        await ref.get();
+
+        await Future.delayed(Duration(milliseconds: 400));
+
+        await iref.child('isPublic').set(false);
+        await iref.child('value').set(2);
+        await Future.delayed(Duration(milliseconds: 400));
+
+        expect(value, 1);
+        expect(
+            exception?.code, FirebaseDatabaseException.permissionDenied().code);
+      });
+    }
   });
 
   group('Snapshot', () {

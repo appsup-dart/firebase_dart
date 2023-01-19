@@ -78,7 +78,7 @@ class BackendConnection {
                                 ? DataMessage.actionListenRevoked
                                 : DataMessage.actionSet,
                             MessageBody(
-                                tag: message.body.query!.limits
+                                tag: (message.body.query?.limits ?? false)
                                     ? message.body.tag
                                     : null,
                                 path: message.body.path,

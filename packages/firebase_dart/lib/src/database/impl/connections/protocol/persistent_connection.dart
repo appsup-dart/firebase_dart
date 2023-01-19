@@ -103,6 +103,9 @@ class PersistentConnectionImpl extends PersistentConnection
     }
     var path =
         message.body.path == null ? null : Name.parsePath(message.body.path!);
+    if (query == null && path != null && message.body.query != null) {
+      query = QuerySpec(path, message.body.query!);
+    }
     switch (message.action) {
       case DataMessage.actionSet:
       case DataMessage.actionMerge:

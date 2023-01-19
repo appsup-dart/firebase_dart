@@ -868,7 +868,11 @@ class SyncTree {
   }
 
   void applyListenRevoked(Path<Name> path, QueryFilter? filter) {
-    var view = root.subtreeNullable(path)?.value.views.remove(filter);
+    var view = root
+        .subtreeNullable(path)
+        ?.value
+        .views
+        .remove(filter ?? const QueryFilter());
     if (view == null) return;
     for (var t in view.observers.values) {
       t.dispatchEvent(CancelEvent(
