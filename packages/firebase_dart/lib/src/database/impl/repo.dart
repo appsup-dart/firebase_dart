@@ -513,7 +513,7 @@ class RemoteQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> register(QuerySpec query,
-      {String? hash, required int priority}) async {
+      {required String hash, required int priority}) async {
     var warnings = await connection.listen(query.path.join('/'),
         query: query.params, hash: hash);
     for (var w in warnings) {

@@ -43,13 +43,16 @@ void main() {
 
       registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [QueryFilter()],
           hashFcn: (filter) => filter.hashCode.toString(),
-          priorityFcn: (filter) => 0);
+          priorityFcn: (filter) => 0,
+          onRegistered: (filter) {});
       registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [],
           hashFcn: (filter) => filter.hashCode.toString(),
-          priorityFcn: (filter) => 0);
+          priorityFcn: (filter) => 0,
+          onRegistered: (filter) {});
       registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [QueryFilter()],
           hashFcn: (filter) => filter.hashCode.toString(),
-          priorityFcn: (filter) => 0);
+          priorityFcn: (filter) => 0,
+          onRegistered: (filter) {});
 
       expect(await l, ['register', 'unregister', 'register']);
     });

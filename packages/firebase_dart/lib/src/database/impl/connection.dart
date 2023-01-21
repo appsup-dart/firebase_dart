@@ -121,7 +121,7 @@ abstract class PersistentConnection {
   ///
   /// Returns possible warning messages.
   Future<Iterable<String>> listen(String path,
-      {required QueryFilter query, String? hash});
+      {required QueryFilter query, required String hash});
 
   /// Unregisters a listener
   Future<void> unlisten(String path, {required QueryFilter query});

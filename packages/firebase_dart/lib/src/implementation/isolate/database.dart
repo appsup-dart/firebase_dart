@@ -30,6 +30,7 @@ class IsolateFirebaseDatabase extends IsolateFirebaseService
       : super(app) {
     _infoSubscription =
         reference().child('.info/serverTimeOffset').onValue.listen((v) {
+      if (v.snapshot.value == null) return;
       _serverTime.add(Duration(milliseconds: v.snapshot.value));
     });
 

@@ -177,7 +177,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   @override
   Future<Iterable<String>> listen(String path,
-      {required QueryFilter query, String? hash}) async {
+      {required QueryFilter query, required String hash}) async {
     var def = QuerySpec(Name.parsePath(path), query);
     var tag = _nextTag++;
     _tagToQuery[tag] = def;

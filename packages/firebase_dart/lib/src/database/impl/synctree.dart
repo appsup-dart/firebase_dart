@@ -464,7 +464,8 @@ abstract class QueryRegistrar {
   ///
   /// The [priority] is used to determine the order in which queries are
   /// registered. Queries with a higher priority are registered first.
-  Future<void> register(QuerySpec query, {String? hash, required int priority});
+  Future<void> register(QuerySpec query,
+      {required String hash, required int priority});
 
   Future<void> unregister(QuerySpec query);
 
@@ -483,7 +484,7 @@ class SequentialQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> register(QuerySpec query,
-      {String? hash, required int priority}) {
+      {required String hash, required int priority}) {
     if (_activeRegistrations[query] != null) {
       // register should never be called twice for the same query without an unregister in between
       throw StateError('Query $query already registered');
@@ -531,7 +532,7 @@ class PersistActiveQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> register(QuerySpec query,
-      {String? hash, required int priority}) async {
+      {required String hash, required int priority}) async {
     // first set query active then register as otherwise the tracked query will not be stored as complete
     persistenceManager.runInTransaction(() {
       persistenceManager.setQueryActive(query);
@@ -554,7 +555,7 @@ class PersistActiveQueryRegistrar extends QueryRegistrar {
 }
 
 class Registration {
-  final String? hash;
+  final String hash;
 
   final int priority;
 
@@ -562,7 +563,7 @@ class Registration {
 
   final QuerySpec query;
 
-  Registration(this.query, {this.hash, required this.priority});
+  Registration(this.query, {required this.hash, required this.priority});
 }
 
 class PrioritizedQueryRegistrar extends QueryRegistrar {
@@ -620,7 +621,7 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> register(QuerySpec query,
-      {String? hash, required int priority}) {
+      {required String hash, required int priority}) {
     assert(!_isClosed);
 
     // if pendingDerigstration contains query, we don't remove it and add it again to the pendingRegistrations
@@ -675,8 +676,9 @@ class QueryRegistrarTree {
   }
 
   void setActiveQueriesOnPath(Path<Name> path, Iterable<QueryFilter> filters,
-      {required String? Function(QueryFilter filter) hashFcn,
-      required int Function(QueryFilter filter) priorityFcn}) {
+      {required String Function(QueryFilter filter) hashFcn,
+      required int Function(QueryFilter filter) priorityFcn,
+      required void Function(QueryFilter filter) onRegistered}) {
     var activeFilters = _activeQueries.putIfAbsent(path, () => {});
 
     var filtersToActivate = filters.toSet().difference(activeFilters);
@@ -684,8 +686,10 @@ class QueryRegistrarTree {
     var filtersToDeactivate = activeFilters.difference(filters.toSet());
 
     for (var f in filtersToActivate) {
-      queryRegistrar.register(QuerySpec(path, f),
-          hash: hashFcn(f), priority: priorityFcn(f));
+      queryRegistrar
+          .register(QuerySpec(path, f),
+              hash: hashFcn(f), priority: priorityFcn(f))
+          .then((_) => onRegistered(f));
     }
 
     for (var f in filtersToDeactivate) {
@@ -768,11 +772,17 @@ class SyncTree {
       var queries = point.minimalSetOfQueries.toList();
 
       registrar.setActiveQueriesOnPath(path, queries,
-          hashFcn: (f) => point.views[f]?._data.serverVersion.isComplete == true
-              ? point.views[f]!._data.serverVersion.value.hash
-              : null,
+          hashFcn: (f) => point.views[f]!._data.serverVersion.value.hash,
           priorityFcn: (f) =>
-              point.views[f]?._data.serverVersion.isComplete == true ? 0 : 1);
+              point.views[f]?._data.serverVersion.isComplete == true ? 0 : 1,
+          onRegistered: (f) {
+            if (_isDestroyed) return;
+            if (point.views[f] == null) return;
+            applyServerOperation(
+                TreeOperation.overwrite(
+                    path, point.views[f]!._data.serverVersion.value),
+                QuerySpec(path, f));
+          });
     }
     _invalidPaths.clear();
     _handleInvalidPointsFuture?.cancel();

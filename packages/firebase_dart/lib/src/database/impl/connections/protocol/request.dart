@@ -50,7 +50,7 @@ class Request {
   Request.unauth() : this(DataMessage.actionUnauth, MessageBody());
 
   Request.listen(String path,
-      {required QueryFilter query, required int tag, String? hash})
+      {required QueryFilter query, required int tag, required String hash})
       : this(
             DataMessage.actionListen,
             MessageBody(
