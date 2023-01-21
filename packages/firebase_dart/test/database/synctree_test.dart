@@ -14,7 +14,8 @@ class LoggingQueryRegistrar extends QueryRegistrar {
   final StreamController<String> controller = StreamController();
 
   @override
-  Future<void> register(QuerySpec query, String? hash) async {
+  Future<void> register(QuerySpec query,
+      {String? hash, required int priority}) async {
     controller.add('register');
   }
 
@@ -41,11 +42,14 @@ void main() {
       var l = logger.onEvent.take(3).toList();
 
       registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [QueryFilter()],
-          (filter) => filter.hashCode.toString());
-      registrar.setActiveQueriesOnPath(
-          Name.parsePath('/test'), [], (filter) => filter.hashCode.toString());
+          hashFcn: (filter) => filter.hashCode.toString(),
+          priorityFcn: (filter) => 0);
+      registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [],
+          hashFcn: (filter) => filter.hashCode.toString(),
+          priorityFcn: (filter) => 0);
       registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [QueryFilter()],
-          (filter) => filter.hashCode.toString());
+          hashFcn: (filter) => filter.hashCode.toString(),
+          priorityFcn: (filter) => 0);
 
       expect(await l, ['register', 'unregister', 'register']);
     });
