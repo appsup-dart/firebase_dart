@@ -53,8 +53,8 @@ class MasterView {
   /// because the data in this view is not yet complete, it will return true.
   bool contains(QueryFilter f) {
     if (f == masterFilter) return true;
-    if (f.orderBy != masterFilter.orderBy) return false;
     if (!masterFilter.limits) return true;
+    if (f.orderBy != masterFilter.orderBy) return false;
     if (!_data.localVersion.isComplete) {
       if (masterFilter.limit == null) {
         if (masterFilter.validInterval.contains(f.validInterval)) return true;
@@ -371,25 +371,16 @@ class SyncPoint {
   }
 
   MasterView getMasterViewForFilter(QueryFilter filter) {
-    // first check if filter already in one of the master views
-    for (var v in views.values) {
-      if (v.masterFilter == filter || v.observers.containsKey(filter)) {
-        return v;
-      }
-    }
-
-    // secondly, check if filter might be contained by one of the master views
-    for (var v in views.values) {
-      if (v.contains(filter)) {
-        return v;
-      }
-    }
-
-    // lastly, create a new master view
-    return createMasterViewForFilter(filter);
+    return getMasterViewIfExistsForFilter(filter) ??
+        createMasterViewForFilter(filter);
   }
 
   MasterView createMasterViewForFilter(QueryFilter filter) {
+    if (filter != const QueryFilter() && !filter.limits) {
+      return createMasterViewForFilter(const QueryFilter());
+    }
+    if (views[filter] != null) return views[filter]!;
+
     var unlimitedFilter = views.keys.firstWhereOrNull((q) => !q.limits);
     // TODO: do not create new master views when already an unlimited view exists
     assert(views[filter] == null);
