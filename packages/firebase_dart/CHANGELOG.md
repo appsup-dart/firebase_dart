@@ -1,3 +1,10 @@
+## 1.1.0-dev.9
+
+ - **REFACTOR**(database): create MasterView for default query when non limiting query. ([e087089f](https://github.com/appsup-dart/firebase_dart/commit/e087089fa90b20c3577f9d717939a166b2f8a0fd))
+ - **REFACTOR**(database): refactor PrioritizedQueryRegistrar. ([d06a8c80](https://github.com/appsup-dart/firebase_dart/commit/d06a8c805e05df2d63d2d172cb78cf150757311f))
+ - **PERF**(database): always send a hash on a listen request. ([7534afc1](https://github.com/appsup-dart/firebase_dart/commit/7534afc1b09124f26c5f24bad466a3dfb234608c))
+ - **FIX**(database): fixed pruning of persistent cache. ([a14d84bc](https://github.com/appsup-dart/firebase_dart/commit/a14d84bcd39019499660e1b95ba19e8c5ab2c66c))
+
 ## 1.1.0-dev.8
 
  - **FIX**(database): should throw permission denied error when permission changes while listening. ([b45a7a5e](https://github.com/appsup-dart/firebase_dart/commit/b45a7a5ec327b28871824515a41c5e23c42985f6))
