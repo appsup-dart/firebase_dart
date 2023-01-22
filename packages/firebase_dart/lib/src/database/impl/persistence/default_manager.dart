@@ -124,7 +124,7 @@ class DefaultPersistenceManager implements PersistenceManager {
               cacheSize, _trackedQueryManager.countOfPrunableQueries())) {
         var pruneForest = _trackedQueryManager.pruneOldQueries(cachePolicy);
         if (pruneForest.prunesAnything()) {
-          storageLayer.pruneCache(Path(), pruneForest);
+          storageLayer.pruneCache(pruneForest);
         } else {
           canPrune = false;
         }

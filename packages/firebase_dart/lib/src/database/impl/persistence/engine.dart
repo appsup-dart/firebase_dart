@@ -40,7 +40,7 @@ abstract class PersistenceStorageEngine {
 
   void resetPreviouslyActiveTrackedQueries(DateTime lastUse);
 
-  void pruneCache(Path<Name> root, PruneForest pruneForest);
+  void pruneCache(PruneForest pruneForest);
 
   void beginTransaction();
 

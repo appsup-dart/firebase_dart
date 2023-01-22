@@ -29,7 +29,7 @@ extension TreeNodeXNonNull<T> on TreeNode<Name, T> {
     var currentTree = this;
     for (var key in path) {
       if (!currentTree.children.containsKey(key)) {
-        return null;
+        break;
       }
       currentTree = currentTree.children[key]!;
       if (predicate(currentTree.value)) {
@@ -95,10 +95,10 @@ extension TreeNodeXNonNull<T> on TreeNode<Name, T> {
 
 extension ModifiableTreeNodeXNonNull<T> on ModifiableTreeNode<Name, T> {
   ModifiableTreeNode<Name, T> setValue(
-      Path<Name> path, T value, T defaultValue) {
+      Path<Name> path, T value, T Function() defaultValue) {
     if (path.isEmpty) return ModifiableTreeNode(value, children);
 
-    var c = children[path.first] ?? ModifiableTreeNode(defaultValue);
+    var c = children[path.first] ?? ModifiableTreeNode(defaultValue());
 
     return ModifiableTreeNode(this.value, {
       ...children,

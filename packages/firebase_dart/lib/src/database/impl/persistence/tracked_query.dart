@@ -335,7 +335,7 @@ class TrackedQueryManager {
     if (trackedSet == null) {
       trackedSet = <QueryFilter, TrackedQuery>{};
       trackedQueryTree =
-          trackedQueryTree.setValue(query.querySpec.path, trackedSet, {});
+          trackedQueryTree.setValue(query.querySpec.path, trackedSet, () => {});
     }
 
     // Sanity check.

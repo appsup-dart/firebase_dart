@@ -322,38 +322,34 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
   }
 
   @override
-  void pruneCache(Path<Name> root, PruneForest pruneForest) {
+  void pruneCache(PruneForest pruneForest) {
     assert(_transaction != null);
+    if (!pruneForest.prunesAnything()) {
+      return;
+    }
 
     var serverCache = database.loadServerCache();
 
-    serverCache.forEachCompleteNode((absoluteDataPath, value) {
-      assert(root == absoluteDataPath || !absoluteDataPath.isDescendantOf(root),
-          'Pruning at $root but we found data higher up.');
-      if (root.isDescendantOf(absoluteDataPath)) {
-        final dataPath = absoluteDataPath.skip(root.length);
-        final dataNode = value;
-        if (pruneForest.shouldPruneUnkeptDescendants(dataPath)) {
-          var newCache = pruneForest
-              .child(dataPath)
-              .foldKeptNodes<IncompleteData>(IncompleteData.empty(),
-                  (keepPath, value, accum) {
+    serverCache.forEachCompleteNode((dataPath, value) {
+      final dataNode = value;
+
+      if (pruneForest.shouldPruneUnkeptDescendants(dataPath)) {
+        var newCache = pruneForest
+            .child(dataPath)
+            .foldKeptNodes<IncompleteData>(IncompleteData.empty(),
+                (keepPath, value, accum) {
+          var value = dataNode.getChild(keepPath);
+          if (!value.isNil) {
             var op = TreeOperation.overwrite(
-                Path.from([...absoluteDataPath, ...keepPath]),
+                Path.from([...dataPath, ...keepPath]),
                 dataNode.getChild(keepPath));
-            return accum.applyOperation(op);
-          });
-          serverCache = serverCache
-              .removeWrite(absoluteDataPath)
-              .applyOperation(newCache.toOperation());
-        } else {
-          // NOTE: This is technically a valid scenario (e.g. you ask to prune at / but only want to
-          // prune 'foo' and 'bar' and ignore everything else).  But currently our pruning will
-          // explicitly prune or keep everything we know about, so if we hit this it means our
-          // tracked queries and the server cache are out of sync.
-          assert(pruneForest.shouldKeep(dataPath),
-              'We have data at $dataPath that is neither pruned nor kept.');
-        }
+            accum = accum.applyOperation(op);
+          }
+          return accum;
+        });
+        serverCache = serverCache
+            .removeWrite(dataPath)
+            .applyOperation(newCache.toOperation());
       }
     });
 
@@ -395,7 +391,8 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
   @override
   int serverCacheEstimatedSizeInBytes() {
-    return database.loadServerCache().estimatedStorageSize;
+    return _transaction?._serverCache?.estimatedStorageSize ??
+        database.loadServerCache().estimatedStorageSize;
   }
 
   @override
