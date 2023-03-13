@@ -478,47 +478,47 @@ abstract class QueryRegistrar {
 class SequentialQueryRegistrar extends QueryRegistrar {
   final QueryRegistrar delegateTo;
 
-  final Map<QuerySpec, Future<bool>> _activeRegistrations = {};
+  final Map<QuerySpec, bool> _localStates = {};
+  final Map<QuerySpec, Future<bool>> _remoteStates = {};
+
+  Future<void> _setState(
+      QuerySpec query, bool state, Future<void> Function() action) async {
+    assert((_localStates[query] ?? false) != state);
+    _localStates[query] = state;
+    var f = _remoteStates[query] ?? Future.value(false);
+    _remoteStates[query] = f.then((v) async {
+      if (_localStates[query] == v) {
+        // The state is already correct, nothing to do
+        return v;
+      }
+
+      // The state is not correct, perform action
+      await action();
+      return state;
+    });
+    await _remoteStates[query];
+    // This is the bug fix. We need to wait for the remote state
+    // to be updated with the new state, otherwise we might not
+    // see it in the next call to _setState.
+    await _remoteStates[query];
+  }
 
   SequentialQueryRegistrar(this.delegateTo);
 
   @override
   Future<void> register(QuerySpec query,
       {required String hash, required int priority}) {
-    if (_activeRegistrations[query] != null) {
-      // register should never be called twice for the same query without an unregister in between
-      throw StateError('Query $query already registered');
-    }
-    return _activeRegistrations[query] ??= Future(() async {
-      if (_activeRegistrations[query] == null) {
-        // unregister was called before register completed
-        // we do not forward the call to the delegate and return false so that the unregister is also not forwarded
-        return false;
-      }
-      await delegateTo.register(query, hash: hash, priority: priority);
-      return true;
-    });
+    return _setState(query, true,
+        () => delegateTo.register(query, hash: hash, priority: priority));
   }
 
   @override
   Future<void> unregister(QuerySpec query) {
-    if (_activeRegistrations[query] == null) {
-      // unregister should never be called when not registered
-      throw StateError('Query $query not registered');
-    }
-
-    var f = _activeRegistrations.remove(query);
-    return f!.then((v) async {
-      if (v) {
-        // only forward unregister if the register call was forwarded to the delegate
-        await delegateTo.unregister(query);
-      }
-    });
+    return _setState(query, false, () => delegateTo.unregister(query));
   }
 
   @override
   Future<void> close() {
-    _activeRegistrations.clear();
     return delegateTo.close();
   }
 }

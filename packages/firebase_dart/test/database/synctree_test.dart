@@ -45,10 +45,12 @@ void main() {
           hashFcn: (filter) => filter.hashCode.toString(),
           priorityFcn: (filter) => 0,
           onRegistered: (filter) {});
+      await Future.microtask(() {});
       registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [],
           hashFcn: (filter) => filter.hashCode.toString(),
           priorityFcn: (filter) => 0,
           onRegistered: (filter) {});
+      await Future.microtask(() {});
       registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [QueryFilter()],
           hashFcn: (filter) => filter.hashCode.toString(),
           priorityFcn: (filter) => 0,
