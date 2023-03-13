@@ -1,3 +1,7 @@
+## 1.1.0-dev.10
+
+ - **FIX**(database): Invalid argument(s): Mapping for QuerySpec exists. ([d7b4a41e](https://github.com/appsup-dart/firebase_dart/commit/d7b4a41e7dc28e3ee47b0f534985cc8b743b9ddd))
+
 ## 1.1.0-dev.9
 
  - **REFACTOR**(database): create MasterView for default query when non limiting query. ([e087089f](https://github.com/appsup-dart/firebase_dart/commit/e087089fa90b20c3577f9d717939a166b2f8a0fd))
