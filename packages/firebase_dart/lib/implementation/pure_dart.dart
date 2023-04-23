@@ -77,8 +77,11 @@ class FirebaseDart {
   }
 
   static void _defaultLaunchUrl(Uri uri, {bool popup = false}) {
-    if (_kIsWeb) webLaunchUrl(uri, popup: popup);
-    throw UnsupportedError('Social sign in not supported on this platform.');
+    if (_kIsWeb) { 
+      webLaunchUrl(uri, popup: popup);
+    } else {
+      throw UnsupportedError('Social sign in not supported on this platform.');
+    }
   }
 
   static late final Uri baseUrl;
