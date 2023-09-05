@@ -731,6 +731,14 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       ref = db1.reference().child('test').child('push-merge-remove');
     });
 
+    test('Writing with a null child', () async {
+      await ref.set({'hello': 'world'});
+
+      await ref.set({'hello': null});
+
+      expect(await ref.get(), isNull);
+    });
+
     test('Remove', () async {
       await ref.set('hello');
       expect(await ref.get(), 'hello');

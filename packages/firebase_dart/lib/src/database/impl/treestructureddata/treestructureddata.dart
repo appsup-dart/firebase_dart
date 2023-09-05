@@ -173,7 +173,11 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
           null,
           children is FilteredMap
               ? children as FilteredMap<Name, TreeStructuredData>
-              : (FilteredMap(const QueryFilter())..addAll(children)),
+              : (FilteredMap(const QueryFilter())
+                ..addAll({
+                  for (var e in children.entries)
+                    if (!e.value.isNil) e.key: e.value
+                })),
           priority);
 
   factory TreeStructuredData.fromExportJson(json,
