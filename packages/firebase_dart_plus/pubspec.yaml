@@ -1,13 +1,13 @@
 name: firebase_dart_plus
 description: A starting point for Dart libraries or applications.
-version: 0.1.0-dev.0
+version: 0.1.0-dev.1
 homepage: https://github.com/appsup-dart/firebase_dart
 
 environment:
   sdk: '>=2.19.6 <3.0.0'
 
 dependencies:
-  firebase_dart: ^1.1.0-dev.10
+  firebase_dart: ^1.1.0-dev.11
   sortedmap: ^0.5.3
 
 dev_dependencies:
