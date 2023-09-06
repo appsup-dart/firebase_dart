@@ -1,3 +1,8 @@
+## 1.1.0-dev.11
+
+ - **FIX**(database): writing an object with a null child did not reduce to nil. ([36f8bc1f](https://github.com/appsup-dart/firebase_dart/commit/36f8bc1fa778a5630f362eb8ad1448659a676919))
+ - **FEAT**(firebase_dart_plus): Batch writes for realtime database. ([a11ee959](https://github.com/appsup-dart/firebase_dart/commit/a11ee959b0c51cdac4a4080aff0d03b1bd5cc78d))
+
 ## 1.1.0-dev.10
 
  - **FIX**(database): Invalid argument(s): Mapping for QuerySpec exists. ([d7b4a41e](https://github.com/appsup-dart/firebase_dart/commit/d7b4a41e7dc28e3ee47b0f534985cc8b743b9ddd))
