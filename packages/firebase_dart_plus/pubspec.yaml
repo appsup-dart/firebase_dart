@@ -1,5 +1,5 @@
 name: firebase_dart_plus
-description: A starting point for Dart libraries or applications.
+description: Some additional features for the `firebase_dart` package.
 version: 0.1.0-dev.1
 homepage: https://github.com/appsup-dart/firebase_dart
 
