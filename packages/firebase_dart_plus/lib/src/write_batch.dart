@@ -12,7 +12,7 @@ import 'package:sortedmap/sortedmap.dart';
 import 'package:firebase_dart/database.dart';
 
 extension FirebaseDatabaseWithWriteBatch on FirebaseDatabase {
-  WriteBatch batch() => WriteBatch(this);
+  WriteBatch batch() => WriteBatch(reference());
 }
 
 /// A WriteBatch is a series of write operations to be performed as one unit.
@@ -42,16 +42,16 @@ extension FirebaseDatabaseWithWriteBatch on FirebaseDatabase {
 ///
 ///
 class WriteBatch {
-  final FirebaseDatabase _database;
+  final DatabaseReference _rootReference;
 
   final List<TreeOperation> _operations = [];
 
   bool _committed = false;
 
-  WriteBatch(this._database);
+  WriteBatch(DatabaseReference ref) : _rootReference = ref.root();
 
   DatabaseReference reference() =>
-      TransactionalDatabaseReference(this, _database.reference());
+      TransactionalDatabaseReference(this, _rootReference);
 
   Future<void> commit() async {
     if (_committed) throw StateError('Batch already committed');
@@ -64,7 +64,7 @@ class WriteBatch {
 
     if (updates.length == 1) {
       var e = updates.entries.first;
-      await _database.reference().child(e.key).set(e.value);
+      await _rootReference.child(e.key).set(e.value);
     } else {
       var p = updates.keys.reduce((value, element) {
         var a = Name.parsePath(value);
@@ -78,12 +78,12 @@ class WriteBatch {
         return a.length < b.length ? value : element;
       });
       if (p.isEmpty) {
-        await _database.reference().update(updates);
+        await _rootReference.update(updates);
       } else {
         updates = {
           for (var e in updates.entries) e.key.substring(p.length + 1): e.value
         };
-        await _database.reference().child(p).update(updates);
+        await _rootReference.child(p).update(updates);
       }
     }
 
@@ -274,8 +274,7 @@ class TransactionalDatabaseReference extends TransactionalQuery
   }
 
   @override
-  Uri get url => Uri.parse(_transaction._database.databaseURL)
-      .replace(path: _path.join('/'));
+  Uri get url => _transaction._rootReference.url.replace(path: _path.join('/'));
 }
 
 extension _QueryX on Query {
