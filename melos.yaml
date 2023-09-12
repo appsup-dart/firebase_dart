@@ -13,16 +13,13 @@ ide:
   intellij: false
 
 command:
-  bootstrap:
-    usePubspecOverrides: true
   version:
-    includeScopes: true
     linkToCommits: true
 
 scripts:
   preversion: 
     exec: dart test -j 1
-    select-package:
+    packageFilters:
       flutter: false
   version:
     exec: "$PWD/remove-prereleases-from-changelog.sh"
