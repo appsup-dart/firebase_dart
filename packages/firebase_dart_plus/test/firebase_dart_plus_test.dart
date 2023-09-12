@@ -149,5 +149,59 @@ void main() {
       expect(() => batch.reference().child('test').set('test'),
           throwsA(isA<StateError>()));
     });
+
+    test('onValue should get updates from server and batch', () async {
+      await db.reference().child('test').set({'hello': 'world'});
+
+      var batch = db.batch();
+
+      dynamic w;
+      var s = batch.reference().child('test').onValue.listen((v) {
+        w = v.snapshot.value;
+      });
+
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(w, {'hello': 'world'});
+
+      await batch.reference().child('test').child('message').set('hello');
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(w, {'hello': 'world', 'message': 'hello'});
+
+      await db.reference().child('test').child('hello').set('hello');
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(w, {'hello': 'hello', 'message': 'hello'});
+
+      await s.cancel();
+    });
+
+    test('onValue should not be called multiple times with same value',
+        () async {
+      await db.reference().child('test').set({'hello': 'world'});
+
+      var batch = db.batch();
+
+      dynamic w;
+      int count = 0;
+      var s = batch.reference().child('test').onValue.listen((v) {
+        w = v.snapshot.value;
+        count++;
+      });
+
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(w, {'hello': 'world'});
+      expect(count, 1);
+
+      await batch.reference().child('test').child('message').set('hello');
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(w, {'hello': 'world', 'message': 'hello'});
+      expect(count, 2);
+
+      await db.reference().child('test').child('message').set('hello');
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(w, {'hello': 'world', 'message': 'hello'});
+      expect(count, 2);
+
+      await s.cancel();
+    });
   });
 }

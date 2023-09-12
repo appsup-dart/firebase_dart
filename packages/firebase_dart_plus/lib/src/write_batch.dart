@@ -6,7 +6,9 @@ import 'package:firebase_dart/src/database/impl/view.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
+import 'package:firebase_dart/src/database/impl/events/value.dart';
 import 'package:firebase_dart/src/implementation/isolate/database.dart';
+import 'package:rxdart/rxdart.dart';
 
 import 'package:sortedmap/sortedmap.dart';
 import 'package:firebase_dart/database.dart';
@@ -44,7 +46,8 @@ extension FirebaseDatabaseWithWriteBatch on FirebaseDatabase {
 class WriteBatch {
   final DatabaseReference _rootReference;
 
-  final List<TreeOperation> _operations = [];
+  final BehaviorSubject<List<TreeOperation>> _onOperationAdded =
+      BehaviorSubject.seeded([]);
 
   bool _committed = false;
 
@@ -57,7 +60,7 @@ class WriteBatch {
     if (_committed) throw StateError('Batch already committed');
 
     _committed = true;
-    if (_operations.isEmpty) return;
+    if (_onOperationAdded.value.isEmpty) return;
 
     var updates = _getUpdates();
     if (updates.isEmpty) return;
@@ -87,16 +90,17 @@ class WriteBatch {
       }
     }
 
-    _operations.clear();
+    await _onOperationAdded.close();
   }
 
   void _addOperation(TreeOperation operation) {
     if (_committed) throw StateError('Batch already committed');
-    _operations.add(operation);
+    _onOperationAdded.add([..._onOperationAdded.value, operation]);
   }
 
   Map<String, dynamic> _getUpdates() {
-    var ops = SortedMap<int, TreeOperation>()..addAll(_operations.asMap());
+    var ops = SortedMap<int, TreeOperation>()
+      ..addAll(_onOperationAdded.value.asMap());
     var cache = ViewCache(IncompleteData.empty(), IncompleteData.empty(), ops)
       ..recalcLocalVersion();
 
@@ -142,31 +146,33 @@ class TransactionalQuery extends Query {
 
   @override
   Stream<Event> on(String eventType) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<dynamic> get() async {
-    var ops = SortedMap<int, TreeOperation>()
-      ..addAll(_transaction._operations.asMap());
-    var cache = ViewCache(IncompleteData.empty(), IncompleteData.empty(), ops)
-      ..recalcLocalVersion();
-
-    var path =
-        reference().url.path.substring(reference().root().url.path.length);
-    var p = Name.parsePath(path);
-
-    if (!cache.localVersion.isCompleteForPath(p)) {
-      var v = await _query.get();
-      var serverVersion = IncompleteData.empty().applyOperation(
-          TreeOperation.overwrite(p, TreeStructuredData.fromJson(v)));
-      cache = cache.updateServerVersion(serverVersion);
+    if (eventType != 'value') {
+      throw UnimplementedError();
     }
+    return CombineLatestStream.combine2(
+        _query.onValue, _transaction._onOperationAdded, (v, operations) {
+      var ops = SortedMap<int, TreeOperation>()..addAll(operations.asMap());
+      var cache = ViewCache(IncompleteData.empty(), IncompleteData.empty(), ops)
+        ..recalcLocalVersion();
 
-    var v =
-        cache.localVersion.child(p).completeValue!.withFilter(_query.filter);
+      var path =
+          reference().url.path.substring(reference().root().url.path.length);
+      var p = Name.parsePath(path);
 
-    return v.toJson();
+      if (!cache.localVersion.isCompleteForPath(p)) {
+        var serverVersion = IncompleteData.empty().applyOperation(
+            TreeOperation.overwrite(
+                p, TreeStructuredData.fromJson(v.snapshot.value)));
+        cache = cache.updateServerVersion(serverVersion);
+      }
+
+      return cache.localVersion
+          .child(p)
+          .completeValue!
+          .withFilter(_query.filter);
+    }).distinct().map((v) {
+      return Event(DataSnapshotImpl(reference(), v), null);
+    });
   }
 
   @override
