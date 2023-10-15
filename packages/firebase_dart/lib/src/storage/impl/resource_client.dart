@@ -284,7 +284,8 @@ class ListResultImpl extends ListResult {
               (v) => {'name': v.fullPath.substring(reference.fullPath.length)})
         ],
         'prefixes': [
-          ...items.map((v) => v.fullPath.substring(reference.fullPath.length))
+          ...prefixes
+              .map((v) => v.fullPath.substring(reference.fullPath.length))
         ],
         'nextPageToken': nextPageToken
       };
