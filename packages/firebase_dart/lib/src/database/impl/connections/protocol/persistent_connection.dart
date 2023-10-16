@@ -492,6 +492,7 @@ class PersistentConnectionImpl extends PersistentConnection
     if (forceQueue || connectionState == ConnectionState.connected) {
       _queueRequest(request);
     }
+    _doIdleCheck();
     return request.response.then<MessageBody>((r) {
       _outstandingRequests.remove(request);
       if (r.message.body.status == MessageBody.statusOk) {
