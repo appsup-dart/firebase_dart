@@ -1,3 +1,7 @@
+## 0.1.0-dev.5
+
+ - Update a dependency to the latest release.
+
 ## 0.1.0-dev.4
 
  - **REFACTOR**(firebase_dart_plus): relax dependency of rxdart to 0.27.0. ([c4167219](https://github.com/appsup-dart/firebase_dart/commit/c4167219c446b76fb38e4dab2fbf10abab649ec2))
