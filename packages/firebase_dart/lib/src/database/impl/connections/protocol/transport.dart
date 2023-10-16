@@ -32,6 +32,12 @@ class Transport {
         var connectionUrl = url.replace(
             path: '.ws', scheme: url.scheme == 'https' ? 'wss' : 'ws');
         var socket = websocket.connect(connectionUrl.toString());
+        socket.ready.catchError((error, stackTrace) {
+          // catch errors in ready future, as otherwise it results in an uncaught
+          // exception and possibly a crash
+          // we can ignore this error as it is also present in the stream and will
+          // be handled there
+        });
         _channel = socket
             .cast<String>()
             .transform<String>(framesChannelTransformer)
