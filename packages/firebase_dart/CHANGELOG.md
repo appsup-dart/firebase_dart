@@ -1,4 +1,4 @@
-## 1.1.0-dev.12
+## 1.1.0
 
  - **REFACTOR**(firebase_dart): support intl ^0.18.0. ([0daa8dbb](https://github.com/appsup-dart/firebase_dart/commit/0daa8dbbc1688c021b8bebba90e8521ebeaf6dca))
  - **REFACTOR**(firebase_dart): support http package ^1.0.0 (pull request [#47](https://github.com/appsup-dart/firebase_dart/issues/47) from xclud). ([c20f0cb6](https://github.com/appsup-dart/firebase_dart/commit/c20f0cb6b37bc18953a5476f6a2f859dc5dc7374))
@@ -7,58 +7,34 @@
  - **FIX**(storage): ListResult.toJson writing items iso prefix (pull request [#46](https://github.com/appsup-dart/firebase_dart/issues/46) from tomassasovsky). ([d2962e2f](https://github.com/appsup-dart/firebase_dart/commit/d2962e2f0795c47bad616fef5ce01e8d73cae12c))
  - **FIX**: launchUrl throwing exception before redirecting (pull request [#42](https://github.com/appsup-dart/firebase_dart/issues/42) from TimWhiting). ([6ac91a55](https://github.com/appsup-dart/firebase_dart/commit/6ac91a55a0e5c74de066a856a70a977cd2b84c53))
 
-## 1.1.0-dev.11
-
  - **FIX**(database): writing an object with a null child did not reduce to nil. ([36f8bc1f](https://github.com/appsup-dart/firebase_dart/commit/36f8bc1fa778a5630f362eb8ad1448659a676919))
  - **FEAT**(firebase_dart_plus): Batch writes for realtime database. ([a11ee959](https://github.com/appsup-dart/firebase_dart/commit/a11ee959b0c51cdac4a4080aff0d03b1bd5cc78d))
 
-## 1.1.0-dev.10
-
  - **FIX**(database): Invalid argument(s): Mapping for QuerySpec exists. ([d7b4a41e](https://github.com/appsup-dart/firebase_dart/commit/d7b4a41e7dc28e3ee47b0f534985cc8b743b9ddd))
-
-## 1.1.0-dev.9
 
  - **REFACTOR**(database): create MasterView for default query when non limiting query. ([e087089f](https://github.com/appsup-dart/firebase_dart/commit/e087089fa90b20c3577f9d717939a166b2f8a0fd))
  - **REFACTOR**(database): refactor PrioritizedQueryRegistrar. ([d06a8c80](https://github.com/appsup-dart/firebase_dart/commit/d06a8c805e05df2d63d2d172cb78cf150757311f))
  - **PERF**(database): always send a hash on a listen request. ([7534afc1](https://github.com/appsup-dart/firebase_dart/commit/7534afc1b09124f26c5f24bad466a3dfb234608c))
  - **FIX**(database): fixed pruning of persistent cache. ([a14d84bc](https://github.com/appsup-dart/firebase_dart/commit/a14d84bcd39019499660e1b95ba19e8c5ab2c66c))
 
-## 1.1.0-dev.8
-
  - **FIX**(database): should throw permission denied error when permission changes while listening. ([b45a7a5e](https://github.com/appsup-dart/firebase_dart/commit/b45a7a5ec327b28871824515a41c5e23c42985f6))
-
-## 1.1.0-dev.7
 
  - **FIX**: query result not always correctly updated after receiving new data. ([12b2b283](https://github.com/appsup-dart/firebase_dart/commit/12b2b2831490a4d3f522df1cb5e0ec957181649b))
 
-## 1.1.0-dev.6
-
  - **FIX**(auth): sandbox for apns on release mode. ([ab1ced6c](https://github.com/appsup-dart/firebase_dart/commit/ab1ced6cc08476fd0baa1d9cb183e2caf0da2fe3))
-
-## 1.1.0-dev.5
 
  - **REFACTOR**(auth): refactor base application verifier. ([b842cbc2](https://github.com/appsup-dart/firebase_dart/commit/b842cbc295e8ffecbacf6b387cd77247be739941))
  - **FIX**(auth): sign out when getting token expired response. ([d8bfb9c5](https://github.com/appsup-dart/firebase_dart/commit/d8bfb9c5845dc2f00de8914598f06bb09eca5b7b))
  - **FEAT**(auth): application verification with silent APNs notifications on ios. ([82db724d](https://github.com/appsup-dart/firebase_dart/commit/82db724d3702324b8f442ec80202232f9ef29e3c))
 
-## 1.1.0-dev.4
-
  - **FEAT**(setup): Platform.current now returns a platform specific subclass. ([64e023a3](https://github.com/appsup-dart/firebase_dart/commit/64e023a37ee4de5d103621a605788f65d2f8f3c1))
 
-## 1.1.0-dev.3
-
  - **FIX**(auth): fix (token) updates on user not being stored in persistence memory. ([ca2f285b](https://github.com/appsup-dart/firebase_dart/commit/ca2f285bddb5e22dff4bb9f3072dec1c55af3e3c))
-
-## 1.1.0-dev.2
-
 
  - **BREAKING** **FIX**(database): `DataSnapshot.value` now returns a `List` when keys are integers ([#31](https://github.com/appsup-dart/firebase_dart/issues/31)). ([9016ae19](https://github.com/appsup-dart/firebase_dart/commit/9016ae19893fd1896f0026ce368447d26486cfc5))
 - **FEAT**(auth): Implemented `FirebaseAuth.signInWithPhoneNumber` method.
 - **FEAT**(auth): Implemented `FirebaseAuth.verifyPhoneNumber` method.
 - **FEAT**(auth): Implemented `FirebaseUser.multiFactor` for mfa support.
-
-
-## 1.1.0-dev.1
 
 - **FEAT**(auth): Implemented `FirebaseUser.reauthenticateWithCredential` method.
 - **FIX**(database): Fix issue where database transaction on a path are no longer executed once a transaction has failed 
@@ -83,12 +59,10 @@
 
 - bugfixes and performance improvements on realtime database
 
-
 ## 1.0.7
 
 - add `DatabaseReference.path` getter
 - fix key ordering in case of integers overflowing 32-bit
-
 
 ## 1.0.6
 
@@ -146,7 +120,6 @@
 
 - Support Dart 2 in `pubspec.yaml`
 
-
 ## 0.7.10
 
 - Dart 2 pre-release compatibility
@@ -199,7 +172,6 @@
 
 - improved performance by only listening to the most general query
 - bugfixes
-
 
 ## 0.5.7
 
@@ -254,7 +226,6 @@
 ## 0.2.1
 
 - relax dependency on crypto library to '>=0.9.2 <3.0.0'
-
 
 ## 0.2.0
 

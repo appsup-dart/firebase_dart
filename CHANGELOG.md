@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-10-17
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.1.0`](#firebase_dart---v110)
+ - [`firebase_dart_flutter` - `v1.1.0`](#firebase_dart_flutter---v110)
+ - [`firebase_dart_plus` - `v0.1.0`](#firebase_dart_plus---v010)
+
+Packages graduated to a stable release (see pre-releases prior to the stable version for changelog entries):
+
+ - `firebase_dart` - `v1.1.0`
+ - `firebase_dart_flutter` - `v1.1.0`
+ - `firebase_dart_plus` - `v0.1.0`
+
+---
+
+#### `firebase_dart` - `v1.1.0`
+
+#### `firebase_dart_flutter` - `v1.1.0`
+
+#### `firebase_dart_plus` - `v0.1.0`
+
+
 ## 2023-10-16
 
 ### Changes
