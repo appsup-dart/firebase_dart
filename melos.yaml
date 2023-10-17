@@ -15,14 +15,13 @@ ide:
 command:
   version:
     linkToCommits: true
-
-scripts:
-  preversion: 
-    exec: dart test -j 1
-    packageFilters:
-      flutter: false
-  version:
-    exec: "$PWD/remove-prereleases-from-changelog.sh"
+    hooks: 
+      pre:
+        exec: dart test -j 1
+        packageFilters:
+          flutter: false
+      preCommit:
+        exec: "$PWD/remove-prereleases-from-changelog.sh"
 
 
  

@@ -4,7 +4,7 @@
 
 # Usage: ./remove-prereleases-from-changelog.sh
 
-current=$(cat CHANGELOG.md | grep -E '## [0-9]+\.[0-9]+\.[0-9]+(.+)' | head -n 1)
+current=$(cat CHANGELOG.md | grep -E '## [0-9]+\.[0-9]+\.[0-9]+(.*)' | head -n 1)
 prerelease=$(echo $current | grep -E '## [0-9]+\.[0-9]+\.[0-9]+-(.+)')
 
 if [ -z "$prerelease" ]; then
