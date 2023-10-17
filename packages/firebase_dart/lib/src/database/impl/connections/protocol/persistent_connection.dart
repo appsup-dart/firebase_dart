@@ -389,6 +389,8 @@ class PersistentConnectionImpl extends PersistentConnection
     }
     // Reset timeouts
     _retryHelper.signalSuccess();
+
+    _inactivityTimer?.cancel();
   }
 
   @override
