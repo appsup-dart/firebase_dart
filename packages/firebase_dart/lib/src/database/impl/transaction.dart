@@ -220,7 +220,10 @@ class TransactionsTree {
   void execute() async {
     await repo._syncTree.waitForAllProcessed();
     var finished = await root.execute();
-    if (!finished) execute();
+    if (!finished) {
+      await Future.delayed(Duration(milliseconds: 20));
+      execute();
+    }
   }
 
   /// Aborts all transactions at [path] with reason [exception]
@@ -380,6 +383,7 @@ class TransactionsNode extends ModifiableTreeNode<Name, List<Transaction>> {
       }
       return true;
     } else {
+      if (_isRunning) return false;
       var allFinished = true;
       for (var k in children.keys.toList()) {
         allFinished = allFinished && await children[k]!.execute();

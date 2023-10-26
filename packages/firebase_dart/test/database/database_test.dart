@@ -950,6 +950,39 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
 
       expect(await ref.child('object/count').get(), 10);
     });
+
+    test('Bug: Should not call rerun when transactions are running', () async {
+      await ref.child('object/count').set(0);
+      var futures = <Future>[];
+
+      futures.add(ref.child('object/count').runTransaction((v) async {
+        await wait(100);
+        return v..value = (v.value ?? 0) + 1;
+      }));
+      futures.add(ref.child('object/count').runTransaction((v) async {
+        await wait(100);
+        return v..value = (v.value ?? 0) + 1;
+      }));
+      futures.add(ref.child('object').runTransaction((v) async {
+        v.value ??= {};
+        v.value.putIfAbsent('count', () => 0);
+        v.value['count']++;
+        return v;
+      }));
+
+      // the previous transactions will be triggered from the path `object`
+
+      await Future.delayed(Duration(milliseconds: 100));
+
+      // the following transaction will cancel the transactions at path `object` and will trigger a rerun from the path `object/test`
+      // this should not start if the previous transactions are still running
+      futures.add(ref.child('object/test').set('hello'));
+      futures.add(ref.child('object/test2').runTransaction((v) async {
+        return v..value = (v.value ?? 0) + 1;
+      }));
+
+      await Future.wait(futures);
+    });
   });
 
   group('OnDisconnect', () {
