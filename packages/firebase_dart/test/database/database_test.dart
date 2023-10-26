@@ -154,6 +154,24 @@ void runDatabaseTests({bool isolated = false}) {
           }
         });
       });
+
+      test('FirebaseDatabase.delete should stop running transactions',
+          () async {
+        var app = await core.Firebase.initializeApp(
+            name: 'my_app', options: getOptions());
+
+        var db = FirebaseDatabase(app: app, databaseURL: testUrl);
+        var ref = db.reference().child('test/some-key');
+
+        ref.runTransaction((mutableData) async {
+          await Future.delayed(Duration(milliseconds: 100));
+          return mutableData;
+        }).ignore();
+
+        await app.delete();
+
+        await Future.delayed(Duration(milliseconds: 200));
+      });
     }
 
     test(

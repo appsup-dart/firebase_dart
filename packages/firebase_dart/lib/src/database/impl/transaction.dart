@@ -216,14 +216,19 @@ class TransactionsTree {
     return transaction.completer.future;
   }
 
+  Future<void>? _executeFuture;
+
   /// Executes all transactions
-  void execute() async {
-    await repo._syncTree.waitForAllProcessed();
-    var finished = await root.execute();
-    if (!finished) {
-      await Future.delayed(Duration(milliseconds: 20));
-      execute();
-    }
+  void execute() {
+    _executeFuture ??= Future(() async {
+      await repo._syncTree.waitForAllProcessed();
+      var finished = await root.execute();
+      _executeFuture = null;
+      if (!finished) {
+        await Future.delayed(Duration(milliseconds: 20));
+        execute();
+      }
+    });
   }
 
   /// Aborts all transactions at [path] with reason [exception]
@@ -237,6 +242,11 @@ class TransactionsTree {
     for (var n in n.childrenDeep) {
       n.abort(exception);
     }
+  }
+
+  Future<void> close() async {
+    abort(Path(), FirebaseDatabaseException.appDeleted());
+    await _executeFuture;
   }
 }
 
@@ -484,7 +494,7 @@ class TransactionsNode extends ModifiableTreeNode<Name, List<Transaction>> {
 
   void abort(FirebaseDatabaseException exception) {
     for (var txn in value) {
-      txn.abort(exception);
+      if (!txn.isComplete) txn.abort(exception);
     }
     value = value.where((t) => !t.isComplete).toList();
   }

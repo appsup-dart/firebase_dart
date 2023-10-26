@@ -91,6 +91,10 @@ class FirebaseDatabaseException extends FirebaseException {
   FirebaseDatabaseException.unknownError()
       : this(code: 'unknown_error', message: 'An unknown error occurred');
 
+  /// Thrown when the operation could not complete because the app was deleted
+  FirebaseDatabaseException.appDeleted()
+      : this(code: 'app-deleted', message: 'The Firebase app was deleted.');
+
   FirebaseDatabaseException replace({String? message}) =>
       FirebaseDatabaseException(code: code, message: message ?? this.message);
 }

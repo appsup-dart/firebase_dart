@@ -141,6 +141,7 @@ class Repo {
   /// Destroys this Repo permanently
   Future<void> close() async {
     _isClosed = true;
+    await _transactions.close();
     await _authStateChangesSubscription.cancel();
     await _connection.close();
     _syncTree.destroy();
