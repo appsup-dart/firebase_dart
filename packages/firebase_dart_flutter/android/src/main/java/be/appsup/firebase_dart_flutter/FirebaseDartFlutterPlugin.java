@@ -220,6 +220,10 @@ private void retrieveSms(@NonNull final Result result) {
   static private Map<String,Object> bundleToMap(Bundle bundle) {
       Map<String,Object> map = new HashMap<>();
 
+      if (bundle==null) {
+        return map;
+      }
+
       for (String k : bundle.keySet()) {
           Object o = bundle.get(k);
           if (o instanceof Bundle) {
