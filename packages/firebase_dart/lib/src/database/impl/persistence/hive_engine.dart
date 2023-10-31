@@ -426,6 +426,7 @@ class KeyValueDatabase {
     assert(box.isOpen);
     // TODO merge transaction data
     for (var k in box.keys) {
+      if (box.get(k) == null) return;
       if (Comparable.compare(k, startKey) < 0) continue;
       if (Comparable.compare(k, endKey) > 0) return;
       yield k as String;
