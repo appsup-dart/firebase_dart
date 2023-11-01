@@ -325,7 +325,19 @@ class TreeStructuredDataFromExportJson extends TreeStructuredData {
   @override
   final QueryFilter filter;
 
-  TreeStructuredDataFromExportJson._(this._data, this.filter) : super._();
+  static bool _hasNulls(dynamic v) {
+    if (v is List) {
+      return v.any((v) => v == null || _hasNulls(v));
+    }
+    if (v is Map) {
+      return v.values.any((v) => v == null || _hasNulls(v));
+    }
+    return false;
+  }
+
+  TreeStructuredDataFromExportJson._(this._data, this.filter)
+      : assert(!_hasNulls(_data._exportJson)),
+        super._();
 
   TreeStructuredDataFromExportJson(dynamic exportJson,
       [QueryFilter filter = const QueryFilter()])
@@ -373,6 +385,7 @@ class TreeStructuredDataImpl extends TreeStructuredData {
       FilteredMap<Name, TreeStructuredData>? children, this.priority)
       : children = UnmodifiableFilteredMap<Name, TreeStructuredData>(
             children ?? FilteredMap(const QueryFilter())),
+        assert(children == null || children.values.every((v) => !v.isNil)),
         super._();
 
   @override
