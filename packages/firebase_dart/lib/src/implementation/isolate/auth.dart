@@ -244,8 +244,8 @@ class EncodeCall<T> extends BaseFunctionCall<Future> {
       try {
         var v = await baseCall.run();
         return encode(v);
-      } catch (e) {
-        throw encodeException(e);
+      } catch (e, tr) {
+        Error.throwWithStackTrace(encodeException(e), tr);
       }
     };
   }
