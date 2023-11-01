@@ -327,7 +327,8 @@ class TreeStructuredDataFromExportJson extends TreeStructuredData {
 
   static bool _hasNulls(dynamic v) {
     if (v is List) {
-      return v.any((v) => v == null || _hasNulls(v));
+      // nulls is a list are allowed
+      return v.any((v) => v != null && _hasNulls(v));
     }
     if (v is Map) {
       return v.values.any((v) => v == null || _hasNulls(v));
