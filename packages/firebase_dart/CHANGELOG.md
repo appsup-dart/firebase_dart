@@ -1,3 +1,11 @@
+## 1.1.1
+
+ - **REFACTOR**(auth): add stack trace to exception. ([cb204e7c](https://github.com/appsup-dart/firebase_dart/commit/cb204e7cccec31941210756733d99784d5163690))
+ - **REFACTOR**(database): add asserts to debug issue with null children. ([f5d45479](https://github.com/appsup-dart/firebase_dart/commit/f5d45479e1e0d993fd1510b0f877d54ec10dcdc9))
+ - **FIX**(database): handle when persistent storage corrupt. ([804de4b7](https://github.com/appsup-dart/firebase_dart/commit/804de4b7d627dbdff03fe895cc68d8edacad5608))
+ - **FIX**(database): running transactions throw error when app deleted. ([8e2055e9](https://github.com/appsup-dart/firebase_dart/commit/8e2055e9cd04c671e51422bae3ff68ad560e5101))
+ - **FIX**(database): fix StateError `Should not call rerun when transactions are running`. ([1cfca21f](https://github.com/appsup-dart/firebase_dart/commit/1cfca21f96c20e93b1a895e15582c06b15c5b219))
+
 ## 1.1.0
 
  - **REFACTOR**(firebase_dart): support intl ^0.18.0. ([0daa8dbb](https://github.com/appsup-dart/firebase_dart/commit/0daa8dbbc1688c021b8bebba90e8521ebeaf6dca))
