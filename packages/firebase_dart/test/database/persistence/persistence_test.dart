@@ -18,13 +18,13 @@ void main() async {
   group('Random synctree test', () {
     test('Random synctree test seed=1607344606058', () {
       _doTest(1607344606058);
-    }, skip: 'This currently fails'); // TODO
+    });
 
     test('Random synctree test seed=epoch', () {
       for (var i = 0; i < 10; i++) {
         _doTest(null);
       }
-    }, skip: 'some might fail'); // TODO
+    });
   });
 }
 
