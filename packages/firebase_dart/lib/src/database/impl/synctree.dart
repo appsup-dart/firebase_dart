@@ -464,7 +464,11 @@ abstract class QueryRegistrar {
   ///
   /// The [priority] is used to determine the order in which queries are
   /// registered. Queries with a higher priority are registered first.
-  Future<void> register(QuerySpec query,
+  ///
+  /// The future completes with true when the query was registered and false
+  /// when the registration was cancelled by a later call to [unregister] or the
+  /// registration was denied by the server.
+  Future<bool> register(QuerySpec query,
       {required String hash, required int priority});
 
   Future<void> unregister(QuerySpec query);
@@ -481,7 +485,18 @@ class SequentialQueryRegistrar extends QueryRegistrar {
   final Map<QuerySpec, bool> _localStates = {};
   final Map<QuerySpec, Future<bool>> _remoteStates = {};
 
-  Future<void> _setState(
+  /// Immediately sets the local state (i.e. the requested state) to on or off
+  /// and then performs the action to set the remote state (i.e. the actual
+  /// state).
+  ///
+  /// Setting the remote state is only performed after all pending actions to
+  /// set the remote state have been performed. This ensures that the remote
+  /// state is always set in the order of the requests. If the remote state is
+  /// already correct, the action is not performed. This can happen when the
+  /// state is set to on and then immediately set to off again.
+  ///
+  /// The future completes with the new remote state.
+  Future<bool> _setState(
       QuerySpec query, bool state, Future<void> Function() action) async {
     assert((_localStates[query] ?? false) != state);
     _localStates[query] = state;
@@ -500,13 +515,13 @@ class SequentialQueryRegistrar extends QueryRegistrar {
     // This is the bug fix. We need to wait for the remote state
     // to be updated with the new state, otherwise we might not
     // see it in the next call to _setState.
-    await _remoteStates[query];
+    return _remoteStates[query]!;
   }
 
   SequentialQueryRegistrar(this.delegateTo);
 
   @override
-  Future<void> register(QuerySpec query,
+  Future<bool> register(QuerySpec query,
       {required String hash, required int priority}) {
     return _setState(query, true,
         () => delegateTo.register(query, hash: hash, priority: priority));
@@ -531,13 +546,13 @@ class PersistActiveQueryRegistrar extends QueryRegistrar {
   PersistActiveQueryRegistrar(this.persistenceManager, this.delegateTo);
 
   @override
-  Future<void> register(QuerySpec query,
+  Future<bool> register(QuerySpec query,
       {required String hash, required int priority}) async {
     // first set query active then register as otherwise the tracked query will not be stored as complete
     persistenceManager.runInTransaction(() {
       persistenceManager.setQueryActive(query);
     });
-    await delegateTo.register(query, hash: hash, priority: priority);
+    return await delegateTo.register(query, hash: hash, priority: priority);
   }
 
   @override
@@ -559,7 +574,7 @@ class Registration {
 
   final int priority;
 
-  final Completer<void> completer = Completer();
+  final Completer<bool> completer = Completer();
 
   final QuerySpec query;
 
@@ -620,7 +635,7 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
   }
 
   @override
-  Future<void> register(QuerySpec query,
+  Future<bool> register(QuerySpec query,
       {required String hash, required int priority}) {
     assert(!_isClosed);
 
@@ -647,7 +662,7 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
 
     if (r != null) {
       // not yet registered
-      r.completer.complete();
+      r.completer.complete(false);
       return Future.value();
     }
 
@@ -689,7 +704,10 @@ class QueryRegistrarTree {
       queryRegistrar
           .register(QuerySpec(path, f),
               hash: hashFcn(f), priority: priorityFcn(f))
-          .then((_) => onRegistered(f));
+          .then((v) {
+        if (!v) return; // registration was cancelled
+        onRegistered(f);
+      });
     }
 
     for (var f in filtersToDeactivate) {
@@ -709,9 +727,9 @@ class QueryRegistrarTree {
 
 class NoopQueryRegistrar extends QueryRegistrar {
   @override
-  Future<void> register(QuerySpec query,
+  Future<bool> register(QuerySpec query,
       {String? hash, required int priority}) {
-    return Future.value();
+    return Future.value(true);
   }
 
   @override

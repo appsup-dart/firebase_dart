@@ -14,9 +14,10 @@ class LoggingQueryRegistrar extends QueryRegistrar {
   final StreamController<String> controller = StreamController();
 
   @override
-  Future<void> register(QuerySpec query,
+  Future<bool> register(QuerySpec query,
       {String? hash, required int priority}) async {
     controller.add('register');
+    return true;
   }
 
   @override

@@ -513,12 +513,18 @@ class RemoteQueryRegistrar extends QueryRegistrar {
   RemoteQueryRegistrar(this.connection);
 
   @override
-  Future<void> register(QuerySpec query,
+  Future<bool> register(QuerySpec query,
       {required String hash, required int priority}) async {
-    var warnings = await connection.listen(query.path.join('/'),
-        query: query.params, hash: hash);
-    for (var w in warnings) {
-      _logger.warning(w);
+    try {
+      var warnings = await connection.listen(query.path.join('/'),
+          query: query.params, hash: hash);
+      for (var w in warnings) {
+        _logger.warning(w);
+      }
+      return true;
+    } on FirebaseDatabaseException catch (e) {
+      _logger.warning('Failed to register query at ${query.path}', e);
+      return false;
     }
   }
 

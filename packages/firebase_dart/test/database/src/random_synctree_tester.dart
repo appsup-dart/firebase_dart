@@ -27,9 +27,10 @@ class MemoryQueryRegistrar extends QueryRegistrar {
   MemoryQueryRegistrar(this.outstandingListens, this.registeredListens);
 
   @override
-  Future<void> register(QuerySpec query,
+  Future<bool> register(QuerySpec query,
       {String? hash, required int priority}) async {
     outstandingListens.add(query);
+    return true;
   }
 
   @override
