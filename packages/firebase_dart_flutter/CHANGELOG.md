@@ -1,3 +1,7 @@
+## 1.1.2
+
+ - Update a dependency to the latest release.
+
 ## 1.1.1
 
  - **FIX**(auth): "Error receiving broadcast Intent". ([c8411ecf](https://github.com/appsup-dart/firebase_dart/commit/c8411ecfadda60b07049caf138b1fa34b3e37c95))

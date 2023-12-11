@@ -1,3 +1,7 @@
+## 1.1.2
+
+ - **FIX**: when doing many listens and unlistens, sometimes a null was returned before the actual value. ([20f72d41](https://github.com/appsup-dart/firebase_dart/commit/20f72d41e2df6b4d2f0af20472d4fc3048577c23))
+
 ## 1.1.1
 
  - **FIX**(database): handle when persistent storage corrupt. ([804de4b7](https://github.com/appsup-dart/firebase_dart/commit/804de4b7d627dbdff03fe895cc68d8edacad5608))
