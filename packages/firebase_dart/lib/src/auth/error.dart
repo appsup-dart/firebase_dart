@@ -400,7 +400,7 @@ class FirebaseAuthException extends FirebaseException {
       credential.hashCode;
 
   @override
-  bool operator ==(other) =>
+  bool operator ==(covariant FirebaseException other) =>
       other is FirebaseAuthException &&
       other.code == code &&
       other.message == message &&
