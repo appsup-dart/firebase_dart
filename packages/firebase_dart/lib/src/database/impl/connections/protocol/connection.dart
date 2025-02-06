@@ -63,6 +63,14 @@ class Connection {
 
       await _outputSink.close();
 
+      for (var v in _pendingRequests.values.toList()) {
+        if (v.message.action == DataMessage.actionUnlisten) {
+          _onDataMessage(DataMessage(
+              null, MessageBody(data: '', status: MessageBody.statusOk),
+              reqNum: v.message.reqNum));
+        }
+      }
+
       delegate.onDisconnect(reason);
 
       await _keepAlivePeriodicStreamSubscription.cancel();
