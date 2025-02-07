@@ -231,7 +231,6 @@ class SyncPoint {
     if (_isCompleteFromParent) {
       views.putIfAbsent(const QueryFilter(),
           () => MasterView(const QueryFilter(), debugName: debugName));
-      _prunable = true;
     } else {
       var defView = views[const QueryFilter()]!;
       if (!defView.observers.containsKey(const QueryFilter())) {
@@ -253,14 +252,14 @@ class SyncPoint {
 
   bool isCompleteForChild(Name child) {
     if (isCompleteFromParent) return true;
-    prune();
-    return views.values.any((m) => m.isCompleteForChild(child));
+    return views.values
+        .any((m) => m.observers.isNotEmpty && m.isCompleteForChild(child));
   }
 
   Iterable<QueryFilter> get minimalSetOfQueries {
     processNewQueries();
     if (isCompleteFromParent) return const [];
-    var queries = views.keys;
+    var queries = views.keys.where((k) => views[k]!.observers.isNotEmpty);
     if (queries.any((q) => !q.limits)) {
       return const [QueryFilter()];
     } else {
@@ -277,7 +276,6 @@ class SyncPoint {
       _newQueries.clear();
       return;
     }
-    prune();
     var queries = views.keys;
     if (queries.any((q) => !q.limits)) {
       _newQueries.forEach((key, value) {
@@ -421,8 +419,6 @@ class SyncPoint {
       .._data = cache;
   }
 
-  bool _prunable = false;
-
   /// Removes an event listener for events of [type] and for data filtered by
   /// [filter].
   ///
@@ -432,7 +428,6 @@ class SyncPoint {
     var isEmpty = false;
     for (var v in views.values) {
       isEmpty = isEmpty || v.removeEventListener(type, filter, listener);
-      if (v.observers.isEmpty) _prunable = true;
     }
     return isEmpty;
   }
@@ -475,17 +470,6 @@ class SyncPoint {
     }
   }
 
-  void prune() {
-    if (!_prunable) return;
-    _prunable = false;
-    for (var e in views.entries.toList()) {
-      var k = e.key;
-      var v = e.value;
-      if (v.observers.isEmpty &&
-          !(k == const QueryFilter() && isCompleteFromParent)) views.remove(k);
-    }
-  }
-
   @override
   String toString() => 'SyncPoint[$debugName]';
 
@@ -509,7 +493,6 @@ class SyncPoint {
     DateTime? next;
     for (var v in views.values) {
       var emptySince = v.pruneObservers(from);
-      if (v.observers.isEmpty) _prunable = true;
       if (emptySince == null) continue;
       if (next == null || emptySince.isBefore(next)) {
         next = emptySince;
@@ -754,7 +737,8 @@ class QueryRegistrarTree {
   void setActiveQueriesOnPath(Path<Name> path, Iterable<QueryFilter> filters,
       {required String Function(QueryFilter filter) hashFcn,
       required int Function(QueryFilter filter) priorityFcn,
-      required void Function(QueryFilter filter) onRegistered}) {
+      required void Function(QueryFilter filter) onRegistered,
+      void Function(QueryFilter filter)? onUnregistered}) {
     var activeFilters = _activeQueries.putIfAbsent(path, () => {});
 
     var filtersToActivate = filters.toSet().difference(activeFilters);
@@ -772,7 +756,9 @@ class QueryRegistrarTree {
     }
 
     for (var f in filtersToDeactivate) {
-      queryRegistrar.unregister(QuerySpec(path, f));
+      queryRegistrar.unregister(QuerySpec(path, f)).then((v) {
+        if (onUnregistered != null) onUnregistered(f);
+      });
     }
 
     activeFilters =
@@ -906,6 +892,14 @@ class SyncTree {
           hashFcn: (f) => point.views[f]!._data.serverVersion.value.hash,
           priorityFcn: (f) =>
               point.views[f]?._data.serverVersion.isComplete == true ? 0 : 1,
+          onUnregistered: (f) {
+            var v = point.views[f];
+            if (v != null && v.observers.isEmpty) {
+              if (!point.isCompleteFromParent || f != const QueryFilter()) {
+                point.views.remove(f);
+              }
+            }
+          },
           onRegistered: (f) {
             if (_isDestroyed) return;
             if (point.views[f] == null) return;
