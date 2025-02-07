@@ -188,6 +188,7 @@ class SetPriority extends Operation implements Overwrite {
 
   @override
   TreeStructuredData apply(TreeStructuredData value) {
+    if (value.isNil) return value;
     return value.withPriority(priority);
   }
 
