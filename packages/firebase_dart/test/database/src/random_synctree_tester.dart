@@ -11,12 +11,9 @@ import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
-import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'package:test/test.dart';
-
-import '../persistence/mock.dart';
 
 final _logger = Logger('firebase.test.random_synctree');
 
@@ -48,27 +45,40 @@ class MemoryQueryRegistrar extends QueryRegistrar {
   }
 }
 
-class RandomSyncTreeTester {
-  late final SyncTree syncTree;
-  static Logger get logger => _logger;
+enum SyncTreeTesterEventType {
+  listen,
+  unlisten,
+  operation,
+  ackListen,
+  ackWrite,
+  revertWrite,
+  serverOperation
+}
 
-  final RandomGenerator random;
+class SyncTreeTesterEvent {
+  final SyncTreeTesterEventType type;
 
-  final double listenProbability;
+  final QuerySpec? query;
 
-  final double unlistenProbability;
+  TreeOperation? operation;
 
-  final double userOperationProbability;
+  SyncTreeTesterEvent({required this.type, this.query, this.operation});
 
-  final double serverOperationProbability;
+  @override
+  String toString() {
+    return 'SyncTreeTesterEvent{type: $type, query: $query, operation: $operation}';
+  }
+}
 
-  final double serverListenResponseProbability;
-
-  final double serverAckProbability;
-
-  final double revertProbability;
-
-  int _currentWriteId = 0;
+class SyncTreeTester {
+  late final SyncTree syncTree = SyncTree(
+    'test:///',
+    queryRegistrar: MemoryQueryRegistrar(outstandingListens, registeredListens),
+    // persistenceManager: DefaultPersistenceManager(
+    //     HivePersistenceStorageEngine(
+    //         KeyValueDatabase(Hive.box('firebase-db-storage'))),
+    //     TestCachePolicy(0.1)),
+  );
 
   final List<MapEntry<QuerySpec, Completer<void>>> outstandingListens = [];
 
@@ -82,38 +92,42 @@ class RandomSyncTreeTester {
 
   TreeStructuredData get currentServerState => _currentServerState;
 
-  RandomSyncTreeTester(
-      {int? seed,
-      this.listenProbability = 0.1,
-      this.unlistenProbability = 0.0,
-      this.userOperationProbability = 0.1,
-      this.serverListenResponseProbability = 0.1,
-      this.serverAckProbability = 0.9,
-      this.revertProbability = 0.2,
-      this.serverOperationProbability = 0.1})
-      : random =
-            RandomGenerator(seed ?? DateTime.now().millisecondsSinceEpoch) {
-    syncTree = SyncTree('test:///',
-        queryRegistrar:
-            MemoryQueryRegistrar(outstandingListens, registeredListens),
-        persistenceManager: DefaultPersistenceManager(
-            HivePersistenceStorageEngine(
-                KeyValueDatabase(Hive.box('firebase-db-storage'))),
-            TestCachePolicy(0.1)));
+  int _currentWriteId = 0;
+
+  void applyEvent(SyncTreeTesterEvent event) {
+    _logger.fine(event);
+
+    switch (event.type) {
+      case SyncTreeTesterEventType.listen:
+        applyUserListen(event.query!);
+        break;
+      case SyncTreeTesterEventType.unlisten:
+        applyUserUnlisten(event.query!);
+        break;
+      case SyncTreeTesterEventType.operation:
+        applyUserOperation(event.operation!);
+        break;
+      case SyncTreeTesterEventType.ackListen:
+        applyAckListen(event.query!);
+        break;
+      case SyncTreeTesterEventType.ackWrite:
+        applyAckWrite(event.operation!);
+        break;
+      case SyncTreeTesterEventType.revertWrite:
+        applyRevertWrite(event.operation!);
+        break;
+      case SyncTreeTesterEventType.serverOperation:
+        applyServerOperation(event.operation!);
+        break;
+    }
   }
 
-  void _generateUserUnlisten() {
-    _logger.fine('generate user unlisten');
-    var query = userListens.keys.toList()[random.nextInt(userListens.length)];
-    _logger.fine('* $query');
+  void applyUserUnlisten(QuerySpec query) {
     syncTree.removeEventListener(
         'cancel', query.path, query.params, userListens.remove(query)!);
   }
 
-  void _generateUserListen() {
-    _logger.fine('generate user listen');
-    var query = random.nextQuerySpec();
-    _logger.fine('* $query');
+  void applyUserListen(QuerySpec query) {
     userListens[query] ??= (event) {
       userListens.remove(query);
     };
@@ -121,44 +135,44 @@ class RandomSyncTreeTester {
         'cancel', query.path, query.params, userListens[query]!);
   }
 
-  void _generateUserOperation() {
-    _logger.fine('generate user operation');
-    var operation = random.nextOperation();
-    _logger.fine('* $operation');
-
+  void applyUserOperation(TreeOperation operation) {
     var taggedOperation = MapEntry(_currentWriteId++, operation);
     syncTree.applyUserOperation(taggedOperation.value, taggedOperation.key);
     outstandingWrites.add(taggedOperation);
   }
 
-  void _handleOutstandingListen() {
-    if (outstandingListens.isEmpty) return;
-    _logger.fine('handle outstanding listen');
+  void applyAckListen(QuerySpec query) {
+    if (outstandingListens.isEmpty || outstandingListens.first.key != query) {
+      return;
+    }
     var e = outstandingListens.removeAt(0);
-    var query = e.key;
     _logger.fine('* $query');
     _updateCurrentServerStateToQuery(query);
     e.value.complete();
   }
 
-  void _handleOutstandingWrite() {
-    if (outstandingWrites.isEmpty) return;
-    _logger.fine('handle outstanding write');
-
-    var op = outstandingWrites.removeAt(0);
-    var path = op.value.path;
-    var isEmptyPriorityError = path.isNotEmpty &&
-        path.last.isPriorityChildName &&
-        _currentServerState.getChild(path.parent!).isEmpty;
-
-    if (random.nextDouble() < revertProbability || isEmptyPriorityError) {
-      syncTree.applyAck(op.value.path, op.key, false);
-      _logger.fine('* revert: $op');
-    } else {
-      _logger.fine('* ack: $op');
-      _updateServerState(op.value.apply(_currentServerState));
-      syncTree.applyAck(op.value.path, op.key, true);
+  void applyAckWrite(TreeOperation operation) {
+    if (outstandingWrites.isEmpty ||
+        outstandingWrites.first.value != operation) {
+      return;
     }
+    var e = outstandingWrites.removeAt(0);
+    _updateServerState(operation.apply(_currentServerState));
+    syncTree.applyAck(operation.path, e.key, true);
+  }
+
+  void applyRevertWrite(TreeOperation operation) {
+    if (outstandingWrites.isEmpty ||
+        outstandingWrites.first.value != operation) {
+      return;
+    }
+    var e = outstandingWrites.removeAt(0);
+    syncTree.applyAck(operation.path, e.key, false);
+  }
+
+  void applyServerOperation(TreeOperation operation) {
+    var newState = operation.apply(_currentServerState);
+    _updateServerState(newState);
   }
 
   void _updateCurrentServerStateToQuery(QuerySpec query) {
@@ -177,15 +191,163 @@ class RandomSyncTreeTester {
       _updateCurrentServerStateToQuery(q);
     }
   }
+}
 
-  void _generateServerOperation() {
-    _logger.fine('generate server operation');
-    var op = random.nextOperation();
-    _logger.fine('* $op');
-    var newState = op.apply(_currentServerState);
-    _updateServerState(newState);
+class SyncTreeTesterRecording {
+  List<SyncTreeTesterEvent> events = [];
+
+  void replay() {
+    var tester = SyncTreeTester();
+    for (var e in events) {
+      tester.applyEvent(e);
+    }
   }
 
+  @override
+  String toString() {
+    return 'SyncTreeTesterRecording{events: $events}';
+  }
+}
+
+mixin SyncTreeTesterRecorder on SyncTreeTester {
+  SyncTreeTesterRecording? recording;
+  void startRecording() {
+    assert(recording == null);
+    recording = SyncTreeTesterRecording();
+  }
+
+  SyncTreeTesterRecording stopRecording() {
+    var r = recording!;
+    recording = null;
+    return r;
+  }
+
+  @override
+  void applyEvent(SyncTreeTesterEvent event) {
+    recording?.events.add(event);
+    super.applyEvent(event);
+  }
+}
+
+class RandomSyncTreeTester with SyncTreeTester, SyncTreeTesterRecorder {
+  static Logger get logger => _logger;
+
+  final RandomGenerator random;
+
+  final double listenProbability;
+
+  final double unlistenProbability;
+
+  final double userOperationProbability;
+
+  final double serverOperationProbability;
+
+  final double serverListenResponseProbability;
+
+  final double serverAckProbability;
+
+  final double revertProbability;
+
+  RandomSyncTreeTester(
+      {int? seed,
+      this.listenProbability = 0.1,
+      this.unlistenProbability = 0.0,
+      this.userOperationProbability = 0.1,
+      this.serverListenResponseProbability = 0.1,
+      this.serverAckProbability = 0.9,
+      this.revertProbability = 0.2,
+      this.serverOperationProbability = 0.1})
+      : random = RandomGenerator(seed ?? DateTime.now().millisecondsSinceEpoch);
+
+  SyncTreeTesterEvent _generateUserListen() {
+    var query = random.nextQuerySpec();
+    return SyncTreeTesterEvent(
+        type: SyncTreeTesterEventType.listen, query: query);
+  }
+
+  SyncTreeTesterEvent _generateUserUnlisten() {
+    var query = userListens.keys.toList()[random.nextInt(userListens.length)];
+    return SyncTreeTesterEvent(
+        type: SyncTreeTesterEventType.unlisten, query: query);
+  }
+
+  SyncTreeTesterEvent _generateUserOperation() {
+    var operation = random.nextOperation();
+    return SyncTreeTesterEvent(
+        type: SyncTreeTesterEventType.operation, operation: operation);
+  }
+
+  SyncTreeTesterEvent? _handleOutstandingListen() {
+    if (outstandingListens.isEmpty) return null;
+    return SyncTreeTesterEvent(
+        type: SyncTreeTesterEventType.ackListen,
+        query: outstandingListens.first.key);
+  }
+
+  SyncTreeTesterEvent? _handleOutstandingWrite() {
+    if (outstandingWrites.isEmpty) return null;
+    _logger.fine('handle outstanding write');
+
+    var op = outstandingWrites.first;
+    var path = op.value.path;
+    var isEmptyPriorityError = path.isNotEmpty &&
+        path.last.isPriorityChildName &&
+        _currentServerState.getChild(path.parent!).isEmpty;
+
+    if (random.nextDouble() < revertProbability || isEmptyPriorityError) {
+      return SyncTreeTesterEvent(
+          type: SyncTreeTesterEventType.revertWrite, operation: op.value);
+    } else {
+      return SyncTreeTesterEvent(
+          type: SyncTreeTesterEventType.ackWrite, operation: op.value);
+    }
+  }
+
+  SyncTreeTesterEvent _generateServerOperation() {
+    _logger.fine('generate server operation');
+    var op = random.nextOperation();
+    return SyncTreeTesterEvent(
+        type: SyncTreeTesterEventType.serverOperation, operation: op);
+  }
+
+  void next() {
+    SyncTreeTesterEvent? event;
+    if (random.nextDouble() < listenProbability) {
+      event = _generateUserListen();
+    } else if (unlistenProbability != 0 &&
+        userListens.isNotEmpty &&
+        random.nextDouble() < unlistenProbability) {
+      event = _generateUserUnlisten();
+    } else if (random.nextDouble() < userOperationProbability) {
+      event = _generateUserOperation();
+    } else if (random.nextDouble() < serverListenResponseProbability) {
+      event = _handleOutstandingListen();
+    } else if (random.nextDouble() < serverAckProbability) {
+      event = _handleOutstandingWrite();
+    } else if (random.nextDouble() < serverOperationProbability) {
+      event = _generateServerOperation();
+    }
+
+    if (event != null) {
+      applyEvent(event);
+    }
+  }
+
+  void flush() {
+    while (outstandingListens.isNotEmpty) {
+      var event = _handleOutstandingListen();
+      if (event == null) break;
+      applyEvent(event);
+    }
+    while (outstandingWrites.isNotEmpty) {
+      var event = _handleOutstandingWrite();
+      if (event == null) break;
+      applyEvent(event);
+    }
+  }
+}
+
+extension SyncTreeTesterCheckX on SyncTreeTester {
   void checkAllViewsComplete() {
     if (outstandingListens.isNotEmpty || outstandingWrites.isNotEmpty) {
       throw StateError(
@@ -290,33 +452,6 @@ class RandomSyncTreeTester {
         }
       });
     });
-  }
-
-  void next() {
-    if (random.nextDouble() < listenProbability) {
-      _generateUserListen();
-    } else if (unlistenProbability != 0 &&
-        userListens.isNotEmpty &&
-        random.nextDouble() < unlistenProbability) {
-      _generateUserUnlisten();
-    } else if (random.nextDouble() < userOperationProbability) {
-      _generateUserOperation();
-    } else if (random.nextDouble() < serverListenResponseProbability) {
-      _handleOutstandingListen();
-    } else if (random.nextDouble() < serverAckProbability) {
-      _handleOutstandingWrite();
-    } else if (random.nextDouble() < serverOperationProbability) {
-      _generateServerOperation();
-    }
-  }
-
-  void flush() {
-    while (outstandingListens.isNotEmpty) {
-      _handleOutstandingListen();
-    }
-    while (outstandingWrites.isNotEmpty) {
-      _handleOutstandingWrite();
-    }
   }
 }
 
