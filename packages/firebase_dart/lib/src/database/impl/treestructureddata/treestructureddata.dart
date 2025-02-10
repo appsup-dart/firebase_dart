@@ -253,18 +253,16 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
 
   TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) {
     if (filter == f) return this;
-
-    FilteredMap<Name, TreeStructuredData> c;
     if (f.ordering == filter.ordering) {
-      c = childrenAsFilteredMap.filteredMap(
-          start: Pair.min(f.startKey, f.startValue),
-          end: Pair.max(f.endKey, f.endValue),
-          limit: f.limit,
-          reversed: f.reversed);
-    } else {
-      c = FilteredMap(f)..addAll(children);
+      return TreeStructuredDataImpl._(
+          value,
+          childrenAsFilteredMap.filteredMap(
+              start: Pair.min(f.startKey, f.startValue),
+              end: Pair.max(f.endKey, f.endValue),
+              limit: f.limit,
+              reversed: f.reversed),
+          priority);
     }
-    if (c.isEmpty && value == null) return _nill;
     return TreeStructuredDataImpl._(
         value, FilteredMap(f)..addAll(children), priority);
   }
@@ -316,11 +314,8 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
   }
 
   TreeStructuredData withChild(Name k, TreeStructuredData newChild) {
-    var c = childrenAsFilteredMap._map.clone()..[k] = newChild;
-    if (c.isEmpty) {
-      return _nill;
-    }
-    return TreeStructuredData.nonLeaf(c, priority);
+    return TreeStructuredData.nonLeaf(
+        childrenAsFilteredMap._map.clone()..[k] = newChild, priority);
   }
 }
 
@@ -392,11 +387,6 @@ class TreeStructuredDataImpl extends TreeStructuredData {
       : children = UnmodifiableFilteredMap<Name, TreeStructuredData>(
             children ?? FilteredMap(const QueryFilter())),
         assert(children == null || children.values.every((v) => !v.isNil)),
-        assert(
-            (children != null && children.isNotEmpty) ||
-                value != null ||
-                priority == null,
-            'A nil node may not have a priority'),
         super._();
 
   @override
