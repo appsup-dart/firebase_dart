@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/event.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
@@ -62,11 +64,118 @@ class SyncTreeTesterEvent {
 
   TreeOperation? operation;
 
-  SyncTreeTesterEvent({required this.type, this.query, this.operation});
+  SyncTreeTesterEvent.listen(this.query)
+      : operation = null,
+        type = SyncTreeTesterEventType.listen;
+  SyncTreeTesterEvent.unlisten(this.query)
+      : operation = null,
+        type = SyncTreeTesterEventType.unlisten;
+  SyncTreeTesterEvent.operation(this.operation)
+      : query = null,
+        type = SyncTreeTesterEventType.operation;
+  SyncTreeTesterEvent.ackListen(this.query)
+      : operation = null,
+        type = SyncTreeTesterEventType.ackListen;
+  SyncTreeTesterEvent.ackWrite(this.operation)
+      : query = null,
+        type = SyncTreeTesterEventType.ackWrite;
+  SyncTreeTesterEvent.revertWrite(this.operation)
+      : query = null,
+        type = SyncTreeTesterEventType.revertWrite;
+  SyncTreeTesterEvent.serverOperation(this.operation)
+      : query = null,
+        type = SyncTreeTesterEventType.serverOperation;
 
   @override
   String toString() {
     return 'SyncTreeTesterEvent{type: $type, query: $query, operation: $operation}';
+  }
+
+  String toCode() {
+    switch (type) {
+      case SyncTreeTesterEventType.listen:
+        return 'SyncTreeTesterEvent.listen(${query!.toCode()})';
+      case SyncTreeTesterEventType.unlisten:
+        return 'SyncTreeTesterEvent.unlisten(${query!.toCode()})';
+      case SyncTreeTesterEventType.operation:
+        return 'SyncTreeTesterEvent.operation(${operation!.toCode()})';
+      case SyncTreeTesterEventType.ackListen:
+        return 'SyncTreeTesterEvent.ackListen(${query!.toCode()})';
+      case SyncTreeTesterEventType.ackWrite:
+        return 'SyncTreeTesterEvent.ackWrite(${operation!.toCode()})';
+      case SyncTreeTesterEventType.revertWrite:
+        return 'SyncTreeTesterEvent.revertWrite(${operation!.toCode()})';
+      case SyncTreeTesterEventType.serverOperation:
+        return 'SyncTreeTesterEvent.serverOperation(${operation!.toCode()})';
+    }
+  }
+}
+
+extension QuerySpecCodeX on QuerySpec {
+  String toCode() {
+    return 'QuerySpec(${path.toCode()}, ${params.toCode()})';
+  }
+}
+
+extension PathCodeX on Path<Name> {
+  String toCode() {
+    return 'Path.from([${map((v) => v.toCode()).join(', ')}])';
+  }
+}
+
+extension NameCodeX on Name {
+  String toCode() {
+    return 'Name(\'$this\')';
+  }
+}
+
+extension QueryFilterCodeX on QueryFilter {
+  String toCode() {
+    return 'QueryFilter(ordering: ${ordering.toCode()}, limit: $limit, reversed: $reversed, validInterval: ${validInterval.toCode()})';
+  }
+}
+
+extension OrderingCodeX on Ordering {
+  String toCode() {
+    if (this is KeyOrdering) {
+      return 'KeyOrdering()';
+    } else if (this is PriorityOrdering) {
+      return 'PriorityOrdering()';
+    } else if (this is ValueOrdering) {
+      return 'ValueOrdering()';
+    } else {
+      return 'ChildOrdering(\'${(this as ChildOrdering).child}\')';
+    }
+  }
+}
+
+extension KeyValueIntervalCodeX on KeyValueInterval {
+  String toCode() {
+    return 'KeyValueInterval(${(start.key as Name?)?.toCode()}, ${(start.value as TreeStructuredData?)?.toCode()}, ${(end.key as Name?)?.toCode()}, ${(end.value as TreeStructuredData?)?.toCode()})';
+  }
+}
+
+extension TreeOperationCodeX on TreeOperation {
+  String toCode() {
+    return 'TreeOperation(${path.toCode()}, ${nodeOperation?.toCode()})';
+  }
+}
+
+extension OperationCodeX on Operation {
+  String toCode() {
+    if (this is Overwrite) {
+      return 'Overwrite(${(this as Overwrite).value.toCode()})';
+    } else if (this is Merge) {
+      return 'Merge([${(this as Merge).overwrites.map((o) => o.toCode()).join(', ')}])';
+    } else {
+      return 'SetPriority(${(this as SetPriority).value.toCode()})';
+    }
+  }
+}
+
+extension TreeStructuredDataCodeX on TreeStructuredData {
+  String toCode() {
+    return 'TreeStructuredData.fromJson(${json.encode(toJson())})';
   }
 }
 
@@ -146,7 +255,6 @@ class SyncTreeTester {
       return;
     }
     var e = outstandingListens.removeAt(0);
-    _logger.fine('* $query');
     _updateCurrentServerStateToQuery(query);
     e.value.complete();
   }
@@ -196,16 +304,35 @@ class SyncTreeTester {
 class SyncTreeTesterRecording {
   List<SyncTreeTesterEvent> events = [];
 
-  void replay() {
+  SyncTreeTesterRecording({List<SyncTreeTesterEvent>? events})
+      : events = events ?? [];
+
+  void replay(FakeAsync fakeAsync) {
     var tester = SyncTreeTester();
     for (var e in events) {
       tester.applyEvent(e);
+      fakeAsync.flushMicrotasks();
+      fakeAsync.flushTimers();
+      tester.checkServerVersions();
+      tester.checkLocalVersions();
     }
   }
 
   @override
   String toString() {
     return 'SyncTreeTesterRecording{events: $events}';
+  }
+
+  String toCode() {
+    var buffer = StringBuffer();
+    buffer.writeln('SyncTreeTesterRecording(');
+    buffer.writeln('  events: [');
+    for (var e in events) {
+      buffer.writeln('    ${e.toCode()},');
+    }
+    buffer.writeln('  ]');
+    buffer.writeln(')');
+    return buffer.toString();
   }
 }
 
@@ -261,32 +388,26 @@ class RandomSyncTreeTester with SyncTreeTester, SyncTreeTesterRecorder {
 
   SyncTreeTesterEvent _generateUserListen() {
     var query = random.nextQuerySpec();
-    return SyncTreeTesterEvent(
-        type: SyncTreeTesterEventType.listen, query: query);
+    return SyncTreeTesterEvent.listen(query);
   }
 
   SyncTreeTesterEvent _generateUserUnlisten() {
     var query = userListens.keys.toList()[random.nextInt(userListens.length)];
-    return SyncTreeTesterEvent(
-        type: SyncTreeTesterEventType.unlisten, query: query);
+    return SyncTreeTesterEvent.unlisten(query);
   }
 
   SyncTreeTesterEvent _generateUserOperation() {
     var operation = random.nextOperation();
-    return SyncTreeTesterEvent(
-        type: SyncTreeTesterEventType.operation, operation: operation);
+    return SyncTreeTesterEvent.operation(operation);
   }
 
   SyncTreeTesterEvent? _handleOutstandingListen() {
     if (outstandingListens.isEmpty) return null;
-    return SyncTreeTesterEvent(
-        type: SyncTreeTesterEventType.ackListen,
-        query: outstandingListens.first.key);
+    return SyncTreeTesterEvent.ackListen(outstandingListens.first.key);
   }
 
   SyncTreeTesterEvent? _handleOutstandingWrite() {
     if (outstandingWrites.isEmpty) return null;
-    _logger.fine('handle outstanding write');
 
     var op = outstandingWrites.first;
     var path = op.value.path;
@@ -295,19 +416,15 @@ class RandomSyncTreeTester with SyncTreeTester, SyncTreeTesterRecorder {
         _currentServerState.getChild(path.parent!).isEmpty;
 
     if (random.nextDouble() < revertProbability || isEmptyPriorityError) {
-      return SyncTreeTesterEvent(
-          type: SyncTreeTesterEventType.revertWrite, operation: op.value);
+      return SyncTreeTesterEvent.revertWrite(op.value);
     } else {
-      return SyncTreeTesterEvent(
-          type: SyncTreeTesterEventType.ackWrite, operation: op.value);
+      return SyncTreeTesterEvent.ackWrite(op.value);
     }
   }
 
   SyncTreeTesterEvent _generateServerOperation() {
-    _logger.fine('generate server operation');
     var op = random.nextOperation();
-    return SyncTreeTesterEvent(
-        type: SyncTreeTesterEventType.serverOperation, operation: op);
+    return SyncTreeTesterEvent.serverOperation(op);
   }
 
   void next() {
@@ -338,11 +455,13 @@ class RandomSyncTreeTester with SyncTreeTester, SyncTreeTesterRecorder {
       var event = _handleOutstandingListen();
       if (event == null) break;
       applyEvent(event);
+      return;
     }
     while (outstandingWrites.isNotEmpty) {
       var event = _handleOutstandingWrite();
       if (event == null) break;
       applyEvent(event);
+      return;
     }
   }
 }
@@ -392,7 +511,8 @@ extension SyncTreeTesterCheckX on SyncTreeTester {
               currentServerState.getChild(path).withFilter(params);
           var serverView = view.data.serverVersion.value.withFilter(params);
           if (serverValue != serverView) {
-            throw StateError('SyncTree has an incorrect view of the server');
+            throw StateError(
+                'SyncTree has an incorrect view of the server for $path $params: serverValue = $serverValue, serverView = $serverView');
           }
         }
       });

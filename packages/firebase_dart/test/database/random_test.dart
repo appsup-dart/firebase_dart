@@ -44,7 +44,7 @@ void main() async {
 
     test('Random synctree test seed=epoch', () {
       for (var i = 0; i < 10; i++) {
-        _doTest(null);
+        _doTest(null, minimize: false);
       }
     });
   });
@@ -74,9 +74,32 @@ class SyncTreeBenchmark extends BenchmarkBase {
   }
 }
 
-void _doTest(int? seed) {
+void _doTest(int? seed, {bool minimize = true}) {
+  var tester = RandomSyncTreeTester(seed: seed)..startRecording();
+
+  try {
+    _executeTest(tester);
+  } catch (e) {
+    if (!minimize) {
+      rethrow;
+    }
+    var recording = tester.stopRecording();
+
+    num count = double.maxFinite;
+    while (recording.events.length < count) {
+      count = recording.events.length;
+      recording = _minimizeRecording(recording);
+    }
+    // print(recording);
+
+    print(recording.toCode());
+
+    fakeAsync((async) => recording.replay(async));
+  }
+}
+
+void _executeTest(RandomSyncTreeTester tester) {
   fakeAsync((fakeAsync) {
-    var tester = RandomSyncTreeTester(seed: seed);
     for (var i = 0; i < 1000; i++) {
       tester.next();
       fakeAsync.flushMicrotasks();
@@ -95,4 +118,23 @@ void _doTest(int? seed) {
 
     tester.checkAllViewsComplete();
   });
+}
+
+SyncTreeTesterRecording _minimizeRecording(SyncTreeTesterRecording recording) {
+  var events = <SyncTreeTesterEvent?>[...recording.events];
+  for (var i = 0; i < recording.events.length; i++) {
+    events[i] = null;
+    var r = SyncTreeTesterRecording()..events.addAll(events.whereType());
+
+    try {
+      fakeAsync((async) {
+        r.replay(async);
+      });
+      events[i] = recording.events[i];
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  return SyncTreeTesterRecording()..events.addAll(events.whereType());
 }
