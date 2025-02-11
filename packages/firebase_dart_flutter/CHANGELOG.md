@@ -1,3 +1,7 @@
+## 1.1.13
+
+ - Update a dependency to the latest release.
+
 ## 1.1.12
 
  - **FIX**: handling recaptcha response on desktop. ([4237e9db](https://github.com/appsup-dart/firebase_dart/commit/4237e9db4045dc09072011bc917fcf3db6029f21))

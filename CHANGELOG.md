@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-02-11
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.3.1`](#firebase_dart---v131)
+ - [`firebase_dart_plus` - `v0.1.0+11`](#firebase_dart_plus---v01011)
+ - [`firebase_dart_flutter` - `v1.1.13`](#firebase_dart_flutter---v1113)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_plus` - `v0.1.0+11`
+ - `firebase_dart_flutter` - `v1.1.13`
+
+---
+
+#### `firebase_dart` - `v1.3.1`
+
+ - **REFACTOR**: acknowledge all pending unlistens on disconnected. ([df0c4de2](https://github.com/appsup-dart/firebase_dart/commit/df0c4de200f1c9025e0996472ba052473a1059cf))
+ - **FIX**(database): bug that causes no or wrong data returned from query in rare cases. ([ac86787a](https://github.com/appsup-dart/firebase_dart/commit/ac86787aa9097a0427a5c004bed814dde6f78cde))
+
+
 ## 2025-01-01
 
 ### Changes

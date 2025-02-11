@@ -1,3 +1,8 @@
+## 1.3.1
+
+ - **REFACTOR**: acknowledge all pending unlistens on disconnected. ([df0c4de2](https://github.com/appsup-dart/firebase_dart/commit/df0c4de200f1c9025e0996472ba052473a1059cf))
+ - **FIX**(database): bug that causes no or wrong data returned from query in rare cases. ([ac86787a](https://github.com/appsup-dart/firebase_dart/commit/ac86787aa9097a0427a5c004bed814dde6f78cde))
+
 ## 1.3.0
 
  - **FEAT**: added ServerValue.increment server value. ([f63f56a2](https://github.com/appsup-dart/firebase_dart/commit/f63f56a28edffb71880cadc979e310fd0d68939b))
