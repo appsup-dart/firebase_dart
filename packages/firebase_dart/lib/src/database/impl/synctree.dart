@@ -820,7 +820,9 @@ class SyncTree {
   }
 
   final Set<Path<Name>> _invalidPaths = {};
-  final Map<Path<Name>, DateTime> _pathsWithEmptyObservers = {};
+  final SortedMap<Path<Name>, DateTime> _pathsWithEmptyObservers = SortedMap(
+      Ordering
+          .byValue()); // we use a sorted map, so that we can easily find the oldest empty observer in case many listereners are registered and unregistered
 
   DelayedCancellableFuture<void>? _handleInvalidPointsFuture;
 
@@ -855,15 +857,11 @@ class SyncTree {
   DateTime? pruneObservers(DateTime from) {
     assert(!_isDestroyed);
 
-    DateTime? next;
-    for (var path in _pathsWithEmptyObservers.keys.toList()) {
-      var t = _pathsWithEmptyObservers[path]!;
-      if (t.isAfter(from)) {
-        if (next == null || t.isBefore(next)) {
-          next = t;
-        }
-        continue;
-      }
+    var entries = _pathsWithEmptyObservers.entries
+        .takeWhile((e) => !e.value.isAfter(from))
+        .toList();
+    for (var e in entries) {
+      var path = e.key;
 
       var node = root.subtree(path, _createNode);
       var point = node.value;
@@ -872,13 +870,10 @@ class SyncTree {
         _pathsWithEmptyObservers.remove(path);
       } else {
         _pathsWithEmptyObservers[path] = emptySince;
-        if (next == null || emptySince.isBefore(next)) {
-          next = emptySince;
-        }
       }
       _invalidate(path);
     }
-    return next;
+    return _pathsWithEmptyObservers.values.firstOrNull;
   }
 
   void handleInvalidPaths() {

@@ -4,7 +4,7 @@
 import 'package:sortedmap/sortedmap.dart';
 import 'package:collection/collection.dart';
 
-class Path<K> extends UnmodifiableListView<K> {
+class Path<K> extends UnmodifiableListView<K> implements Comparable<Path<K>> {
   Path() : super([]);
 
   Path.from(Iterable<K> source) : super(source);
@@ -17,7 +17,7 @@ class Path<K> extends UnmodifiableListView<K> {
   Path<K>? get parent => isEmpty ? null : Path.from(take(length - 1));
 
   @override
-  int get hashCode => const ListEquality().hash(this);
+  late final int hashCode = const ListEquality().hash(this);
 
   @override
   bool operator ==(Object other) =>
@@ -26,6 +26,12 @@ class Path<K> extends UnmodifiableListView<K> {
   bool isDescendantOf(Path<K> other) {
     if (other.length >= length) return false;
     return Path.from(take(other.length)) == other;
+  }
+
+  @override
+  int compareTo(Path<K> other) {
+    // dummy implementation, so that it can be used as key in a SortedMap
+    return Comparable.compare(hashCode, other.hashCode);
   }
 }
 
