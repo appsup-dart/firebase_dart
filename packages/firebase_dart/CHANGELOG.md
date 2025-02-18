@@ -1,3 +1,7 @@
+## 1.3.2
+
+ - **PERF**(database): improve performance when lots of query registrations and deregistrations. ([5fd6eaea](https://github.com/appsup-dart/firebase_dart/commit/5fd6eaea2935806e4727aaac18f1785046857a70))
+
 ## 1.3.1
 
  - **REFACTOR**: acknowledge all pending unlistens on disconnected. ([df0c4de2](https://github.com/appsup-dart/firebase_dart/commit/df0c4de200f1c9025e0996472ba052473a1059cf))
