@@ -9,6 +9,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
+
 
 import androidx.annotation.NonNull;
 
@@ -96,22 +98,26 @@ public class FirebaseDartFlutterPlugin implements FlutterPlugin, MethodCallHandl
             }
             break;
         case "getAuthResult":
-            binding.getApplicationContext().registerReceiver(new BroadcastReceiver() {
+            BroadcastReceiver receiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     result.success(bundleToMap(intent.getExtras()));
                     binding.getApplicationContext().unregisterReceiver(this);
                 }
-            }, new IntentFilter(ACTION_AUTH_RECEIVED));
+            };
+            IntentFilter filter = new IntentFilter(ACTION_AUTH_RECEIVED);
+            binding.getApplicationContext().registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
             break;
         case "getVerifyResult":
-            binding.getApplicationContext().registerReceiver(new BroadcastReceiver() {
+            receiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     result.success(bundleToMap(intent.getExtras()));
                     binding.getApplicationContext().unregisterReceiver(this);
                 }
-            }, new IntentFilter(ACTION_RECAPTCHA_RECEIVED));
+            };
+            filter = new IntentFilter(ACTION_RECAPTCHA_RECEIVED);
+            binding.getApplicationContext().registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
             break;
         case "isGooglePlayServicesAvailable":
             int v = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(binding.getApplicationContext(), 12451000);
@@ -173,8 +179,7 @@ private void retrieveSms(@NonNull final Result result) {
         }
     });
 
-
-    binding.getApplicationContext().registerReceiver(new BroadcastReceiver() {
+    BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             Bundle extras = intent.getExtras();
@@ -193,7 +198,9 @@ private void retrieveSms(@NonNull final Result result) {
             }
             binding.getApplicationContext().unregisterReceiver(this);
         }
-    }, new IntentFilter(SmsRetriever.SMS_RETRIEVED_ACTION));
+    };
+    IntentFilter filter = new IntentFilter(SmsRetriever.SMS_RETRIEVED_ACTION);
+    binding.getApplicationContext().registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
   }
 
   private String getAppSignatureHash() throws PackageManager.NameNotFoundException, NoSuchAlgorithmException {

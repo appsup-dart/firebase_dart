@@ -39,7 +39,7 @@ apply plugin: 'com.android.library'
 android {
     namespace 'be.appsup.firebase_dart_flutter'
 
-    compileSdkVersion 29
+    compileSdkVersion 34
 
     defaultConfig {
         minSdkVersion 16

@@ -253,9 +253,12 @@ class AndroidSmsRetriever extends SmsRetriever {
   @override
   Future<String?> retrieveSms() {
     if (!kIsWeb && platform_info.Platform.instance.android) {
-      return Future(() async {
+      return Future<String?>(() async {
         var v = (await _channel.invokeMethod<String>('retrieveSms'))!;
         return v;
+      }).catchError((e, tr) {
+        Logger('firebase_dart_flutter').warning('Failed retrieving SMS', e, tr);
+        return null;
       });
     }
     return Future.value();
