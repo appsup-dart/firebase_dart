@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-02-19
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart_flutter` - `v1.1.15`](#firebase_dart_flutter---v1115)
+
+---
+
+#### `firebase_dart_flutter` - `v1.1.15`
+
+ - **FIX**(firebase_dart_flutter): fixes error for phone auth and mfa. ([e7717754](https://github.com/appsup-dart/firebase_dart/commit/e771775412c410688b9df842f4013420c48f5754))
+
+
 ## 2025-02-18
 
 ### Changes
