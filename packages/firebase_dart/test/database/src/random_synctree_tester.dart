@@ -13,9 +13,12 @@ import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
+import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'package:test/test.dart';
+
+import '../persistence/mock.dart';
 
 final _logger = Logger('firebase.test.random_synctree');
 
@@ -180,13 +183,17 @@ extension TreeStructuredDataCodeX on TreeStructuredData {
 }
 
 class SyncTreeTester {
+  final bool usePersistence;
+
   late final SyncTree syncTree = SyncTree(
     'test:///',
     queryRegistrar: MemoryQueryRegistrar(outstandingListens, registeredListens),
-    // persistenceManager: DefaultPersistenceManager(
-    //     HivePersistenceStorageEngine(
-    //         KeyValueDatabase(Hive.box('firebase-db-storage'))),
-    //     TestCachePolicy(0.1)),
+    persistenceManager: usePersistence
+        ? DefaultPersistenceManager(
+            HivePersistenceStorageEngine(
+                KeyValueDatabase(Hive.box('firebase-db-storage'))),
+            TestCachePolicy(0.1))
+        : null,
   );
 
   final List<MapEntry<QuerySpec, Completer<void>>> outstandingListens = [];
@@ -202,6 +209,8 @@ class SyncTreeTester {
   TreeStructuredData get currentServerState => _currentServerState;
 
   int _currentWriteId = 0;
+
+  SyncTreeTester({this.usePersistence = true});
 
   void applyEvent(SyncTreeTesterEvent event) {
     _logger.fine(event);
@@ -356,7 +365,7 @@ mixin SyncTreeTesterRecorder on SyncTreeTester {
   }
 }
 
-class RandomSyncTreeTester with SyncTreeTester, SyncTreeTesterRecorder {
+class RandomSyncTreeTester extends SyncTreeTester with SyncTreeTesterRecorder {
   static Logger get logger => _logger;
 
   final RandomGenerator random;
@@ -383,7 +392,8 @@ class RandomSyncTreeTester with SyncTreeTester, SyncTreeTesterRecorder {
       this.serverListenResponseProbability = 0.1,
       this.serverAckProbability = 0.9,
       this.revertProbability = 0.2,
-      this.serverOperationProbability = 0.1})
+      this.serverOperationProbability = 0.1,
+      super.usePersistence = true})
       : random = RandomGenerator(seed ?? DateTime.now().millisecondsSinceEpoch);
 
   SyncTreeTesterEvent _generateUserListen() {
