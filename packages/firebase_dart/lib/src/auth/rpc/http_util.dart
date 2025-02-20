@@ -28,19 +28,16 @@ class MetadataClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     var platform = Platform.current;
 
-    final modifiedRequest = RequestImpl(
-        request.method, request.url, request.finalize())
-      ..headers.addAll({
-        if (platform is AndroidPlatform)
-          'X-Android-Package': platform.packageId,
-        if (platform is AndroidPlatform)
-          'X-Android-Cert': platform.sha1Cert.replaceAll(':', '').toUpperCase(),
-        if (platform is IOsPlatform) 'X-Ios-Bundle-Identifier': platform.appId,
-        'X-Firebase-Locale': _locale ?? Intl.getCurrentLocale(),
-        'X-Firebase-GMPID': firebaseAppId,
-        ...request.headers,
-      });
-    return baseClient.send(modifiedRequest);
+    request.headers.addAll({
+      if (platform is AndroidPlatform) 'X-Android-Package': platform.packageId,
+      if (platform is AndroidPlatform)
+        'X-Android-Cert': platform.sha1Cert.replaceAll(':', '').toUpperCase(),
+      if (platform is IOsPlatform) 'X-Ios-Bundle-Identifier': platform.appId,
+      'X-Firebase-Locale': _locale ?? Intl.getCurrentLocale(),
+      'X-Firebase-GMPID': firebaseAppId,
+      ...request.headers,
+    });
+    return baseClient.send(request);
   }
 }
 
@@ -57,26 +54,15 @@ class ApiKeyClient extends http.BaseClient {
   }
 
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    final modifiedRequest = RequestImpl(
-        request.method,
-        request.url.replace(
-            queryParameters: {...request.url.queryParameters, 'key': apiKey}),
-        request.finalize());
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final modifiedRequest = http.Request(
+      request.method,
+      request.url.replace(
+          queryParameters: {...request.url.queryParameters, 'key': apiKey}),
+    )
+      ..headers.addAll(request.headers)
+      ..bodyBytes = await request.finalize().toBytes();
+
     return baseClient.send(modifiedRequest);
-  }
-}
-
-class RequestImpl extends http.BaseRequest {
-  final Stream<List<int>> _stream;
-
-  RequestImpl(String method, Uri url, [Stream<List<int>>? stream])
-      : _stream = stream ?? const Stream.empty(),
-        super(method, url);
-
-  @override
-  http.ByteStream finalize() {
-    super.finalize();
-    return http.ByteStream(_stream);
   }
 }
