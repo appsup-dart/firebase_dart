@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-02-20
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.3.3`](#firebase_dart---v133)
+ - [`firebase_dart_plus` - `v0.1.0+13`](#firebase_dart_plus---v01013)
+ - [`firebase_dart_flutter` - `v1.1.16`](#firebase_dart_flutter---v1116)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_plus` - `v0.1.0+13`
+ - `firebase_dart_flutter` - `v1.1.16`
+
+---
+
+#### `firebase_dart` - `v1.3.3`
+
+ - **FIX**: auth requests throwing HttpException: Unexpected response (unsolicited response without request). ([3a2bb44b](https://github.com/appsup-dart/firebase_dart/commit/3a2bb44beeb11199158e82babb37f55661989f2e))
+
+
 ## 2025-02-19
 
 ### Changes

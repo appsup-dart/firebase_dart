@@ -1,3 +1,7 @@
+## 1.3.3
+
+ - **FIX**: auth requests throwing HttpException: Unexpected response (unsolicited response without request). ([3a2bb44b](https://github.com/appsup-dart/firebase_dart/commit/3a2bb44beeb11199158e82babb37f55661989f2e))
+
 ## 1.3.2
 
  - **PERF**(database): improve performance when lots of query registrations and deregistrations. ([5fd6eaea](https://github.com/appsup-dart/firebase_dart/commit/5fd6eaea2935806e4727aaac18f1785046857a70))

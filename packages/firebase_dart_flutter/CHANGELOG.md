@@ -1,3 +1,7 @@
+## 1.1.16
+
+ - Update a dependency to the latest release.
+
 ## 1.1.15
 
  - **FIX**(firebase_dart_flutter): fixes error for phone auth and mfa. ([e7717754](https://github.com/appsup-dart/firebase_dart/commit/e771775412c410688b9df842f4013420c48f5754))
