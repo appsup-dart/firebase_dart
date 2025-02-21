@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/event.dart';
@@ -112,6 +113,16 @@ class SyncTreeTesterEvent {
         return 'SyncTreeTesterEvent.serverOperation(${operation!.toCode()})';
     }
   }
+
+  @override
+  int get hashCode => Object.hash(type, query, operation);
+
+  @override
+  bool operator ==(Object other) =>
+      other is SyncTreeTesterEvent &&
+      other.type == type &&
+      other.query == query &&
+      other.operation == operation;
 }
 
 extension QuerySpecCodeX on QuerySpec {
@@ -178,7 +189,7 @@ extension OperationCodeX on Operation {
 
 extension TreeStructuredDataCodeX on TreeStructuredData {
   String toCode() {
-    return 'TreeStructuredData.fromJson(${json.encode(toJson())})';
+    return 'TreeStructuredData.fromJson(${json.encode(toJson(true))})';
   }
 }
 
@@ -316,8 +327,8 @@ class SyncTreeTesterRecording {
   SyncTreeTesterRecording({List<SyncTreeTesterEvent>? events})
       : events = events ?? [];
 
-  void replay(FakeAsync fakeAsync) {
-    var tester = SyncTreeTester();
+  void replay(FakeAsync fakeAsync, {bool usePersistence = true}) {
+    var tester = SyncTreeTester(usePersistence: usePersistence);
     for (var e in events) {
       tester.applyEvent(e);
       fakeAsync.flushMicrotasks();
@@ -343,6 +354,14 @@ class SyncTreeTesterRecording {
     buffer.writeln(')');
     return buffer.toString();
   }
+
+  @override
+  int get hashCode => const ListEquality().hash(events);
+
+  @override
+  bool operator ==(Object other) =>
+      other is SyncTreeTesterRecording &&
+      const ListEquality().equals(events, other.events);
 }
 
 mixin SyncTreeTesterRecorder on SyncTreeTester {
