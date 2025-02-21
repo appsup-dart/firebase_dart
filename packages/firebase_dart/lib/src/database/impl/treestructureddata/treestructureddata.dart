@@ -272,8 +272,9 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is TreeStructuredData &&
-        other.priority == priority &&
+    if (other is! TreeStructuredData) return false;
+    if (isNil && other.isNil) return true;
+    return other.priority == priority &&
         (isLeaf
             ? other.isLeaf && value == other.value
             : !other.isLeaf &&
@@ -281,8 +282,8 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
   }
 
   @override
-  late final int hashCode =
-      Object.hash(value, priority, const MapEquality().hash(children));
+  late final int hashCode = Object.hash(
+      value, isNil ? null : priority, const MapEquality().hash(children));
 
   @override
   String toString() => 'TreeStructuredData[${toJson(true)}]';
