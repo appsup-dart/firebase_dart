@@ -71,8 +71,9 @@ class SyncTreeBenchmark extends BenchmarkBase {
   }
 }
 
-void _doTest(int? seed, {bool minimize = true}) {
-  var tester = RandomSyncTreeTester(seed: seed)..startRecording();
+void _doTest(int? seed, {bool minimize = true, bool usePersistence = true}) {
+  var tester = RandomSyncTreeTester(seed: seed, usePersistence: usePersistence)
+    ..startRecording();
 
   try {
     _executeTest(tester);
@@ -91,7 +92,8 @@ void _doTest(int? seed, {bool minimize = true}) {
 
     print(recording.toCode());
 
-    fakeAsync((async) => recording.replay(async));
+    fakeAsync(
+        (async) => recording.replay(async, usePersistence: usePersistence));
   }
 }
 
