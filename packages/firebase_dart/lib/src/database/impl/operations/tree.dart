@@ -103,6 +103,7 @@ class Merge extends Operation {
   final List<TreeOperation> overwrites;
 
   Merge._(this.overwrites);
+  Merge.fromOperations(this.overwrites);
   Merge(Map<Path<Name>, TreeStructuredData> children)
       : this._(children.keys
             .map((p) => TreeOperation.overwrite(p, children[p]!))

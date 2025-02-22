@@ -180,7 +180,7 @@ extension OperationCodeX on Operation {
     if (this is Overwrite) {
       return 'Overwrite(${(this as Overwrite).value.toCode()})';
     } else if (this is Merge) {
-      return 'Merge([${(this as Merge).overwrites.map((o) => o.toCode()).join(', ')}])';
+      return 'Merge.fromOperations([${(this as Merge).overwrites.map((o) => o.toCode()).join(', ')}])';
     } else {
       return 'SetPriority(${(this as SetPriority).value.toCode()})';
     }
