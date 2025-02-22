@@ -37,15 +37,46 @@ class DefaultPersistenceManager implements PersistenceManager {
 
   @override
   void updateServerCache(QuerySpec query, TreeOperation operation) {
+    var currentValue =
+        storageLayer.serverCache(query.path).withFilter(query.params).value;
+    var expected = query.path
+        .fold(operation, (o, k) => o.operationForChild(k)!)
+        .apply(currentValue);
+
     if (query.params.limits && query.path == operation.path) {
       var o = operation.nodeOperation;
-      if (o is Overwrite) {
+      if (o is Overwrite && o.value.children.isNotEmpty) {
+        // the new value in not necessarily complete for the path, it is only complete for the query
         operation = TreeOperation.merge(operation.path,
             o.value.children.map((k, v) => MapEntry(Path.from([k]), v)));
       }
     }
     storageLayer.overwriteServerCache(operation);
     setQueryComplete(query);
+
+    // check if the value is as expected, if not, forget the extra keys
+    var actual =
+        storageLayer.serverCache(query.path).withFilter(query.params).value;
+    while (actual != expected) {
+      var wrongKeys = actual.children.keys
+          .toSet()
+          .difference(expected.children.keys.toSet());
+      if (wrongKeys.isEmpty) {
+        // this should probably not happen, but we will break out of the loop to avoid infinite loop
+        _logger.warning(
+            'Unexpected state: value in persistence storage does not match expected value.');
+        break;
+      }
+
+      for (var k in wrongKeys) {
+        storageLayer
+            .overwriteServerCache(TreeOperation(query.path.child(k), Forget()));
+      }
+
+      actual =
+          storageLayer.serverCache(query.path).withFilter(query.params).value;
+    }
+
     _doPruneCheckAfterServerUpdate();
   }
 

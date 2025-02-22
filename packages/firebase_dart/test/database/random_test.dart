@@ -2,6 +2,10 @@ import 'dart:typed_data';
 
 import 'package:benchmark_harness/benchmark_harness.dart';
 import 'package:fake_async/fake_async.dart';
+import 'package:firebase_dart/src/database/impl/operations/tree.dart';
+import 'package:firebase_dart/src/database/impl/query_spec.dart';
+import 'package:firebase_dart/src/database/impl/tree.dart';
+import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
@@ -46,6 +50,47 @@ void main() async {
       for (var i = 0; i < 10; i++) {
         _doTest(null, minimize: false);
       }
+    });
+  });
+
+  group('persistence storage', () {
+    test('should remove obscured data from storage', () {
+      var treeOperation1 = TreeOperation(Path.from([]),
+          Overwrite(TreeStructuredData.fromJson({'key-1': false})));
+
+      var querySpec = QuerySpec(Path.from([]), QueryFilter(limit: 2));
+      var treeOperation2 = TreeOperation(Path.from([]),
+          Overwrite(TreeStructuredData.fromJson({'key-2': false})));
+
+      var recording = SyncTreeTesterRecording(events: [
+        SyncTreeTesterEvent.serverOperation(treeOperation1),
+        SyncTreeTesterEvent.listen(querySpec),
+        SyncTreeTesterEvent.ackListen(querySpec),
+        SyncTreeTesterEvent.serverOperation(treeOperation2),
+      ]);
+
+      fakeAsync((async) => recording.replay(async, usePersistence: true));
+    });
+
+    test('a limiting query should not be handled as complete', () {
+      // this query will contain all children - it has a limit larger than the number of children
+      // and an unlimiting valid interval - but we cannot consider it complete as it might have a
+      // priority which is not returned by a limiting query
+      var querySpec = QuerySpec(Path.from([]), QueryFilter(limit: 30));
+
+      var treeOperation = TreeOperation(
+          Path.from([]),
+          Overwrite(TreeStructuredData.fromJson({
+            '.priority': 1,
+            'key-1': 2,
+          })));
+      var recording = SyncTreeTesterRecording(events: [
+        SyncTreeTesterEvent.listen(querySpec),
+        SyncTreeTesterEvent.ackListen(querySpec),
+        SyncTreeTesterEvent.serverOperation(treeOperation),
+      ]);
+
+      fakeAsync((async) => recording.replay(async, usePersistence: true));
     });
   });
 

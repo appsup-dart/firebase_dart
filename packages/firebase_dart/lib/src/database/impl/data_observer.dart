@@ -1,6 +1,8 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
+import 'package:sortedmap/sortedmap.dart';
+
 import 'event.dart';
 import 'package:collection/collection.dart';
 import 'events/value.dart';
@@ -15,6 +17,18 @@ abstract class Operation {
   Iterable<Path<Name>> get completesPaths;
 
   Operation? operationForChild(Name key);
+}
+
+extension _FilterX on Filter<Name, TreeStructuredData> {
+  QueryFilter toQueryFilter() {
+    if (this is QueryFilter) return this as QueryFilter;
+    return QueryFilter(
+      limit: limit,
+      validInterval: validInterval,
+      reversed: reversed,
+      ordering: ordering as TreeStructuredDataOrdering,
+    );
+  }
 }
 
 /// This class holds a collection of writes that can be applied to nodes in
@@ -33,10 +47,12 @@ class IncompleteData {
   IncompleteData.empty([QueryFilter filter = const QueryFilter()])
       : this._(ModifiableTreeNode(null), filter);
   IncompleteData.complete(TreeStructuredData data)
-      : this._(ModifiableTreeNode(data), data.filter as QueryFilter);
+      : this._(ModifiableTreeNode(data), data.filter.toQueryFilter());
   IncompleteData._(ModifiableTreeNode<Name, TreeStructuredData?> writeTree,
       [this.filter = const QueryFilter()])
       : _writeTree = writeTree.withFilter(filter);
+
+  bool get isNil => _writeTree.isNil;
 
   factory IncompleteData.fromLeafs(Map<Path<Name>, TreeStructuredData> leafs) {
     var tree = ModifiableTreeNode<Name, TreeStructuredData?>(null);
@@ -189,6 +205,38 @@ class IncompleteData {
             (o.nodeOperation as Overwrite).value));
       }
       return v;
+    } else if (n is Forget) {
+      ModifiableTreeNode<Name, TreeStructuredData?> forget(
+          ModifiableTreeNode<Name, TreeStructuredData?> tree, Path<Name> path) {
+        if (path.isEmpty) {
+          if (tree.isNil) return tree;
+          if (tree.value == null) return ModifiableTreeNode(null);
+          return tree.clone()..value = null;
+        }
+        if (tree.value != null) {
+          tree = ModifiableTreeNode(null, {
+            for (var k in tree.value!.children.keys)
+              k: ModifiableTreeNode(tree.value!.children[k])
+          });
+        }
+        var child = tree.children[path.first];
+        if (child == null) return tree;
+        var newChild = forget(child, path.skip(1));
+        if (newChild == child) return tree;
+        tree = tree.clone();
+        if (newChild.isNil) {
+          if (tree.children.containsKey(path.first)) {
+            return tree..children.remove(path.first);
+          }
+          return tree;
+        } else {
+          return tree..children[path.first] = newChild;
+        }
+      }
+
+      var tree = forget(_writeTree, operation.path);
+      if (tree == _writeTree) return this;
+      return IncompleteData._(tree, filter);
     }
     throw UnsupportedError('Operation of type ${n.runtimeType} not supported');
   }

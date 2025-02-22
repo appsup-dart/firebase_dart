@@ -261,10 +261,10 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
               end: Pair.max(f.endKey, f.endValue),
               limit: f.limit,
               reversed: f.reversed),
-          priority);
+          f.limits ? null : priority);
     }
     return TreeStructuredDataImpl._(
-        value, FilteredMap(f)..addAll(children), priority);
+        value, FilteredMap(f)..addAll(children), f.limits ? null : priority);
   }
 
   dynamic toJson([bool exportFormat = false]);

@@ -15,6 +15,83 @@ void main() {
 
     var empty = IncompleteData.empty();
 
+    group('Forget operation', () {
+      var path = Name.parsePath('child');
+      test('forget operation on complete data, removes the node', () {
+        var v = empty.applyOperation(TreeOperation.overwrite(path, leafNode));
+        expect(v.isCompleteForPath(path), isTrue);
+        v = v.applyOperation(TreeOperation(path, Forget()));
+        expect(v.isCompleteForPath(path), isFalse);
+        expect(v.isNil, isTrue);
+      });
+
+      test('forget operation on incomplete data, removes the node', () {
+        var v = empty.applyOperation(
+            TreeOperation.overwrite(path.child(Name('subchild')), leafNode));
+        expect(v.isCompleteForPath(path), isFalse);
+        expect(v.isCompleteForPath(path.child(Name('subchild'))), isTrue);
+        v = v.applyOperation(TreeOperation(path, Forget()));
+        expect(v.isCompleteForPath(path), isFalse);
+        expect(v.isCompleteForPath(path.child(Name('subchild'))), isFalse);
+      });
+
+      test('forget operation when parent is complete, uncompletes parent', () {
+        var v = empty.applyOperation(TreeOperation.overwrite(
+            path,
+            TreeStructuredData.fromJson({
+              'subchild1': 'value',
+              'subchild2': 'value',
+            })));
+        expect(v.isCompleteForPath(path), isTrue);
+        expect(v.isCompleteForPath(path.child(Name('subchild1'))), isTrue);
+        expect(v.isCompleteForPath(path.child(Name('subchild2'))), isTrue);
+        v = v.applyOperation(
+            TreeOperation(path.child(Name('subchild1')), Forget()));
+        expect(v.isCompleteForPath(path), isFalse);
+        expect(v.isCompleteForPath(path.child(Name('subchild1'))), isFalse);
+        expect(v.isCompleteForPath(path.child(Name('subchild2'))), isTrue);
+      });
+
+      test(
+          'forget operation when grand-parent is complete, uncompletes ancestors',
+          () {
+        var v = empty.applyOperation(TreeOperation.overwrite(
+            path,
+            TreeStructuredData.fromJson({
+              'subchild1': {
+                'subsubchild1': 'value',
+                'subsubchild2': 'value',
+              },
+              'subchild2': 'value',
+            })));
+        expect(v.isCompleteForPath(path), isTrue);
+        expect(v.isCompleteForPath(path.child(Name('subchild1'))), isTrue);
+        expect(
+            v.isCompleteForPath(
+                path.child(Name('subchild1')).child(Name('subsubchild1'))),
+            isTrue);
+        expect(
+            v.isCompleteForPath(
+                path.child(Name('subchild1')).child(Name('subsubchild2'))),
+            isTrue);
+        expect(v.isCompleteForPath(path.child(Name('subchild2'))), isTrue);
+        v = v.applyOperation(TreeOperation(
+            path.child(Name('subchild1')).child(Name('subsubchild1')),
+            Forget()));
+        expect(v.isCompleteForPath(path), isFalse);
+        expect(v.isCompleteForPath(path.child(Name('subchild1'))), isFalse);
+        expect(
+            v.isCompleteForPath(
+                path.child(Name('subchild1')).child(Name('subsubchild1'))),
+            isFalse);
+        expect(
+            v.isCompleteForPath(
+                path.child(Name('subchild1')).child(Name('subsubchild2'))),
+            isTrue);
+        expect(v.isCompleteForPath(path.child(Name('subchild2'))), isTrue);
+      });
+    });
+
     test('empty is not complete', () {
       expect(empty.isComplete, false);
       expect(empty.completeValue, null);

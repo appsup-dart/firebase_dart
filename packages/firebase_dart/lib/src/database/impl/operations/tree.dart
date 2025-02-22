@@ -149,6 +149,22 @@ class Merge extends Operation {
       const ListEquality().equals(overwrites, other.overwrites);
 }
 
+class Forget extends Operation {
+  @override
+  TreeStructuredData apply(TreeStructuredData value) {
+    throw UnsupportedError('Forget should not be applied');
+  }
+
+  @override
+  Iterable<Path<Name>> get completesPaths =>
+      throw UnsupportedError('Forget should not be applied');
+
+  @override
+  Operation? operationForChild(Name key) {
+    throw UnsupportedError('Forget should not be applied');
+  }
+}
+
 class Overwrite extends Operation {
   final TreeStructuredData value;
 

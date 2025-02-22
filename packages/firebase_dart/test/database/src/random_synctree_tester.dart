@@ -202,7 +202,8 @@ class SyncTreeTester {
     persistenceManager: usePersistence
         ? DefaultPersistenceManager(
             HivePersistenceStorageEngine(
-                KeyValueDatabase(Hive.box('firebase-db-storage'))),
+                KeyValueDatabase(Hive.box('firebase-db-storage')))
+              ..clear(),
             TestCachePolicy(0.1))
         : null,
   );
@@ -334,6 +335,7 @@ class SyncTreeTesterRecording {
       fakeAsync.flushMicrotasks();
       fakeAsync.flushTimers();
       tester.checkServerVersions();
+      tester.checkPersistedServerCache();
       tester.checkLocalVersions();
     }
   }
@@ -516,7 +518,8 @@ extension SyncTreeTesterCheckX on SyncTreeTester {
   }
 
   void checkPersistedActiveQueries() {
-    var trackedQueries = storageEngine
+    if (!usePersistence) return;
+    var trackedQueries = storageEngine!
         .loadTrackedQueries()
         .where((v) => v.active)
         .map((v) => v.querySpec);
@@ -548,20 +551,28 @@ extension SyncTreeTesterCheckX on SyncTreeTester {
     });
   }
 
-  HivePersistenceStorageEngine get storageEngine =>
-      (syncTree.persistenceManager as DefaultPersistenceManager).storageLayer
-          as HivePersistenceStorageEngine;
+  HivePersistenceStorageEngine? get storageEngine => usePersistence
+      ? (syncTree.persistenceManager as DefaultPersistenceManager).storageLayer
+          as HivePersistenceStorageEngine
+      : null;
 
   void checkPersistedWrites() {
-    expect(
-        storageEngine.loadUserOperations(), Map.fromEntries(outstandingWrites));
+    if (!usePersistence) return;
+    expect(storageEngine!.loadUserOperations(),
+        Map.fromEntries(outstandingWrites));
   }
 
   void checkPersistedServerCache() {
-    var v = storageEngine.database.loadServerCache().value;
+    if (!usePersistence) return;
+    var v = storageEngine!.database.loadServerCache().value;
     syncTree.root.forEachNode((path, node) {
+      if (outstandingListens
+          .map((v) => v.key)
+          .any((q) => path.isDescendantOf(q.path) || path == q.path)) {
+        return;
+      }
       node.views.forEach((params, view) {
-        if (view.data.localVersion.isComplete) {
+        if (view.data.serverVersion.isComplete) {
           // complete data should match with value on server
           var persistedValue = v.getChild(path).withFilter(params);
           var serverView = view.data.serverVersion.value;

@@ -403,6 +403,21 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
   Future<void> close() async {
     await database.close();
   }
+
+  @override
+  void clear() {
+    var queries = loadTrackedQueries();
+    var operations = loadUserOperations();
+    beginTransaction();
+    for (var v in queries) {
+      _transaction!.deleteTrackedQuery(v.id);
+    }
+    for (var v in operations.keys) {
+      _transaction!.deleteUserOperation(v);
+    }
+    _saveServerCache(IncompleteData.empty());
+    endTransaction();
+  }
 }
 
 class KeyValueDatabase {
