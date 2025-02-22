@@ -313,7 +313,7 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
   @override
   void overwriteServerCache(TreeOperation operation) {
-    _saveServerCache(database.loadServerCache().applyOperation(operation));
+    _saveServerCache(serverCache(Path.from([])).applyOperation(operation));
   }
 
   void _saveServerCache(IncompleteData serverCache) {
@@ -386,7 +386,8 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
 
   @override
   IncompleteData serverCache(Path<Name> path) {
-    return database.loadServerCache().child(path);
+    return (_transaction?._serverCache ?? database.loadServerCache())
+        .child(path);
   }
 
   @override
