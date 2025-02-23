@@ -56,6 +56,7 @@ class MasterView {
   bool contains(QueryFilter f) {
     if (f == masterFilter) return true;
     if (!masterFilter.limits) return true;
+    if (!f.limits) return false;
     if (f.orderBy != masterFilter.orderBy) return false;
     if (!_data.localVersion.isComplete) {
       if (masterFilter.limit == null) {

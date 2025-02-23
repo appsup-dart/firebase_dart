@@ -45,7 +45,7 @@ class DefaultPersistenceManager implements PersistenceManager {
 
     if (query.params.limits && query.path == operation.path) {
       var o = operation.nodeOperation;
-      if (o is Overwrite && o.value.children.isNotEmpty) {
+      if (o is Overwrite) {
         // the new value in not necessarily complete for the path, it is only complete for the query
         operation = TreeOperation.merge(operation.path,
             o.value.children.map((k, v) => MapEntry(Path.from([k]), v)));

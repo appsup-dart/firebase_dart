@@ -45,11 +45,52 @@ void main() async {
     test('Random synctree test seed=1738855293545', () {
       _doTest(1738855293545);
     });
+    test('Random synctree test seed=1738919743671', () {
+      _doTest(1738919743671);
+    });
 
     test('Random synctree test seed=epoch', () {
       for (var i = 0; i < 10; i++) {
         _doTest(null, minimize: false);
       }
+    });
+  });
+
+  group('minimized tests', () {
+    test('should contain priority when not limits', () {
+      var querySpec = QuerySpec(Path.from([]), QueryFilter(limit: 1));
+      var treeOperation = TreeOperation(
+          Path.from([]),
+          Overwrite(TreeStructuredData.fromJson({
+            'key-1': false,
+          })));
+
+      var querySpec2 = QuerySpec(Path.from([]), QueryFilter(limit: 10));
+
+      var treeOperation2 = TreeOperation(
+          Path.from([]),
+          Overwrite(
+              TreeStructuredData.fromJson({'.priority': 1, '.value': true})));
+      var querySpec3 = QuerySpec(Path.from([]), QueryFilter());
+
+      var treeOperation3 = TreeOperation(
+          Path.from([]),
+          Overwrite(TreeStructuredData.fromJson({
+            '.priority': 2,
+            'key-1': false,
+          })));
+      var recording = SyncTreeTesterRecording(events: [
+        SyncTreeTesterEvent.listen(querySpec),
+        SyncTreeTesterEvent.ackListen(querySpec),
+        SyncTreeTesterEvent.serverOperation(treeOperation),
+        SyncTreeTesterEvent.listen(querySpec2),
+        SyncTreeTesterEvent.ackListen(querySpec2),
+        SyncTreeTesterEvent.serverOperation(treeOperation2),
+        SyncTreeTesterEvent.listen(querySpec3),
+        SyncTreeTesterEvent.operation(treeOperation3),
+      ]);
+
+      fakeAsync((async) => recording.replay(async, usePersistence: true));
     });
   });
 

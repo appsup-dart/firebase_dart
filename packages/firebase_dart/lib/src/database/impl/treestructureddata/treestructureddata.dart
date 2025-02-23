@@ -255,7 +255,7 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
     if (filter == f) return this;
     if (f.ordering == filter.ordering) {
       return TreeStructuredDataImpl._(
-          value,
+          f.limits ? null : value,
           childrenAsFilteredMap.filteredMap(
               start: Pair.min(f.startKey, f.startValue),
               end: Pair.max(f.endKey, f.endValue),
@@ -263,8 +263,8 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
               reversed: f.reversed),
           f.limits ? null : priority);
     }
-    return TreeStructuredDataImpl._(
-        value, FilteredMap(f)..addAll(children), f.limits ? null : priority);
+    return TreeStructuredDataImpl._(f.limits ? null : value,
+        FilteredMap(f)..addAll(children), f.limits ? null : priority);
   }
 
   dynamic toJson([bool exportFormat = false]);
