@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-03-17
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.3.4`](#firebase_dart---v134)
+ - [`firebase_dart_plus` - `v0.1.0+14`](#firebase_dart_plus---v01014)
+ - [`firebase_dart_flutter` - `v1.1.17`](#firebase_dart_flutter---v1117)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_plus` - `v0.1.0+14`
+ - `firebase_dart_flutter` - `v1.1.17`
+
+---
+
+#### `firebase_dart` - `v1.3.4`
+
+ - **FIX**(database): writing some invalid (not-json-serializable) data will throw immediately. ([554a249b](https://github.com/appsup-dart/firebase_dart/commit/554a249b9c7f1df9d460455d272e7b57eb8de71c))
+ - **FIX**(database): never consider a limiting query complete as it may contain a priority. ([8cf55c07](https://github.com/appsup-dart/firebase_dart/commit/8cf55c07337cd14a48a4cacd5a7326c1a2f4c805))
+ - **FIX**(database): getting outdated result from persistent storage. ([689e160e](https://github.com/appsup-dart/firebase_dart/commit/689e160eaad0acb25a3a81b1853daae62126db13))
+ - **FIX**(database): persistent storage data lost when multiple operations in short time. ([b109feff](https://github.com/appsup-dart/firebase_dart/commit/b109feff724f3a66abd49bd62b3e69c4a262e6fe))
+
+
 ## 2025-02-20
 
 ### Changes

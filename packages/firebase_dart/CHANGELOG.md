@@ -1,3 +1,10 @@
+## 1.3.4
+
+ - **FIX**(database): writing some invalid (not-json-serializable) data will throw immediately. ([554a249b](https://github.com/appsup-dart/firebase_dart/commit/554a249b9c7f1df9d460455d272e7b57eb8de71c))
+ - **FIX**(database): never consider a limiting query complete as it may contain a priority. ([8cf55c07](https://github.com/appsup-dart/firebase_dart/commit/8cf55c07337cd14a48a4cacd5a7326c1a2f4c805))
+ - **FIX**(database): getting outdated result from persistent storage. ([689e160e](https://github.com/appsup-dart/firebase_dart/commit/689e160eaad0acb25a3a81b1853daae62126db13))
+ - **FIX**(database): persistent storage data lost when multiple operations in short time. ([b109feff](https://github.com/appsup-dart/firebase_dart/commit/b109feff724f3a66abd49bd62b3e69c4a262e6fe))
+
 ## 1.3.3
 
  - **FIX**: auth requests throwing HttpException: Unexpected response (unsolicited response without request). ([3a2bb44b](https://github.com/appsup-dart/firebase_dart/commit/3a2bb44beeb11199158e82babb37f55661989f2e))
