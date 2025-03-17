@@ -99,7 +99,7 @@ class DataMessage extends _JsonObjectMessage {
   @override
   Map<String, dynamic> get _payloadJson => {
         if (action != null) 'a': action,
-        'b': body,
+        'b': body.toJson(),
         if (reqNum != null) 'r': reqNum,
         if (error != null) 'error': error,
       };

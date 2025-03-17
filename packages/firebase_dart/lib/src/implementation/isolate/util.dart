@@ -92,8 +92,7 @@ class IsolateTask<T> extends IsolateRunnable {
       var v = await functionCall.run() as T;
       return Result.value(v);
     } catch (e, tr) {
-      return ErrorResult(
-          e is Error ? e.toString() : e, StackTrace.fromString(tr.toString()));
+      return ErrorResult(e, tr);
     }
   }
 

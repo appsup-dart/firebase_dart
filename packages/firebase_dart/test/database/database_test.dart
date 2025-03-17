@@ -806,6 +806,12 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       await childRef.set('hello2');
       expect(await childRef.get(), 'hello2');
     });
+
+    test('Should throw when writing not json serializable data', () async {
+      expect(() => ref.set(DateTime.now()), throwsA(isA<ArgumentError>()));
+      expect(() => ref.set(double.infinity), throwsA(isA<ArgumentError>()));
+      expect(() => ref.set(double.nan), throwsA(isA<ArgumentError>()));
+    });
   });
 
   group('Special characters', () {

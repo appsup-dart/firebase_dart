@@ -49,12 +49,15 @@ class Value implements Comparable<Value> {
 
   factory Value(dynamic value) {
     if (value is bool) return Value.bool(value);
-    if (value is num) return Value.num(value);
+    if (value is num) {
+      if (value.isNaN) throw ArgumentError('NaN is not supported');
+      if (value.isInfinite) throw ArgumentError('Infinity is not supported');
+      return Value.num(value);
+    }
     if (value is String) return Value.string(value);
     if (value is Map && value.containsKey('.sv')) {
       return Value.server(value['.sv']);
     }
-    ServerValue;
     throw ArgumentError('Unsupported value type ${value.runtimeType}');
   }
 
