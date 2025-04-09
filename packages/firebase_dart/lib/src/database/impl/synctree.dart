@@ -801,6 +801,8 @@ class SyncTree {
 
   bool _isDestroyed = false;
 
+  final Clock _clock = clock;
+
   SyncTree(String name,
       {QueryRegistrar? queryRegistrar, PersistenceManager? persistenceManager})
       : this._(name,
@@ -834,14 +836,14 @@ class SyncTree {
       _pruneObserversTimer!.cancel();
       _pruneObserversTimer = null;
     }
-    var next = pruneObservers(clock
+    var next = pruneObservers(_clock
         .now()
         .subtract(Repo.databaseConfiguration.keepQueriesSyncedDuration));
     if (next != null) {
       _pruneObserversTimer = Timer(
           next
               .add(Repo.databaseConfiguration.keepQueriesSyncedDuration)
-              .difference(clock.now()),
+              .difference(_clock.now()),
           _pruneObservers);
     }
   }
@@ -969,7 +971,7 @@ class SyncTree {
     return _doOnSyncPoint(path, (point) {
       var isEmpty = point.removeEventListener(type, filter, listener);
       if (isEmpty) {
-        _pathsWithEmptyObservers[path] ??= clock.now();
+        _pathsWithEmptyObservers[path] ??= _clock.now();
         _pruneObservers();
       }
     });
