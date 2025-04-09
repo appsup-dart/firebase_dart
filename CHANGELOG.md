@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-04-09
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.3.5`](#firebase_dart---v135)
+ - [`firebase_dart_flutter` - `v1.1.18`](#firebase_dart_flutter---v1118)
+ - [`firebase_dart_plus` - `v0.1.0+15`](#firebase_dart_plus---v01015)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.1.18`
+ - `firebase_dart_plus` - `v0.1.0+15`
+
+---
+
+#### `firebase_dart` - `v1.3.5`
+
+ - **FIX**: timeouts when using `withClock`. ([31801ed9](https://github.com/appsup-dart/firebase_dart/commit/31801ed9fe8b9792b3749ae38544d865ac63666d))
+
+
 ## 2025-03-17
 
 ### Changes

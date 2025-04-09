@@ -1,3 +1,7 @@
+## 1.3.5
+
+ - **FIX**: timeouts when using `withClock`. ([31801ed9](https://github.com/appsup-dart/firebase_dart/commit/31801ed9fe8b9792b3749ae38544d865ac63666d))
+
 ## 1.3.4
 
  - **FIX**(database): writing some invalid (not-json-serializable) data will throw immediately. ([554a249b](https://github.com/appsup-dart/firebase_dart/commit/554a249b9c7f1df9d460455d272e7b57eb8de71c))
