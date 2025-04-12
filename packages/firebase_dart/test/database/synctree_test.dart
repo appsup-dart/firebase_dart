@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
+import 'package:firebase_dart/src/database/impl/events/value.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
 import 'package:firebase_dart/src/database/impl/query_spec.dart';
@@ -63,6 +64,47 @@ void main() {
     });
   });
   group('SyncTree', () {
+    test('Previously complete query should not notify new targets', () async {
+      var syncTree = SyncTree('mem:///', queryRegistrar: _Registrar());
+
+      var path = Name.parsePath('child1');
+      var query1 = QueryFilter().copyWith(orderBy: '.key', limit: 1);
+      var query2 =
+          QueryFilter().copyWith(orderBy: '.key', endAtKey: Name('some-key'));
+
+      TreeStructuredData? value1, value2, value2bis;
+      await syncTree.addEventListener('value', path, query1, (v) {
+        value1 = (v as ValueEvent<TreeStructuredData>).value;
+      });
+      syncTree.applyServerOperation(
+          TreeOperation.overwrite(path, TreeStructuredData()),
+          QuerySpec(path, query1));
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(value1, TreeStructuredData());
+      await syncTree.addEventListener('value', path, query2, (v) {
+        value2 = (v as ValueEvent<TreeStructuredData>).value;
+      });
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(value2,
+          TreeStructuredData()); // query2 is complete, because query1 was empty
+
+      syncTree.applyServerOperation(
+          TreeOperation.overwrite(
+              path, TreeStructuredData.fromJson({'key-1': 'value-1'})),
+          QuerySpec(path, query1));
+      await Future.delayed(Duration(milliseconds: 10));
+
+      expect(value1, TreeStructuredData.fromExportJson({'key-1': 'value-1'}));
+      expect(value2,
+          TreeStructuredData()); // query2 is no longer complete, so should still have the same value as before
+
+      await syncTree.addEventListener('value', path, query2, (v) {
+        value2bis = (v as ValueEvent<TreeStructuredData>).value;
+      });
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(value2bis,
+          null); // query2 is not complete, so new registrations should not get a value
+    });
     group('Completeness on user operation', () {
       late SyncTree syncTree;
       SyncPoint syncPoint;
@@ -275,5 +317,21 @@ extension SyncTreeMeasurer on SyncTree {
     });
 
     return obsoleteCount;
+  }
+}
+
+class _Registrar extends QueryRegistrar {
+  @override
+  Future<void> close() async {}
+
+  @override
+  Future<bool> register(QuerySpec query,
+      {required String hash, required int priority}) {
+    return Completer<bool>().future;
+  }
+
+  @override
+  Future<void> unregister(QuerySpec query) {
+    return Completer<bool>().future;
   }
 }

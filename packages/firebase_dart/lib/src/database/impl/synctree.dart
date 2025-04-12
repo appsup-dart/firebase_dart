@@ -124,11 +124,8 @@ class MasterView {
       String type, QueryFilter filter, EventListener listener) {
     if (!contains(filter)) return false;
     observers
-        .putIfAbsent(
-            filter,
-            () =>
-                EventTarget()..notifyDataChanged(_data.valueForFilter(filter)))
-        .addEventListener(type, listener);
+        .putIfAbsent(filter, () => EventTarget())
+        .addEventListener(type, listener, _data.valueForFilter(filter));
 
     return true;
   }
@@ -370,7 +367,7 @@ class SyncPoint {
     } else {
       _newQueries
           .putIfAbsent(filter, () => EventTarget())
-          .addEventListener(type, listener);
+          .addEventListener(type, listener, IncompleteData.empty());
     }
   }
 

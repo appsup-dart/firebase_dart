@@ -31,17 +31,26 @@ class EventTarget {
   Iterable<String> get eventTypesWithRegistrations =>
       _eventRegistrations.keys.where((k) => _eventRegistrations[k]!.isNotEmpty);
 
-  IncompleteData _oldValue = IncompleteData.empty();
+  final Map<EventListener, IncompleteData> _valuesNotified = {};
 
   void notifyDataChanged(IncompleteData newValue) {
-    if (!newValue.isComplete && _oldValue.isComplete) return;
     if (hasEventRegistrations) {
-      eventTypesWithRegistrations
-          .expand((t) =>
-              const TreeEventGenerator().generateEvents(t, _oldValue, newValue))
-          .forEach(dispatchEvent);
+      for (var t in eventTypesWithRegistrations) {
+        var cache = <IncompleteData, List<Event>>{};
+
+        for (var l in _eventRegistrations[t]!) {
+          var oldValue = _valuesNotified[l] ?? IncompleteData.empty();
+          if (!newValue.isComplete && oldValue.isComplete) continue;
+          var events = cache[oldValue] ??
+              const TreeEventGenerator().generateEvents(t, oldValue, newValue);
+
+          for (var e in events) {
+            l(e);
+          }
+          _valuesNotified[l] = newValue;
+        }
+      }
     }
-    _oldValue = newValue;
   }
 
   void dispatchEvent(Event event) {
@@ -50,15 +59,17 @@ class EventTarget {
     _eventRegistrations[event.type]!.toList().forEach((l) => l(event));
   }
 
-  void addEventListener(String type, EventListener listener) {
+  void addEventListener(
+      String type, EventListener listener, IncompleteData value) {
     _eventRegistrations
         .putIfAbsent(type, () => <void Function(Event)>{})
         .add(listener);
     _emptyListenersSince = null;
 
     var events = const TreeEventGenerator()
-        .generateEvents(type, IncompleteData.empty(), _oldValue);
+        .generateEvents(type, IncompleteData.empty(), value);
     events.where((e) => e.type == type).forEach((e) => listener(e));
+    _valuesNotified[listener] = value;
   }
 
   void removeEventListener(String type, EventListener? listener) {
@@ -69,6 +80,7 @@ class EventTarget {
           .putIfAbsent(type, () => <void Function(Event)>{})
           .remove(listener);
     }
+    _valuesNotified.remove(listener);
     if (!hasEventRegistrations) {
       _emptyListenersSince = clock.now();
     }
