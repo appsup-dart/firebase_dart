@@ -288,6 +288,8 @@ extension _QueryX on Query {
       return (this as IsolateQuery).filter;
     } else if (this is QueryImpl) {
       return (this as QueryImpl).filter;
+    } else if (this is TransactionalQuery) {
+      return (this as TransactionalQuery)._query.filter;
     }
     throw UnimplementedError();
   }
