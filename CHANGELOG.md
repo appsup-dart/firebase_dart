@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-04-13
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.3.6`](#firebase_dart---v136)
+ - [`firebase_dart_plus` - `v0.1.0+16`](#firebase_dart_plus---v01016)
+ - [`firebase_dart_flutter` - `v1.1.19`](#firebase_dart_flutter---v1119)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.1.19`
+
+---
+
+#### `firebase_dart` - `v1.3.6`
+
+ - **FIX**(database): previously complete query should not notify new targets. ([d3339749](https://github.com/appsup-dart/firebase_dart/commit/d3339749115656cbcaf079ad264556a3a5b93a4c))
+
+#### `firebase_dart_plus` - `v0.1.0+16`
+
+ - **FIX**(firebase_dart_plus): allow recursive write batches. ([1e50d8ad](https://github.com/appsup-dart/firebase_dart/commit/1e50d8adeb283b3ad8156648d25d5c13bcff4a0e))
+
+
 ## 2025-04-09
 
 ### Changes

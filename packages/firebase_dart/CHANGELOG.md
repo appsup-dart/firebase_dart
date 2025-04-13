@@ -1,3 +1,7 @@
+## 1.3.6
+
+ - **FIX**(database): previously complete query should not notify new targets. ([d3339749](https://github.com/appsup-dart/firebase_dart/commit/d3339749115656cbcaf079ad264556a3a5b93a4c))
+
 ## 1.3.5
 
  - **FIX**: timeouts when using `withClock`. ([31801ed9](https://github.com/appsup-dart/firebase_dart/commit/31801ed9fe8b9792b3749ae38544d865ac63666d))
