@@ -207,8 +207,10 @@ class FlutterApplicationVerifier extends BaseApplicationVerifier {
               isSandbox: !kReleaseMode)
           .timeout(defaultTimeout);
 
-      return completer.future.timeout(timeout);
-    } catch (e) {
+      return await completer.future.timeout(timeout);
+    } catch (e, tr) {
+      Logger('FlutterApplicationVerifier')
+          .warning('Failed verifying with APNS', e, tr);
       return null;
     }
   }
