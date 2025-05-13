@@ -64,6 +64,87 @@ void main() {
     });
   });
   group('SyncTree', () {
+    test(
+        'Null check operator used on a null value, when reconnecting with a query that gets upgraded',
+        () {
+      var syncTree = SyncTree('mem:///', queryRegistrar: _Registrar());
+
+      syncTree.addEventListener(
+          'cancel',
+          Name.parsePath('/test/child'),
+          QueryFilter(
+              ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1),
+          (event) {});
+      var point =
+          syncTree.root.children[Name('test')]!.children[Name('child')]!.value;
+      syncTree.handleInvalidPaths();
+      syncTree.applyServerOperation(
+          TreeOperation.overwrite(
+              Name.parsePath('/test/child'), TreeStructuredData()),
+          QuerySpec(
+            Name.parsePath('/test/child'),
+            QueryFilter(
+                ordering: TreeStructuredDataOrdering.byChild('order'),
+                limit: 1),
+          ));
+      syncTree.applyUpgrade(
+        Name.parsePath('/test/child'),
+        QueryFilter(
+            ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1),
+      );
+
+      expect(point.isCompleteFromParent, false);
+      expect(
+          point.views.keys.single,
+          QueryFilter(
+              ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1));
+
+      syncTree.addEventListener(
+          'cancel',
+          Name.parsePath('/test'),
+          QueryFilter(ordering: TreeStructuredDataOrdering.byKey(), limit: 1),
+          (event) {});
+      syncTree.handleInvalidPaths();
+      expect(point.isCompleteFromParent,
+          false); // when the listeners are registered in opposite order, this would be true. Should it be true in this case as well?
+      expect(
+          point.views.keys.single,
+          QueryFilter(
+              ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1));
+
+      syncTree.applyServerOperation(
+          TreeOperation.overwrite(
+              Name.parsePath('/test'), TreeStructuredData()),
+          QuerySpec(
+            Name.parsePath('/test'),
+            QueryFilter(ordering: TreeStructuredDataOrdering.byKey(), limit: 1),
+          ));
+      expect(point.isCompleteFromParent, true);
+      expect(point.views.keys, [
+        QueryFilter(
+            ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1),
+        QueryFilter(),
+      ]);
+
+      // when a connection is lost and re-established, the apply upgrade will be called again
+      syncTree.applyUpgrade(
+        Name.parsePath('/test/child'),
+        QueryFilter(
+            ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1),
+      );
+      expect(point.isCompleteFromParent, true);
+      expect(point.views.keys,
+          contains(QueryFilter())); // this should not remove the main query
+
+      syncTree.applyServerOperation(
+          TreeOperation.overwrite(
+              Name.parsePath('/test'), TreeStructuredData.fromJson({'a': 1})),
+          QuerySpec(
+            Name.parsePath('/test'),
+            QueryFilter(ordering: TreeStructuredDataOrdering.byKey(), limit: 1),
+          ));
+    });
+
     test('Previously complete query should not notify new targets', () async {
       var syncTree = SyncTree('mem:///', queryRegistrar: _Registrar());
 

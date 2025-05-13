@@ -476,12 +476,13 @@ class SyncPoint {
     if (masterView == null) return;
     for (var v in views.values) {
       if (v == masterView) continue;
+      if (v.masterFilter == const QueryFilter()) continue;
 
       for (var e in v.observers.entries) {
         masterView.adoptEventTarget(e.key, e.value);
       }
     }
-    views.removeWhere((k, v) => v != masterView);
+    views.removeWhere((k, v) => k != const QueryFilter() && v != masterView);
   }
 
   /// Removes all observers that do not have any listeners since [from].
