@@ -64,6 +64,106 @@ void main() {
     });
   });
   group('SyncTree', () {
+    test('Upgraded query should also serve new queries', () {
+      var syncTree = SyncTree('mem:///', queryRegistrar: _Registrar());
+
+      syncTree.addEventListener(
+          'cancel',
+          Name.parsePath('/test/child'),
+          QueryFilter(
+              ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1),
+          (event) {});
+
+      syncTree.handleInvalidPaths();
+      syncTree.applyServerOperation(
+          TreeOperation.overwrite(Name.parsePath('/test/child'),
+              TreeStructuredData.fromJson({'a': 1})),
+          QuerySpec(
+            Name.parsePath('/test/child'),
+            QueryFilter(
+                ordering: TreeStructuredDataOrdering.byChild('order'),
+                limit: 1),
+          ));
+      syncTree.applyUpgrade(
+        Name.parsePath('/test/child'),
+        QueryFilter(
+            ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1),
+      );
+      var point =
+          syncTree.root.children[Name('test')]!.children[Name('child')]!.value;
+      expect(
+          point.views.keys.single,
+          QueryFilter(
+              ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1));
+
+      syncTree.addEventListener(
+          'cancel',
+          Name.parsePath('/test/child'),
+          QueryFilter(
+              ordering: TreeStructuredDataOrdering.byChild('order'), limit: 2),
+          (event) {});
+
+      syncTree.handleInvalidPaths();
+      expect(point.views.keys, [
+        QueryFilter(
+            ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1)
+      ]);
+    }, skip: 'not working yet, would improve performance');
+    test('Upgraded query should continue to serve queries', () {
+      var syncTree = SyncTree('mem:///', queryRegistrar: _Registrar());
+
+      syncTree.addEventListener(
+          'cancel',
+          Name.parsePath('/test/child'),
+          QueryFilter(
+              ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1),
+          (event) {});
+      syncTree.handleInvalidPaths();
+      syncTree.addEventListener(
+          'cancel',
+          Name.parsePath('/test/child'),
+          QueryFilter(
+              ordering: TreeStructuredDataOrdering.byChild('order'), limit: 2),
+          (event) {});
+      syncTree.handleInvalidPaths();
+      var point =
+          syncTree.root.children[Name('test')]!.children[Name('child')]!.value;
+
+      syncTree.applyServerOperation(
+          TreeOperation.overwrite(Name.parsePath('/test/child'),
+              TreeStructuredData.fromJson({'a': 1})),
+          QuerySpec(
+            Name.parsePath('/test/child'),
+            QueryFilter(
+                ordering: TreeStructuredDataOrdering.byChild('order'),
+                limit: 1),
+          ));
+      syncTree.applyUpgrade(
+        Name.parsePath('/test/child'),
+        QueryFilter(
+            ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1),
+      );
+      expect(
+          point.views.keys.single,
+          QueryFilter(
+              ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1));
+
+      syncTree.applyServerOperation(
+          TreeOperation.overwrite(Name.parsePath('/test/child'),
+              TreeStructuredData.fromJson({'b': 1})),
+          QuerySpec(
+            Name.parsePath('/test/child'),
+            QueryFilter(
+                ordering: TreeStructuredDataOrdering.byChild('order'),
+                limit: 1),
+          ));
+      syncTree.handleInvalidPaths();
+
+      expect(point.views.keys, [
+        QueryFilter(
+            ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1)
+      ]);
+    }, skip: 'not working yet, would improve performance');
     test(
         'Null check operator used on a null value, when reconnecting with a query that gets upgraded',
         () {
