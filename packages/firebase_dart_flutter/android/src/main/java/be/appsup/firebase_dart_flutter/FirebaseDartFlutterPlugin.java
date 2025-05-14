@@ -10,6 +10,7 @@ import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Build;
+import android.content.pm.PackageManager;
 
 
 import androidx.annotation.NonNull;
@@ -29,7 +30,6 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.ConnectionResult;
@@ -55,6 +55,8 @@ public class FirebaseDartFlutterPlugin implements FlutterPlugin, MethodCallHandl
 
   private FlutterPluginBinding binding;
 
+  private Context applicationContext;
+
   static final String ACTION_AUTH_RECEIVED = "be.appsup.firebase_dart_flutter.ACTION_AUTH_RECEIVED";
   static final String ACTION_RECAPTCHA_RECEIVED = "be.appsup.firebase_dart_flutter.ACTION_RECAPTCHA_RECEIVED";
 
@@ -63,8 +65,17 @@ public class FirebaseDartFlutterPlugin implements FlutterPlugin, MethodCallHandl
     channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "firebase_dart_flutter");
     channel.setMethodCallHandler(this);
     binding = flutterPluginBinding;
+    applicationContext = binding.getApplicationContext();
+  }
 
+  private void bringAppToFront() {
+    Intent intent = applicationContext.getPackageManager()
+        .getLaunchIntentForPackage(applicationContext.getPackageName());
 
+    if (intent != null) {
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+      applicationContext.startActivity(intent);
+    }
   }
 
   @Override
@@ -103,6 +114,7 @@ public class FirebaseDartFlutterPlugin implements FlutterPlugin, MethodCallHandl
                 public void onReceive(Context context, Intent intent) {
                     result.success(bundleToMap(intent.getExtras()));
                     binding.getApplicationContext().unregisterReceiver(this);
+                    bringAppToFront();
                 }
             };
             IntentFilter filter = new IntentFilter(ACTION_AUTH_RECEIVED);
@@ -114,6 +126,7 @@ public class FirebaseDartFlutterPlugin implements FlutterPlugin, MethodCallHandl
                 public void onReceive(Context context, Intent intent) {
                     result.success(bundleToMap(intent.getExtras()));
                     binding.getApplicationContext().unregisterReceiver(this);
+                    bringAppToFront();
                 }
             };
             filter = new IntentFilter(ACTION_RECAPTCHA_RECEIVED);
