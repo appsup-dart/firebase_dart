@@ -10,11 +10,17 @@ import 'package:package_info/package_info.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hive/hive.dart';
 
+export 'package:firebase_dart/implementation/pure_dart.dart'
+    show ApplicationVerifier, RecaptchaApplicationVerifier;
+export 'package:firebase_dart_flutter/src/auth_handlers.dart'
+    show FlutterApplicationVerifier;
+
 class FirebaseDartFlutter {
   static const _channel = MethodChannel('firebase_dart_flutter');
 
   static Future<void> setup({
     bool isolated = !kIsWeb,
+    ApplicationVerifier? applicationVerifier,
   }) async {
     isolated = isolated && !kIsWeb;
     WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +40,7 @@ class FirebaseDartFlutter {
         launchUrl: kIsWeb
             ? null
             : (url, {bool popup = false}) async {
-                await launchUrl(url, mode: LaunchMode.externalApplication);
+                await launchUrl(url, mode: LaunchMode.inAppBrowserView);
               },
         authHandler: AuthHandler.from([
           GoogleAuthHandler(),
@@ -43,7 +49,8 @@ class FirebaseDartFlutter {
           FlutterAuthHandler(),
           const AuthHandler(),
         ]),
-        applicationVerifier: kIsWeb ? null : FlutterApplicationVerifier(),
+        applicationVerifier: applicationVerifier ??
+            (kIsWeb ? null : FlutterApplicationVerifier()),
         smsRetriever: AndroidSmsRetriever(),
         platform: await _getPlatform());
   }

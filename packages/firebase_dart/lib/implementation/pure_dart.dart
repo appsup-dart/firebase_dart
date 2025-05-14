@@ -12,7 +12,6 @@ import 'package:http/http.dart' as http;
 
 import 'package:meta/meta.dart';
 
-import '../core.dart';
 import '../src/core.dart';
 import '../src/database/impl/repo.dart';
 
@@ -30,6 +29,8 @@ export 'package:firebase_dart/src/auth/authhandlers.dart'
 export 'package:firebase_dart/src/auth/app_verifier.dart'
     show ApplicationVerificationResult;
 export 'package:firebase_dart/src/auth/sms_retriever.dart' show SmsRetriever;
+export 'package:firebase_dart/src/auth/app_verifier.dart'
+    show RecaptchaApplicationVerifier, ApplicationVerifier;
 
 const bool _kIsWeb = identical(0, 0.0);
 

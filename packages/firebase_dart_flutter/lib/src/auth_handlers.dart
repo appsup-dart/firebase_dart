@@ -140,6 +140,13 @@ Future<Map<String, dynamic>> _getResult(String type) async {
 }
 
 class FlutterApplicationVerifier extends BaseApplicationVerifier {
+  final bool usePlayIntegrity;
+
+  final bool useApns;
+
+  FlutterApplicationVerifier(
+      {this.usePlayIntegrity = true, this.useApns = true});
+
   final DeepLinkRetriever _deepLinkRetriever = DeepLinkRetriever.instance;
   Future<String>? _lastRecaptchaResult;
 
@@ -171,6 +178,7 @@ class FlutterApplicationVerifier extends BaseApplicationVerifier {
 
   @override
   Future<String?> verifyWithApns(FirebaseAuth auth) async {
+    if (!useApns) return null;
     try {
       var apns = ApnsPushConnectorOnly();
 
@@ -218,6 +226,7 @@ class FlutterApplicationVerifier extends BaseApplicationVerifier {
   @override
   Future<String?> verifyWithPlayIntegrity(
       FirebaseAuth auth, String nonce) async {
+    if (!usePlayIntegrity) return null;
     var available = await _isGooglePlayServicesAvailable;
     if (!available) return null;
 
