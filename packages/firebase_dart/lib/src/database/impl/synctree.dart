@@ -29,25 +29,12 @@ class MasterView {
 
   final String? debugName;
 
-  ViewCache __data;
-
-  ViewCache get _data => __data;
-  set _data(ViewCache v) {
-    if ((debugName ?? '').startsWith('mem://test/billingAccounts/') &&
-        v.localVersion.isComplete &&
-        (debugName ?? '').endsWith('ownerGroup') &&
-        v.localVersion.value == TreeStructuredData() &&
-        _data.localVersion.value != TreeStructuredData()) {
-      print(
-          '*** MasterView: set data $debugName ${v.localVersion} ${_data.localVersion}');
-    }
-    __data = v;
-  }
+  ViewCache _data;
 
   final Map<QueryFilter, EventTarget> observers = {};
 
   MasterView(this.masterFilter, {this.debugName})
-      : __data = ViewCache(IncompleteData.empty(masterFilter),
+      : _data = ViewCache(IncompleteData.empty(masterFilter),
             IncompleteData.empty(masterFilter));
 
   MasterView withFilter(QueryFilter filter) =>
@@ -135,10 +122,6 @@ class MasterView {
   /// Returns true when the listener was added.
   bool addEventListener(
       String type, QueryFilter filter, EventListener listener) {
-    if ((debugName ?? '').startsWith('mem://test/billingAccounts/') &&
-        (debugName ?? '').endsWith('ownerGroup')) {
-      print('*** MasterView: add event listener');
-    }
     if (!contains(filter)) return false;
     observers
         .putIfAbsent(filter, () => EventTarget())
@@ -158,10 +141,6 @@ class MasterView {
   /// Returns true when this operation removed the last listener for the filter.
   bool removeEventListener(
       String type, QueryFilter filter, EventListener listener) {
-    if ((debugName ?? '').startsWith('mem://test/billingAccounts/') &&
-        (debugName ?? '').endsWith('ownerGroup')) {
-      print('*** MasterView: add event listener');
-    }
     var target = observers[filter];
     if (target == null) return false;
     if (!target.hasEventRegistrations) return false;
@@ -766,11 +745,6 @@ class QueryRegistrarTree {
     var filtersToDeactivate = activeFilters.difference(filters.toSet());
 
     for (var f in filtersToActivate) {
-      if (path.length == 3 &&
-          path.first == Name('billingAccounts') &&
-          path[2] == Name('ownerGroup')) {
-        print('*** SyncTree: register $path $f');
-      }
       queryRegistrar
           .register(QuerySpec(path, f),
               hash: hashFcn(f), priority: priorityFcn(f))
@@ -781,15 +755,9 @@ class QueryRegistrarTree {
     }
 
     for (var f in filtersToDeactivate) {
-      if (path.length == 3 &&
-          path.first == Name('billingAccounts') &&
-          path[2] == Name('ownerGroup')) {
-        print('*** SyncTree: unregister $path $f');
-      }
       queryRegistrar.unregister(QuerySpec(path, f)).then((v) {
         if (onUnregistered != null) onUnregistered(f);
       });
-      // if (onUnregistered != null) onUnregistered(f);
     }
 
     activeFilters =
@@ -911,11 +879,6 @@ class SyncTree {
 
   void applyAckListen(Path<Name> path, QueryFilter filter) {
     if (_isDestroyed) return;
-    if (path.length == 3 &&
-        path.first == Name('billingAccounts') &&
-        path[2] == Name('ownerGroup')) {
-      print('*** SyncTree: registered $path $filter');
-    }
     var node = root.subtree(path, _createNode);
     var point = node.value;
     if (point.views[filter] == null) return;
@@ -929,12 +892,6 @@ class SyncTree {
     var node = root.subtree(path, _createNode);
     var point = node.value;
     var v = point.views[filter];
-    if (path.length == 3 &&
-        path.first == Name('billingAccounts') &&
-        path[2] == Name('ownerGroup')) {
-      print(
-          '*** SyncTree: unregistered $path $filter ${v?.observers.values.fold(false, (a, b) => a || b.hasEventRegistrations)} ${point.isCompleteFromParent}');
-    }
     if (v != null && v.observers.isEmpty) {
       if (!point.isCompleteFromParent || filter != const QueryFilter()) {
         point.views.remove(filter);
@@ -948,12 +905,6 @@ class SyncTree {
       var node = root.subtree(path, _createNode);
       var point = node.value;
       var queries = point.minimalSetOfQueries.toList();
-      if (path.length == 3 &&
-          path.first == Name('billingAccounts') &&
-          path[2] == Name('ownerGroup')) {
-        print(
-            '*** SyncTree: handle invalid paths $path ${point.isCompleteFromParent} $queries');
-      }
 
       registrar.setActiveQueriesOnPath(path, queries,
           hashFcn: (f) => point.views[f]!._data.serverVersion.value.hash,
