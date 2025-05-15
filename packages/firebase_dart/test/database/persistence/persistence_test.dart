@@ -30,19 +30,20 @@ void main() async {
 
 void _doTest(int? seed) {
   fakeAsync((fakeAsync) {
-    var tester = RandomSyncTreeTester(seed: seed, unlistenProbability: 0.1);
+    var generator =
+        RandomSyncTreeRecordingGenerator(seed: seed, unlistenProbability: 0.1);
 
     for (var i = 0; i < 1000; i++) {
-      tester.next();
+      generator.next();
       fakeAsync.flushMicrotasks();
 
-      tester.checkPersistedActiveQueries();
-      tester.checkPersistedWrites();
+      generator.tester.checkPersistedActiveQueries();
+      generator.tester.checkPersistedWrites();
 
-      if (tester.outstandingListens.isEmpty) {
-        tester.checkPersistedServerCache();
+      if (generator.tester.outstandingListens.isEmpty) {
+        generator.tester.checkPersistedServerCache();
       }
     }
-    tester.flush();
+    generator.flush();
   });
 }

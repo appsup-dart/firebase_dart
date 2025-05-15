@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
-import 'package:collection/collection.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/event.dart';
@@ -14,6 +12,7 @@ import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
+import 'package:firebase_dart/src/synctree_recorder.dart';
 import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
 import 'package:sortedmap/sortedmap.dart';
@@ -51,148 +50,6 @@ class MemoryQueryRegistrar extends QueryRegistrar {
   }
 }
 
-enum SyncTreeTesterEventType {
-  listen,
-  unlisten,
-  operation,
-  ackListen,
-  ackWrite,
-  revertWrite,
-  serverOperation
-}
-
-class SyncTreeTesterEvent {
-  final SyncTreeTesterEventType type;
-
-  final QuerySpec? query;
-
-  TreeOperation? operation;
-
-  SyncTreeTesterEvent.listen(this.query)
-      : operation = null,
-        type = SyncTreeTesterEventType.listen;
-  SyncTreeTesterEvent.unlisten(this.query)
-      : operation = null,
-        type = SyncTreeTesterEventType.unlisten;
-  SyncTreeTesterEvent.operation(this.operation)
-      : query = null,
-        type = SyncTreeTesterEventType.operation;
-  SyncTreeTesterEvent.ackListen(this.query)
-      : operation = null,
-        type = SyncTreeTesterEventType.ackListen;
-  SyncTreeTesterEvent.ackWrite(this.operation)
-      : query = null,
-        type = SyncTreeTesterEventType.ackWrite;
-  SyncTreeTesterEvent.revertWrite(this.operation)
-      : query = null,
-        type = SyncTreeTesterEventType.revertWrite;
-  SyncTreeTesterEvent.serverOperation(this.operation)
-      : query = null,
-        type = SyncTreeTesterEventType.serverOperation;
-
-  @override
-  String toString() {
-    return 'SyncTreeTesterEvent{type: $type, query: $query, operation: $operation}';
-  }
-
-  String toCode() {
-    switch (type) {
-      case SyncTreeTesterEventType.listen:
-        return 'SyncTreeTesterEvent.listen(${query!.toCode()})';
-      case SyncTreeTesterEventType.unlisten:
-        return 'SyncTreeTesterEvent.unlisten(${query!.toCode()})';
-      case SyncTreeTesterEventType.operation:
-        return 'SyncTreeTesterEvent.operation(${operation!.toCode()})';
-      case SyncTreeTesterEventType.ackListen:
-        return 'SyncTreeTesterEvent.ackListen(${query!.toCode()})';
-      case SyncTreeTesterEventType.ackWrite:
-        return 'SyncTreeTesterEvent.ackWrite(${operation!.toCode()})';
-      case SyncTreeTesterEventType.revertWrite:
-        return 'SyncTreeTesterEvent.revertWrite(${operation!.toCode()})';
-      case SyncTreeTesterEventType.serverOperation:
-        return 'SyncTreeTesterEvent.serverOperation(${operation!.toCode()})';
-    }
-  }
-
-  @override
-  int get hashCode => Object.hash(type, query, operation);
-
-  @override
-  bool operator ==(Object other) =>
-      other is SyncTreeTesterEvent &&
-      other.type == type &&
-      other.query == query &&
-      other.operation == operation;
-}
-
-extension QuerySpecCodeX on QuerySpec {
-  String toCode() {
-    return 'QuerySpec(${path.toCode()}, ${params.toCode()})';
-  }
-}
-
-extension PathCodeX on Path<Name> {
-  String toCode() {
-    return 'Path.from([${map((v) => v.toCode()).join(', ')}])';
-  }
-}
-
-extension NameCodeX on Name {
-  String toCode() {
-    return 'Name(\'$this\')';
-  }
-}
-
-extension QueryFilterCodeX on QueryFilter {
-  String toCode() {
-    return 'QueryFilter(ordering: ${ordering.toCode()}, limit: $limit, reversed: $reversed, validInterval: ${validInterval.toCode()})';
-  }
-}
-
-extension OrderingCodeX on Ordering {
-  String toCode() {
-    if (this is KeyOrdering) {
-      return 'KeyOrdering()';
-    } else if (this is PriorityOrdering) {
-      return 'PriorityOrdering()';
-    } else if (this is ValueOrdering) {
-      return 'ValueOrdering()';
-    } else {
-      return 'ChildOrdering(\'${(this as ChildOrdering).child}\')';
-    }
-  }
-}
-
-extension KeyValueIntervalCodeX on KeyValueInterval {
-  String toCode() {
-    return 'KeyValueInterval(${(start.key as Name?)?.toCode()}, ${(start.value as TreeStructuredData?)?.toCode()}, ${(end.key as Name?)?.toCode()}, ${(end.value as TreeStructuredData?)?.toCode()})';
-  }
-}
-
-extension TreeOperationCodeX on TreeOperation {
-  String toCode() {
-    return 'TreeOperation(${path.toCode()}, ${nodeOperation?.toCode()})';
-  }
-}
-
-extension OperationCodeX on Operation {
-  String toCode() {
-    if (this is Overwrite) {
-      return 'Overwrite(${(this as Overwrite).value.toCode()})';
-    } else if (this is Merge) {
-      return 'Merge.fromOperations([${(this as Merge).overwrites.map((o) => o.toCode()).join(', ')}])';
-    } else {
-      return 'SetPriority(${(this as SetPriority).value.toCode()})';
-    }
-  }
-}
-
-extension TreeStructuredDataCodeX on TreeStructuredData {
-  String toCode() {
-    return 'TreeStructuredData.fromJson(${json.encode(toJson(true))})';
-  }
-}
-
 class SyncTreeTester {
   final bool usePersistence;
 
@@ -208,67 +65,77 @@ class SyncTreeTester {
         : null,
   );
 
+  /// A list of all listeners that are registered on the server, but not yet
+  /// acknowledged.
   final List<MapEntry<QuerySpec, Completer<void>>> outstandingListens = [];
 
-  final Map<QuerySpec, EventListener> userListens = {};
+  /// All listeners that are registered in the sync tree.
+  final Map<int, MapEntry<QuerySpec, EventListener>> userListens = {};
 
+  /// The last reported value for each registered listener.
   final Map<QuerySpec, TreeStructuredData> registeredListens = {};
 
+  /// The current state of the server.
   TreeStructuredData _currentServerState = TreeStructuredData();
 
-  final List<MapEntry<int, TreeOperation>> outstandingWrites = [];
+  /// A list of all writes that are pending acknowledgement from the server.
+  final Map<int, TreeOperation> outstandingWrites = {};
 
   TreeStructuredData get currentServerState => _currentServerState;
 
-  int _currentWriteId = 0;
-
   SyncTreeTester({this.usePersistence = true});
 
-  void applyEvent(SyncTreeTesterEvent event) {
+  void applyEvent(SyncTreeOperation event) {
     _logger.fine(event);
 
     switch (event.type) {
-      case SyncTreeTesterEventType.listen:
-        applyUserListen(event.query!);
+      case SyncTreeOperationType.listen:
+        applyUserListen(event.query!, event.listenType!, event.listenerId!);
         break;
-      case SyncTreeTesterEventType.unlisten:
-        applyUserUnlisten(event.query!);
+      case SyncTreeOperationType.unlisten:
+        applyUserUnlisten(event.query!, event.listenType!, event.listenerId!);
         break;
-      case SyncTreeTesterEventType.operation:
-        applyUserOperation(event.operation!);
+      case SyncTreeOperationType.operation:
+        applyUserOperation(event.operation!, event.writeId!);
         break;
-      case SyncTreeTesterEventType.ackListen:
+      case SyncTreeOperationType.ackListen:
         applyAckListen(event.query!);
         break;
-      case SyncTreeTesterEventType.ackWrite:
-        applyAckWrite(event.operation!);
+      case SyncTreeOperationType.ackWrite:
+        applyAckWrite(event.query!.path, event.writeId!);
         break;
-      case SyncTreeTesterEventType.revertWrite:
-        applyRevertWrite(event.operation!);
+      case SyncTreeOperationType.revertWrite:
+        applyRevertWrite(event.query!.path, event.writeId!);
         break;
-      case SyncTreeTesterEventType.serverOperation:
+      case SyncTreeOperationType.serverOperation:
         applyServerOperation(event.operation!);
+        break;
+      case SyncTreeOperationType.ackUnlisten:
+        // TODO: Handle this case.
+        break;
+      case SyncTreeOperationType.listenRevoked:
+        // TODO: Handle this case.
+        break;
+      case SyncTreeOperationType.upgrade:
+        // TODO: Handle this case.
         break;
     }
   }
 
-  void applyUserUnlisten(QuerySpec query) {
-    syncTree.removeEventListener(
-        'cancel', query.path, query.params, userListens.remove(query)!);
+  void applyUserUnlisten(QuerySpec query, String listenType, int listenerId) {
+    syncTree.removeEventListener(listenType, query.path, query.params,
+        userListens.remove(listenerId)!.value);
   }
 
-  void applyUserListen(QuerySpec query) {
-    userListens[query] ??= (event) {
-      userListens.remove(query);
-    };
+  void applyUserListen(QuerySpec query, String listenType, int listenerId) {
+    userListens[listenerId] ??= MapEntry(query, (event) {});
     syncTree.addEventListener(
-        'cancel', query.path, query.params, userListens[query]!);
+        listenType, query.path, query.params, userListens[listenerId]!.value);
   }
 
-  void applyUserOperation(TreeOperation operation) {
-    var taggedOperation = MapEntry(_currentWriteId++, operation);
-    syncTree.applyUserOperation(taggedOperation.value, taggedOperation.key);
-    outstandingWrites.add(taggedOperation);
+  void applyUserOperation(TreeOperation operation, int writeId) {
+    syncTree.applyUserOperation(operation, writeId);
+    outstandingWrites[writeId] = operation;
   }
 
   void applyAckListen(QuerySpec query) {
@@ -280,23 +147,23 @@ class SyncTreeTester {
     e.value.complete();
   }
 
-  void applyAckWrite(TreeOperation operation) {
-    if (outstandingWrites.isEmpty ||
-        outstandingWrites.first.value != operation) {
+  void applyAckWrite(Path<Name> path, int writeId) {
+    var operation = outstandingWrites.remove(writeId);
+    if (operation == null) {
+      _logger.warning('No outstanding write for $writeId at path $path');
       return;
     }
-    var e = outstandingWrites.removeAt(0);
     _updateServerState(operation.apply(_currentServerState));
-    syncTree.applyAck(operation.path, e.key, true);
+    syncTree.applyAck(path, writeId, true);
   }
 
-  void applyRevertWrite(TreeOperation operation) {
-    if (outstandingWrites.isEmpty ||
-        outstandingWrites.first.value != operation) {
+  void applyRevertWrite(Path<Name> path, int writeId) {
+    var operation = outstandingWrites.remove(writeId);
+    if (operation == null) {
+      _logger.warning('No outstanding write for $writeId at path $path');
       return;
     }
-    var e = outstandingWrites.removeAt(0);
-    syncTree.applyAck(operation.path, e.key, false);
+    syncTree.applyAck(path, writeId, false);
   }
 
   void applyServerOperation(TreeOperation operation) {
@@ -322,12 +189,7 @@ class SyncTreeTester {
   }
 }
 
-class SyncTreeTesterRecording {
-  List<SyncTreeTesterEvent> events = [];
-
-  SyncTreeTesterRecording({List<SyncTreeTesterEvent>? events})
-      : events = events ?? [];
-
+extension SyncTreeTesterRecording on SyncTreeRecording {
   void replay(FakeAsync fakeAsync, {bool usePersistence = true}) {
     var tester = SyncTreeTester(usePersistence: usePersistence);
     for (var e in events) {
@@ -339,54 +201,31 @@ class SyncTreeTesterRecording {
       tester.checkLocalVersions();
     }
   }
-
-  @override
-  String toString() {
-    return 'SyncTreeTesterRecording{events: $events}';
-  }
-
-  String toCode() {
-    var buffer = StringBuffer();
-    buffer.writeln('SyncTreeTesterRecording(');
-    buffer.writeln('  events: [');
-    for (var e in events) {
-      buffer.writeln('    ${e.toCode()},');
-    }
-    buffer.writeln('  ]');
-    buffer.writeln(')');
-    return buffer.toString();
-  }
-
-  @override
-  int get hashCode => const ListEquality().hash(events);
-
-  @override
-  bool operator ==(Object other) =>
-      other is SyncTreeTesterRecording &&
-      const ListEquality().equals(events, other.events);
 }
 
-mixin SyncTreeTesterRecorder on SyncTreeTester {
-  SyncTreeTesterRecording? recording;
+class SyncTreeTesterRecorder extends SyncTreeTester {
+  SyncTreeTesterRecorder({super.usePersistence = true});
+
+  SyncTreeRecording? recording;
   void startRecording() {
     assert(recording == null);
-    recording = SyncTreeTesterRecording();
+    recording = SyncTreeRecording();
   }
 
-  SyncTreeTesterRecording stopRecording() {
+  SyncTreeRecording stopRecording() {
     var r = recording!;
     recording = null;
     return r;
   }
 
   @override
-  void applyEvent(SyncTreeTesterEvent event) {
+  void applyEvent(SyncTreeOperation event) {
     recording?.events.add(event);
     super.applyEvent(event);
   }
 }
 
-class RandomSyncTreeTester extends SyncTreeTester with SyncTreeTesterRecorder {
+class RandomSyncTreeRecordingGenerator {
   static Logger get logger => _logger;
 
   final RandomGenerator random;
@@ -405,7 +244,11 @@ class RandomSyncTreeTester extends SyncTreeTester with SyncTreeTesterRecorder {
 
   final double revertProbability;
 
-  RandomSyncTreeTester(
+  final SyncTreeTesterRecorder tester;
+
+  int _currentWriteId = 0;
+
+  RandomSyncTreeRecordingGenerator(
       {int? seed,
       this.listenProbability = 0.1,
       this.unlistenProbability = 0.0,
@@ -414,56 +257,60 @@ class RandomSyncTreeTester extends SyncTreeTester with SyncTreeTesterRecorder {
       this.serverAckProbability = 0.9,
       this.revertProbability = 0.2,
       this.serverOperationProbability = 0.1,
-      super.usePersistence = true})
-      : random = RandomGenerator(seed ?? DateTime.now().millisecondsSinceEpoch);
+      bool usePersistence = true})
+      : random = RandomGenerator(seed ?? DateTime.now().millisecondsSinceEpoch),
+        tester = SyncTreeTesterRecorder(usePersistence: usePersistence);
 
-  SyncTreeTesterEvent _generateUserListen() {
+  SyncTreeOperation _generateUserListen() {
     var query = random.nextQuerySpec();
-    return SyncTreeTesterEvent.listen(query);
+    return SyncTreeOperation.listen(query, 'cancel', Object().hashCode);
   }
 
-  SyncTreeTesterEvent _generateUserUnlisten() {
-    var query = userListens.keys.toList()[random.nextInt(userListens.length)];
-    return SyncTreeTesterEvent.unlisten(query);
+  SyncTreeOperation _generateUserUnlisten() {
+    var id = tester.userListens.keys
+        .toList()[random.nextInt(tester.userListens.length)];
+    return SyncTreeOperation.unlisten(
+        tester.userListens[id]!.key, 'cancel', id);
   }
 
-  SyncTreeTesterEvent _generateUserOperation() {
+  SyncTreeOperation _generateUserOperation() {
     var operation = random.nextOperation();
-    return SyncTreeTesterEvent.operation(operation);
+    return SyncTreeOperation.operation(operation, _currentWriteId++);
   }
 
-  SyncTreeTesterEvent? _handleOutstandingListen() {
-    if (outstandingListens.isEmpty) return null;
-    return SyncTreeTesterEvent.ackListen(outstandingListens.first.key);
+  SyncTreeOperation? _handleOutstandingListen() {
+    if (tester.outstandingListens.isEmpty) return null;
+    return SyncTreeOperation.ackListen(tester.outstandingListens.first.key);
   }
 
-  SyncTreeTesterEvent? _handleOutstandingWrite() {
-    if (outstandingWrites.isEmpty) return null;
+  SyncTreeOperation? _handleOutstandingWrite() {
+    if (tester.outstandingWrites.isEmpty) return null;
 
-    var op = outstandingWrites.first;
-    var path = op.value.path;
+    var writeId = tester.outstandingWrites.keys.first;
+    var op = tester.outstandingWrites[writeId]!;
+    var path = op.path;
     var isEmptyPriorityError = path.isNotEmpty &&
         path.last.isPriorityChildName &&
-        _currentServerState.getChild(path.parent!).isEmpty;
+        tester._currentServerState.getChild(path.parent!).isEmpty;
 
     if (random.nextDouble() < revertProbability || isEmptyPriorityError) {
-      return SyncTreeTesterEvent.revertWrite(op.value);
+      return SyncTreeOperation.revertWrite(path, writeId);
     } else {
-      return SyncTreeTesterEvent.ackWrite(op.value);
+      return SyncTreeOperation.ackWrite(path, writeId);
     }
   }
 
-  SyncTreeTesterEvent _generateServerOperation() {
+  SyncTreeOperation _generateServerOperation() {
     var op = random.nextOperation();
-    return SyncTreeTesterEvent.serverOperation(op);
+    return SyncTreeOperation.serverOperation(op, QuerySpec(Path.from([])));
   }
 
   void next() {
-    SyncTreeTesterEvent? event;
+    SyncTreeOperation? event;
     if (random.nextDouble() < listenProbability) {
       event = _generateUserListen();
     } else if (unlistenProbability != 0 &&
-        userListens.isNotEmpty &&
+        tester.userListens.isNotEmpty &&
         random.nextDouble() < unlistenProbability) {
       event = _generateUserUnlisten();
     } else if (random.nextDouble() < userOperationProbability) {
@@ -477,21 +324,21 @@ class RandomSyncTreeTester extends SyncTreeTester with SyncTreeTesterRecorder {
     }
 
     if (event != null) {
-      applyEvent(event);
+      tester.applyEvent(event);
     }
   }
 
   void flush() {
-    while (outstandingListens.isNotEmpty) {
+    while (tester.outstandingListens.isNotEmpty) {
       var event = _handleOutstandingListen();
       if (event == null) break;
-      applyEvent(event);
+      tester.applyEvent(event);
       return;
     }
-    while (outstandingWrites.isNotEmpty) {
+    while (tester.outstandingWrites.isNotEmpty) {
       var event = _handleOutstandingWrite();
       if (event == null) break;
-      applyEvent(event);
+      tester.applyEvent(event);
       return;
     }
   }
@@ -558,8 +405,7 @@ extension SyncTreeTesterCheckX on SyncTreeTester {
 
   void checkPersistedWrites() {
     if (!usePersistence) return;
-    expect(storageEngine!.loadUserOperations(),
-        Map.fromEntries(outstandingWrites));
+    expect(storageEngine!.loadUserOperations(), outstandingWrites);
   }
 
   void checkPersistedServerCache() {
@@ -585,7 +431,7 @@ extension SyncTreeTesterCheckX on SyncTreeTester {
 
   void checkLocalVersions() {
     var v = currentServerState;
-    for (var w in outstandingWrites) {
+    for (var w in outstandingWrites.entries) {
       v = w.value.apply(v);
     }
 
@@ -598,7 +444,7 @@ extension SyncTreeTesterCheckX on SyncTreeTester {
         }
 
         // TODO: once completeness on user operation is correctly implemented, local versions should also match when there are still outstanding writes
-        if (outstandingWrites
+        if (outstandingWrites.entries
             .map((v) => v.value)
             .any((o) => o.path.isDescendantOf(path) || path == o.path)) return;
 

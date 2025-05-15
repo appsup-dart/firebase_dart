@@ -502,17 +502,27 @@ extension SyncTreeMeasurer on SyncTree {
 }
 
 class _Registrar extends QueryRegistrar {
+  final Map<QuerySpec, Completer<bool>> _pendingRegistrations = {};
+
   @override
   Future<void> close() async {}
 
   @override
   Future<bool> register(QuerySpec query,
       {required String hash, required int priority}) {
-    return Completer<bool>().future;
+    return (_pendingRegistrations[query] ??= Completer<bool>()).future;
   }
 
   @override
   Future<void> unregister(QuerySpec query) {
     return Completer<bool>().future;
+  }
+
+  Future<void> completeRegistration(QuerySpec query) {
+    var completer = _pendingRegistrations.remove(query);
+    if (completer != null) {
+      completer.complete(true);
+    }
+    return Future.value();
   }
 }

@@ -29,12 +29,25 @@ class MasterView {
 
   final String? debugName;
 
-  ViewCache _data;
+  ViewCache __data;
+
+  ViewCache get _data => __data;
+  set _data(ViewCache v) {
+    if ((debugName ?? '').startsWith('mem://test/billingAccounts/') &&
+        v.localVersion.isComplete &&
+        (debugName ?? '').endsWith('ownerGroup') &&
+        v.localVersion.value == TreeStructuredData() &&
+        _data.localVersion.value != TreeStructuredData()) {
+      print(
+          '*** MasterView: set data $debugName ${v.localVersion} ${_data.localVersion}');
+    }
+    __data = v;
+  }
 
   final Map<QueryFilter, EventTarget> observers = {};
 
   MasterView(this.masterFilter, {this.debugName})
-      : _data = ViewCache(IncompleteData.empty(masterFilter),
+      : __data = ViewCache(IncompleteData.empty(masterFilter),
             IncompleteData.empty(masterFilter));
 
   MasterView withFilter(QueryFilter filter) =>
@@ -122,6 +135,10 @@ class MasterView {
   /// Returns true when the listener was added.
   bool addEventListener(
       String type, QueryFilter filter, EventListener listener) {
+    if ((debugName ?? '').startsWith('mem://test/billingAccounts/') &&
+        (debugName ?? '').endsWith('ownerGroup')) {
+      print('*** MasterView: add event listener');
+    }
     if (!contains(filter)) return false;
     observers
         .putIfAbsent(filter, () => EventTarget())
@@ -141,6 +158,10 @@ class MasterView {
   /// Returns true when this operation removed the last listener for the filter.
   bool removeEventListener(
       String type, QueryFilter filter, EventListener listener) {
+    if ((debugName ?? '').startsWith('mem://test/billingAccounts/') &&
+        (debugName ?? '').endsWith('ownerGroup')) {
+      print('*** MasterView: add event listener');
+    }
     var target = observers[filter];
     if (target == null) return false;
     if (!target.hasEventRegistrations) return false;
@@ -745,6 +766,11 @@ class QueryRegistrarTree {
     var filtersToDeactivate = activeFilters.difference(filters.toSet());
 
     for (var f in filtersToActivate) {
+      if (path.length == 3 &&
+          path.first == Name('billingAccounts') &&
+          path[2] == Name('ownerGroup')) {
+        print('*** SyncTree: register $path $f');
+      }
       queryRegistrar
           .register(QuerySpec(path, f),
               hash: hashFcn(f), priority: priorityFcn(f))
@@ -755,9 +781,15 @@ class QueryRegistrarTree {
     }
 
     for (var f in filtersToDeactivate) {
+      if (path.length == 3 &&
+          path.first == Name('billingAccounts') &&
+          path[2] == Name('ownerGroup')) {
+        print('*** SyncTree: unregister $path $f');
+      }
       queryRegistrar.unregister(QuerySpec(path, f)).then((v) {
         if (onUnregistered != null) onUnregistered(f);
       });
+      // if (onUnregistered != null) onUnregistered(f);
     }
 
     activeFilters =
@@ -877,33 +909,58 @@ class SyncTree {
     return _pathsWithEmptyObservers.values.firstOrNull;
   }
 
+  void applyAckListen(Path<Name> path, QueryFilter filter) {
+    if (_isDestroyed) return;
+    if (path.length == 3 &&
+        path.first == Name('billingAccounts') &&
+        path[2] == Name('ownerGroup')) {
+      print('*** SyncTree: registered $path $filter');
+    }
+    var node = root.subtree(path, _createNode);
+    var point = node.value;
+    if (point.views[filter] == null) return;
+    applyServerOperation(
+        TreeOperation.overwrite(
+            path, point.views[filter]!._data.serverVersion.value),
+        QuerySpec(path, filter));
+  }
+
+  void applyAckUnlisten(Path<Name> path, QueryFilter filter) {
+    var node = root.subtree(path, _createNode);
+    var point = node.value;
+    var v = point.views[filter];
+    if (path.length == 3 &&
+        path.first == Name('billingAccounts') &&
+        path[2] == Name('ownerGroup')) {
+      print(
+          '*** SyncTree: unregistered $path $filter ${v?.observers.values.fold(false, (a, b) => a || b.hasEventRegistrations)} ${point.isCompleteFromParent}');
+    }
+    if (v != null && v.observers.isEmpty) {
+      if (!point.isCompleteFromParent || filter != const QueryFilter()) {
+        point.views.remove(filter);
+      }
+    }
+  }
+
   void handleInvalidPaths() {
     assert(!_isDestroyed);
     for (var path in _invalidPaths) {
       var node = root.subtree(path, _createNode);
       var point = node.value;
       var queries = point.minimalSetOfQueries.toList();
+      if (path.length == 3 &&
+          path.first == Name('billingAccounts') &&
+          path[2] == Name('ownerGroup')) {
+        print(
+            '*** SyncTree: handle invalid paths $path ${point.isCompleteFromParent} $queries');
+      }
 
       registrar.setActiveQueriesOnPath(path, queries,
           hashFcn: (f) => point.views[f]!._data.serverVersion.value.hash,
           priorityFcn: (f) =>
               point.views[f]?._data.serverVersion.isComplete == true ? 0 : 1,
-          onUnregistered: (f) {
-            var v = point.views[f];
-            if (v != null && v.observers.isEmpty) {
-              if (!point.isCompleteFromParent || f != const QueryFilter()) {
-                point.views.remove(f);
-              }
-            }
-          },
-          onRegistered: (f) {
-            if (_isDestroyed) return;
-            if (point.views[f] == null) return;
-            applyServerOperation(
-                TreeOperation.overwrite(
-                    path, point.views[f]!._data.serverVersion.value),
-                QuerySpec(path, f));
-          });
+          onUnregistered: (f) => applyAckUnlisten(path, f),
+          onRegistered: (f) => applyAckListen(path, f));
     }
     _invalidPaths.clear();
     _handleInvalidPointsFuture?.cancel();
@@ -980,10 +1037,10 @@ class SyncTree {
       Path<Name> path, TreeStructuredData newData, int writeId) {
     _logger.fine(() => 'apply user overwrite ($writeId) $path -> $newData');
     var operation = TreeOperation.overwrite(path, newData);
-    _applyUserOperation(operation, writeId);
+    applyUserOperation(operation, writeId);
   }
 
-  void _applyUserOperation(TreeOperation operation, int writeId) {
+  void applyUserOperation(TreeOperation operation, int writeId) {
     persistenceManager.runInTransaction(() {
       persistenceManager.saveUserOperation(operation, writeId);
       _applyOperationToSyncPoints(
@@ -1022,7 +1079,7 @@ class SyncTree {
       Map<Path<Name>, TreeStructuredData> changedChildren, int writeId) {
     _logger.fine(() => 'apply user merge ($writeId) $path -> $changedChildren');
     var operation = TreeOperation.merge(path, changedChildren);
-    _applyUserOperation(operation, writeId);
+    applyUserOperation(operation, writeId);
   }
 
   /// Helper function to recursively apply an operation to a node in the

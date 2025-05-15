@@ -6,6 +6,7 @@ import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
+import 'package:firebase_dart/src/synctree_recorder.dart';
 import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
@@ -16,7 +17,7 @@ void main() async {
   await Hive.openBox('firebase-db-storage', bytes: Uint8List(0));
 
   hierarchicalLoggingEnabled = true;
-  RandomSyncTreeTester.logger
+  RandomSyncTreeRecordingGenerator.logger
     ..level = Level.INFO
     ..onRecord.listen(print);
 
@@ -48,6 +49,9 @@ void main() async {
     test('Random synctree test seed=1738919743671', () {
       _doTest(1738919743671);
     });
+    test('Random synctree test seed=1747121950733', () {
+      _doTest(1747121950733);
+    }, skip: 'needs fix');
 
     test('Random synctree test seed=epoch', () {
       for (var i = 0; i < 10; i++) {
@@ -79,15 +83,17 @@ void main() async {
             '.priority': 2,
             'key-1': false,
           })));
-      var recording = SyncTreeTesterRecording(events: [
-        SyncTreeTesterEvent.listen(querySpec),
-        SyncTreeTesterEvent.ackListen(querySpec),
-        SyncTreeTesterEvent.serverOperation(treeOperation),
-        SyncTreeTesterEvent.listen(querySpec2),
-        SyncTreeTesterEvent.ackListen(querySpec2),
-        SyncTreeTesterEvent.serverOperation(treeOperation2),
-        SyncTreeTesterEvent.listen(querySpec3),
-        SyncTreeTesterEvent.operation(treeOperation3),
+      var recording = SyncTreeRecording(events: [
+        SyncTreeOperation.listen(querySpec, 'cancel', 1),
+        SyncTreeOperation.ackListen(querySpec),
+        SyncTreeOperation.serverOperation(
+            treeOperation, QuerySpec(Path.from([]))),
+        SyncTreeOperation.listen(querySpec2, 'cancel', 2),
+        SyncTreeOperation.ackListen(querySpec2),
+        SyncTreeOperation.serverOperation(
+            treeOperation2, QuerySpec(Path.from([]))),
+        SyncTreeOperation.listen(querySpec3, 'cancel', 3),
+        SyncTreeOperation.operation(treeOperation3, 1),
       ]);
 
       fakeAsync((async) => recording.replay(async, usePersistence: true));
@@ -103,11 +109,13 @@ void main() async {
       var treeOperation2 = TreeOperation(Path.from([]),
           Overwrite(TreeStructuredData.fromJson({'key-2': false})));
 
-      var recording = SyncTreeTesterRecording(events: [
-        SyncTreeTesterEvent.serverOperation(treeOperation1),
-        SyncTreeTesterEvent.listen(querySpec),
-        SyncTreeTesterEvent.ackListen(querySpec),
-        SyncTreeTesterEvent.serverOperation(treeOperation2),
+      var recording = SyncTreeRecording(events: [
+        SyncTreeOperation.serverOperation(
+            treeOperation1, QuerySpec(Path.from([]))),
+        SyncTreeOperation.listen(querySpec, 'cancel', 1),
+        SyncTreeOperation.ackListen(querySpec),
+        SyncTreeOperation.serverOperation(
+            treeOperation2, QuerySpec(Path.from([]))),
       ]);
 
       fakeAsync((async) => recording.replay(async, usePersistence: true));
@@ -125,10 +133,11 @@ void main() async {
             '.priority': 1,
             'key-1': 2,
           })));
-      var recording = SyncTreeTesterRecording(events: [
-        SyncTreeTesterEvent.listen(querySpec),
-        SyncTreeTesterEvent.ackListen(querySpec),
-        SyncTreeTesterEvent.serverOperation(treeOperation),
+      var recording = SyncTreeRecording(events: [
+        SyncTreeOperation.listen(querySpec, 'cancel', 1),
+        SyncTreeOperation.ackListen(querySpec),
+        SyncTreeOperation.serverOperation(
+            treeOperation, QuerySpec(Path.from([]))),
       ]);
 
       fakeAsync((async) => recording.replay(async, usePersistence: true));
@@ -151,7 +160,7 @@ class SyncTreeBenchmark extends BenchmarkBase {
   @override
   void run() {
     fakeAsync((fakeAsync) {
-      var tester = RandomSyncTreeTester(seed: seed);
+      var tester = RandomSyncTreeRecordingGenerator(seed: seed);
       for (var i = 0; i < 1000; i++) {
         tester.next();
         fakeAsync.flushMicrotasks();
@@ -161,16 +170,18 @@ class SyncTreeBenchmark extends BenchmarkBase {
 }
 
 void _doTest(int? seed, {bool minimize = true, bool usePersistence = true}) {
-  var tester = RandomSyncTreeTester(seed: seed, usePersistence: usePersistence)
-    ..startRecording();
+  var generator = RandomSyncTreeRecordingGenerator(
+      seed: seed, usePersistence: usePersistence);
+
+  generator.tester.startRecording();
 
   try {
-    _executeTest(tester);
+    _executeTest(generator);
   } catch (e) {
     if (!minimize) {
       rethrow;
     }
-    var recording = tester.stopRecording();
+    var recording = generator.tester.stopRecording();
 
     num count = double.maxFinite;
     while (recording.events.length < count) {
@@ -186,33 +197,33 @@ void _doTest(int? seed, {bool minimize = true, bool usePersistence = true}) {
   }
 }
 
-void _executeTest(RandomSyncTreeTester tester) {
+void _executeTest(RandomSyncTreeRecordingGenerator generator) {
   fakeAsync((fakeAsync) {
     for (var i = 0; i < 1000; i++) {
-      tester.next();
+      generator.next();
       fakeAsync.flushMicrotasks();
       fakeAsync.flushTimers();
-      tester.checkServerVersions();
-      tester.checkLocalVersions();
+      generator.tester.checkServerVersions();
+      generator.tester.checkLocalVersions();
     }
-    while (tester.outstandingListens.isNotEmpty ||
-        tester.outstandingWrites.isNotEmpty) {
-      tester.flush();
+    while (generator.tester.outstandingListens.isNotEmpty ||
+        generator.tester.outstandingWrites.isNotEmpty) {
+      generator.flush();
       fakeAsync.flushMicrotasks();
       fakeAsync.flushTimers();
-      tester.checkServerVersions();
-      tester.checkLocalVersions();
+      generator.tester.checkServerVersions();
+      generator.tester.checkLocalVersions();
     }
 
-    tester.checkAllViewsComplete();
+    generator.tester.checkAllViewsComplete();
   });
 }
 
-SyncTreeTesterRecording _minimizeRecording(SyncTreeTesterRecording recording) {
-  var events = <SyncTreeTesterEvent?>[...recording.events];
+SyncTreeRecording _minimizeRecording(SyncTreeRecording recording) {
+  var events = <SyncTreeOperation?>[...recording.events];
   for (var i = 0; i < recording.events.length; i++) {
     events[i] = null;
-    var r = SyncTreeTesterRecording()..events.addAll(events.whereType());
+    var r = SyncTreeRecording()..events.addAll(events.whereType());
 
     try {
       fakeAsync((async) {
@@ -224,5 +235,5 @@ SyncTreeTesterRecording _minimizeRecording(SyncTreeTesterRecording recording) {
     }
   }
 
-  return SyncTreeTesterRecording()..events.addAll(events.whereType());
+  return SyncTreeRecording()..events.addAll(events.whereType());
 }
