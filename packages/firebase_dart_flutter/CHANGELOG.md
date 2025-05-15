@@ -1,3 +1,9 @@
+## 1.2.0
+
+ - **REFACTOR**: log problems verifying app with apns on ios. ([deb7a355](https://github.com/appsup-dart/firebase_dart/commit/deb7a355d26bf48408bb45d92fa0d14b5377ca4b))
+ - **FIX**: app not moved to foreground after interacting with recaptcha. ([740d3162](https://github.com/appsup-dart/firebase_dart/commit/740d316243ffec84707c02ac6e673702a68a3803))
+ - **FEAT**: allow custom application verifier in FirebaseDartFlutter.setup. ([5f36c2c2](https://github.com/appsup-dart/firebase_dart/commit/5f36c2c2ded139517024fd1d3e8385bb876f659b))
+
 ## 1.1.19
 
  - Update a dependency to the latest release.

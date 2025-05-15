@@ -1,3 +1,7 @@
+## 0.1.0+17
+
+ - Update a dependency to the latest release.
+
 ## 0.1.0+16
 
  - **FIX**(firebase_dart_plus): allow recursive write batches. ([1e50d8ad](https://github.com/appsup-dart/firebase_dart/commit/1e50d8adeb283b3ad8156648d25d5c13bcff4a0e))

@@ -3,6 +3,43 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-05-15
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.4.0`](#firebase_dart---v140)
+ - [`firebase_dart_flutter` - `v1.2.0`](#firebase_dart_flutter---v120)
+ - [`firebase_dart_plus` - `v0.1.0+17`](#firebase_dart_plus---v01017)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_plus` - `v0.1.0+17`
+
+---
+
+#### `firebase_dart` - `v1.4.0`
+
+ - **REFACTOR**(database): move SyncTreeRecording to package code. ([3bcc9f88](https://github.com/appsup-dart/firebase_dart/commit/3bcc9f88a6d911f6b602adbf3c4f681dae679084))
+ - **FIX**: Null check operator used on a null value, when reconnecting with a query that gets upgraded. ([b1618b3c](https://github.com/appsup-dart/firebase_dart/commit/b1618b3c28151f5901e29e87ca94e8103cbfdfd8))
+ - **FEAT**: allow custom application verifier in FirebaseDartFlutter.setup. ([5f36c2c2](https://github.com/appsup-dart/firebase_dart/commit/5f36c2c2ded139517024fd1d3e8385bb876f659b))
+
+#### `firebase_dart_flutter` - `v1.2.0`
+
+ - **REFACTOR**: log problems verifying app with apns on ios. ([deb7a355](https://github.com/appsup-dart/firebase_dart/commit/deb7a355d26bf48408bb45d92fa0d14b5377ca4b))
+ - **FIX**: app not moved to foreground after interacting with recaptcha. ([740d3162](https://github.com/appsup-dart/firebase_dart/commit/740d316243ffec84707c02ac6e673702a68a3803))
+ - **FEAT**: allow custom application verifier in FirebaseDartFlutter.setup. ([5f36c2c2](https://github.com/appsup-dart/firebase_dart/commit/5f36c2c2ded139517024fd1d3e8385bb876f659b))
+
+
 ## 2025-04-13
 
 ### Changes

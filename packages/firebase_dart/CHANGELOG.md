@@ -1,3 +1,9 @@
+## 1.4.0
+
+ - **REFACTOR**(database): move SyncTreeRecording to package code. ([3bcc9f88](https://github.com/appsup-dart/firebase_dart/commit/3bcc9f88a6d911f6b602adbf3c4f681dae679084))
+ - **FIX**: Null check operator used on a null value, when reconnecting with a query that gets upgraded. ([b1618b3c](https://github.com/appsup-dart/firebase_dart/commit/b1618b3c28151f5901e29e87ca94e8103cbfdfd8))
+ - **FEAT**: allow custom application verifier in FirebaseDartFlutter.setup. ([5f36c2c2](https://github.com/appsup-dart/firebase_dart/commit/5f36c2c2ded139517024fd1d3e8385bb876f659b))
+
 ## 1.3.6
 
  - **FIX**(database): previously complete query should not notify new targets. ([d3339749](https://github.com/appsup-dart/firebase_dart/commit/d3339749115656cbcaf079ad264556a3a5b93a4c))
