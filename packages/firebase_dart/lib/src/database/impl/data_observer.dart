@@ -95,14 +95,24 @@ class IncompleteData {
   bool isCompleteForPath(Path<Name> path) =>
       _writeTree.findRootMostPathWithValue(path) != null;
 
-  /// Returns true if the data for the direct [child] is complete
-  bool isCompleteForChild(Name child) => _writeTree.children[child] != null;
-
   /// Creates an [IncompleteData] structure for the direct [child]
   IncompleteData directChild(Name child) {
     if (isComplete) {
-      return IncompleteData._(ModifiableTreeNode(
-          _writeTree.value!.children[child] ?? TreeStructuredData()));
+      var c = _writeTree.value!.children[child];
+      if (c != null) {
+        return IncompleteData._(ModifiableTreeNode(c));
+      }
+
+      var f = value.filter;
+      if (f.validInterval.isUnlimited &&
+          (f.limit == null || f.limit! > value.children.length)) {
+        return IncompleteData._(ModifiableTreeNode(TreeStructuredData()));
+      }
+      if (f.ordering == KeyOrdering() &&
+          value.childrenAsFilteredMap.completeInterval.containsPoint(
+              KeyOrdering().mapKeyValue(child, TreeStructuredData()))) {
+        return IncompleteData._(ModifiableTreeNode(TreeStructuredData()));
+      }
     }
     var tree = _writeTree.children[child];
     if (tree != null) return IncompleteData._(tree);

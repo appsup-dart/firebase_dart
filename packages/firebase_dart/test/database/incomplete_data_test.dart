@@ -92,6 +92,216 @@ void main() {
       });
     });
 
+    group('directChild', () {
+      group('when no filter', () {
+        test('when complete and child absent, should return complete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(
+              Path.from([]),
+              TreeStructuredData.fromJson(
+                  {'key-1': 'value-1', 'key-2': 'value-2'})));
+
+          var c = v.directChild(Name('key-3'));
+
+          expect(c.isComplete, true);
+          expect(c.value, TreeStructuredData());
+        });
+        test('when complete and child present, should return complete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(
+              Path.from([]),
+              TreeStructuredData.fromJson(
+                  {'key-1': 'value-1', 'key-2': 'value-2'})));
+
+          var c = v.directChild(Name('key-1'));
+
+          expect(c.isComplete, true);
+          expect(c.value, TreeStructuredData.fromJson('value-1'));
+        });
+        test('when incomplete and child absent, should return incomplete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(
+              Path.from([Name('key-1')]),
+              TreeStructuredData.fromJson('value-1')));
+
+          var c = v.directChild(Name('key-2'));
+
+          expect(c.isComplete, false);
+          expect(c.value, TreeStructuredData());
+        });
+        test('when incomplete and child present, should return complete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(
+              Path.from([Name('key-1')]),
+              TreeStructuredData.fromJson('value-1')));
+
+          var c = v.directChild(Name('key-1'));
+
+          expect(c.isComplete, true);
+          expect(c.value, TreeStructuredData.fromJson('value-1'));
+        });
+      });
+      group('when filter with key ordering', () {
+        var empty = IncompleteData.empty(QueryFilter(
+          ordering: TreeStructuredDataOrdering.byKey(),
+          limit: 1,
+        ));
+        test(
+            'when child outside complete interval, should return incomplete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(Path.from([]),
+              TreeStructuredData.fromJson({'key-1': 'value-1'})));
+
+          var c = v.directChild(Name('key-2'));
+
+          expect(c.isComplete, false);
+          expect(c.value, TreeStructuredData());
+        });
+        test(
+            'when child inside complete interval, should return complete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(Path.from([]),
+              TreeStructuredData.fromJson({'key-1': 'value-1'})));
+
+          var c = v.directChild(Name('key-0'));
+
+          expect(c.isComplete, true);
+          expect(c.value, TreeStructuredData());
+        });
+        test('when child present, should return complete child', () {
+          var v = empty.applyOperation(TreeOperation.overwrite(Path.from([]),
+              TreeStructuredData.fromJson({'key-1': 'value-1'})));
+
+          var c = v.directChild(Name('key-1'));
+
+          expect(c.isComplete, true);
+          expect(c.value, TreeStructuredData.fromJson('value-1'));
+        });
+        test('when incomplete and child absent, should return incomplete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(
+              Path.from([Name('key-1')]),
+              TreeStructuredData.fromJson('value-1')));
+
+          var c = v.directChild(Name('key-2'));
+
+          expect(c.isComplete, false);
+          expect(c.value, TreeStructuredData());
+        });
+        test('when incomplete and child present, should return complete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(
+              Path.from([Name('key-1')]),
+              TreeStructuredData.fromJson('value-1')));
+
+          var c = v.directChild(Name('key-1'));
+
+          expect(c.isComplete, true);
+          expect(c.value, TreeStructuredData.fromJson('value-1'));
+        });
+      });
+
+      group('when filter with other ordering', () {
+        var empty = IncompleteData.empty(QueryFilter(
+          ordering: TreeStructuredDataOrdering.byValue(),
+          limit: 1,
+        ));
+        test('when complete and child absent, should return incomplete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(Path.from([]),
+              TreeStructuredData.fromJson({'key-1': 'value-1'})));
+
+          var c = v.directChild(Name('key-2'));
+
+          expect(c.isComplete, false);
+          expect(c.value, TreeStructuredData());
+        });
+
+        test('when complete and child present, should return complete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(Path.from([]),
+              TreeStructuredData.fromJson({'key-1': 'value-1'})));
+
+          var c = v.directChild(Name('key-1'));
+
+          expect(c.isComplete, true);
+          expect(c.value, TreeStructuredData.fromJson('value-1'));
+        });
+        test('when incomplete and child absent, should return incomplete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(
+              Path.from([Name('key-1')]),
+              TreeStructuredData.fromJson('value-1')));
+
+          var c = v.directChild(Name('key-2'));
+
+          expect(c.isComplete, false);
+          expect(c.value, TreeStructuredData());
+        });
+        test('when incomplete and child present, should return complete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(
+              Path.from([Name('key-1')]),
+              TreeStructuredData.fromJson('value-1')));
+
+          var c = v.directChild(Name('key-1'));
+
+          expect(c.isComplete, true);
+          expect(c.value, TreeStructuredData.fromJson('value-1'));
+        });
+      });
+
+      group('when filter with less results then limit', () {
+        var empty = IncompleteData.empty(QueryFilter(
+          ordering: TreeStructuredDataOrdering.byValue(),
+          limit: 2,
+        ));
+        test('when complete and child absent, should return complete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(Path.from([]),
+              TreeStructuredData.fromJson({'key-1': 'value-1'})));
+
+          var c = v.directChild(Name('key-2'));
+
+          expect(c.isComplete, true);
+          expect(c.value, TreeStructuredData());
+        });
+
+        test('when complete and child present, should return complete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(Path.from([]),
+              TreeStructuredData.fromJson({'key-1': 'value-1'})));
+
+          var c = v.directChild(Name('key-1'));
+
+          expect(c.isComplete, true);
+          expect(c.value, TreeStructuredData.fromJson('value-1'));
+        });
+        test('when incomplete and child absent, should return incomplete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(
+              Path.from([Name('key-1')]),
+              TreeStructuredData.fromJson('value-1')));
+
+          var c = v.directChild(Name('key-2'));
+
+          expect(c.isComplete, false);
+          expect(c.value, TreeStructuredData());
+        });
+        test('when incomplete and child present, should return complete child',
+            () {
+          var v = empty.applyOperation(TreeOperation.overwrite(
+              Path.from([Name('key-1')]),
+              TreeStructuredData.fromJson('value-1')));
+
+          var c = v.directChild(Name('key-1'));
+
+          expect(c.isComplete, true);
+          expect(c.value, TreeStructuredData.fromJson('value-1'));
+        });
+      });
+    });
+
     test('empty is not complete', () {
       expect(empty.isComplete, false);
       expect(empty.completeValue, null);

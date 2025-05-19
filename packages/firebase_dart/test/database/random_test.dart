@@ -61,6 +61,38 @@ void main() async {
   });
 
   group('minimized tests', () {
+    test(
+        'should not consider server version complete when local version complete',
+        () {
+      var querySpec = QuerySpec(
+          Path.from([]),
+          QueryFilter(
+            ordering: KeyOrdering(),
+            limit: 1,
+          ));
+      var querySpec2 = QuerySpec(Path.from([Name('key-1')]), QueryFilter());
+      var recording = SyncTreeRecording(events: [
+        SyncTreeOperation.listen(querySpec, 'cancel', 1),
+        SyncTreeOperation.ackListen(querySpec),
+        SyncTreeOperation.serverOperation(
+            TreeOperation(
+                Path.from([]),
+                Overwrite(TreeStructuredData.fromJson({
+                  'key-1': 0,
+                  'key-0': 0,
+                }))),
+            QuerySpec(Path.from([]))),
+
+        // following operation makes the MasterView.isCompleteForChild('key-1') true, but the server version is incomplete,
+        // so the newly created ViewCache for query 2 should still have an incomplete server version
+        SyncTreeOperation.operation(
+            TreeOperation(
+                Path.from([]), Overwrite(TreeStructuredData.fromJson(0))),
+            1),
+        SyncTreeOperation.listen(querySpec2, 'cancel', 2),
+      ]);
+      fakeAsync((async) => recording.replay(async, usePersistence: true));
+    });
     test('should contain priority when not limits', () {
       var querySpec = QuerySpec(Path.from([]), QueryFilter(limit: 1));
       var treeOperation = TreeOperation(
