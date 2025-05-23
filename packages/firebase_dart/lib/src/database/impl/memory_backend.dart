@@ -10,7 +10,7 @@ import 'package:firebase_dart/src/database/impl/tree.dart';
 class UnsecuredMemoryBackend extends SyncTreeBackend {
   UnsecuredMemoryBackend()
       : super(SyncTree('')
-          ..root.value.isCompleteFromParent = true
+          ..root.value.parentState = QueryRegistrationState.registered
           ..addEventListener('value', Path.from([]), QueryFilter(), (event) {})
           ..applyServerOperation(
               TreeOperation.overwrite(

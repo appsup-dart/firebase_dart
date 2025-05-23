@@ -48,6 +48,9 @@ class MasterView {
   ViewCache _data;
 
   QueryRegistrationState _state = QueryRegistrationState.unregistered;
+
+  QueryRegistrationState? _parentState;
+
   QueryRegistrationState get state => _state;
 
   set state(QueryRegistrationState v) {
@@ -55,6 +58,10 @@ class MasterView {
 
     _state = v;
   }
+
+  bool get isInSync =>
+      _state == QueryRegistrationState.registered ||
+      _parentState == QueryRegistrationState.registered;
 
   final Map<QueryFilter, EventTarget> observers = {};
 
@@ -224,7 +231,7 @@ class SyncPoint {
 
   final Map<QueryFilter, MasterView> views = {};
 
-  bool _isCompleteFromParent = false;
+  QueryRegistrationState? _parentState;
 
   final PersistenceManager persistenceManager;
 
@@ -245,27 +252,34 @@ class SyncPoint {
   SyncPoint child(Name child) {
     var p = SyncPoint('$debugName/$child', path.child(child),
         data: viewCacheForChild(child), persistenceManager: persistenceManager);
-    p.isCompleteFromParent = isCompleteForChild(child);
+    p.parentState = registrationStateForChild(child);
     return p;
   }
 
-  bool get isCompleteFromParent => _isCompleteFromParent;
+  bool get isCompleteFromParent => _parentState != null;
 
-  set isCompleteFromParent(bool v) {
-    if (_isCompleteFromParent == v) return;
-    _isCompleteFromParent = v;
-    if (_isCompleteFromParent) {
-      views.putIfAbsent(const QueryFilter(),
-          () => createMasterViewForFilter(const QueryFilter()));
-    } else {
-      var defView = views[const QueryFilter()]!;
-      if (!defView.observers.containsKey(const QueryFilter())) {
-        views.remove(const QueryFilter());
-        for (var k in defView.observers.keys.toList()) {
-          var view = getMasterViewForFilter(k);
-          view.adoptEventTarget(k, defView.observers.remove(k)!);
+  set parentState(QueryRegistrationState? v) {
+    if (_parentState == v) return;
+    var wasComplete = isCompleteFromParent;
+
+    _parentState = v;
+    if (wasComplete != isCompleteFromParent) {
+      if (isCompleteFromParent) {
+        views.putIfAbsent(const QueryFilter(),
+            () => createMasterViewForFilter(const QueryFilter()));
+      } else {
+        var defView = views[const QueryFilter()]!;
+        if (!defView.observers.containsKey(const QueryFilter())) {
+          views.remove(const QueryFilter());
+          for (var k in defView.observers.keys.toList()) {
+            var view = getMasterViewForFilter(k);
+            view.adoptEventTarget(k, defView.observers.remove(k)!);
+          }
         }
       }
+    }
+    for (var v in views.values) {
+      v._parentState = _parentState;
     }
   }
 
@@ -276,10 +290,16 @@ class SyncPoint {
     return null;
   }
 
-  bool isCompleteForChild(Name child) {
-    if (isCompleteFromParent) return true;
-    return views.values
-        .any((m) => m.observers.isNotEmpty && m.isCompleteForChild(child));
+  QueryRegistrationState? registrationStateForChild(Name child) {
+    if (_parentState != null) return _parentState!;
+    return views.values.fold(null, (s, v) {
+      if (s == null || s.compareTo(v._state) < 0) {
+        if (v.isCompleteForChild(child)) {
+          return v._state;
+        }
+      }
+      return s;
+    });
   }
 
   Iterable<QueryFilter> get minimalSetOfQueries {
@@ -1000,10 +1020,10 @@ class SyncTree {
     for (var child in children.keys) {
       var v = children[child]!;
 
-      var newIsCompleteFromParent = point.isCompleteForChild(child);
+      var newStateFromParent = point.registrationStateForChild(child);
 
-      if (v.value.isCompleteFromParent != newIsCompleteFromParent) {
-        v.value.isCompleteFromParent = newIsCompleteFromParent;
+      if (v.value._parentState != newStateFromParent) {
+        v.value.parentState = newStateFromParent;
         _invalidate(path.child(child));
       }
     }

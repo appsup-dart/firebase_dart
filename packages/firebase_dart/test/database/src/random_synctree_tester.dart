@@ -378,12 +378,9 @@ extension SyncTreeTesterCheckX on SyncTreeTester {
 
   void checkServerVersions() {
     syncTree.root.forEachNode((path, node) {
-      if (outstandingListens
-          .map((v) => v.key)
-          .any((q) => path.isDescendantOf(q.path) || path == q.path)) {
-        return;
-      }
       node.views.forEach((params, view) {
+        if (!view.isInSync) return;
+
         if (view.data.serverVersion.isComplete) {
           // complete data should match with value on server
           var serverValue =

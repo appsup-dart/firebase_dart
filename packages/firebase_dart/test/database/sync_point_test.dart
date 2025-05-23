@@ -541,12 +541,12 @@ void main() {
         var p = SyncPoint('test', Path(),
             persistenceManager: NoopPersistenceManager());
 
-        p.isCompleteFromParent = true;
+        p.parentState = QueryRegistrationState.registered;
         p.addEventListener('value', QueryFilter(limit: 1), (event) {});
         expect(p.minimalSetOfQueries, []);
         expect(p.views.keys, [const QueryFilter()]);
 
-        p.isCompleteFromParent = false;
+        p.parentState = null;
         expect(p.minimalSetOfQueries, [QueryFilter(limit: 1)]);
       });
 
@@ -560,7 +560,7 @@ void main() {
         expect(p.minimalSetOfQueries, [QueryFilter(limit: 1)]);
         expect(p.views.keys, [QueryFilter(limit: 1)]);
 
-        p.isCompleteFromParent = true;
+        p.parentState = QueryRegistrationState.registered;
         expect(p.minimalSetOfQueries, []);
       });
     });
