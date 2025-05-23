@@ -207,6 +207,9 @@ class SyncPoint {
 
   final Map<QueryFilter, EventTarget> _newQueries = {};
 
+  /// User operations that are not yet acknowledged by the server
+  final SortedMap<int, TreeOperation> pendingOperations = SortedMap();
+
   SyncPoint(this.debugName, this.path,
       {ViewCache? data, required this.persistenceManager}) {
     if (data == null) return;
@@ -228,7 +231,7 @@ class SyncPoint {
     _isCompleteFromParent = v;
     if (_isCompleteFromParent) {
       views.putIfAbsent(const QueryFilter(),
-          () => MasterView(const QueryFilter(), debugName: debugName));
+          () => createMasterViewForFilter(const QueryFilter()));
     } else {
       var defView = views[const QueryFilter()]!;
       if (!defView.observers.containsKey(const QueryFilter())) {
@@ -412,6 +415,9 @@ class SyncPoint {
         .serverCache(QuerySpec(path, filter))
         .withFilter(filter);
     var cache = ViewCache(serverVersion, serverVersion);
+    for (var op in pendingOperations.entries) {
+      cache = cache.applyOperation(op.value, ViewOperationSource.user, op.key);
+    }
     // TODO: apply user operations from persistence storage
     return views[filter] = MasterView(filter, debugName: debugName)
       .._data = cache;
@@ -434,6 +440,11 @@ class SyncPoint {
   /// views when [filter] is `null`.
   void applyOperation(TreeOperation operation, QueryFilter? filter,
       ViewOperationSource source, int? writeId) {
+    if (source == ViewOperationSource.user) {
+      pendingOperations[writeId!] = operation;
+    } else if (source == ViewOperationSource.ack) {
+      pendingOperations.remove(writeId);
+    }
     if (filter == null || filter == const QueryFilter()) {
       if (source == ViewOperationSource.server) {
         if (operation.mayUpgrade && operation.path.isEmpty) {

@@ -51,7 +51,10 @@ void main() async {
     });
     test('Random synctree test seed=1747121950733', () {
       _doTest(1747121950733);
-    }, skip: 'needs fix');
+    });
+    test('Random synctree test seed=1747659799315', () {
+      _doTest(1747659799315);
+    });
 
     test('Random synctree test seed=epoch', () {
       for (var i = 0; i < 10; i++) {
@@ -61,6 +64,25 @@ void main() async {
   });
 
   group('minimized tests', () {
+    test('user operations should be added to newly created views', () {
+      var path = Path.from([Name('index-key')]);
+      var querySpec = QuerySpec(path, QueryFilter(limit: 1));
+      var treeOperation =
+          TreeOperation(path, Overwrite(TreeStructuredData.fromJson(0)));
+      var treeOperation2 = TreeOperation(
+          Path.from([]), Overwrite(TreeStructuredData.fromJson(0)));
+      var querySpec2 = QuerySpec(Path.from([]), QueryFilter());
+      var recording = SyncTreeRecording(events: [
+        SyncTreeOperation.listen(querySpec, 'cancel', 1),
+        SyncTreeOperation.ackListen(querySpec),
+        SyncTreeOperation.operation(treeOperation, 1),
+        SyncTreeOperation.ackWrite(path, 1),
+        SyncTreeOperation.operation(treeOperation2, 2),
+        SyncTreeOperation.listen(querySpec2, 'cancel', 2),
+        SyncTreeOperation.ackListen(querySpec2),
+      ]);
+      fakeAsync((async) => recording.replay(async, usePersistence: true));
+    });
     test(
         'should not consider server version complete when local version complete',
         () {

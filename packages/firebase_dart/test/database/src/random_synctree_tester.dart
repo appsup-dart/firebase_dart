@@ -446,14 +446,17 @@ extension SyncTreeTesterCheckX on SyncTreeTester {
         // TODO: once completeness on user operation is correctly implemented, local versions should also match when there are still outstanding writes
         if (outstandingWrites.entries
             .map((v) => v.value)
-            .any((o) => o.path.isDescendantOf(path) || path == o.path)) return;
+            .any((o) => o.path.isDescendantOf(path) || path == o.path)) {
+          return;
+        }
 
         if (view.data.localVersion.isComplete) {
           // complete data should match with value on server
           var serverValue = v.getChild(path).withFilter(params);
           var serverView = view.data.localVersion.value;
           if (serverValue != serverView) {
-            throw StateError('SyncTree has an incorrect local version');
+            throw StateError(
+                'SyncTree has an incorrect local version for $path $params: serverValue = $serverValue, serverView = $serverView');
           }
         }
       });
