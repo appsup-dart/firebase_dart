@@ -48,17 +48,17 @@ void main() {
       registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [QueryFilter()],
           hashFcn: (filter) => filter.hashCode.toString(),
           priorityFcn: (filter) => 0,
-          onRegistered: (filter) {});
+          onRegistrationStateChanged: (filter, state) {});
       await Future.microtask(() {});
       registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [],
           hashFcn: (filter) => filter.hashCode.toString(),
           priorityFcn: (filter) => 0,
-          onRegistered: (filter) {});
+          onRegistrationStateChanged: (filter, state) {});
       await Future.microtask(() {});
       registrar.setActiveQueriesOnPath(Name.parsePath('/test'), [QueryFilter()],
           hashFcn: (filter) => filter.hashCode.toString(),
           priorityFcn: (filter) => 0,
-          onRegistered: (filter) {});
+          onRegistrationStateChanged: (filter, state) {});
 
       expect(await l, ['register', 'unregister', 'register']);
     });
@@ -205,12 +205,12 @@ void main() {
           QueryFilter(ordering: TreeStructuredDataOrdering.byKey(), limit: 1),
           (event) {});
       syncTree.handleInvalidPaths();
-      expect(point.isCompleteFromParent,
-          false); // when the listeners are registered in opposite order, this would be true. Should it be true in this case as well?
-      expect(
-          point.views.keys.single,
-          QueryFilter(
-              ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1));
+      expect(point.isCompleteFromParent, true);
+      expect(point.views.keys, [
+        QueryFilter(
+            ordering: TreeStructuredDataOrdering.byChild('order'), limit: 1),
+        QueryFilter(),
+      ]);
 
       syncTree.applyServerOperation(
           TreeOperation.overwrite(
@@ -260,6 +260,8 @@ void main() {
       syncTree.applyServerOperation(
           TreeOperation.overwrite(path, TreeStructuredData()),
           QuerySpec(path, query1));
+      syncTree.onRegistrationStateChanged(
+          path, query1, QueryRegistrationState.registered);
       await Future.delayed(Duration(milliseconds: 10));
       expect(value1, TreeStructuredData());
       await syncTree.addEventListener('value', path, query2, (v) {

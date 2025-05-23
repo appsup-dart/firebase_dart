@@ -24,12 +24,37 @@ import 'view.dart';
 
 final _logger = Logger('firebase-synctree');
 
+enum QueryRegistrationState with Comparable<QueryRegistrationState> {
+  registering(3),
+  registered(4),
+  unregistering(2),
+  unregistered(1);
+
+  final int order;
+
+  const QueryRegistrationState(this.order);
+
+  @override
+  int compareTo(QueryRegistrationState other) {
+    return order.compareTo(other.order);
+  }
+}
+
 class MasterView {
   QueryFilter masterFilter;
 
   final String? debugName;
 
   ViewCache _data;
+
+  QueryRegistrationState _state = QueryRegistrationState.unregistered;
+  QueryRegistrationState get state => _state;
+
+  set state(QueryRegistrationState v) {
+    if (_state == v) return;
+
+    _state = v;
+  }
 
   final Map<QueryFilter, EventTarget> observers = {};
 
@@ -744,11 +769,14 @@ class QueryRegistrarTree {
     return queryRegistrar.close();
   }
 
-  void setActiveQueriesOnPath(Path<Name> path, Iterable<QueryFilter> filters,
-      {required String Function(QueryFilter filter) hashFcn,
-      required int Function(QueryFilter filter) priorityFcn,
-      required void Function(QueryFilter filter) onRegistered,
-      void Function(QueryFilter filter)? onUnregistered}) {
+  void setActiveQueriesOnPath(
+    Path<Name> path,
+    Iterable<QueryFilter> filters, {
+    required String Function(QueryFilter filter) hashFcn,
+    required int Function(QueryFilter filter) priorityFcn,
+    required void Function(QueryFilter filter, QueryRegistrationState state)
+        onRegistrationStateChanged,
+  }) {
     var activeFilters = _activeQueries.putIfAbsent(path, () => {});
 
     var filtersToActivate = filters.toSet().difference(activeFilters);
@@ -756,18 +784,20 @@ class QueryRegistrarTree {
     var filtersToDeactivate = activeFilters.difference(filters.toSet());
 
     for (var f in filtersToActivate) {
+      onRegistrationStateChanged(f, QueryRegistrationState.registering);
       queryRegistrar
           .register(QuerySpec(path, f),
               hash: hashFcn(f), priority: priorityFcn(f))
           .then((v) {
         if (!v) return; // registration was cancelled
-        onRegistered(f);
+        onRegistrationStateChanged(f, QueryRegistrationState.registered);
       });
     }
 
     for (var f in filtersToDeactivate) {
+      onRegistrationStateChanged(f, QueryRegistrationState.unregistering);
       queryRegistrar.unregister(QuerySpec(path, f)).then((v) {
-        if (onUnregistered != null) onUnregistered(f);
+        onRegistrationStateChanged(f, QueryRegistrationState.unregistered);
       });
     }
 
@@ -910,21 +940,53 @@ class SyncTree {
     }
   }
 
+  void onRegistrationStateChanged(
+      Path<Name> path, QueryFilter filter, QueryRegistrationState state) {
+    assert(!_isDestroyed);
+    var node = root.subtree(path, _createNode);
+    var point = node.value;
+    if (point.views[filter]?._state == state) return;
+
+    point.views[filter]?.state = state;
+    switch (state) {
+      case QueryRegistrationState.registered:
+        applyAckListen(path, filter);
+        break;
+      case QueryRegistrationState.unregistered:
+        applyAckUnlisten(path, filter);
+        break;
+      case QueryRegistrationState.unregistering:
+      case QueryRegistrationState.registering:
+        break;
+    }
+    _invalidate(path);
+  }
+
   void handleInvalidPaths() {
     assert(!_isDestroyed);
-    for (var path in _invalidPaths) {
+    var paths = _invalidPaths.toList();
+    _invalidPaths.clear();
+    for (var path in paths) {
       var node = root.subtree(path, _createNode);
       var point = node.value;
       var queries = point.minimalSetOfQueries.toList();
 
-      registrar.setActiveQueriesOnPath(path, queries,
-          hashFcn: (f) => point.views[f]!._data.serverVersion.value.hash,
-          priorityFcn: (f) =>
-              point.views[f]?._data.serverVersion.isComplete == true ? 0 : 1,
-          onUnregistered: (f) => applyAckUnlisten(path, f),
-          onRegistered: (f) => applyAckListen(path, f));
+      registrar.setActiveQueriesOnPath(
+        path,
+        queries,
+        hashFcn: (f) => point.views[f]!._data.serverVersion.value.hash,
+        priorityFcn: (f) =>
+            point.views[f]?._data.serverVersion.isComplete == true ? 0 : 1,
+        onRegistrationStateChanged: (filter, state) {
+          if (_isDestroyed) return;
+          onRegistrationStateChanged(
+            path,
+            filter,
+            state,
+          );
+        },
+      );
     }
-    _invalidPaths.clear();
     _handleInvalidPointsFuture?.cancel();
     _handleInvalidPointsFuture = null;
   }
