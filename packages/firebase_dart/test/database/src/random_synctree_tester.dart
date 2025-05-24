@@ -415,6 +415,7 @@ extension SyncTreeTesterCheckX on SyncTreeTester {
         return;
       }
       node.views.forEach((params, view) {
+        if (!view.isInSync) return;
         if (view.data.serverVersion.isComplete) {
           // complete data should match with value on server
           var persistedValue = v.getChild(path).withFilter(params);
@@ -446,6 +447,8 @@ extension SyncTreeTesterCheckX on SyncTreeTester {
             .any((o) => o.path.isDescendantOf(path) || path == o.path)) {
           return;
         }
+
+        if (!view.isInSync) return;
 
         if (view.data.localVersion.isComplete) {
           // complete data should match with value on server

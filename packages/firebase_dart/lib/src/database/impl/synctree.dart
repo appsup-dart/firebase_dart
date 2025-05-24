@@ -59,9 +59,15 @@ class MasterView {
     _state = v;
   }
 
-  bool get isInSync =>
-      _state == QueryRegistrationState.registered ||
-      _parentState == QueryRegistrationState.registered;
+  QueryRegistrationState get effectiveState {
+    if (_parentState == null) return _state;
+    if (Comparable.compare(_parentState!, _state) > 0) {
+      return _parentState!;
+    }
+    return _state;
+  }
+
+  bool get isInSync => effectiveState == QueryRegistrationState.registered;
 
   final Map<QueryFilter, EventTarget> observers = {};
 
@@ -205,6 +211,20 @@ class MasterView {
   /// view.
   Map<QueryFilter, EventTarget> applyOperation(
       Operation operation, ViewOperationSource source, int? writeId) {
+    if (source == ViewOperationSource.ack &&
+        (operation as Ack).success &&
+        effectiveState == QueryRegistrationState.unregistered) {
+      // The query is not registered, so we probably did not receive an updated value for the operation.
+      // As the operation was successful, we will apply it to the current view we have of the server.
+      // If the server value is different, we will receive the correct value when the query is registered.
+      // We cannot do this if the state is registering or unregistering, as we cannot be sure wether or not we already received the updated value and therefore cannot assume we will receive a correction later.
+      // TODO: this does not update the persistent storage
+      var operation = _data.pendingOperations[writeId];
+      if (operation != null) {
+        _data =
+            _data.applyOperation(operation, ViewOperationSource.server, null);
+      }
+    }
     _data = _data.applyOperation(operation, source, writeId);
 
     var out = <QueryFilter, EventTarget>{};

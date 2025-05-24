@@ -64,6 +64,48 @@ void main() {
     });
   });
   group('SyncTree', () {
+    test('Write ack should update server version when not in sync', () {
+      var registrar = _Registrar();
+      var syncTree = SyncTree('mem:///', queryRegistrar: registrar);
+
+      void callback(event) {}
+      var path = Name.parsePath('/test');
+      var value1 = TreeStructuredData();
+      var value2 = TreeStructuredData.fromJson('value');
+
+      MasterView view() {
+        var point = syncTree.root.children[Name('test')]!.value;
+        return point.views.values.single;
+      }
+
+      syncTree.addEventListener('cancel', path, QueryFilter(), callback);
+      syncTree.handleInvalidPaths();
+      expect(view().state, QueryRegistrationState.registering);
+
+      syncTree.applyServerOperation(
+          TreeOperation.overwrite(path, value1), null);
+      syncTree.onRegistrationStateChanged(
+          path, QueryFilter(), QueryRegistrationState.registered);
+      syncTree.handleInvalidPaths();
+      expect(view().state, QueryRegistrationState.registered);
+      expect(view().data.serverVersion.completeValue, value1);
+      expect(view().data.localVersion.completeValue, value1);
+
+      syncTree.onRegistrationStateChanged(
+          path, QueryFilter(), QueryRegistrationState.unregistered);
+      syncTree.handleInvalidPaths();
+      expect(view().state, QueryRegistrationState.unregistered);
+      expect(view().data.serverVersion.completeValue, value1);
+      expect(view().data.localVersion.completeValue, value1);
+
+      syncTree.applyUserOperation(TreeOperation.overwrite(path, value2), 1);
+      expect(view().data.serverVersion.completeValue, value1);
+      expect(view().data.localVersion.completeValue, value2);
+
+      syncTree.applyAck(path, 1, true);
+      expect(view().data.serverVersion.completeValue, value2);
+      expect(view().data.localVersion.completeValue, value2);
+    });
     test('Upgraded query should also serve new queries', () {
       var syncTree = SyncTree('mem:///', queryRegistrar: _Registrar());
 
