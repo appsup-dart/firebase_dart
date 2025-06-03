@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-06-03
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.4.1`](#firebase_dart---v141)
+ - [`firebase_dart_plus` - `v0.1.0+18`](#firebase_dart_plus---v01018)
+ - [`firebase_dart_flutter` - `v1.2.1`](#firebase_dart_flutter---v121)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_plus` - `v0.1.0+18`
+ - `firebase_dart_flutter` - `v1.2.1`
+
+---
+
+#### `firebase_dart` - `v1.4.1`
+
+ - **REFACTOR**: added support for intl 0.20. ([9bacf020](https://github.com/appsup-dart/firebase_dart/commit/9bacf0204eb6ce572166b150c719beb5f26adf0f))
+ - **REFACTOR**(database): keep track of parent registration state in MasterView. ([4dfbc6d7](https://github.com/appsup-dart/firebase_dart/commit/4dfbc6d7ca43072bc2fa42c63da30317078abb1a))
+ - **REFACTOR**(database): keep track of registration state in MasterView. ([9524aa85](https://github.com/appsup-dart/firebase_dart/commit/9524aa858d76bcb5deb0ab3fb303fc65d9dd2708))
+ - **FIX**(database): write ack should update server version when not in sync. ([508f83ad](https://github.com/appsup-dart/firebase_dart/commit/508f83ad2b7a9523ca54c9b2c5c1f76664ab818b))
+ - **FIX**(database): unacknowledged user operations not always visible in new queries. ([6bb78960](https://github.com/appsup-dart/firebase_dart/commit/6bb789609948f212a393a5354435c96f933aa4a9))
+ - **FIX**(database): server version out of sync in particular cases. ([eb0f6b1e](https://github.com/appsup-dart/firebase_dart/commit/eb0f6b1e182babcaaa960166dc62e1e00bce7d70))
+
+
 ## 2025-05-15
 
 ### Changes

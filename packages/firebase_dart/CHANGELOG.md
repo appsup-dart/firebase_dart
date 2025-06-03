@@ -1,3 +1,12 @@
+## 1.4.1
+
+ - **REFACTOR**: added support for intl 0.20. ([9bacf020](https://github.com/appsup-dart/firebase_dart/commit/9bacf0204eb6ce572166b150c719beb5f26adf0f))
+ - **REFACTOR**(database): keep track of parent registration state in MasterView. ([4dfbc6d7](https://github.com/appsup-dart/firebase_dart/commit/4dfbc6d7ca43072bc2fa42c63da30317078abb1a))
+ - **REFACTOR**(database): keep track of registration state in MasterView. ([9524aa85](https://github.com/appsup-dart/firebase_dart/commit/9524aa858d76bcb5deb0ab3fb303fc65d9dd2708))
+ - **FIX**(database): write ack should update server version when not in sync. ([508f83ad](https://github.com/appsup-dart/firebase_dart/commit/508f83ad2b7a9523ca54c9b2c5c1f76664ab818b))
+ - **FIX**(database): unacknowledged user operations not always visible in new queries. ([6bb78960](https://github.com/appsup-dart/firebase_dart/commit/6bb789609948f212a393a5354435c96f933aa4a9))
+ - **FIX**(database): server version out of sync in particular cases. ([eb0f6b1e](https://github.com/appsup-dart/firebase_dart/commit/eb0f6b1e182babcaaa960166dc62e1e00bce7d70))
+
 ## 1.4.0
 
  - **REFACTOR**(database): move SyncTreeRecording to package code. ([3bcc9f88](https://github.com/appsup-dart/firebase_dart/commit/3bcc9f88a6d911f6b602adbf3c4f681dae679084))

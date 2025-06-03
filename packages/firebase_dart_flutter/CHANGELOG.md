@@ -1,3 +1,7 @@
+## 1.2.1
+
+ - Update a dependency to the latest release.
+
 ## 1.2.0
 
  - **REFACTOR**: log problems verifying app with apns on ios. ([deb7a355](https://github.com/appsup-dart/firebase_dart/commit/deb7a355d26bf48408bb45d92fa0d14b5377ca4b))
