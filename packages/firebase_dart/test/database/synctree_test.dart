@@ -34,6 +34,11 @@ class LoggingQueryRegistrar extends QueryRegistrar {
   Future<void> close() async {
     await controller.close();
   }
+
+  @override
+  void revoke(QuerySpec query) {
+    controller.add('revoke');
+  }
 }
 
 void main() {
@@ -569,4 +574,7 @@ class _Registrar extends QueryRegistrar {
     }
     return Future.value();
   }
+
+  @override
+  void revoke(QuerySpec query) {}
 }

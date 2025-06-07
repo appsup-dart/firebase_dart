@@ -592,6 +592,8 @@ abstract class QueryRegistrar {
 
   Future<void> unregister(QuerySpec query);
 
+  void revoke(QuerySpec query);
+
   Future<void> close();
 }
 
@@ -655,6 +657,13 @@ class SequentialQueryRegistrar extends QueryRegistrar {
   Future<void> close() {
     return delegateTo.close();
   }
+
+  @override
+  void revoke(QuerySpec query) {
+    if (_localStates[query] == true) {
+      _setState(query, false, () async => delegateTo.revoke(query));
+    }
+  }
 }
 
 class PersistActiveQueryRegistrar extends QueryRegistrar {
@@ -685,6 +694,14 @@ class PersistActiveQueryRegistrar extends QueryRegistrar {
   @override
   Future<void> close() {
     return delegateTo.close();
+  }
+
+  @override
+  void revoke(QuerySpec query) {
+    delegateTo.revoke(query);
+    persistenceManager.runInTransaction(() {
+      persistenceManager.setQueryInactive(query);
+    });
   }
 }
 
@@ -796,6 +813,13 @@ class PrioritizedQueryRegistrar extends QueryRegistrar {
     _handleFuture = null;
     return delegateTo.close();
   }
+
+  @override
+  void revoke(QuerySpec query) {
+    pendingDeregistrations.remove(query);
+    pendingRegistrations.remove(query);
+    delegateTo.revoke(query);
+  }
 }
 
 class QueryRegistrarTree {
@@ -807,6 +831,11 @@ class QueryRegistrarTree {
 
   Future<void> close() {
     return queryRegistrar.close();
+  }
+
+  void revokeActiveQuery(Path<Name> path, QueryFilter filter) {
+    _activeQueries.remove(path);
+    queryRegistrar.revoke(QuerySpec(path, filter));
   }
 
   void setActiveQueriesOnPath(
@@ -868,6 +897,9 @@ class NoopQueryRegistrar extends QueryRegistrar {
   Future<void> close() {
     return Future.value();
   }
+
+  @override
+  void revoke(QuerySpec query) {}
 }
 
 class SyncTree {
@@ -1136,6 +1168,8 @@ class SyncTree {
           null));
     } // TODO is this always because of permission denied?
     view.observers.clear();
+
+    registrar.revokeActiveQuery(path, filter ?? const QueryFilter());
   }
 
   /// Applies a user merge at [path] with [changedChildren]

@@ -48,6 +48,12 @@ class MemoryQueryRegistrar extends QueryRegistrar {
   Future<void> close() {
     return Future.value();
   }
+
+  @override
+  void revoke(QuerySpec query) {
+    outstandingListens.remove(query);
+    registeredListens.remove(query);
+  }
 }
 
 class SyncTreeTester {

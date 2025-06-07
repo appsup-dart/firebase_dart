@@ -540,4 +540,7 @@ class RemoteQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> close() async {}
+
+  @override
+  void revoke(QuerySpec query) {}
 }

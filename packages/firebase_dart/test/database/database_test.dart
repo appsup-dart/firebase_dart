@@ -292,6 +292,10 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
             '.indexOn': ['order'],
           }
         },
+        'test-read-protected': {
+          '.read': 'auth!=null',
+          '.write': 'true',
+        },
       };
     }
   });
@@ -553,6 +557,35 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       expect(await ref.get(), v);
       await ref.set('Hello all');
       expect(await ref.get(), 'Hello all');
+    });
+
+    test('Permission denied error is received on subsequent listens', () async {
+      // Create a protected reference
+      var protectedRef = db1.reference().child('test-read-protected');
+
+      // First listen attempt
+      try {
+        await protectedRef.onValue.first;
+        fail('Should not receive a value');
+      } on FirebaseDatabaseException catch (e) {
+        expect(e.code, FirebaseDatabaseException.permissionDenied().code);
+      }
+
+      // Second listen attempt
+      try {
+        await protectedRef.onValue.first.timeout(Duration(milliseconds: 2000));
+        fail('Should not receive a value');
+      } on FirebaseDatabaseException catch (e) {
+        expect(e.code, FirebaseDatabaseException.permissionDenied().code);
+      }
+
+      // Third listen attempt
+      try {
+        await protectedRef.onValue.first.timeout(Duration(milliseconds: 2000));
+        fail('Should not receive a value');
+      } on FirebaseDatabaseException catch (e) {
+        expect(e.code, FirebaseDatabaseException.permissionDenied().code);
+      }
     });
 
     test('Set object', () async {
