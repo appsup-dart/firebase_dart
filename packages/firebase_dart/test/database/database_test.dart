@@ -295,6 +295,9 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
         'test-read-protected': {
           '.read': 'auth!=null',
           '.write': 'true',
+          'child': {
+            '.read': 'query.orderByChild=="order" && query.equalTo=="first"'
+          }
         },
       };
     }
@@ -559,6 +562,45 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       expect(await ref.get(), 'Hello all');
     });
 
+    test('Permission denied error on possibly complete queries', () async {
+      // Create a protected reference
+      var protectedRef = db1.reference().child('test-read-protected/child');
+
+      // First listen attempt
+      var f1 = protectedRef.onValue.first;
+      var f2 =
+          protectedRef.orderByChild('order').equalTo('first').onValue.first;
+
+      try {
+        await f1;
+        fail('Should not receive a value');
+      } on FirebaseDatabaseException catch (e) {
+        expect(e.code, FirebaseDatabaseException.permissionDenied().code);
+      }
+
+      await f2;
+    });
+
+    test(
+        'Permission denied error on possibly complete queries with same ordering',
+        () async {
+      // Create a protected reference
+      var protectedRef = db1.reference().child('test-read-protected/child');
+
+      // First listen attempt
+      var f1 = protectedRef.orderByChild('order').onValue.first;
+      var f2 =
+          protectedRef.orderByChild('order').equalTo('first').onValue.first;
+
+      try {
+        await f1;
+        fail('Should not receive a value');
+      } on FirebaseDatabaseException catch (e) {
+        expect(e.code, FirebaseDatabaseException.permissionDenied().code);
+      }
+
+      await f2;
+    });
     test('Permission denied error is received on subsequent listens', () async {
       // Create a protected reference
       var protectedRef = db1.reference().child('test-read-protected');

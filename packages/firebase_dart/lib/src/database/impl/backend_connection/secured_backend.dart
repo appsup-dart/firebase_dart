@@ -29,7 +29,7 @@ class SecuredBackend extends Backend {
 
     var root = RuleDataSnapshotFromBackend.root(unsecuredBackend);
     securityTree
-        .canRead(auth: currentAuth, path: path, root: root)
+        .canRead(auth: currentAuth, path: path, root: root, query: query)
         .listen((canRead) {
       if (!canRead) {
         if (completer.isCompleted) {

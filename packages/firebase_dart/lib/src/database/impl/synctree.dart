@@ -468,12 +468,9 @@ class SyncPoint {
     if (views[filter] != null) return views[filter]!;
 
     var unlimitedFilter = views.keys.firstWhereOrNull((q) => !q.limits);
-    // TODO: do not create new master views when already an unlimited view exists
     assert(views[filter] == null);
     if (unlimitedFilter != null) {
-      filter =
-          QueryFilter(ordering: filter.ordering as TreeStructuredDataOrdering);
-      return views[filter] = views[unlimitedFilter]!.withFilter(filter);
+      return views[unlimitedFilter]!;
     }
 
     var serverVersion = persistenceManager
@@ -1155,18 +1152,31 @@ class SyncTree {
   }
 
   void applyListenRevoked(Path<Name> path, QueryFilter? filter) {
-    var view = root
-        .subtreeNullable(path)
-        ?.value
-        .views
-        .remove(filter ?? const QueryFilter());
+    var point = root.subtreeNullable(path)?.value;
+    if (point == null) return;
+
+    filter ??= const QueryFilter();
+
+    var view = point.views.remove(filter);
+
     if (view == null) return;
-    for (var t in view.observers.values) {
-      t.dispatchEvent(CancelEvent(
+
+    var filtersToRemove = filter.limits
+        ? [filter]
+        : view.observers.keys.where((v) => !v.limits).toList();
+
+    for (var f in filtersToRemove) {
+      var target = view.observers.remove(f);
+
+      target?.dispatchEvent(CancelEvent(
           FirebaseDatabaseException.permissionDenied()
               .replace(message: 'Access to ${path.join('/')} denied'),
           null));
-    } // TODO is this always because of permission denied?
+
+      // TODO is this always because of permission denied?
+    }
+
+    point._newQueries.addEntries(view.observers.entries);
     view.observers.clear();
 
     registrar.revokeActiveQuery(path, filter ?? const QueryFilter());

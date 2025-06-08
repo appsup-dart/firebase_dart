@@ -31,9 +31,12 @@ class SecurityTree {
   }
 
   Stream<bool> canRead(
-      {RuleDataSnapshot? root, required String path, Auth? auth}) {
+      {RuleDataSnapshot? root,
+      required String path,
+      Auth? auth,
+      QueryFilter? query}) {
     return CombineLatestStream<bool?, bool>(
-        _canReadStreams(root: root, path: path, auth: auth), (l) {
+        _canReadStreams(root: root, path: path, auth: auth, query: query), (l) {
       return l.any((element) => element ?? false);
     });
   }
@@ -52,7 +55,10 @@ class SecurityTree {
   }
 
   Iterable<Stream<bool?>> _canReadStreams(
-      {RuleDataSnapshot? root, required String path, Auth? auth}) sync* {
+      {RuleDataSnapshot? root,
+      required String path,
+      Auth? auth,
+      QueryFilter? query}) sync* {
     var p = Name.parsePath(path);
 
     var tree = this.root;
@@ -61,8 +67,8 @@ class SecurityTree {
 
     var locations = <String, String>{};
 
-    yield tree.value
-        .canRead(root: root, data: data, auth: auth, locations: locations);
+    yield tree.value.canRead(
+        root: root, data: data, auth: auth, locations: locations, query: query);
     for (var n in p) {
       var node = tree.children[n.asString()];
       if (node == null) {
@@ -77,8 +83,12 @@ class SecurityTree {
 
       data = data!.child(BehaviorSubject.seeded(n.asString()));
 
-      yield node.value
-          .canRead(root: root, data: data, auth: auth, locations: locations);
+      yield node.value.canRead(
+          root: root,
+          data: data,
+          auth: auth,
+          locations: locations,
+          query: query);
     }
   }
 }
@@ -99,12 +109,14 @@ class SecurityNode {
       {RuleDataSnapshot? root,
       RuleDataSnapshot? data,
       Auth? auth,
-      required Map<String, String> locations}) {
+      required Map<String, String> locations,
+      QueryFilter? query}) {
     return (const _ExpressionEvaluator().eval(read, {
       'root': root,
       'data': data,
       'now': DateTime.now().millisecondsSinceEpoch,
       'auth': auth,
+      'query': query,
       ...locations
     }) as Stream)
         .cast<bool?>();
@@ -266,6 +278,19 @@ class _ExpressionEvaluator extends ExpressionEvaluator {
       return v[name];
     } else if (v is Stream) {
 //      return v.map((v)=>)
+    } else if (v is QueryFilter) {
+      switch (name) {
+        case 'orderByChild':
+          if (v.orderBy.startsWith('.')) return null;
+          return v.orderBy;
+        case 'equalTo':
+          var start = v.validTypedInterval.start.value;
+          var end = v.validTypedInterval.end.value;
+          if (start != end) return null;
+          if (start == null) return null;
+
+          return (start as TreeStructuredData).toJson();
+      }
     }
 
     return super.evalMemberExpression(expression, context);
