@@ -1,3 +1,8 @@
+## 1.4.2
+
+ - **FIX**: ensure permission denied errors are not propagated to other queries. ([cc79863c](https://github.com/appsup-dart/firebase_dart/commit/cc79863c3bb0ee7a1ab41290c9eadb46ee029547))
+ - **FIX**: ensure permission denied errors are properly propagated on subsequent listens. ([9bd85cb6](https://github.com/appsup-dart/firebase_dart/commit/9bd85cb6498a0b3e74302cae28d9af2138fed924))
+
 ## 1.4.1
 
  - **REFACTOR**: added support for intl 0.20. ([9bacf020](https://github.com/appsup-dart/firebase_dart/commit/9bacf0204eb6ce572166b150c719beb5f26adf0f))

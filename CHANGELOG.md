@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-06-08
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.4.2`](#firebase_dart---v142)
+ - [`firebase_dart_plus` - `v0.1.0+19`](#firebase_dart_plus---v01019)
+ - [`firebase_dart_flutter` - `v1.2.2`](#firebase_dart_flutter---v122)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_plus` - `v0.1.0+19`
+ - `firebase_dart_flutter` - `v1.2.2`
+
+---
+
+#### `firebase_dart` - `v1.4.2`
+
+ - **FIX**: ensure permission denied errors are not propagated to other queries. ([cc79863c](https://github.com/appsup-dart/firebase_dart/commit/cc79863c3bb0ee7a1ab41290c9eadb46ee029547))
+ - **FIX**: ensure permission denied errors are properly propagated on subsequent listens. ([9bd85cb6](https://github.com/appsup-dart/firebase_dart/commit/9bd85cb6498a0b3e74302cae28d9af2138fed924))
+
+
 ## 2025-06-03
 
 ### Changes
