@@ -1,4 +1,5 @@
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/core.dart';
 import 'package:firebase_dart/src/database/impl/backend_connection/rules.dart';
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/event.dart';
@@ -32,9 +33,15 @@ class MemoryBackend extends SecuredBackend {
 
   static MemoryBackend getInstance(String namespace) =>
       _instances.putIfAbsent(namespace, () {
-        var implementation = FirebaseImplementation.installation;
-        if (implementation is IsolateFirebaseImplementation) {
-          return IsolateMemoryBackend(implementation.commander, namespace);
+        try {
+          var implementation = FirebaseImplementation.installation;
+          if (implementation is IsolateFirebaseImplementation) {
+            return IsolateMemoryBackend(implementation.commander, namespace);
+          }
+        } on FirebaseCoreException catch (e) {
+          if (e.code != FirebaseCoreException.noSetup().code) {
+            rethrow;
+          }
         }
         return MemoryBackend();
       });
