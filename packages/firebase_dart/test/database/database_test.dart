@@ -335,14 +335,17 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
 
       expect(connectionStates, [true]);
 
+      var c = Completer();
+
       var f = ref.onValue
           .map((v) {
+            if (!c.isCompleted) c.complete(null);
             return v.snapshot.value;
           })
           .take(2)
           .toList();
 
-      await wait(200);
+      await c.future;
 
       await connectionDestroyer(db1);
 
