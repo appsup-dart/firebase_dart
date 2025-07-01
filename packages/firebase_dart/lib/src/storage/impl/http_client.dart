@@ -74,8 +74,7 @@ class StreamedResponseWithCaseInsensitiveHeaders
       equals: (key1, key2) => key1.toLowerCase() == key2.toLowerCase(),
       hashCode: (key) => key.toLowerCase().hashCode);
 
-  StreamedResponseWithCaseInsensitiveHeaders(http.StreamedResponse delegateTo)
-      : super(delegateTo) {
+  StreamedResponseWithCaseInsensitiveHeaders(super.delegateTo) {
     headers.addAll(super.headers);
   }
 }

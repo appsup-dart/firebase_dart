@@ -1,4 +1,4 @@
-part of firebase.protocol;
+part of '../protocol.dart';
 
 /// Handles a non persistent connection to the server
 ///

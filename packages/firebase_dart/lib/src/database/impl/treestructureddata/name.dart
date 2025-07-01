@@ -1,10 +1,10 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-part of firebase.treestructureddata;
+part of '../treestructureddata.dart';
 
 class _SpecialName extends Name {
-  const _SpecialName(String value) : super._(value);
+  const _SpecialName(super.value) : super._();
 
   @override
   Iterable<Match> allMatches(String string, [int start = 0]) => [];
@@ -108,7 +108,7 @@ class _NameImpl extends Name {
   /// For use in kyes, the maximum possible 32-bit integer.
   static const max32bitInteger = 2147483647;
 
-  _NameImpl(String value) : super._(value);
+  _NameImpl(super.value) : super._();
 
   late final int? _intValue = int.tryParse(_value);
 

@@ -9,7 +9,7 @@ abstract class ChildEvent<K> extends Event {
   final K childKey;
   final K prevChildKey;
 
-  ChildEvent(String type, this.childKey, this.prevChildKey) : super(type);
+  ChildEvent(super.type, this.childKey, this.prevChildKey);
 
   @override
   String toString() => 'ChildEvent[$childKey $type]';

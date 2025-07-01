@@ -119,15 +119,12 @@ abstract class MultiFactorInfo {
 /// Represents the information for a phone second factor.
 class PhoneMultiFactorInfo extends MultiFactorInfo {
   const PhoneMultiFactorInfo({
-    required String? displayName,
-    required double enrollmentTimestamp,
-    required String uid,
+    required super.displayName,
+    required super.enrollmentTimestamp,
+    required super.uid,
     required this.phoneNumber,
   }) : super(
-          displayName: displayName,
-          enrollmentTimestamp: enrollmentTimestamp,
           factorId: 'phone',
-          uid: uid,
         );
 
   PhoneMultiFactorInfo.fromJson(Map<String, dynamic> obj)

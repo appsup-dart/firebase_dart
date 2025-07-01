@@ -1,4 +1,4 @@
-part of firebase_dart.database.backend_connection;
+part of '../backend_connection.dart';
 
 abstract class Backend {
   Auth? _auth;

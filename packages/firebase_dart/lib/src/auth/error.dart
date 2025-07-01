@@ -12,12 +12,12 @@ class FirebaseAuthException extends FirebaseException {
   final AuthCredential? credential;
 
   FirebaseAuthException._(
-      {required String code,
-      required String? message,
+      {required super.code,
+      required super.message,
       this.email,
       this.phoneNumber,
       this.credential})
-      : super(plugin: 'auth', code: code, message: message);
+      : super(plugin: 'auth');
 
   FirebaseAuthException(String code, [String? message])
       : this._(code: code, message: message);

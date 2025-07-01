@@ -1,4 +1,4 @@
-part of firebase_dart;
+part of '../database.dart';
 
 /// DatabaseReference represents a particular location in your Firebase
 /// Database and can be used for reading or writing data to that location.

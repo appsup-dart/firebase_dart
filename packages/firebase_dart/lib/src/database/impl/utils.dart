@@ -238,7 +238,7 @@ extension KeyValueIntervalX on KeyValueInterval {
 class DelayedCancellableFuture<T> extends DelegatingFuture<T> {
   final void Function() cancel;
 
-  DelayedCancellableFuture._(Future<T> future, this.cancel) : super(future);
+  DelayedCancellableFuture._(super.future, this.cancel);
   factory DelayedCancellableFuture(
       Duration duration, FutureOr<T> Function() computation) {
     var c = Completer<T>();

@@ -1,7 +1,7 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-part of firebase_dart;
+part of '../database.dart';
 
 class ServerValue extends MapView<String, dynamic> {
   static const ServerValue timestamp = ServerValue._({'.sv': 'timestamp'});
@@ -12,5 +12,5 @@ class ServerValue extends MapView<String, dynamic> {
         '.sv': {'increment': delta}
       });
 
-  const ServerValue._(Map<String, dynamic> map) : super(map);
+  const ServerValue._(super.map);
 }

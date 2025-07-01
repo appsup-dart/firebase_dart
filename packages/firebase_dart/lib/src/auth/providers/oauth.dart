@@ -9,7 +9,7 @@ import '../auth_provider.dart';
 /// This class is extended by other OAuth based providers, or can be used
 /// standalone for integration with other 3rd party providers.
 class OAuthProvider extends AuthProvider {
-  OAuthProvider(String providerId) : super(providerId);
+  OAuthProvider(super.providerId);
 
   final List<String> _scopes = [];
   Map<dynamic, dynamic>? _parameters;
@@ -82,13 +82,13 @@ class OAuthCredential extends AuthCredential {
 
   @protected
   const OAuthCredential({
-    required String providerId,
-    required String signInMethod,
+    required super.providerId,
+    required super.signInMethod,
     this.accessToken,
     this.idToken,
     this.secret,
     this.rawNonce,
-  }) : super(providerId: providerId, signInMethod: signInMethod);
+  });
 
   @override
   Map<String, String?> asMap() {

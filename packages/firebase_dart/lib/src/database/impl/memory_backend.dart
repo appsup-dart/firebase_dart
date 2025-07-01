@@ -1,4 +1,3 @@
-import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/core.dart';
 import 'package:firebase_dart/src/database/impl/backend_connection/rules.dart';
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
@@ -6,7 +5,6 @@ import 'package:firebase_dart/src/database/impl/event.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/isolate.dart';
-import 'package:firebase_dart/src/implementation/isolate/database.dart';
 import 'package:firebase_dart/src/implementation/isolate/util.dart';
 import 'package:stream_channel/stream_channel.dart';
 

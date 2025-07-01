@@ -1,4 +1,4 @@
-part of firebase.protocol;
+part of '../protocol.dart';
 
 /// Transforms a channel with frames of limited length to full strings
 final framesChannelTransformer = const FramesChannelTransformer();

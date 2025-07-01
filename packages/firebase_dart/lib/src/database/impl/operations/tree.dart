@@ -132,7 +132,9 @@ class Merge extends Operation {
 
   @override
   Operation? operationForChild(Name key) {
-    var o = overwrites.map((o) => o.operationForChild(key)).whereNotNull();
+    var o = overwrites
+        .map((o) => o.operationForChild(key))
+        .whereType<TreeOperation>();
     if (o.isEmpty) return null;
     return Merge._(o.toList());
   }
@@ -195,7 +197,7 @@ class Overwrite extends Operation {
 }
 
 class SetValue extends Overwrite {
-  SetValue(TreeStructuredData value) : super(value);
+  SetValue(super.value);
 }
 
 class SetPriority extends Operation implements Overwrite {

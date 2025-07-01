@@ -121,9 +121,7 @@ class IdentityToolkitApi implements id.IdentityToolkitApi {
 class V1Resource extends id.V1Resource {
   final commons.ApiRequester _requester;
 
-  V1Resource(commons.ApiRequester client)
-      : _requester = client,
-        super(client);
+  V1Resource(super.client) : _requester = client;
 
   @override
   Future<GoogleCloudIdentitytoolkitV1GetRecaptchaParamResponse>
@@ -167,6 +165,7 @@ class GoogleCloudIdentitytoolkitV1GetRecaptchaParamResponse
 
 class GoogleCloudIdentitytoolkitV2StartMfaPhoneRequestInfo
     extends v2.GoogleCloudIdentitytoolkitV2StartMfaPhoneRequestInfo {
+  @override
   String? playIntegrityToken;
 
   GoogleCloudIdentitytoolkitV2StartMfaPhoneRequestInfo();
@@ -181,6 +180,7 @@ class GoogleCloudIdentitytoolkitV2StartMfaPhoneRequestInfo
 
 class GoogleCloudIdentitytoolkitV1SendVerificationCodeRequest
     extends id.GoogleCloudIdentitytoolkitV1SendVerificationCodeRequest {
+  @override
   String? playIntegrityToken;
 
   GoogleCloudIdentitytoolkitV1SendVerificationCodeRequest();

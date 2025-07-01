@@ -58,11 +58,8 @@ class GoogleAuthProvider extends OAuthProvider {
 
 /// An [AuthCredential] for authenticating via google.com
 class GoogleAuthCredential extends OAuthCredential {
-  GoogleAuthCredential._(
-      {required String? idToken, required String? accessToken})
+  GoogleAuthCredential._({required super.idToken, required super.accessToken})
       : super(
             providerId: GoogleAuthProvider.id,
-            signInMethod: GoogleAuthProvider.googleSignInMethod,
-            accessToken: accessToken,
-            idToken: idToken);
+            signInMethod: GoogleAuthProvider.googleSignInMethod);
 }

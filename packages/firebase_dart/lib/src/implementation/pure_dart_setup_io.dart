@@ -1,5 +1,4 @@
 import 'package:firebase_dart/implementation/pure_dart.dart';
-import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:firebase_dart/src/implementation.dart';

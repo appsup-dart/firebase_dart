@@ -7,7 +7,7 @@ import 'package:collection/collection.dart';
 class Path<K> extends UnmodifiableListView<K> implements Comparable<Path<K>> {
   Path() : super([]);
 
-  Path.from(Iterable<K> source) : super(source);
+  Path.from(super.source);
 
   @override
   Path<K> skip(int count) => Path.from(super.skip(count));

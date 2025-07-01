@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/auth/auth_mixin.dart';
 import 'package:firebase_dart/src/auth/authhandlers.dart';
@@ -38,10 +37,9 @@ class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
 
   late StreamSubscription _userChangedSubscription;
 
-  FirebaseAuthImpl(FirebaseApp app, {Client? httpClient})
+  FirebaseAuthImpl(super.app, {Client? httpClient})
       : httpClient = MetadataClient(httpClient ?? Client(),
-            firebaseAppId: app.options.appId),
-        super(app) {
+            firebaseAppId: app.options.appId) {
     _onReady = _init();
     getRedirectResult().timeout(Duration(seconds: 5)).ignore();
   }

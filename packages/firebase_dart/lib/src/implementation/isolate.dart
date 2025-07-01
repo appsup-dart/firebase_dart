@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:firebase_dart/implementation/pure_dart.dart';
-import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/database.dart';
 import 'package:firebase_dart/src/core.dart';
@@ -36,12 +35,11 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
   IsolateFirebaseImplementation(
       {required this.storagePath,
       required this.platform,
-      required Function(Uri url, {bool popup}) launchUrl,
+      required super.launchUrl,
       required this.authHandler,
       required this.applicationVerifier,
       required this.smsRetriever,
-      this.httpClient})
-      : super(launchUrl: launchUrl);
+      this.httpClient});
 
   Future<IsolateCommander> _setup() async {
     var worker = IsolateWorker()..registerFunction(#launchUrl, launchUrl);
@@ -153,8 +151,7 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
 class IsolateFirebaseApp extends FirebaseApp {
   final IsolateCommander commander;
 
-  IsolateFirebaseApp(String name, FirebaseOptions options, this.commander)
-      : super(name, options);
+  IsolateFirebaseApp(super.name, super.options, this.commander);
 
   @override
   Future<void> delete() async {
@@ -165,7 +162,7 @@ class IsolateFirebaseApp extends FirebaseApp {
 }
 
 abstract class IsolateFirebaseService extends FirebaseService {
-  IsolateFirebaseService(IsolateFirebaseApp app) : super(app);
+  IsolateFirebaseService(IsolateFirebaseApp super.app);
 
   @override
   IsolateFirebaseApp get app => super.app as IsolateFirebaseApp;

@@ -1,4 +1,4 @@
-part of firebase.treestructureddata;
+part of '../treestructureddata.dart';
 
 abstract class TreeStructuredDataOrdering extends Ordering {
   factory TreeStructuredDataOrdering(String orderBy) {
@@ -113,17 +113,12 @@ extension QueryFilterX on Filter<Name, TreeStructuredData?> {
 
 class QueryFilter extends Filter<Name, TreeStructuredData> {
   const QueryFilter(
-      {KeyValueInterval validInterval = const KeyValueInterval(),
-      int? limit,
-      bool reversed = false,
-      TreeStructuredDataOrdering ordering =
+      {super.validInterval,
+      super.limit,
+      super.reversed,
+      TreeStructuredDataOrdering super.ordering =
           const TreeStructuredDataOrdering.byPriority()})
-      : assert(!reversed || limit != null),
-        super(
-            ordering: ordering,
-            limit: limit,
-            reversed: reversed,
-            validInterval: validInterval);
+      : assert(!reversed || limit != null);
 
   String get orderBy => (ordering as TreeStructuredDataOrdering).orderBy;
 

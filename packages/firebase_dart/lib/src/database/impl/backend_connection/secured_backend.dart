@@ -1,7 +1,7 @@
-part of firebase_dart.database.backend_connection;
+part of '../backend_connection.dart';
 
 class SecuredBackend extends Backend {
-  BehaviorSubject<SecurityTree> _securityTree = BehaviorSubject.seeded(
+  final BehaviorSubject<SecurityTree> _securityTree = BehaviorSubject.seeded(
       SecurityTree.fromJson({'.read': 'true', '.write': 'true'}));
 
   final Backend unsecuredBackend;

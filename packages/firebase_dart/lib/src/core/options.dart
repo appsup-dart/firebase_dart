@@ -1,4 +1,4 @@
-part of firebase_dart.core;
+part of '../core.dart';
 
 /// The options used to configure a Firebase app.
 ///

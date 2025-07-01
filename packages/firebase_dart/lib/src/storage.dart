@@ -442,9 +442,9 @@ abstract class ListResult {
 
 class StorageException extends FirebaseException {
   StorageException._({
-    required String code,
-    String? message,
-  }) : super(plugin: 'storage', code: code, message: message);
+    required super.code,
+    super.message,
+  }) : super(plugin: 'storage');
 
   StorageException(String code, [String? message])
       : this._(code: code, message: message);

@@ -1179,7 +1179,7 @@ class SyncTree {
     point._newQueries.addEntries(view.observers.entries);
     view.observers.clear();
 
-    registrar.revokeActiveQuery(path, filter ?? const QueryFilter());
+    registrar.revokeActiveQuery(path, filter);
   }
 
   /// Applies a user merge at [path] with [changedChildren]

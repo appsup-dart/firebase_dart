@@ -1,8 +1,8 @@
-part of firebase_dart.core;
+part of '../core.dart';
 
 class FirebaseCoreException extends FirebaseException {
-  FirebaseCoreException({required String code, String? message})
-      : super(plugin: 'core', code: code, message: message);
+  FirebaseCoreException({required super.code, super.message})
+      : super(plugin: 'core');
 
   /// Thrown when usage of an app occurs but no app has been created.
   FirebaseCoreException.noAppExists(String appName)

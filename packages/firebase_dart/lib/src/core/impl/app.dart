@@ -3,7 +3,7 @@ import 'package:firebase_dart/core.dart';
 import 'package:meta/meta.dart';
 
 class FirebaseAppImpl extends FirebaseApp {
-  FirebaseAppImpl(String name, FirebaseOptions options) : super(name, options);
+  FirebaseAppImpl(super.name, super.options);
 
   @override
   Future<void> delete() async {

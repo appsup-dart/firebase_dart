@@ -1,4 +1,4 @@
-part of firebase_dart.core;
+part of '../core.dart';
 
 /// The entry point for accessing Firebase.
 class Firebase {

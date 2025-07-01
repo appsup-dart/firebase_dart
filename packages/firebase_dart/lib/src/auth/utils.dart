@@ -86,8 +86,7 @@ class WebPlatform extends Platform {
   final String currentUrl;
 
   WebPlatform(
-      {required this.currentUrl, required bool isMobile, bool isOnline = true})
-      : super(isMobile: isMobile, isOnline: isOnline);
+      {required this.currentUrl, required super.isMobile, super.isOnline});
 
   @override
   Map<String, dynamic> toJson() => {
@@ -104,8 +103,10 @@ class AndroidPlatform extends Platform {
   final String sha1Cert;
 
   AndroidPlatform(
-      {required this.packageId, required this.sha1Cert, required bool isOnline})
-      : super(isMobile: true, isOnline: isOnline);
+      {required this.packageId,
+      required this.sha1Cert,
+      required super.isOnline})
+      : super(isMobile: true);
 
   @override
   bool get isMobile => true;
@@ -122,8 +123,8 @@ class AndroidPlatform extends Platform {
 class IOsPlatform extends Platform {
   final String appId;
 
-  IOsPlatform({required this.appId, required bool isOnline})
-      : super(isMobile: true, isOnline: isOnline);
+  IOsPlatform({required this.appId, required super.isOnline})
+      : super(isMobile: true);
 
   @override
   Map<String, dynamic> toJson() => {
@@ -136,8 +137,8 @@ class IOsPlatform extends Platform {
 class MacOsPlatform extends Platform {
   final String appId;
 
-  MacOsPlatform({required this.appId, required bool isOnline})
-      : super(isMobile: false, isOnline: isOnline);
+  MacOsPlatform({required this.appId, required super.isOnline})
+      : super(isMobile: false);
 
   @override
   Map<String, dynamic> toJson() => {
@@ -148,8 +149,7 @@ class MacOsPlatform extends Platform {
 }
 
 class LinuxPlatform extends Platform {
-  LinuxPlatform({required bool isOnline})
-      : super(isMobile: false, isOnline: isOnline);
+  LinuxPlatform({required super.isOnline}) : super(isMobile: false);
 
   @override
   Map<String, dynamic> toJson() => {
@@ -159,8 +159,7 @@ class LinuxPlatform extends Platform {
 }
 
 class WindowsPlatform extends Platform {
-  WindowsPlatform({required bool isOnline})
-      : super(isMobile: false, isOnline: isOnline);
+  WindowsPlatform({required super.isOnline}) : super(isMobile: false);
 
   @override
   Map<String, dynamic> toJson() => {

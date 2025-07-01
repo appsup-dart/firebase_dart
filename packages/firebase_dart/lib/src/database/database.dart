@@ -1,4 +1,4 @@
-part of firebase_dart;
+part of '../database.dart';
 
 /// The entry point for accessing a Firebase Database.
 ///

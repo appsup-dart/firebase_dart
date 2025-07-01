@@ -17,14 +17,13 @@ class StoreBackend extends BaseBackend {
   final Store<String, dynamic> settings;
 
   StoreBackend(
-      {required String projectId,
+      {required super.projectId,
       Store<String, BackendUser>? users,
       Store<String, String>? smsCodes,
       Store<String, dynamic>? settings})
       : users = users ?? MemoryStore(),
         smsCodes = smsCodes ?? MemoryStore(),
-        settings = settings ?? MemoryStore(),
-        super(projectId: projectId);
+        settings = settings ?? MemoryStore();
 
   @override
   Future<BackendUser> getUserById(String uid) async {

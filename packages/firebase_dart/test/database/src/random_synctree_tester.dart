@@ -40,7 +40,7 @@ class MemoryQueryRegistrar extends QueryRegistrar {
 
   @override
   Future<void> unregister(QuerySpec query) async {
-    outstandingListens.remove(query);
+    outstandingListens.removeWhere((e) => e.key == query);
     registeredListens.remove(query);
   }
 
@@ -51,7 +51,7 @@ class MemoryQueryRegistrar extends QueryRegistrar {
 
   @override
   void revoke(QuerySpec query) {
-    outstandingListens.remove(query);
+    outstandingListens.removeWhere((e) => e.key == query);
     registeredListens.remove(query);
   }
 }
