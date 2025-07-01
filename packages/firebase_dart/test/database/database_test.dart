@@ -438,13 +438,34 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
         expect(await ref.get(), 'hello world');
       });
       test('revoke listening', () async {
-        if (ref.url.scheme == 'mem') {
-          // TODO
-          return;
-        }
         ref = ref.child('test-read-protected');
 
         await expectLater(() => ref.get(), throwsException);
+      });
+
+      test('unauthenticate after listening', () async {
+        ref = ref.child('test-read-protected');
+
+        await expectLater(() => ref.get(), throwsException);
+
+        await db.authenticate(token);
+
+        var error = Completer();
+        var s = ref.onValue.listen((e) {}, onError: (e) {
+          error.complete(e);
+        });
+        await ref.get();
+
+        await db.unauthenticate();
+
+        expect(
+            await error.future,
+            FirebaseDatabaseException.permissionDenied()
+                .replace(message: 'Access to test-read-protected denied'));
+
+        await expectLater(() => ref.get(), throwsException);
+
+        await s.cancel();
       });
     }
 

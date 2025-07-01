@@ -1,25 +1,23 @@
 part of firebase_dart.database.backend_connection;
 
 class SecuredBackend extends Backend {
-  SecurityTree _securityTree =
-      SecurityTree.fromJson({'.read': 'true', '.write': 'true'});
+  BehaviorSubject<SecurityTree> _securityTree = BehaviorSubject.seeded(
+      SecurityTree.fromJson({'.read': 'true', '.write': 'true'}));
 
   final Backend unsecuredBackend;
 
   SecuredBackend.from(this.unsecuredBackend);
 
-  SecurityTree get securityTree => _securityTree;
+  SecurityTree get securityTree => _securityTree.value;
 
   set securityRules(Map<String, dynamic> rules) {
-    _securityTree = SecurityTree.fromJson(rules);
-    // TODO reevaluate all listeners
+    _securityTree.add(SecurityTree.fromJson(rules));
   }
 
   @override
-  // ignore: unnecessary_overrides
-  Future<void> auth(Auth? auth) {
-    return super.auth(auth);
-    // TODO reevaluate listeners
+  Future<void> auth(Auth? auth) async {
+    await super.auth(auth);
+    _securityTree.add(securityTree);
   }
 
   @override
@@ -28,8 +26,9 @@ class SecuredBackend extends Backend {
     var completer = Completer();
 
     var root = RuleDataSnapshotFromBackend.root(unsecuredBackend);
-    securityTree
-        .canRead(auth: currentAuth, path: path, root: root, query: query)
+    _securityTree
+        .switchMap((v) =>
+            v.canRead(auth: currentAuth, path: path, root: root, query: query))
         .listen((canRead) {
       if (!canRead) {
         if (completer.isCompleted) {

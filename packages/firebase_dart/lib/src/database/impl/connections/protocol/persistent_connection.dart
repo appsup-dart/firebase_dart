@@ -119,6 +119,11 @@ class PersistentConnectionImpl extends PersistentConnection
             path,
             message.body.data,
             query);
+        if (message.action == DataMessage.actionListenRevoked) {
+          query ??= QuerySpec(path!);
+          _tagToQuery.inverse.remove(query);
+          _removeListen(message.body.path!, message.body.query);
+        }
         if (!_onDataOperation.isClosed) _onDataOperation.add(event);
         break;
       case DataMessage.actionAuthRevoked:

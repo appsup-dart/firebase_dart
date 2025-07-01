@@ -10,6 +10,7 @@ import 'package:firebase_dart/src/database/impl/synctree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:jose/jose.dart';
 import 'package:logging/logging.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'connections/protocol.dart';
 import 'events/value.dart';
