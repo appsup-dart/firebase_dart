@@ -1,3 +1,8 @@
+## 1.4.3
+
+ - **FIX**(database): error `Invalid argument(s): Mapping for ... exists` (in bimap.dart). ([a8893eb4](https://github.com/appsup-dart/firebase_dart/commit/a8893eb453b0b774a30607ccc5b0479de025def8))
+ - **FIX**: error when accessing MemoryBackend without first calling FirebaseDart.setup(). ([c679731a](https://github.com/appsup-dart/firebase_dart/commit/c679731a896c72973788b357a9355e3154cdcc51))
+
 ## 1.4.2
 
  - **FIX**: ensure permission denied errors are not propagated to other queries. ([cc79863c](https://github.com/appsup-dart/firebase_dart/commit/cc79863c3bb0ee7a1ab41290c9eadb46ee029547))

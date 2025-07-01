@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-07-01
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.4.3`](#firebase_dart---v143)
+ - [`firebase_dart_plus` - `v0.1.0+20`](#firebase_dart_plus---v01020)
+ - [`firebase_dart_flutter` - `v1.2.3`](#firebase_dart_flutter---v123)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_plus` - `v0.1.0+20`
+ - `firebase_dart_flutter` - `v1.2.3`
+
+---
+
+#### `firebase_dart` - `v1.4.3`
+
+ - **FIX**(database): error `Invalid argument(s): Mapping for ... exists` (in bimap.dart). ([a8893eb4](https://github.com/appsup-dart/firebase_dart/commit/a8893eb453b0b774a30607ccc5b0479de025def8))
+ - **FIX**: error when accessing MemoryBackend without first calling FirebaseDart.setup(). ([c679731a](https://github.com/appsup-dart/firebase_dart/commit/c679731a896c72973788b357a9355e3154cdcc51))
+
+
 ## 2025-06-08
 
 ### Changes
