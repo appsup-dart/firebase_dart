@@ -39,7 +39,14 @@ class UserManager {
   }
 
   Future<void> _init() async {
-    var storage = await this.storage;
+    final storage = await this.storage;
+    final response = await (await storage).get(_key);
+
+    final currentUser = response == null
+        ? null
+        : FirebaseUserImpl.fromJson({...response}, auth: auth);
+
+    _controller.add(currentUser);
 
     _subscription = storage
         .watch(key: _key)
