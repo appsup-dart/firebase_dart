@@ -28,11 +28,6 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-
-        resValue "string", "app_name", "FirebaseDart"
-        resValue "string", "facebook_app_id", ""
-        resValue "string", "fb_login_protocol_scheme", "fb"
-        resValue "string", "facebook_client_token", ""
     }
 
     buildTypes {

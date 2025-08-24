@@ -1,0 +1,20 @@
+name: firebase_dart_flutter_auth_apple
+description: Provides a `firebase_dart` auth handler for sign in with Apple using the native Apple API
+version: 0.0.1
+homepage: https://github.com/appsup-dart/firebase_dart
+
+environment:
+  sdk: ^3.5.3
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_dart: ^1.4.3
+  sign_in_with_apple: ^6.0.0
+  platform_info: ^5.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0

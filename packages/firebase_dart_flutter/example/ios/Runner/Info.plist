@@ -57,6 +57,16 @@
 				<string>com.googleusercontent.apps.58034530388-sbobpkd95nil4iu3p2f4g9sgm2d4vaja</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb698091946903009</string>
+			</array>
+		</dict>
 	</array>	
+	<key>FacebookAppID</key>
+	<string>698091946903009</string>
+	<key>FacebookDisplayName</key>
+	<string>FirebaseDartFlutterExample</string>
 </dict>
 </plist>

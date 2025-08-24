@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:isolate';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart_flutter/src/auth_handlers.dart';
 import 'package:flutter/foundation.dart';
@@ -6,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
-import 'package:package_info/package_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hive/hive.dart';
 
@@ -18,9 +19,26 @@ export 'package:firebase_dart_flutter/src/auth_handlers.dart'
 class FirebaseDartFlutter {
   static const _channel = MethodChannel('firebase_dart_flutter');
 
+  /// Setup the Firebase Dart Flutter SDK.
+  ///
+  /// When [isolated] is true, the SDK will run in an [Isolate].
+  /// This is useful to avoid blocking the main thread.
+  ///
+  /// For certain tasks, like sending an sms code to verify a phone number, it
+  /// is required to verify that the request is coming from a human. For that
+  /// purpose, the [applicationVerifier] can be used. By default, an application
+  /// verifier is used that tries silent verification first (on android through
+  /// Play Integrity, on iOS through APNS). If that fails, it will fall back to
+  /// a recaptcha.
+  ///
+  /// [socialAuthHandlers] is a list of [AuthHandler] that will be used to handle
+  /// social authentication. See packages [firebase_dart_flutter_auth_google],
+  /// [firebase_dart_flutter_auth_facebook] and
+  /// [firebase_dart_flutter_auth_apple] for common social authentication handlers.
   static Future<void> setup({
     bool isolated = !kIsWeb,
     ApplicationVerifier? applicationVerifier,
+    List<AuthHandler> socialAuthHandlers = const [],
   }) async {
     isolated = isolated && !kIsWeb;
     WidgetsFlutterBinding.ensureInitialized();
@@ -43,9 +61,7 @@ class FirebaseDartFlutter {
                 await launchUrl(url, mode: LaunchMode.inAppBrowserView);
               },
         authHandler: AuthHandler.from([
-          GoogleAuthHandler(),
-          FacebookAuthHandler(),
-          AppleAuthHandler(),
+          ...socialAuthHandlers,
           FlutterAuthHandler(),
           const AuthHandler(),
         ]),

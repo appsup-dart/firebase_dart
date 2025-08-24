@@ -6,7 +6,6 @@ allprojects {
 }
 
 rootProject.buildDir = "../build"
-apply from: 'set_namespaces.gradle'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }

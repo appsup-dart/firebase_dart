@@ -50,12 +50,17 @@ class AuthTab extends StatelessWidget {
                   TextButton(
                       child: const Text('sign in with google'),
                       onPressed: () async {
-                        await auth.signInWithRedirect(GoogleAuthProvider());
+                        await auth.signInWithPopup(GoogleAuthProvider());
                       }),
                   TextButton(
                       child: const Text('sign in with facebook'),
                       onPressed: () async {
-                        await auth.signInWithRedirect(FacebookAuthProvider());
+                        await auth.signInWithPopup(FacebookAuthProvider());
+                      }),
+                  TextButton(
+                      child: const Text('sign in with apple'),
+                      onPressed: () async {
+                        await auth.signInWithPopup(OAuthProvider('apple.com'));
                       }),
                   TextButton(
                     child: const Text('send sign in link'),

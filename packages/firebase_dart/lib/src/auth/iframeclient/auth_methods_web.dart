@@ -8,13 +8,14 @@ import 'package:firebase_dart/src/auth/iframeclient/gapi_iframes.dart';
 import 'package:firebase_dart/src/auth/iframeclient/url_builder.dart';
 import 'iframewrapper.dart';
 
-final IfcHandler ifc = _createIfc(Firebase.apps.first);
-
 class DefaultAuthHandler extends FirebaseAppAuthHandler {
   const DefaultAuthHandler();
 
+  static final Map<String, IfcHandler> _ifcHandlers = {};
+
   @override
   Future<AuthCredential?> getSignInResult(FirebaseApp app) async {
+    var ifc = _ifcHandlers.putIfAbsent(app.name, () => _createIfc(app));
     var completer = Completer<AuthCredential?>();
     bool callback(IframeAuthEvent r) {
       var error = r.error;

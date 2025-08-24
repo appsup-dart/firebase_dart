@@ -21,6 +21,12 @@ dependencies:
     path: ../
   firebase_dart:
     path: ../../firebase_dart
+  firebase_dart_flutter_auth_google:
+    path: ../../firebase_dart_flutter_auth_google
+  firebase_dart_flutter_auth_facebook:
+    path: ../../firebase_dart_flutter_auth_facebook
+  firebase_dart_flutter_auth_apple:
+    path: ../../firebase_dart_flutter_auth_apple
   hive: any
 
   # The following adds the Cupertino Icons font to your application.

@@ -1,6 +1,9 @@
 import 'dart:io';
 
 import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
+import 'package:firebase_dart_flutter_auth_apple/firebase_dart_flutter_auth_apple.dart';
+import 'package:firebase_dart_flutter_auth_facebook/firebase_dart_flutter_auth_facebook.dart';
+import 'package:firebase_dart_flutter_auth_google/firebase_dart_flutter_auth_google.dart';
 import 'package:firebase_dart_flutter_example/src/core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +16,16 @@ void main() async {
   // capture/monitor network traffic for debugging purposes
   if (kDebugMode) HttpOverrides.global = MyHttpOverrides();
 
-  await FirebaseDartFlutter.setup(isolated: false);
+  await FirebaseDartFlutter.setup(
+    isolated: false,
+    socialAuthHandlers: [
+      GoogleAuthHandler(),
+      FacebookAuthHandler(
+        facebookAppIdForFirebaseApp: (app) => '698091946903009',
+      ),
+      AppleAuthHandler(),
+    ],
+  );
 
   var box = await Hive.openBox('firebase_dart_flutter_example');
   if (box.get('apps') == null || (box.get('apps') as List).isEmpty) {

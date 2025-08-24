@@ -472,25 +472,32 @@ class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
         operation: operation, data: UnmodifiableMapView(data));
   }
 
+  String? _redirectResultId;
   Future<UserCredential>? _redirectResult;
 
   @override
   Future<UserCredential> getRedirectResult() {
+    String currentId = DateTime.now().millisecondsSinceEpoch.toString();
+
     if (_redirectResult != null) return _redirectResult!;
-    Future<UserCredential>? v;
-    v = Future.microtask(() async {
+
+    _redirectResultId = currentId;
+    _redirectResult = Future.microtask(() async {
+      // Check if this is still the current request
+      if (_redirectResultId != currentId) return UserCredentialImpl();
+
       var credential = await PureDartFirebaseImplementation
           .installation.authHandler
           .getSignInResult(app);
 
-      if (_redirectResult != v) return UserCredentialImpl();
       if (credential == null) {
         return UserCredentialImpl();
       }
 
       return signInWithCredential(credential);
     });
-    return _redirectResult = v;
+
+    return _redirectResult!;
   }
 
   @override

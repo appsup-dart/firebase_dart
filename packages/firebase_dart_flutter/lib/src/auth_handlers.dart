@@ -7,98 +7,11 @@ import 'package:firebase_dart/auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
 import 'package:logging/logging.dart';
 import 'package:flutter_apns_only/flutter_apns_only.dart';
 import 'package:crypto/crypto.dart';
 import 'package:app_links/app_links.dart';
-
-class FacebookAuthHandler extends DirectAuthHandler {
-  FacebookAuthHandler() : super(FacebookAuthProvider.PROVIDER_ID);
-
-  @override
-  Future<void> signOut(FirebaseApp app, User user) async {
-    try {
-      var facebookLogin = FacebookAuth.instance;
-      await facebookLogin.logOut();
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  @override
-  Future<AuthCredential?> directSignIn(
-      FirebaseApp app, AuthProvider provider) async {
-    try {
-      var facebookLogin = FacebookAuth.instance;
-      var accessToken = (await facebookLogin.login()).accessToken!;
-
-      return FacebookAuthProvider.credential(accessToken.tokenString);
-    } catch (e) {
-      return null;
-    }
-  }
-}
-
-class GoogleAuthHandler extends DirectAuthHandler {
-  GoogleAuthHandler() : super(GoogleAuthProvider.PROVIDER_ID);
-
-  @override
-  Future<void> signOut(FirebaseApp app, User user) async {
-    try {
-      await GoogleSignIn().signOut();
-    } on AssertionError {
-      // TODO
-    } on MissingPluginException {
-      // TODO
-    } catch (e) {
-      // TODO: on release build for web, this throws an exception, should be checked why, for now ignore
-    }
-  }
-
-  @override
-  Future<AuthCredential?> directSignIn(
-      FirebaseApp app, AuthProvider provider) async {
-    try {
-      var account = await GoogleSignIn().signIn();
-      var auth = await account!.authentication;
-      return GoogleAuthProvider.credential(
-          idToken: auth.idToken, accessToken: auth.accessToken);
-    } on MissingPluginException {
-      return null;
-    } on AssertionError {
-      return null;
-    }
-  }
-}
-
-class AppleAuthHandler extends DirectAuthHandler<OAuthProvider> {
-  AppleAuthHandler() : super('apple.com');
-
-  @override
-  Future<AuthCredential?> directSignIn(
-      FirebaseApp app, OAuthProvider provider) async {
-    if (!platform_info.Platform.instance.iOS) {
-      return null;
-    }
-    final credential = await SignInWithApple.getAppleIDCredential(
-      scopes: [
-        AppleIDAuthorizationScopes.email,
-        AppleIDAuthorizationScopes.fullName,
-      ],
-    );
-    return OAuthProvider.credential(
-        providerId: providerId,
-        idToken: credential.identityToken!,
-        accessToken: credential.authorizationCode);
-  }
-
-  @override
-  Future<void> signOut(FirebaseApp app, User user) async {}
-}
 
 class FlutterAuthHandler extends FirebaseAppAuthHandler {
   final DeepLinkRetriever _deepLinkRetriever = DeepLinkRetriever.instance;
