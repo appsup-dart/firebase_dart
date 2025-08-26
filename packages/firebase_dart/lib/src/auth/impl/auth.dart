@@ -397,20 +397,13 @@ class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
       }
     }
 
-    try {
-      var assertion = await (verifier
-              ?.verify()
-              .then((v) => ApplicationVerificationResult(verifier.type, v)) ??
-          impl.applicationVerifier
-              .verify(this, phoneNumber ?? multiFactorInfo?.phoneNumber ?? ''));
+    var assertion = await (verifier
+            ?.verify()
+            .then((v) => ApplicationVerificationResult(verifier.type, v)) ??
+        impl.applicationVerifier
+            .verify(this, phoneNumber ?? multiFactorInfo?.phoneNumber ?? ''));
 
-      verificationId = await requestVerificationId(assertion);
-    } catch (e) {
-      var assertion = await impl.applicationVerifier.verify(
-          this, phoneNumber ?? multiFactorInfo?.phoneNumber ?? '',
-          forceRecaptcha: true);
-      verificationId = await requestVerificationId(assertion);
-    }
+    verificationId = await requestVerificationId(assertion);
 
     codeSent(verificationId, 0 /*TODO*/);
 

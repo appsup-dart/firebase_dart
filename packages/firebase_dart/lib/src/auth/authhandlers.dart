@@ -5,6 +5,7 @@ import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/core.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
 import 'package:firebase_dart/src/implementation/isolate/auth.dart';
+import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
@@ -153,11 +154,25 @@ abstract class BaseApplicationVerifier implements ApplicationVerifier {
     if (!forceRecaptcha) {
       var p = Platform.current;
       if (p is IOsPlatform || p is MacOsPlatform) {
-        var v = await verifyWithApns(auth);
-        if (v != null) return ApplicationVerificationResult.apns(v);
+        try {
+          var v = await verifyWithApns(auth);
+          if (v != null) return ApplicationVerificationResult.apns(v);
+        } catch (e, tr) {
+          Logger('FirebaseAuth').warning(
+              'Failed to verify application with APNS, will try recaptcha instead.',
+              e,
+              tr);
+        }
       } else if (p is AndroidPlatform) {
-        var v = await verifyWithPlayIntegrity(auth, nonce);
-        if (v != null) return ApplicationVerificationResult.playItegrity(v);
+        try {
+          var v = await verifyWithPlayIntegrity(auth, nonce);
+          if (v != null) return ApplicationVerificationResult.playItegrity(v);
+        } catch (e, tr) {
+          Logger('FirebaseAuth').warning(
+              'Failed to verify application with Play Integrity, will try recaptcha instead.',
+              e,
+              tr);
+        }
       }
     }
     var v = await verifyWithRecaptcha(auth);
