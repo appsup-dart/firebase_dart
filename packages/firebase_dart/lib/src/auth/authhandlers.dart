@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/core.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
-import 'package:firebase_dart/src/implementation/isolate/auth.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
@@ -185,22 +184,16 @@ abstract class BaseApplicationVerifier implements ApplicationVerifier {
   @protected
   Future<Duration> verifyIosClient(FirebaseAuth auth,
       {required String appToken, required bool isSandbox}) async {
-    if (auth is FirebaseAuthImpl) {
-      return auth.rpcHandler
-          .verifyIosClient(appToken: appToken, isSandbox: isSandbox);
-    } else if (auth is IsolateFirebaseAuth) {
-      return auth.invoke(
-          #verifyIosClient, [], {#appToken: appToken, #isSandbox: isSandbox});
+    if (auth is FirebaseAuthProtectedMethods) {
+      return auth.verifyIosClient(appToken: appToken, isSandbox: isSandbox);
     }
     throw UnimplementedError();
   }
 
   @protected
   Future<String> getProducerProjectNumber(FirebaseAuth auth) async {
-    if (auth is FirebaseAuthImpl) {
-      return auth.rpcHandler.getProducerProjectNumber();
-    } else if (auth is IsolateFirebaseAuth) {
-      return auth.invoke(#getProducerProjectNumber);
+    if (auth is FirebaseAuthProtectedMethods) {
+      return auth.getProducerProjectNumber();
     }
     throw UnimplementedError();
   }

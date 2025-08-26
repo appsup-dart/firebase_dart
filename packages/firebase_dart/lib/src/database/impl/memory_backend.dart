@@ -1,17 +1,14 @@
-import 'package:firebase_dart/src/core.dart';
-import 'package:firebase_dart/src/database/impl/backend_connection/rules.dart';
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
-import 'package:firebase_dart/src/database/impl/event.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
-import 'package:firebase_dart/src/implementation.dart';
-import 'package:firebase_dart/src/implementation/isolate.dart';
-import 'package:firebase_dart/src/implementation/isolate/util.dart';
 import 'package:stream_channel/stream_channel.dart';
 
 import 'backend_connection.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
+
+import 'memory_backend_non_isolate.dart'
+    if (dart.library.isolate) 'package:firebase_dart/src/database/impl/memory_backend_isolate.dart';
 
 class UnsecuredMemoryBackend extends SyncTreeBackend {
   UnsecuredMemoryBackend()
@@ -31,17 +28,7 @@ class MemoryBackend extends SecuredBackend {
 
   static MemoryBackend getInstance(String namespace) =>
       _instances.putIfAbsent(namespace, () {
-        try {
-          var implementation = FirebaseImplementation.installation;
-          if (implementation is IsolateFirebaseImplementation) {
-            return IsolateMemoryBackend(implementation.commander, namespace);
-          }
-        } on FirebaseCoreException catch (e) {
-          if (e.code != FirebaseCoreException.noSetup().code) {
-            rethrow;
-          }
-        }
-        return MemoryBackend();
+        return createMemoryBackend(namespace);
       });
 
   static StreamChannel<Message> connect(Uri url) {
@@ -52,60 +39,5 @@ class MemoryBackend extends SecuredBackend {
     var connection = BackendConnection(backend, url.host)..open();
 
     return connection.transport!.foreignChannel;
-  }
-}
-
-class IsolateMemoryBackend implements MemoryBackend {
-  final Future<IsolateCommander> commander;
-  final String namespace;
-
-  IsolateMemoryBackend(this.commander, this.namespace);
-
-  @override
-  Future<void> auth(Auth? auth) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Auth? get currentAuth => throw UnimplementedError();
-
-  @override
-  Future<List<String>> listen(String path, EventListener listener,
-      {QueryFilter query = const QueryFilter(), String? hash}) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> merge(String path, Map<String, dynamic> children) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> put(String path, value, {String? hash}) {
-    throw UnimplementedError();
-  }
-
-  @override
-  set securityRules(Map<String, dynamic> rules) {
-    commander.then((c) {
-      c.execute(StaticFunctionCall(setSecurityRules, [namespace, rules]));
-    });
-  }
-
-  @override
-  SecurityTree get securityTree => throw UnimplementedError();
-
-  @override
-  Future<void> unlisten(String path, EventListener? listener,
-      {QueryFilter query = const QueryFilter()}) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Backend get unsecuredBackend => throw UnimplementedError();
-
-  static void setSecurityRules(String namespace, Map<String, dynamic> rules) {
-    var backend = MemoryBackend.getInstance(namespace);
-    backend.securityRules = rules;
   }
 }

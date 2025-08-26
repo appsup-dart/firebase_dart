@@ -19,8 +19,16 @@ import '../rpc/rpc_handler.dart';
 import '../usermanager.dart';
 import 'user.dart';
 
+mixin FirebaseAuthProtectedMethods on FirebaseAuthMixin {
+  Future<Duration> verifyIosClient(
+      {required String appToken, required bool isSandbox});
+
+  Future<String> getProducerProjectNumber();
+}
+
 /// The entry point of the Firebase Authentication SDK.
-class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
+class FirebaseAuthImpl extends FirebaseService
+    with FirebaseAuthMixin, FirebaseAuthProtectedMethods {
   late final RpcHandler rpcHandler =
       RpcHandler(app.options.apiKey, httpClient: httpClient);
 
@@ -601,6 +609,17 @@ class FirebaseAuthImpl extends FirebaseService with FirebaseAuthMixin {
   Future<UserCredential> signInWithAuthProvider(AuthProvider provider) {
     // TODO: implement signInWithAuthProvider
     throw UnimplementedError();
+  }
+
+  @override
+  Future<String> getProducerProjectNumber() {
+    return rpcHandler.getProducerProjectNumber();
+  }
+
+  @override
+  Future<Duration> verifyIosClient(
+      {required String appToken, required bool isSandbox}) {
+    return rpcHandler.verifyIosClient(appToken: appToken, isSandbox: isSandbox);
   }
 }
 

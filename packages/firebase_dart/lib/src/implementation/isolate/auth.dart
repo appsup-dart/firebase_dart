@@ -275,7 +275,7 @@ class EncodeCall<T> extends BaseFunctionCall<Future> {
 }
 
 class IsolateFirebaseAuth extends IsolateFirebaseService
-    with FirebaseAuthMixin {
+    with FirebaseAuthMixin, FirebaseAuthProtectedMethods {
   final BehaviorSubject<User?> _subject = BehaviorSubject(sync: true);
 
   Future<T> invoke<T>(Symbol method,
@@ -491,6 +491,18 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   Future<UserCredential> signInWithAuthProvider(AuthProvider provider) {
     // TODO: implement signInWithAuthProvider
     throw UnimplementedError();
+  }
+
+  @override
+  Future<String> getProducerProjectNumber() {
+    return invoke(#getProducerProjectNumber);
+  }
+
+  @override
+  Future<Duration> verifyIosClient(
+      {required String appToken, required bool isSandbox}) {
+    return invoke(
+        #verifyIosClient, [], {#appToken: appToken, #isSandbox: isSandbox});
   }
 }
 

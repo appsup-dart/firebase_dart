@@ -29,6 +29,9 @@ abstract class FirebaseImplementation {
 
   FirebaseStorage createStorage(covariant FirebaseApp app,
       {String? storageBucket});
+
+  Future<void> updateDatabaseConfiguration(
+      {Duration? keepQueriesSyncedDuration});
 }
 
 abstract class BaseFirebaseImplementation extends FirebaseImplementation {

@@ -5,6 +5,7 @@ import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
+import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/storage.dart';
 import 'package:firebase_dart/src/storage/service.dart';
 import 'package:http/http.dart' as http;
@@ -57,5 +58,13 @@ class PureDartFirebaseImplementation extends BaseFirebaseImplementation {
     return FirebaseService.findService<FirebaseStorageImpl>(app,
             (s) => s.bucket == (storageBucket ?? app.options.storageBucket)) ??
         FirebaseStorageImpl(app, storageBucket, httpClient: _httpClient);
+  }
+
+  @override
+  Future<void> updateDatabaseConfiguration(
+      {Duration? keepQueriesSyncedDuration}) async {
+    Repo.updateDatabaseConfiguration(
+      keepQueriesSyncedDuration: keepQueriesSyncedDuration,
+    );
   }
 }
