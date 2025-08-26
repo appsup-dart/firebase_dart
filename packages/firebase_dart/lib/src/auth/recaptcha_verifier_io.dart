@@ -54,19 +54,37 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
 <html>
   <head>
     <title>reCAPTCHA demo: Simple page</title>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script>
+      var onloadCallback = function() {
+        var widgetId = grecaptcha.render('recaptcha', {
+          sitekey: '$siteKey',
+          size: 'invisible',
+          theme: 'light',
+          callback: function(token) {
+            fetch('', {
+              method: 'POST',
+              body: 'g-recaptcha-response=' + token
+            });
+          },
+          expiredCallback: function() {
+            console.log('expired-callback');
+          },
+          errorCallback: function(error) {
+            console.log('error-callback', error);
+          }
+        });
+        grecaptcha.execute(widgetId);
+      };
+    </script>
+    <script src="https://www.google.com/recaptcha/api.js?render=explicit&onload=onloadCallback&sitekey=$siteKey" async defer></script>
   </head>
   <body>
-    <form action="?" method="POST">
-      <div class="g-recaptcha" data-sitekey="$siteKey" data-size="${size.name}" data-theme="${theme.name}"></div>
-      <br/>
-      <input type="submit" value="Submit">
-    </form>
+    <div id="recaptcha"></div>
   </body>
 </html>
   ''';
     var s = await _startServer(1111, html);
-    _runBrowser('http://localhost:1111');
+    _runBrowser('http://127.0.0.1:1111');
 
     try {
       return await _completer.future;
@@ -76,7 +94,7 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
   }
 
   Future<HttpServer> _startServer(int port, String content) {
-    return (HttpServer.bind(InternetAddress.loopbackIPv4, port)
+    return (HttpServer.bind(InternetAddress('127.0.0.1'), port)
       ..then((requestServer) async {
         await for (var request in requestServer) {
           request.response.statusCode = 200;
