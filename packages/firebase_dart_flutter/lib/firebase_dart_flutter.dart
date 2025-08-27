@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:isolate';
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart_flutter/src/app_verifier.dart';
 import 'package:firebase_dart_flutter/src/auth_handlers.dart';
+import 'package:firebase_dart_flutter/src/sms_retriever.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -13,7 +15,7 @@ import 'package:hive/hive.dart';
 
 export 'package:firebase_dart/implementation/pure_dart.dart'
     show ApplicationVerifier, RecaptchaApplicationVerifier;
-export 'package:firebase_dart_flutter/src/auth_handlers.dart'
+export 'package:firebase_dart_flutter/src/app_verifier.dart'
     show FlutterApplicationVerifier;
 
 class FirebaseDartFlutter {

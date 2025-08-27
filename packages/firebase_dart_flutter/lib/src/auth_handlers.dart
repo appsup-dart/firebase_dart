@@ -1,17 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/auth.dart';
+import 'package:firebase_dart_flutter/src/deep_link_retriever.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
-import 'package:logging/logging.dart';
-import 'package:flutter_apns_only/flutter_apns_only.dart';
-import 'package:crypto/crypto.dart';
-import 'package:app_links/app_links.dart';
+
+import 'channel.dart';
 
 class FlutterAuthHandler extends FirebaseAppAuthHandler {
   final DeepLinkRetriever _deepLinkRetriever = DeepLinkRetriever.instance;
@@ -22,7 +18,7 @@ class FlutterAuthHandler extends FirebaseAppAuthHandler {
     if (!kIsWeb) {
       return _lastAuthResult ??= Future(() async {
         var v = await (platform_info.Platform.instance.android
-            ? _getResult('getAuthResult')
+            ? getResult('getAuthResult')
             : _deepLinkRetriever.getDeepLinkResult());
         _lastAuthResult = null;
         return createCredential(
@@ -32,205 +28,5 @@ class FlutterAuthHandler extends FirebaseAppAuthHandler {
       });
     }
     return null;
-  }
-}
-
-const _channel = MethodChannel('firebase_dart_flutter');
-
-Future<Map<String, dynamic>> _getResult(String type) async {
-  var v = (await _channel.invokeMapMethod<String, dynamic>(type))!;
-
-  Map<String, dynamic>? error =
-      v['firebaseError'] == null ? null : json.decode(v['firebaseError']);
-  if (error != null) {
-    var code = error['code'];
-    if (code.startsWith('auth/')) {
-      code = code.substring('auth/'.length);
-    }
-    throw FirebaseAuthException(code, error['message']);
-  }
-  return v;
-}
-
-class FlutterApplicationVerifier extends BaseApplicationVerifier {
-  final bool usePlayIntegrity;
-
-  final bool useApns;
-
-  FlutterApplicationVerifier(
-      {this.usePlayIntegrity = true, this.useApns = true});
-
-  final DeepLinkRetriever _deepLinkRetriever = DeepLinkRetriever.instance;
-  Future<String>? _lastRecaptchaResult;
-
-  late final Future<bool> _isGooglePlayServicesAvailable = Future(() async {
-    if (kIsWeb || !platform_info.Platform.instance.android) return false;
-    return await _channel.invokeMethod<bool>('isGooglePlayServicesAvailable') ??
-        false;
-  });
-
-  @override
-  Future<String> getVerifyResult(FirebaseApp app) {
-    if (!kIsWeb && platform_info.Platform.instance.android) {
-      return _lastRecaptchaResult ??= Future(() async {
-        var v = await _getResult('getVerifyResult');
-        _lastRecaptchaResult = null;
-
-        return Uri.parse(v['link']!).queryParameters['recaptchaToken']!;
-      });
-    } else if (!kIsWeb) {
-      return _lastRecaptchaResult ??= Future(() async {
-        var v = await _deepLinkRetriever.getDeepLinkResult();
-        _lastRecaptchaResult = null;
-
-        return v['recaptchaToken']!;
-      });
-    }
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<String?> verifyWithApns(FirebaseAuth auth) async {
-    if (!useApns) return null;
-    try {
-      var apns = ApnsPushConnectorOnly();
-
-      var completer = Completer<String>();
-      apns.configureApns(
-        onMessage: (message) async {
-          var v =
-              json.decode(message.payload['data']['com.google.firebase.auth']);
-
-          completer.complete('${v['receipt']}:${v['secret']}');
-        },
-      );
-
-      var tokenCompleter = Completer<String>();
-      if (apns.token.value != null) {
-        tokenCompleter.complete(apns.token.value);
-      } else {
-        apns.token.addListener(() async {
-          if (tokenCompleter.isCompleted) return;
-          tokenCompleter.complete(apns.token.value);
-        });
-      }
-
-      var defaultTimeout = const Duration(seconds: 5);
-      var s = await apns.getAuthorizationStatus().timeout(defaultTimeout);
-      if (s != ApnsAuthorizationStatus.authorized) {
-        if (!await apns.requestNotificationPermissions()) {
-          return null;
-        }
-      }
-
-      var timeout = await verifyIosClient(auth,
-              appToken: await tokenCompleter.future.timeout(defaultTimeout),
-              isSandbox: !kReleaseMode)
-          .timeout(defaultTimeout);
-
-      return await completer.future.timeout(timeout);
-    } catch (e, tr) {
-      Logger('FlutterApplicationVerifier')
-          .warning('Failed verifying with APNS', e, tr);
-      return null;
-    }
-  }
-
-  @override
-  Future<String?> verifyWithPlayIntegrity(
-      FirebaseAuth auth, String nonce) async {
-    if (!usePlayIntegrity) return null;
-    var available = await _isGooglePlayServicesAvailable;
-    if (!available) return null;
-
-    try {
-      var n = base64Url.encode(sha256.convert(nonce.codeUnits).bytes);
-      var token = await _channel.invokeMethod<String>('requestIntegrityToken', {
-        'projectNumber': await getProducerProjectNumber(auth),
-        'nonce': n,
-      });
-      return token!;
-    } catch (e, tr) {
-      Logger('FlutterApplicationVerifier')
-          .warning('Failed getting SafetyNet token', e, tr);
-      return null;
-    }
-  }
-}
-
-class AndroidSmsRetriever extends SmsRetriever {
-  static const _channel = MethodChannel('firebase_dart_flutter');
-
-  late final Future<String?> _appSignatureHash = Future(() async {
-    var v = (await _channel.invokeMethod<String>('getAppSignatureHash'))!;
-    return v;
-  });
-
-  @override
-  Future<String?> getAppSignatureHash() {
-    if (!kIsWeb && platform_info.Platform.instance.android) {
-      return _appSignatureHash;
-    }
-    return Future.value();
-  }
-
-  @override
-  Future<String?> retrieveSms() {
-    if (!kIsWeb && platform_info.Platform.instance.android) {
-      return Future<String?>(() async {
-        var v = (await _channel.invokeMethod<String>('retrieveSms'))!;
-        return v;
-      }).catchError((e, tr) {
-        Logger('firebase_dart_flutter').warning('Failed retrieving SMS', e, tr);
-        return null;
-      });
-    }
-    return Future.value();
-  }
-}
-
-class DeepLinkRetriever with WidgetsBindingObserver {
-  final StreamController<Uri> _controller = StreamController.broadcast();
-
-  DeepLinkRetriever._() {
-    if (!kIsWeb && !platform_info.Platform.instance.mobile) {
-      AppLinks().uriLinkStream.listen((uri) {
-        didPushRouteInformation(RouteInformation(uri: uri));
-      });
-    } else {
-      WidgetsFlutterBinding.ensureInitialized().addObserver(this);
-    }
-  }
-
-  static final DeepLinkRetriever instance = DeepLinkRetriever._();
-
-  @override
-  Future<bool> didPushRouteInformation(
-      RouteInformation routeInformation) async {
-    var uri = routeInformation.uri;
-
-    if (uri.host != 'firebaseauth') return false;
-    var deepLink = Uri.parse(uri.queryParameters['deep_link_id']!);
-
-    _controller.add(deepLink);
-
-    return true;
-  }
-
-  Future<Map<String, String>> getDeepLinkResult() async {
-    var deepLink = await _controller.stream.first;
-
-    var v = deepLink.queryParameters;
-
-    Map<String, dynamic>? error =
-        v['firebaseError'] == null ? null : json.decode(v['firebaseError']!);
-    if (error != null) {
-      var code = error['code'] as String;
-      if (code.startsWith('auth/')) {
-        code = code.substring('auth/'.length);
-      }
-      throw FirebaseAuthException(code, error['message']);
-    }
-    return v;
   }
 }

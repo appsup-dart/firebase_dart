@@ -20,6 +20,7 @@ dependencies:
   flutter_apns_only: ^1.0.0
   crypto: ^3.0.3
   app_links: ^6.3.3
+  flutter_inappwebview: ^6.0.0
 
 dev_dependencies:
   flutter_test:
