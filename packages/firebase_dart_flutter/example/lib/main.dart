@@ -16,6 +16,12 @@ void main() async {
   // capture/monitor network traffic for debugging purposes
   if (kDebugMode) HttpOverrides.global = MyHttpOverrides();
 
+  WidgetsFlutterBinding.ensureInitialized();
+  var key = GlobalKey();
+  var appVerifier = FlutterApplicationVerifier(
+      useApns: false,
+      usePlayIntegrity: false,
+      getBuildContext: () => key.currentContext);
   await FirebaseDartFlutter.setup(
     isolated: false,
     socialAuthHandlers: [
@@ -25,6 +31,7 @@ void main() async {
       ),
       AppleAuthHandler(),
     ],
+    applicationVerifier: appVerifier,
   );
 
   var box = await Hive.openBox('firebase_dart_flutter_example');
@@ -32,7 +39,7 @@ void main() async {
     await box.put('apps', [DefaultFirebaseOptions.currentPlatform.asMap]);
   }
 
-  runApp(const MyApp());
+  runApp(MyApp(key: key));
 }
 
 class MyApp extends StatelessWidget {
