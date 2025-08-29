@@ -15,6 +15,48 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`firebase_dart` - `v1.4.5`](#firebase_dart---v145)
+ - [`firebase_dart_flutter` - `v1.3.1`](#firebase_dart_flutter---v131)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1+2`](#firebase_dart_flutter_auth_facebook---v0012)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1+2`](#firebase_dart_flutter_auth_apple---v0012)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0+2`](#firebase_dart_flutter_auth_google---v0102)
+ - [`firebase_dart_plus` - `v0.1.0+22`](#firebase_dart_plus---v01022)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1+2`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0+2`
+ - `firebase_dart_plus` - `v0.1.0+22`
+
+---
+
+#### `firebase_dart` - `v1.4.5`
+
+ - **FIX**: recaptcha when running in isolate. ([951eb1f4](https://github.com/appsup-dart/firebase_dart/commit/951eb1f471a714c37b346698aaa3da6049200578))
+
+#### `firebase_dart_flutter` - `v1.3.1`
+
+ - **FIX**: recaptcha when running in isolate. ([951eb1f4](https://github.com/appsup-dart/firebase_dart/commit/951eb1f471a714c37b346698aaa3da6049200578))
+
+#### `firebase_dart_flutter_auth_facebook` - `v0.0.1+2`
+
+ - **DOCS**: fix LICENSE. ([bdf073a9](https://github.com/appsup-dart/firebase_dart/commit/bdf073a954c93992cc8fbed943dcd90158f4ea8c))
+
+
+## 2025-08-29
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`firebase_dart` - `v1.4.4`](#firebase_dart---v144)
  - [`firebase_dart_flutter` - `v1.3.0`](#firebase_dart_flutter---v130)
  - [`firebase_dart_flutter_auth_apple` - `v0.0.1+1`](#firebase_dart_flutter_auth_apple---v0011)
