@@ -1,6 +1,6 @@
 name: firebase_dart_flutter_auth_google
 description: Provides a `firebase_dart` auth handler for sign in with Google using the native Google API
-version: 0.1.0
+version: 0.1.0+1
 homepage: https://github.com/appsup-dart/firebase_dart
 
 environment:
@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  firebase_dart: ^1.4.3
+  firebase_dart: ^1.4.4
   google_sign_in: ^6.1.1
 
 dev_dependencies:

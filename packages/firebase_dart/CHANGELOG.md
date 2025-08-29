@@ -1,3 +1,11 @@
+## 1.4.4
+
+ - **REFACTOR**(firebase_dart_flutter): move social auth providers to separate packages. ([db2ef04b](https://github.com/appsup-dart/firebase_dart/commit/db2ef04b6c1879fced845731f45d2eceb25a9a70))
+ - **FIX**: several fixes for app verification with recaptcha. ([8890f308](https://github.com/appsup-dart/firebase_dart/commit/8890f308d06ef9f96f52925a464d4e630b6c8609))
+ - **FIX**: use 127.0.0.1 as host instead of localhost for recaptcha when running on vm. ([f129ab5f](https://github.com/appsup-dart/firebase_dart/commit/f129ab5f63debc52ff0d802a47d8d425a6979185))
+ - **FIX**: imports of dart:isolate on web caused issues with webdev. ([984e8b5d](https://github.com/appsup-dart/firebase_dart/commit/984e8b5dd78e50bb4a45f2f5f67b2e6ac9da12a3))
+ - **FIX**: executing recaptcha challenge twice. ([5101fbe5](https://github.com/appsup-dart/firebase_dart/commit/5101fbe5ad88f69fd893e15a58520e5347f22057))
+
 ## 1.4.3
 
  - **FIX**(database): error `Invalid argument(s): Mapping for ... exists` (in bimap.dart). ([a8893eb4](https://github.com/appsup-dart/firebase_dart/commit/a8893eb453b0b774a30607ccc5b0479de025def8))

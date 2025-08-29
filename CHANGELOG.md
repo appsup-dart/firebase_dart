@@ -3,6 +3,60 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-08-29
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.4.4`](#firebase_dart---v144)
+ - [`firebase_dart_flutter` - `v1.3.0`](#firebase_dart_flutter---v130)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1+1`](#firebase_dart_flutter_auth_apple---v0011)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1+1`](#firebase_dart_flutter_auth_facebook---v0011)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0+1`](#firebase_dart_flutter_auth_google---v0101)
+ - [`firebase_dart_plus` - `v0.1.0+21`](#firebase_dart_plus---v01021)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_plus` - `v0.1.0+21`
+
+---
+
+#### `firebase_dart` - `v1.4.4`
+
+ - **REFACTOR**(firebase_dart_flutter): move social auth providers to separate packages. ([db2ef04b](https://github.com/appsup-dart/firebase_dart/commit/db2ef04b6c1879fced845731f45d2eceb25a9a70))
+ - **FIX**: several fixes for app verification with recaptcha. ([8890f308](https://github.com/appsup-dart/firebase_dart/commit/8890f308d06ef9f96f52925a464d4e630b6c8609))
+ - **FIX**: use 127.0.0.1 as host instead of localhost for recaptcha when running on vm. ([f129ab5f](https://github.com/appsup-dart/firebase_dart/commit/f129ab5f63debc52ff0d802a47d8d425a6979185))
+ - **FIX**: imports of dart:isolate on web caused issues with webdev. ([984e8b5d](https://github.com/appsup-dart/firebase_dart/commit/984e8b5dd78e50bb4a45f2f5f67b2e6ac9da12a3))
+ - **FIX**: executing recaptcha challenge twice. ([5101fbe5](https://github.com/appsup-dart/firebase_dart/commit/5101fbe5ad88f69fd893e15a58520e5347f22057))
+
+#### `firebase_dart_flutter` - `v1.3.0`
+
+ - **REFACTOR**(firebase_dart_flutter): move social auth providers to separate packages. ([db2ef04b](https://github.com/appsup-dart/firebase_dart/commit/db2ef04b6c1879fced845731f45d2eceb25a9a70))
+ - **FIX**: several fixes for app verification with recaptcha. ([8890f308](https://github.com/appsup-dart/firebase_dart/commit/8890f308d06ef9f96f52925a464d4e630b6c8609))
+ - **FEAT**: use in app recaptcha as fallback for app verification. ([1ea6d495](https://github.com/appsup-dart/firebase_dart/commit/1ea6d495114a736044c1a3e1049e514ad1bdf058))
+
+#### `firebase_dart_flutter_auth_apple` - `v0.0.1+1`
+
+ - **REFACTOR**(firebase_dart_flutter): move social auth providers to separate packages. ([db2ef04b](https://github.com/appsup-dart/firebase_dart/commit/db2ef04b6c1879fced845731f45d2eceb25a9a70))
+
+#### `firebase_dart_flutter_auth_facebook` - `v0.0.1+1`
+
+ - **REFACTOR**(firebase_dart_flutter): move social auth providers to separate packages. ([db2ef04b](https://github.com/appsup-dart/firebase_dart/commit/db2ef04b6c1879fced845731f45d2eceb25a9a70))
+
+#### `firebase_dart_flutter_auth_google` - `v0.1.0+1`
+
+ - **REFACTOR**(firebase_dart_flutter): move social auth providers to separate packages. ([db2ef04b](https://github.com/appsup-dart/firebase_dart/commit/db2ef04b6c1879fced845731f45d2eceb25a9a70))
+
+
 ## 2025-07-01
 
 ### Changes

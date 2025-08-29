@@ -1,3 +1,9 @@
+## 1.3.0
+
+ - **REFACTOR**(firebase_dart_flutter): move social auth providers to separate packages. ([db2ef04b](https://github.com/appsup-dart/firebase_dart/commit/db2ef04b6c1879fced845731f45d2eceb25a9a70))
+ - **FIX**: several fixes for app verification with recaptcha. ([8890f308](https://github.com/appsup-dart/firebase_dart/commit/8890f308d06ef9f96f52925a464d4e630b6c8609))
+ - **FEAT**: use in app recaptcha as fallback for app verification. ([1ea6d495](https://github.com/appsup-dart/firebase_dart/commit/1ea6d495114a736044c1a3e1049e514ad1bdf058))
+
 ## 1.2.3
 
  - Update a dependency to the latest release.
