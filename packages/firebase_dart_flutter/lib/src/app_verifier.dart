@@ -177,8 +177,7 @@ class FlutterApplicationVerifier extends BaseApplicationVerifier {
         }
 
         if (overlay != null) {
-          var siteKey =
-              await (auth as dynamic).rpcHandler.getRecaptchaSiteKey();
+          var siteKey = await getRecaptchaSiteKey(auth);
           late OverlayEntry entry;
           Completer<String?> completer = Completer();
 

@@ -504,6 +504,11 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     return invoke(
         #verifyIosClient, [], {#appToken: appToken, #isSandbox: isSandbox});
   }
+
+  @override
+  Future<String> getRecaptchaSiteKey() {
+    return invoke(#getRecaptchaSiteKey);
+  }
 }
 
 class CurrentUserFunctionCall<T> extends BaseFunctionCall<T> {
@@ -648,6 +653,8 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
         };
       case #verifyIosClient:
         return (auth as FirebaseAuthImpl).rpcHandler.verifyIosClient;
+      case #getRecaptchaSiteKey:
+        return (auth as FirebaseAuthImpl).rpcHandler.getRecaptchaSiteKey;
       case #getProducerProjectNumber:
         return (auth as FirebaseAuthImpl).rpcHandler.getProducerProjectNumber;
       case #userChanges:

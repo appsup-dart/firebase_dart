@@ -24,6 +24,8 @@ mixin FirebaseAuthProtectedMethods on FirebaseAuthMixin {
       {required String appToken, required bool isSandbox});
 
   Future<String> getProducerProjectNumber();
+
+  Future<String> getRecaptchaSiteKey();
 }
 
 /// The entry point of the Firebase Authentication SDK.
@@ -633,6 +635,11 @@ class FirebaseAuthImpl extends FirebaseService
   Future<Duration> verifyIosClient(
       {required String appToken, required bool isSandbox}) {
     return rpcHandler.verifyIosClient(appToken: appToken, isSandbox: isSandbox);
+  }
+
+  @override
+  Future<String> getRecaptchaSiteKey() {
+    return rpcHandler.getRecaptchaSiteKey();
   }
 }
 

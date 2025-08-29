@@ -178,6 +178,13 @@ abstract class BaseApplicationVerifier implements ApplicationVerifier {
     return ApplicationVerificationResult.recaptcha(v);
   }
 
+  Future<String> getRecaptchaSiteKey(FirebaseAuth auth) async {
+    if (auth is FirebaseAuthProtectedMethods) {
+      return auth.getRecaptchaSiteKey();
+    }
+    throw UnimplementedError();
+  }
+
   @visibleForOverriding
   Future<String> getVerifyResult(FirebaseApp app);
 
