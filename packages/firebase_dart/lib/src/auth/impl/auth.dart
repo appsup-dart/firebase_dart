@@ -411,8 +411,21 @@ class FirebaseAuthImpl extends FirebaseService
         impl.applicationVerifier
             .verify(this, phoneNumber ?? multiFactorInfo?.phoneNumber ?? ''));
 
-    verificationId = await requestVerificationId(assertion);
+    try {
+      verificationId = await requestVerificationId(assertion);
+    } catch (e) {
+      if (assertion.type == 'recaptcha') {
+        rethrow;
+      }
 
+      assertion = await (verifier
+              ?.verify()
+              .then((v) => ApplicationVerificationResult(verifier.type, v)) ??
+          impl.applicationVerifier.verify(
+              this, phoneNumber ?? multiFactorInfo?.phoneNumber ?? '',
+              forceRecaptcha: true));
+      verificationId = await requestVerificationId(assertion);
+    }
     codeSent(verificationId, 0 /*TODO*/);
 
     smsFuture.timeout(timeout, onTimeout: () {

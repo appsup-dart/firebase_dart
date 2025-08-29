@@ -7,6 +7,7 @@ import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart_flutter/src/deep_link_retriever.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_apns_only/flutter_apns_only.dart';
 import 'package:logging/logging.dart';
@@ -224,6 +225,9 @@ class _RecaptchaWidgetState extends State<RecaptchaWidget> {
   static String _getHtml(String siteKey) => '''
     <html>
       <head>
+        <meta name="viewport" 
+              content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      
         <script>
             var onSubmit = function(token) {
               dart.postMessage(token);
@@ -251,12 +255,18 @@ class _RecaptchaWidgetState extends State<RecaptchaWidget> {
   final WebViewController _controller = WebViewController();
 
   Future<void> _prepareController() async {
-    await _controller.loadHtmlString(_getHtml(widget.siteKey),
-        baseUrl: widget.baseUrl);
+    await _controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+    if (!kIsWeb && Platform.current is! MacOsPlatform) {
+      await _controller.setBackgroundColor(Colors.black45);
+    }
     await _controller.addJavaScriptChannel('dart',
         onMessageReceived: (message) {
       widget.onToken(message.message.isEmpty ? null : message.message);
     });
+    await _controller.loadHtmlString(
+      _getHtml(widget.siteKey),
+      baseUrl: widget.baseUrl,
+    );
   }
 
   @override
