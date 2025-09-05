@@ -73,6 +73,7 @@ void runAuthTests({bool isolated = false}) {
           'emailVerified': false,
           'phoneNumber': null,
           'photoUrl': 'https://www.default.com/default/default.png',
+          'tenantId': null,
           'credential': {
             'issuer': <String, dynamic>{},
             'client_id': '',
