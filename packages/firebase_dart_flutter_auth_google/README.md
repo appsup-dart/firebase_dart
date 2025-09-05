@@ -1,3 +1,5 @@
+[![Ceasefire Now](https://badge.techforpalestine.org/default)](https://techforpalestine.org/learn-more)
+
 
 
 Provides a `firebase_dart` handler for sign in with Google using the native Google API.

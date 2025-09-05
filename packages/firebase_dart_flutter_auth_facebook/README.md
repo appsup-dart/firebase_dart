@@ -1,3 +1,5 @@
+[![Ceasefire Now](https://badge.techforpalestine.org/default)](https://techforpalestine.org/learn-more)
+
 
 
 Provides a `firebase_dart` auth handler for sign in with Facebook using the native Facebook API.
