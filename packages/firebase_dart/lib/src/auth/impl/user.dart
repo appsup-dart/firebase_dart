@@ -167,8 +167,8 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
                   int.parse(user.lastLoginAt!)),
           createdAt: user.createdAt == null
               ? null
-              : DateTime.fromMillisecondsSinceEpoch(
-                  int.parse(user.createdAt!)));
+              : DateTime.fromMillisecondsSinceEpoch(int.parse(user.createdAt!)),
+          tenantId: user.tenantId);
       setAccountInfo(accountInfo);
       _enrolledFactors.addAll([
         if (user.mfaInfo != null)
@@ -494,8 +494,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   String? get refreshToken => _credential.refreshToken;
 
   @override
-  // TODO: implement tenantId
-  String? get tenantId => null;
+  String? get tenantId => _accountInfo.tenantId;
 
   @override
   Future<void> updatePhoneNumber(PhoneAuthCredential phoneCredential) {
@@ -599,6 +598,7 @@ class AccountInfo {
   final bool? isAnonymous;
   final DateTime? createdAt;
   final DateTime? lastLoginAt;
+  final String? tenantId;
 
   AccountInfo(
       {required this.uid,
@@ -609,7 +609,8 @@ class AccountInfo {
       required this.phoneNumber,
       required this.isAnonymous,
       required this.createdAt,
-      required this.lastLoginAt});
+      required this.lastLoginAt,
+      required this.tenantId});
 
   AccountInfo.fromJson(Map<String, dynamic> json)
       : this(
@@ -625,7 +626,8 @@ class AccountInfo {
                 : DateTime.fromMillisecondsSinceEpoch(json['createdAt']),
             lastLoginAt: json['lastLoginAt'] == null
                 ? null
-                : DateTime.fromMillisecondsSinceEpoch(json['lastLoginAt']));
+                : DateTime.fromMillisecondsSinceEpoch(json['lastLoginAt']),
+            tenantId: json['tenantId']);
 
   Map<String, dynamic> toJson() => {
         'uid': uid,
@@ -637,6 +639,7 @@ class AccountInfo {
         'isAnonymous': isAnonymous,
         'createdAt': createdAt?.millisecondsSinceEpoch,
         'lastLoginAt': lastLoginAt?.millisecondsSinceEpoch,
+        'tenantId': tenantId,
       };
 }
 

@@ -561,10 +561,10 @@ class FirebaseAuthImpl extends FirebaseService
     if (actionCodeUrl == null) {
       throw FirebaseAuthException.argumentError('Invalid email link!');
     }
-/* TODO:    if (actionCodeUrl.tenantId != this.tenantId) {
+    if (actionCodeUrl.tenantId != tenantId) {
       throw FirebaseAuthException.tenantIdMismatch();
     }
- */
+
     return await _handleSignInResult(
         await rpcHandler.signInWithEmailLink(email!, actionCodeUrl.code),
         isNewUser: false);
@@ -640,6 +640,14 @@ class FirebaseAuthImpl extends FirebaseService
   @override
   Future<String> getRecaptchaSiteKey() {
     return rpcHandler.getRecaptchaSiteKey();
+  }
+
+  @override
+  String? get tenantId => rpcHandler.tenantId;
+
+  @override
+  set tenantId(String? tenantId) {
+    rpcHandler.tenantId = tenantId;
   }
 }
 

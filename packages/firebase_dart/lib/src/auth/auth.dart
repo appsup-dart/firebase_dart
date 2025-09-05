@@ -34,6 +34,9 @@ abstract class FirebaseAuth {
   /// The [FirebaseApp] for this current Auth instance.
   FirebaseApp get app;
 
+  /// The current Auth instance's tenant ID.
+  String? tenantId;
+
   /// Notifies about changes to the user's sign-in state (such as sign-in or
   /// sign-out).
   Stream<User?> authStateChanges();

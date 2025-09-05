@@ -70,6 +70,8 @@ abstract class FirebaseAppAuthHandler implements AuthHandler {
 
     var platform = Platform.current;
 
+    var tenantId = FirebaseAuth.instanceFor(app: app).tenantId;
+
     var url = Uri(
         scheme: 'https',
         host: app.options.authDomain,
@@ -81,7 +83,7 @@ abstract class FirebaseAppAuthHandler implements AuthHandler {
           if (providerId != null) 'providerId': providerId,
           if (scopes != null && scopes.isNotEmpty) 'scopes': scopes.join(','),
           if (parameters != null) 'customParameters': json.encode(parameters),
-          // TODO: if (tenantId != null) 'tid': tenantId
+          if (tenantId != null) 'tid': tenantId,
 
           'eventId': eventId,
 

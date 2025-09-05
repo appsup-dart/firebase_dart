@@ -278,6 +278,8 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     with FirebaseAuthMixin, FirebaseAuthProtectedMethods {
   final BehaviorSubject<User?> _subject = BehaviorSubject(sync: true);
 
+  String? _tenantId;
+
   Future<T> invoke<T>(Symbol method,
       [List<dynamic>? positionalArguments,
       Map<Symbol, dynamic>? namedArguments]) async {
@@ -509,6 +511,15 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   Future<String> getRecaptchaSiteKey() {
     return invoke(#getRecaptchaSiteKey);
   }
+
+  @override
+  String? get tenantId => _tenantId;
+
+  @override
+  set tenantId(String? tenantId) {
+    _tenantId = tenantId;
+    invoke(#setTenantId, [tenantId]);
+  }
 }
 
 class CurrentUserFunctionCall<T> extends BaseFunctionCall<T> {
@@ -657,6 +668,9 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
         return (auth as FirebaseAuthImpl).rpcHandler.getRecaptchaSiteKey;
       case #getProducerProjectNumber:
         return (auth as FirebaseAuthImpl).rpcHandler.getProducerProjectNumber;
+      case #setTenantId:
+        return (tenantId) =>
+            (auth as FirebaseAuthImpl).rpcHandler.tenantId = tenantId;
       case #userChanges:
         return () =>
             auth.userChanges().map<Map<String, dynamic>?>((v) => v?.toJson());

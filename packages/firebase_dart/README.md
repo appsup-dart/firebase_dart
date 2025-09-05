@@ -138,7 +138,7 @@ This implementation does not yet support all functionalities of the firebase aut
 | User.multiFactor | ✅
 
 
-[Multi-tenancy](https://cloud.google.com/identity-platform/docs/multi-tenancy) is currently not supported.
+[Multi-tenancy](https://cloud.google.com/identity-platform/docs/multi-tenancy) is supported by setting `tenantId` on a `FirebaseAuth` instance.
 
 ## Realtime database
 
