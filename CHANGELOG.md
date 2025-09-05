@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-09-05
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.5.0`](#firebase_dart---v150)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1+3`](#firebase_dart_flutter_auth_apple---v0013)
+ - [`firebase_dart_plus` - `v0.1.0+23`](#firebase_dart_plus---v01023)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0+3`](#firebase_dart_flutter_auth_google---v0103)
+ - [`firebase_dart_flutter` - `v1.3.2`](#firebase_dart_flutter---v132)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1+3`](#firebase_dart_flutter_auth_facebook---v0013)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1+3`
+ - `firebase_dart_plus` - `v0.1.0+23`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0+3`
+ - `firebase_dart_flutter` - `v1.3.2`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1+3`
+
+---
+
+#### `firebase_dart` - `v1.5.0`
+
+ - **FEAT**(auth): support for multi tenancy. ([b941d543](https://github.com/appsup-dart/firebase_dart/commit/b941d5433d55093591128e401e5a3b09d6815c4a))
+
+
 ## 2025-08-29
 
 ### Changes

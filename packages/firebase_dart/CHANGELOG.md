@@ -1,3 +1,7 @@
+## 1.5.0
+
+ - **FEAT**(auth): support for multi tenancy. ([b941d543](https://github.com/appsup-dart/firebase_dart/commit/b941d5433d55093591128e401e5a3b09d6815c4a))
+
 ## 1.4.5
 
  - **FIX**: recaptcha when running in isolate. ([951eb1f4](https://github.com/appsup-dart/firebase_dart/commit/951eb1f471a714c37b346698aaa3da6049200578))

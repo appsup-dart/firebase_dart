@@ -1,3 +1,7 @@
+## 1.3.2
+
+ - Update a dependency to the latest release.
+
 ## 1.3.1
 
  - **FIX**: recaptcha when running in isolate. ([951eb1f4](https://github.com/appsup-dart/firebase_dart/commit/951eb1f471a714c37b346698aaa3da6049200578))

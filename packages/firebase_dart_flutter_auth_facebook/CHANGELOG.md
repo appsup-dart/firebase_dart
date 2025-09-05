@@ -1,3 +1,7 @@
+## 0.0.1+3
+
+ - Update a dependency to the latest release.
+
 ## 0.0.1+2
 
  - **DOCS**: fix LICENSE. ([bdf073a9](https://github.com/appsup-dart/firebase_dart/commit/bdf073a954c93992cc8fbed943dcd90158f4ea8c))
