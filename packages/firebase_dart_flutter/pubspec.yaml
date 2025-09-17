@@ -14,7 +14,7 @@ dependencies:
   platform_info: ^5.0.0
   path_provider: ^2.0.0
   hive: ^2.0.0
-  package_info_plus: ^8.0.0
+  package_info_plus: '>=8.0.0 <10.0.0'
   url_launcher: ^6.0.0
   logging: ^1.0.2
   flutter_apns_only: ^1.0.0
