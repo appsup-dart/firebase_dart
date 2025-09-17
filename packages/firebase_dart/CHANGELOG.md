@@ -1,3 +1,7 @@
+## 1.5.1
+
+ - **REFACTOR**: set min sdk to 3.0.0. ([8ec08cdb](https://github.com/appsup-dart/firebase_dart/commit/8ec08cdb01f285d79ca5ea32638159b839e9091a))
+
 ## 1.5.0
 
  - **FEAT**(auth): support for multi tenancy. ([b941d543](https://github.com/appsup-dart/firebase_dart/commit/b941d5433d55093591128e401e5a3b09d6815c4a))

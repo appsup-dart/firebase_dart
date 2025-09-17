@@ -1,3 +1,7 @@
+## 0.1.0+24
+
+ - **REFACTOR**: set min sdk to 3.0.0. ([8ec08cdb](https://github.com/appsup-dart/firebase_dart/commit/8ec08cdb01f285d79ca5ea32638159b839e9091a))
+
 ## 0.1.0+23
 
  - Update a dependency to the latest release.

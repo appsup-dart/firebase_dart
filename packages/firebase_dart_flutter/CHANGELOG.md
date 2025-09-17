@@ -1,3 +1,8 @@
+## 1.3.3
+
+ - **REFACTOR**: support for package_info_plus ^9.0.0. ([ffe6ed62](https://github.com/appsup-dart/firebase_dart/commit/ffe6ed6211f48bd07d355127d01a458234bdc86b))
+ - **REFACTOR**: set min sdk to 3.0.0. ([8ec08cdb](https://github.com/appsup-dart/firebase_dart/commit/8ec08cdb01f285d79ca5ea32638159b839e9091a))
+
 ## 1.3.2
 
  - Update a dependency to the latest release.

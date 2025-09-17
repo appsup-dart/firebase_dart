@@ -3,6 +3,52 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-09-17
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.5.1`](#firebase_dart---v151)
+ - [`firebase_dart_flutter` - `v1.3.3`](#firebase_dart_flutter---v133)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1+4`](#firebase_dart_flutter_auth_apple---v0014)
+ - [`firebase_dart_plus` - `v0.1.0+24`](#firebase_dart_plus---v01024)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1+4`](#firebase_dart_flutter_auth_facebook---v0014)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0+4`](#firebase_dart_flutter_auth_google---v0104)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1+4`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0+4`
+
+---
+
+#### `firebase_dart` - `v1.5.1`
+
+ - **REFACTOR**: set min sdk to 3.0.0. ([8ec08cdb](https://github.com/appsup-dart/firebase_dart/commit/8ec08cdb01f285d79ca5ea32638159b839e9091a))
+
+#### `firebase_dart_flutter` - `v1.3.3`
+
+ - **REFACTOR**: support for package_info_plus ^9.0.0. ([ffe6ed62](https://github.com/appsup-dart/firebase_dart/commit/ffe6ed6211f48bd07d355127d01a458234bdc86b))
+ - **REFACTOR**: set min sdk to 3.0.0. ([8ec08cdb](https://github.com/appsup-dart/firebase_dart/commit/8ec08cdb01f285d79ca5ea32638159b839e9091a))
+
+#### `firebase_dart_flutter_auth_apple` - `v0.0.1+4`
+
+ - **REFACTOR**: support for sign_in_with_apple ^7.0.0. ([eb05194e](https://github.com/appsup-dart/firebase_dart/commit/eb05194e726eafe7e1d0f8c566f48a52816d08d5))
+
+#### `firebase_dart_plus` - `v0.1.0+24`
+
+ - **REFACTOR**: set min sdk to 3.0.0. ([8ec08cdb](https://github.com/appsup-dart/firebase_dart/commit/8ec08cdb01f285d79ca5ea32638159b839e9091a))
+
+
 ## 2025-09-05
 
 ### Changes
