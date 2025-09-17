@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'auth.dart';
 
-abstract class FirebaseAuthMixin implements FirebaseAuth {
+mixin FirebaseAuthMixin implements FirebaseAuth {
   @override
   Future<ConfirmationResult> signInWithPhoneNumber(
     String phoneNumber, [

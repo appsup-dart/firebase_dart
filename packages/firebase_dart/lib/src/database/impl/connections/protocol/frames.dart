@@ -44,7 +44,7 @@ class FramesToMessagesTransformer
   }
 }
 
-class _FramesToMessagesEventSink extends EventSink<String> {
+class _FramesToMessagesEventSink implements EventSink<String> {
   final EventSink<String> _outputSink;
 
   int? _totalFrames;

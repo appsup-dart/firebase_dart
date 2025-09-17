@@ -8,7 +8,7 @@ part of '../database.dart';
 /// `FirebaseDatabase.reference()`, you can use it to read data
 /// (ie. `onChildAdded`), write data (ie. `setValue`), and to create new
 /// `DatabaseReference`s (ie. `child`).
-abstract class DatabaseReference implements Query {
+mixin DatabaseReference implements Query {
   /// Getter for onDisconnect.
   OnDisconnect onDisconnect();
 

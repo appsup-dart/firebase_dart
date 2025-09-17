@@ -565,7 +565,7 @@ class FirebaseUserImpl extends User with DelegatingUserInfo {
   late final MultiFactor multiFactor = MultiFactorImpl(this);
 }
 
-abstract class DelegatingUserInfo implements UserInfo {
+mixin DelegatingUserInfo implements UserInfo {
   AccountInfo? get _accountInfo;
 
   @override

@@ -24,7 +24,7 @@ import 'view.dart';
 
 final _logger = Logger('firebase-synctree');
 
-enum QueryRegistrationState with Comparable<QueryRegistrationState> {
+enum QueryRegistrationState implements Comparable<QueryRegistrationState> {
   registering(3),
   registered(4),
   unregistering(2),
