@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   firebase_dart: ^1.5.0
-  sign_in_with_apple: ^6.0.0
+  sign_in_with_apple: '>=6.0.0 <8.0.0'
   platform_info: ^5.0.0
 
 dev_dependencies:
