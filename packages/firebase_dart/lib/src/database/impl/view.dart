@@ -100,7 +100,6 @@ class ViewCache {
       case ViewOperationSource.ack:
         return removeOperation(writeId!);
       case ViewOperationSource.server:
-      default:
         var result = serverVersion.applyOperation(operation as TreeOperation);
         return updateServerVersion(result);
     }

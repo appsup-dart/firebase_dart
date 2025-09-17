@@ -116,45 +116,38 @@ class _QueryWidgetState extends State<QueryWidget> {
           child: ValueListenableBuilder(
             valueListenable: _orderBy,
             builder: (BuildContext context, String value, Widget? child) {
-              var callback = _subscription != null
-                  ? null
-                  : (String? value) {
-                      _orderBy.value = value!;
-                    };
-              return Column(children: [
-                RadioListTile<String>(
-                  groupValue: value,
-                  value: '.priority',
-                  title: const Text('priority'),
-                  onChanged: callback,
-                ),
-                RadioListTile(
-                  groupValue: value,
-                  value: '.key',
-                  title: const Text('key'),
-                  onChanged: callback,
-                ),
-                RadioListTile(
-                  groupValue: value,
-                  value: '.value',
-                  title: const Text('value'),
-                  onChanged: callback,
-                ),
-                RadioListTile(
-                  groupValue: value,
-                  value: '.child',
-                  title: const Text('child'),
-                  onChanged: callback,
-                ),
-                if (_orderBy.value == '.child')
-                  Padding(
-                      padding: const EdgeInsets.only(left: 64),
-                      child: TextFormField(
-                        controller: _orderByChild,
-                        decoration:
-                            const InputDecoration(labelText: 'child key'),
-                      ))
-              ]);
+              return RadioGroup<String>(
+                groupValue: value,
+                onChanged: (value) {
+                  _orderBy.value = value!;
+                },
+                child: Column(children: [
+                  const RadioListTile<String>(
+                    value: '.priority',
+                    title: Text('priority'),
+                  ),
+                  const RadioListTile(
+                    value: '.key',
+                    title: Text('key'),
+                  ),
+                  const RadioListTile(
+                    value: '.value',
+                    title: Text('value'),
+                  ),
+                  const RadioListTile(
+                    value: '.child',
+                    title: Text('child'),
+                  ),
+                  if (_orderBy.value == '.child')
+                    Padding(
+                        padding: const EdgeInsets.only(left: 64),
+                        child: TextFormField(
+                          controller: _orderByChild,
+                          decoration:
+                              const InputDecoration(labelText: 'child key'),
+                        ))
+                ]),
+              );
             },
           ),
         ),

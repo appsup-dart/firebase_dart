@@ -8,7 +8,6 @@ import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart_flutter/src/deep_link_retriever.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_apns_only/flutter_apns_only.dart';
 import 'package:logging/logging.dart';
 import 'package:webview_flutter/webview_flutter.dart';

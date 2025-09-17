@@ -48,7 +48,7 @@ class GoogleAuthHandler extends DirectAuthHandler {
           idToken: auth.idToken, accessToken: auth.accessToken);
     } on MissingPluginException {
       return null;
-    } on AssertionError catch (e) {
+    } on AssertionError {
       return null;
     }
   }

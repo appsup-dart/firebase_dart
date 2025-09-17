@@ -113,6 +113,7 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
     return app;
   }
 
+  @override
   Future<void> updateDatabaseConfiguration(
       {Duration? keepQueriesSyncedDuration}) async {
     var commander = await this.commander;

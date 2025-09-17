@@ -17,7 +17,7 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  isolateId = Service.getIsolateID(Isolate.current)!;
+  isolateId = Service.getIsolateId(Isolate.current)!;
   vmService = await vmServiceConnectUri(_toWebSocket(serverUri));
 
   await run();
