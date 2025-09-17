@@ -1,3 +1,3 @@
-library firebase_storage;
+library;
 
 export 'src/storage.dart';

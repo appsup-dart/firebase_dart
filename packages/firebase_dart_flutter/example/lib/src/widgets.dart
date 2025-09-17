@@ -10,8 +10,10 @@ class ActionDialog<T> extends StatefulWidget {
   final FutureOr<T> Function() onContinue;
 
   const ActionDialog(
-      {Key? key, required this.children, this.title, required this.onContinue})
-      : super(key: key);
+      {super.key,
+      required this.children,
+      this.title,
+      required this.onContinue});
 
   @override
   State<StatefulWidget> createState() => _ActionDialogState();

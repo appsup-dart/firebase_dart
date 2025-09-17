@@ -22,7 +22,7 @@ class ReferenceImpl implements Reference {
       : requests = ResourceClient(location, storage.httpClient);
 
   /// The URL for the bucket and path this object references, in the form
-  /// gs://<bucket>/<object-path>
+  /// gs://&lt;bucket&gt;/&lt;object-path&gt;
   @override
   String toString() => location.toString();
 

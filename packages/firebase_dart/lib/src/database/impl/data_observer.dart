@@ -285,7 +285,7 @@ class IncompleteData {
 class EventGenerator {
   const EventGenerator();
 
-  static bool _equals(a, b) {
+  static bool _equals(dynamic a, dynamic b) {
     if (a is Map && b is Map) return const MapEquality().equals(a, b);
     if (a is Iterable && b is Iterable) {
       return const IterableEquality().equals(a, b);

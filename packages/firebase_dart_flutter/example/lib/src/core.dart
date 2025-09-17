@@ -17,7 +17,7 @@ class AppListPage extends StatelessWidget {
     yield* box.watch(key: 'apps').map((e) => parseApps(e.value));
   }
 
-  const AppListPage({Key? key}) : super(key: key);
+  const AppListPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +60,7 @@ class AppListPage extends StatelessWidget {
 }
 
 class NewAppDialog extends StatefulWidget {
-  const NewAppDialog({Key? key}) : super(key: key);
+  const NewAppDialog({super.key});
 
   @override
   State<StatefulWidget> createState() => _NewAppDialogState();
@@ -230,7 +230,7 @@ class _NewAppDialogState extends State<NewAppDialog> {
 class AppPage extends StatefulWidget {
   final String projectId;
 
-  const AppPage({Key? key, required this.projectId}) : super(key: key);
+  const AppPage({super.key, required this.projectId});
 
   @override
   State<AppPage> createState() => _AppPageState();
@@ -345,7 +345,7 @@ class _AppPageState extends State<AppPage> {
 class AppSettingsTab extends StatelessWidget {
   final FirebaseApp app;
 
-  const AppSettingsTab({Key? key, required this.app}) : super(key: key);
+  const AppSettingsTab({super.key, required this.app});
 
   @override
   Widget build(BuildContext context) {

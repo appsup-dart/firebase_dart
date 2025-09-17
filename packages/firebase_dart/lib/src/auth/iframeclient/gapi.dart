@@ -1,5 +1,5 @@
 @JS('gapi')
-library gapi;
+library;
 
 import 'package:js/js.dart';
 

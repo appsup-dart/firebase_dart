@@ -35,7 +35,7 @@ dev_dependencies:
   fake_async: ^1.2.0
   benchmark_harness: ^2.0.0
   vm_service: ">=9.0.0 <15.0.0"
-  lints: ">=2.0.0 <5.0.0"
+  lints: ^6.0.0
 
 false_secrets:
  - /lib/src/core/options.dart

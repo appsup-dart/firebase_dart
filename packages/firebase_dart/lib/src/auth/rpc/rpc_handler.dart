@@ -1295,7 +1295,6 @@ class SignInResult {
   SignInResult.mfaRequired(this.mfaPendingCredential, this.mfaInfo)
       : _credential = null;
 
-  openid.Credential get credential => _credential == null
-      ? throw FirebaseAuthException.mfaRequired()
-      : _credential!;
+  openid.Credential get credential =>
+      _credential ?? (throw FirebaseAuthException.mfaRequired());
 }

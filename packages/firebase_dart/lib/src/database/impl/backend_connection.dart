@@ -1,4 +1,4 @@
-library firebase_dart.database.backend_connection;
+library;
 
 import 'dart:async';
 

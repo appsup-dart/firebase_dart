@@ -1,4 +1,4 @@
-library firebase_auth;
+library;
 
 import 'package:firebase_dart/core.dart';
 import 'package:meta/meta.dart';

@@ -8,9 +8,8 @@ class DatabaseTab extends StatelessWidget {
 
   final FirebaseDatabase database;
 
-  DatabaseTab({Key? key, required this.app})
-      : database = FirebaseDatabase(app: app),
-        super(key: key);
+  DatabaseTab({super.key, required this.app})
+      : database = FirebaseDatabase(app: app);
 
   @override
   Widget build(BuildContext context) {

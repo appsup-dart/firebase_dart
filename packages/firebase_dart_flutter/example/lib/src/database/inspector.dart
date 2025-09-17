@@ -7,9 +7,9 @@ import 'package:flutter/services.dart';
 
 class QueryInspectorPage extends StatelessWidget {
   const QueryInspectorPage({
-    Key? key,
+    super.key,
     required this.database,
-  }) : super(key: key);
+  });
 
   final FirebaseDatabase database;
 
@@ -25,9 +25,9 @@ class QueryWidget extends StatefulWidget {
   final FirebaseDatabase database;
 
   const QueryWidget({
-    Key? key,
+    super.key,
     required this.database,
-  }) : super(key: key);
+  });
 
   @override
   State<QueryWidget> createState() => _QueryWidgetState();

@@ -1,4 +1,4 @@
-library firebase_dart;
+library;
 
 export 'implementation/pure_dart.dart' show FirebaseDart;
 export 'auth.dart';

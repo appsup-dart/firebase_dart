@@ -1,6 +1,6 @@
 /// Support for doing something awesome.
 ///
 /// More dartdocs go here.
-library firebase_dart_plus;
+library;
 
 export 'src/write_batch.dart';

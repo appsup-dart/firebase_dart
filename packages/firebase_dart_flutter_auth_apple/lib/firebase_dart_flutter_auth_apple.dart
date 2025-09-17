@@ -1,4 +1,4 @@
-library firebase_dart_flutter_auth_apple;
+library;
 
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';

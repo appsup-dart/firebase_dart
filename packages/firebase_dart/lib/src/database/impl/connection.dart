@@ -1,4 +1,4 @@
-library firebase.connection;
+library;
 
 import 'dart:async';
 

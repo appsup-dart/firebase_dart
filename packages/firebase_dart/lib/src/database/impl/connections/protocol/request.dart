@@ -87,7 +87,7 @@ class Request {
       : this(DataMessage.actionMerge,
             MessageBody(path: path, data: data, hash: hash));
 
-  Request.stats(stats)
+  Request.stats(dynamic stats)
       : this(DataMessage.actionStats, MessageBody(stats: stats));
 
   /// The response for this request

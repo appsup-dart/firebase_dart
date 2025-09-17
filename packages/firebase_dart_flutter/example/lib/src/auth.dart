@@ -9,9 +9,8 @@ class AuthTab extends StatelessWidget {
 
   final FirebaseAuth auth;
 
-  AuthTab({Key? key, required this.app})
-      : auth = FirebaseAuth.instanceFor(app: app),
-        super(key: key);
+  AuthTab({super.key, required this.app})
+      : auth = FirebaseAuth.instanceFor(app: app);
 
   @override
   Widget build(BuildContext context) {
@@ -113,8 +112,7 @@ class UserInfo extends StatelessWidget {
   final User user;
   final FirebaseAuth auth;
 
-  const UserInfo({Key? key, required this.auth, required this.user})
-      : super(key: key);
+  const UserInfo({super.key, required this.auth, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -213,8 +211,7 @@ class SignInWithEmailAndPasswordDialog extends StatelessWidget {
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
 
-  SignInWithEmailAndPasswordDialog({Key? key, required this.auth})
-      : super(key: key);
+  SignInWithEmailAndPasswordDialog({super.key, required this.auth});
 
   @override
   Widget build(BuildContext context) {
@@ -246,7 +243,7 @@ class SignInWithPhoneNumberDialog extends StatelessWidget {
 
   final TextEditingController phoneNumber = TextEditingController();
 
-  SignInWithPhoneNumberDialog({Key? key, required this.auth}) : super(key: key);
+  SignInWithPhoneNumberDialog({super.key, required this.auth});
 
   @override
   Widget build(BuildContext context) {
@@ -289,8 +286,7 @@ class SignInWithSmsCodeDialog extends StatelessWidget {
   final TextEditingController otp = TextEditingController();
 
   SignInWithSmsCodeDialog(
-      {Key? key, required this.auth, required this.verificationId})
-      : super(key: key);
+      {super.key, required this.auth, required this.verificationId});
 
   @override
   Widget build(BuildContext context) {

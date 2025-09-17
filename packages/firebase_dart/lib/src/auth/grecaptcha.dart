@@ -1,5 +1,5 @@
 @JS()
-library grecaptcha;
+library;
 
 import 'package:js/js.dart';
 

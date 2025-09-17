@@ -1,7 +1,7 @@
 // ignore_for_file: constant_identifier_names, non_constant_identifier_names
 
 @JS()
-library iframewrapper;
+library;
 
 import 'package:js/js.dart';
 

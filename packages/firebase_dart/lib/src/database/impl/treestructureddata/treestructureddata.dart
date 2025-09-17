@@ -180,11 +180,11 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
                 })),
           priority);
 
-  factory TreeStructuredData.fromExportJson(json,
+  factory TreeStructuredData.fromExportJson(dynamic json,
           [QueryFilter filter = const QueryFilter()]) =>
       TreeStructuredDataFromExportJson(json, filter);
 
-  factory TreeStructuredData.fromJson(json, [priority]) {
+  factory TreeStructuredData.fromJson(dynamic json, [dynamic priority]) {
     if (json == null) {
       return TreeStructuredData();
     }
