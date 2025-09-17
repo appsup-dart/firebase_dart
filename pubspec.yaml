@@ -1,7 +1,34 @@
 name: firebase_dart_repo
+repository: https://github.com/appsup-dart/firebase_dart
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
 
 dependencies:
-  melos: ^3.1.1
+  melos: ^7.0.0
+
+workspace:
+  - packages/firebase_dart
+  - packages/firebase_dart_flutter
+  - packages/firebase_dart_flutter_auth_google
+  - packages/firebase_dart_flutter_auth_facebook
+  - packages/firebase_dart_flutter_auth_apple
+  - packages/firebase_dart_plus
+
+melos:
+  ide:
+    intellij: false
+
+  command:
+    version:
+      linkToCommits: true
+      hooks: 
+        pre:
+          exec: dart test -j 1
+          packageFilters:
+            flutter: false
+        preCommit:
+          exec: "$PWD/remove-prereleases-from-changelog.sh"
+
+
+  

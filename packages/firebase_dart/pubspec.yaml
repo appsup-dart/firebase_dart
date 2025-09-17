@@ -3,6 +3,8 @@ description: A port of the Firebase database, auth and storage client to pure Da
 version: 1.5.1
 homepage: https://github.com/appsup-dart/firebase_dart
 
+resolution: workspace
+
 environment:
   sdk: '>=3.5.0 <4.0.0'
 

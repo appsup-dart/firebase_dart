@@ -6,6 +6,8 @@ homepage: https://github.com/appsup-dart/firebase_dart
 environment:
   sdk: '>=3.5.0 <4.0.0'
 
+resolution: workspace
+
 dependencies:
   firebase_dart: ^1.5.1
   sortedmap: ^0.5.3
