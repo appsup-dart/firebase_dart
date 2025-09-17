@@ -14,10 +14,9 @@ ide:
 
 command:
   version:
-    linkToCommits: true
     hooks: 
       pre:
-        exec: dart test -j 1
+        exec: dart test -j 1 --fail-fast
         packageFilters:
           flutter: false
       preCommit:
