@@ -3,6 +3,48 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-09-20
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.5.2`](#firebase_dart---v152)
+ - [`firebase_dart_flutter` - `v1.3.4`](#firebase_dart_flutter---v134)
+ - [`firebase_dart_plus` - `v0.1.0+25`](#firebase_dart_plus---v01025)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0+5`](#firebase_dart_flutter_auth_google---v0105)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1+5`](#firebase_dart_flutter_auth_facebook---v0015)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1+5`](#firebase_dart_flutter_auth_apple---v0015)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter_auth_google` - `v0.1.0+5`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1+5`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1+5`
+
+---
+
+#### `firebase_dart` - `v1.5.2`
+
+ - **REFACTOR**: set min sdk version to 3.5.0. ([cf833367](https://github.com/appsup-dart/firebase_dart/commit/cf8333679d4dfd2fd0686f1df6f8bccf70f5af18))
+
+#### `firebase_dart_flutter` - `v1.3.4`
+
+ - **REFACTOR**: set min sdk version to 3.5.0. ([cf833367](https://github.com/appsup-dart/firebase_dart/commit/cf8333679d4dfd2fd0686f1df6f8bccf70f5af18))
+
+#### `firebase_dart_plus` - `v0.1.0+25`
+
+ - **REFACTOR**: set min sdk version to 3.5.0. ([cf833367](https://github.com/appsup-dart/firebase_dart/commit/cf8333679d4dfd2fd0686f1df6f8bccf70f5af18))
+
+
 ## 2025-09-17
 
 ### Changes

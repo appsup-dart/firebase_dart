@@ -1,3 +1,7 @@
+## 0.0.1+5
+
+ - Update a dependency to the latest release.
+
 ## 0.0.1+4
 
  - **REFACTOR**: support for sign_in_with_apple ^7.0.0. ([eb05194e](https://github.com/appsup-dart/firebase_dart/commit/eb05194e726eafe7e1d0f8c566f48a52816d08d5))
