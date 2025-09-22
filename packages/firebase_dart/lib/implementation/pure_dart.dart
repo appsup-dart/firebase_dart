@@ -6,7 +6,7 @@ import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/pure_dart_setup_web.dart'
     if (dart.library.io) 'package:firebase_dart/src/implementation/pure_dart_setup_io.dart'
-    if (dart.library.html) 'package:firebase_dart/src/implementation/pure_dart_setup_web.dart';
+    if (dart.library.js_interop) 'package:firebase_dart/src/implementation/pure_dart_setup_web.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:meta/meta.dart';

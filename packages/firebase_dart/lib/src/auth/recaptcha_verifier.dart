@@ -1,7 +1,7 @@
 import 'auth.dart';
 
 import 'recaptcha_verifier_io.dart'
-    if (dart.library.html) 'recaptcha_verifier_web.dart';
+    if (dart.library.js_interop) 'recaptcha_verifier_web.dart';
 
 /// An [reCAPTCHA](https://www.google.com/recaptcha/?authuser=0)-based
 /// application verifier.

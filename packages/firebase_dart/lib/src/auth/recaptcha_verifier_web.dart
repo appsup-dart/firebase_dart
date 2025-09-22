@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:html';
-import 'dart:js';
-import 'dart:js_util';
+import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 import 'dart:math';
+import 'package:web/web.dart';
 
 import 'auth.dart';
-import 'grecaptcha.dart';
+import 'grecaptcha.dart' as grecaptcha;
 import 'impl/auth.dart';
 
 class RecaptchaVerifierImpl implements RecaptchaVerifier {
@@ -57,7 +57,7 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
           ? document.body!
           : document.getElementById(container!)!;
       var guaranteedEmpty = document.createElement('div')..id = 'recaptcha';
-      element.children.add(guaranteedEmpty);
+      element.appendChild(guaranteedEmpty);
       _element = element = guaranteedEmpty;
 
       _completer = Completer();
@@ -66,22 +66,22 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
 
       newWidgetId = grecaptcha.render(
           element,
-          GRecaptchaParameters(
-              callback: allowInterop((v) {
+          grecaptcha.GRecaptchaParameters(
+              callback: (String? v) {
                 if (newWidgetId != widgetId) return;
                 if (onSuccess != null) onSuccess!();
                 _completer!.complete(v);
-              }),
-              errorCallback: allowInterop((error) {
+              }.toJS,
+              errorCallback: (JSAny error) {
                 var e = FirebaseAuthException('recaptcha-error', '$error');
                 if (onError != null) onError!(e);
                 _completer!.completeError(e);
-              }),
-              expiredCallback: allowInterop(() {
+              }.toJS,
+              expiredCallback: () {
                 if (onExpired != null) onExpired!();
                 _completer!
                     .completeError(FirebaseAuthException('recaptcha-expired'));
-              }),
+              }.toJS,
               size: container == null ? 'invisible' : size.name,
               theme: theme.name,
               sitekey: await (auth as FirebaseAuthImpl)
@@ -138,7 +138,7 @@ class RecaptchaLoader {
     var r = Random();
 
     var name = '_gonload${r.nextInt(1000000)}';
-    var script = ScriptElement()
+    var script = HTMLScriptElement()
       ..src = Uri.parse('https://www.google.com/recaptcha/api.js')
           .replace(queryParameters: {
         'render': 'explicit',
@@ -147,9 +147,11 @@ class RecaptchaLoader {
       }).toString()
       ..async = true;
 
-    setProperty(window, name, allowInterop((_) {
-      completer.complete();
-    }));
+    globalContext.setProperty(
+        name.toJS,
+        () {
+          completer.complete();
+        }.toJS);
 
     document.body!.append(script);
 

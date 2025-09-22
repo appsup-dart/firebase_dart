@@ -3,21 +3,21 @@
 @JS('gapi.iframes')
 library;
 
-import 'dart:html';
-
-import 'package:js/js.dart';
+import 'dart:async';
+import 'dart:js_interop';
+import 'package:web/web.dart';
 
 @JS()
 external Context getContext();
 
 @JS()
-class Iframe {
+extension type Iframe._(JSObject _) implements JSObject {
   external IThenable ping();
 
   external void restyle(IframeRestyleOptions parameters);
 
   external void send(
-      String type, dynamic data, Function onDone, IframesFilter filter);
+      String type, JSAny data, JSFunction onDone, IframesFilter filter);
 
   external void register(String eventName, IframeEventHandler callback,
       [IframesFilter filter]);
@@ -26,23 +26,23 @@ class Iframe {
 
 @JS()
 @anonymous
-abstract class Context {
+extension type Context._(JSObject _) implements JSObject {
   external void openChild(IframeOptions options);
 
-  external void open(IframeOptions options, [Function(Iframe) onOpen]);
+  external void open(IframeOptions options, [JSFunction onOpen]);
 }
 
 @JS()
 @anonymous
-abstract class IframeAttributes {
-  external CssStyleDeclaration? style;
+extension type IframeAttributes._(JSObject _) implements JSObject {
+  external CSSStyleDeclaration? style;
 
-  external factory IframeAttributes({CssStyleDeclaration? style});
+  external factory IframeAttributes({CSSStyleDeclaration? style});
 }
 
 @JS()
 @anonymous
-abstract class IframeRestyleOptions {
+extension type IframeRestyleOptions._(JSObject _) implements JSObject {
   external bool? setHideOnLeave;
 
   external factory IframeRestyleOptions({bool? setHideOnLeave});
@@ -50,7 +50,7 @@ abstract class IframeRestyleOptions {
 
 @JS()
 @anonymous
-abstract class IframeEvent {
+extension type IframeEvent._(JSObject _) implements JSObject {
   external String type;
 
   external IframeAuthEvent? authEvent;
@@ -58,18 +58,17 @@ abstract class IframeEvent {
 
 @JS()
 @anonymous
-abstract class IframeEventHandlerResponse {
+extension type IframeEventHandlerResponse._(JSObject _) implements JSObject {
   external String status;
 
   external factory IframeEventHandlerResponse({String status});
 }
 
-typedef IframeEventHandler = IframeEventHandlerResponse Function(
-    IframeEvent, Iframe);
+typedef IframeEventHandler = JSFunction;
 
 @JS()
 @anonymous
-abstract class IframeAuthEvent {
+extension type IframeAuthEvent._(JSObject _) implements JSObject {
   external String? eventId;
 
   external String? postBody;
@@ -89,7 +88,7 @@ abstract class IframeAuthEvent {
 
 @JS()
 @anonymous
-abstract class IframeError {
+extension type IframeError._(JSObject _) implements JSObject {
   external String code;
 
   external String message;
@@ -97,16 +96,16 @@ abstract class IframeError {
 
 @JS()
 @anonymous
-abstract class IframeOptions {
+extension type IframeOptions._(JSObject _) implements JSObject {
   external String get url;
-  external HtmlElement? get where;
+  external HTMLElement? get where;
   external IframeAttributes? get attributes;
   external IframesFilter? messageHandlersFilter;
   external bool? dontclear;
 
   external factory IframeOptions(
       {String url,
-      HtmlElement? where,
+      HTMLElement? where,
       IframeAttributes? attributes,
       IframesFilter? messageHandlersFilter,
       bool? dontclear});
@@ -114,12 +113,24 @@ abstract class IframeOptions {
 
 @JS()
 @anonymous
-abstract class IThenable {
-  external void then(Function callback, Function onError);
+extension type IThenable._(JSObject _) implements JSObject {
+  external void then(JSFunction callback, JSFunction onError);
+
+  Future<void> toFuture() {
+    var completer = Completer<void>();
+    then(
+        () {
+          completer.complete();
+        }.toJS,
+        (JSAny error) {
+          completer.completeError(error);
+        }.toJS);
+    return completer.future;
+  }
 }
 
 @JS()
 external IframesFilter get CROSS_ORIGIN_IFRAMES_FILTER;
 
 @JS()
-abstract class IframesFilter {}
+extension type IframesFilter._(JSObject _) implements JSObject {}

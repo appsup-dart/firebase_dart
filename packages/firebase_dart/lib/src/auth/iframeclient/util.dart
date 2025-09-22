@@ -1,9 +1,10 @@
-import 'dart:js';
+import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 
 dynamic getObjectRef(String ref) {
-  dynamic m = context;
+  JSObject? m = globalContext;
   for (var k in ref.split('.')) {
-    m = m?[k];
+    m = m?.getProperty(k.toJS) as JSObject?;
   }
   return m;
 }

@@ -6,7 +6,7 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:jose/jose.dart';
-import 'dart:html';
+import 'package:web/web.dart';
 
 bool _isMobile() {
   final navigatorPlatform = window.navigator.platform?.toLowerCase() ?? '';

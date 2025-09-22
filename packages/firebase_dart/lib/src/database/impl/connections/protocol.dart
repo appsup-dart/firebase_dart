@@ -23,7 +23,7 @@ import '../connection.dart';
 import '../query_spec.dart';
 import '../treestructureddata.dart';
 import 'protocol/websocket.dart'
-    if (dart.library.html) 'protocol/websocket_html.dart'
+    if (dart.library.js_interop) 'protocol/websocket_html.dart'
     if (dart.library.io) 'protocol/websocket_io.dart' as websocket;
 
 part 'protocol/connection.dart';

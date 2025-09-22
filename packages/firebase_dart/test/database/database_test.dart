@@ -18,7 +18,7 @@ import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 import '../secrets.dart'
-    if (dart.library.html) '../secrets.dart'
+    if (dart.library.js_interop) '../secrets.dart'
     if (dart.library.io) '../secrets_io.dart' as s;
 import '../util.dart';
 

@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:html';
 
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/auth/iframeclient/gapi_iframes.dart';
 import 'package:firebase_dart/src/auth/iframeclient/url_builder.dart';
+import 'package:web/web.dart';
 import 'iframewrapper.dart';
 
 class DefaultAuthHandler extends FirebaseAppAuthHandler {
@@ -56,14 +56,14 @@ class DefaultAuthHandler extends FirebaseAppAuthHandler {
 void webLaunchUrl(Uri uri, {bool popup = false}) {
   var width = 500;
   var height = 600;
-  var top = (window.screen!.available.height - height) / 2;
-  var left = (window.screen!.available.width - width) / 2;
+  var top = (window.screen.availHeight - height) / 2;
+  var left = (window.screen.availWidth - width) / 2;
 
   window.open(
       uri.toString(),
       popup ? '_blank' : '_self',
       !popup
-          ? null
+          ? ''
           : 'height=$height,width=$width,top=${top > 0 ? top : 0},'
               'left=${left > 0 ? left : 0},location=true,resizable=true,'
               'statusbar=true,toolbar=false');
