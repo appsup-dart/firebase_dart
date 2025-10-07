@@ -216,9 +216,11 @@ class PersistentConnectionImpl extends PersistentConnection
     var def = QuerySpec(Name.parsePath(path), query);
     var tag = _tagToQuery.inverse.remove(def);
     if (tag == null) return;
-    var r = Request.unlisten(path, query: query, tag: tag);
     _removeListen(path, query);
-    await _request(r);
+    if (_connectionState == ConnectionState.connected) {
+      var r = Request.unlisten(path, query: query, tag: tag);
+      await _request(r);
+    }
     _doIdleCheck();
   }
 
@@ -270,6 +272,9 @@ class PersistentConnectionImpl extends PersistentConnection
     await _onConnect.close();
   }
 
+  @visibleForTesting
+  Future<Response?> get authResponse async => (await _authRequest)?.response;
+
   @override
   Future<void> refreshAuthToken(FutureOr<String>? token) async {
     _logger.fine('Auth token refreshed.');
@@ -285,6 +290,10 @@ class PersistentConnectionImpl extends PersistentConnection
         await _upgradeAuth();
       } else {
         await _sendUnauth();
+      }
+    } else {
+      if (token == null) {
+        _setAuthData(null);
       }
     }
   }
