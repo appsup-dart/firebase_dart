@@ -1,3 +1,8 @@
+## 1.5.3
+
+ - **REFACTOR**: migrate to dart:js_interop. ([e19c0b09](https://github.com/appsup-dart/firebase_dart/commit/e19c0b09e26b76d170dec0df68a5983778de12d5))
+ - **FIX**(database): unlisten when not connected prevents subsequent listens for same query. ([6821849f](https://github.com/appsup-dart/firebase_dart/commit/6821849ff7727f9e9f4688aba8947a986f3729a6))
+
 ## 1.5.2
 
  - **REFACTOR**: set min sdk version to 3.5.0. ([cf833367](https://github.com/appsup-dart/firebase_dart/commit/cf8333679d4dfd2fd0686f1df6f8bccf70f5af18))
