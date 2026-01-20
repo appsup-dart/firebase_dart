@@ -24,7 +24,14 @@ melos:
       linkToCommits: true
       hooks: 
         pre:
-          exec: dart test -j 1
+          exec: |
+            # Run serial tests in isolation (e.g. tests that access a remote database)
+            # If the tests fail, exit with the code
+            # If the tests pass, exit with 0
+            # If there are no serial tests, exit with 0
+            dart test -j 1 -t serial || exit_code=$?; if [[ $exit_code -eq 79 ]]; then exit 0; fi
+            # Run non-serial tests in parallel
+            dart test -x serial
           packageFilters:
             flutter: false
         preCommit:

@@ -49,7 +49,7 @@ void runDatabaseTests({bool isolated = false}) {
 
   group('https', () {
     testsWith(s.secrets, isolated: isolated);
-  });
+  }, tags: ['serial']);
 
   group('FirebaseDatabase.delete', () {
     var testUrl = 'mem://test2';
