@@ -1,3 +1,8 @@
+## 1.5.4
+
+ - **PERF**: better performance when many queries on sibling paths. ([4515957c](https://github.com/appsup-dart/firebase_dart/commit/4515957cba6f22ce27d4a17f9d53f5ca5beca0d0))
+ - **FIX**: avoid notifying observers when not in-sync and persistence disabled. ([6cc3ea32](https://github.com/appsup-dart/firebase_dart/commit/6cc3ea329fbc3bc0ad549c861a3e1de44d50be4a))
+
 ## 1.5.3
 
  - **REFACTOR**: migrate to dart:js_interop. ([e19c0b09](https://github.com/appsup-dart/firebase_dart/commit/e19c0b09e26b76d170dec0df68a5983778de12d5))
