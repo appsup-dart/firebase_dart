@@ -185,15 +185,15 @@ void main() {
         w = v.snapshot.value;
       });
 
-      await Future.delayed(Duration(milliseconds: 10));
+      await Future.delayed(Duration(milliseconds: 50));
       expect(w, {'hello': 'world'});
 
       await batch.reference().child('test').child('message').set('hello');
-      await Future.delayed(Duration(milliseconds: 10));
+      await Future.delayed(Duration(milliseconds: 50));
       expect(w, {'hello': 'world', 'message': 'hello'});
 
       await db.reference().child('test').child('hello').set('hello');
-      await Future.delayed(Duration(milliseconds: 10));
+      await Future.delayed(Duration(milliseconds: 50));
       expect(w, {'hello': 'hello', 'message': 'hello'});
 
       await s.cancel();
@@ -212,17 +212,17 @@ void main() {
         count++;
       });
 
-      await Future.delayed(Duration(milliseconds: 10));
+      await Future.delayed(Duration(milliseconds: 50));
       expect(w, {'hello': 'world'});
       expect(count, 1);
 
       await batch.reference().child('test').child('message').set('hello');
-      await Future.delayed(Duration(milliseconds: 10));
+      await Future.delayed(Duration(milliseconds: 50));
       expect(w, {'hello': 'world', 'message': 'hello'});
       expect(count, 2);
 
       await db.reference().child('test').child('message').set('hello');
-      await Future.delayed(Duration(milliseconds: 10));
+      await Future.delayed(Duration(milliseconds: 50));
       expect(w, {'hello': 'world', 'message': 'hello'});
       expect(count, 2);
 
