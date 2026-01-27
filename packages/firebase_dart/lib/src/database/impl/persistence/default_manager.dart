@@ -15,6 +15,9 @@ import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 final _logger = Logger('firebase.persistence');
 
 class DefaultPersistenceManager implements PersistenceManager {
+  @override
+  bool get isEnabled => true;
+
   final PersistenceStorageEngine storageLayer;
   final TrackedQueryManager _trackedQueryManager;
   final CachePolicy cachePolicy;
@@ -82,7 +85,7 @@ class DefaultPersistenceManager implements PersistenceManager {
 
   bool _completeQueryContains(
       QueryFilter masterFilter, IncompleteData data, QueryFilter f) {
-    var v = MasterView(masterFilter)
+    var v = MasterView(masterFilter, persistenceEnabled: isEnabled)
       ..applyOperation(TreeOperation.overwrite(Path.from([]), data.value),
           ViewOperationSource.server, null);
     return v.contains(f);

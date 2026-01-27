@@ -32,6 +32,8 @@ abstract class PersistenceManager {
   T runInTransaction<T>(T Function() callable);
 
   Future<void> close();
+
+  bool get isEnabled;
 }
 
 class FakePersistenceManager extends NoopPersistenceManager {
@@ -44,10 +46,16 @@ class FakePersistenceManager extends NoopPersistenceManager {
   IncompleteData serverCache(QuerySpec query) {
     return serverCacheFunction(query.path, query.params);
   }
+
+  @override
+  bool get isEnabled => true;
 }
 
 class NoopPersistenceManager implements PersistenceManager {
   bool _insideTransaction = false;
+
+  @override
+  bool get isEnabled => false;
 
   @override
   void saveUserOperation(TreeOperation operation, int writeId) {
@@ -157,4 +165,7 @@ class DelegatingPersistenceManager implements PersistenceManager {
   Future<void> close() {
     return delegateTo.close();
   }
+
+  @override
+  bool get isEnabled => delegateTo.isEnabled;
 }

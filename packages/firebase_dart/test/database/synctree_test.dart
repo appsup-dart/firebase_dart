@@ -97,6 +97,8 @@ void main() {
       expect(view().data.localVersion.completeValue, value1);
 
       syncTree.onRegistrationStateChanged(
+          path, QueryFilter(), QueryRegistrationState.unregistering);
+      syncTree.onRegistrationStateChanged(
           path, QueryFilter(), QueryRegistrationState.unregistered);
       syncTree.handleInvalidPaths();
       expect(view().state, QueryRegistrationState.unregistered);

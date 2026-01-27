@@ -15,7 +15,8 @@ void main() {
     group('MasterView.contains', () {
       var o = TreeStructuredDataOrdering.byKey();
       test('Should contain every filter when loads all data', () {
-        var view = MasterView(QueryFilter(ordering: o));
+        var view =
+            MasterView(QueryFilter(ordering: o), persistenceEnabled: true);
 
         expect(view.contains(QueryFilter(ordering: o, limit: 5)), true);
         expect(
@@ -32,7 +33,8 @@ void main() {
           'Should contain every filter with validInterval within validInterval of master query loading all data',
           () {
         var i = KeyValueInterval('key-001', empty, 'key-100', empty);
-        var view = MasterView(QueryFilter(ordering: o, validInterval: i));
+        var view = MasterView(QueryFilter(ordering: o, validInterval: i),
+            persistenceEnabled: true);
 
         expect(view.contains(QueryFilter(ordering: o, limit: 5)), false);
         expect(
@@ -50,7 +52,8 @@ void main() {
           'Should not contain when validInterval is not contained and does not limit',
           () {
         var i = KeyValueInterval('key-001', empty, 'key-100', empty);
-        var view = MasterView(QueryFilter(ordering: o, validInterval: i));
+        var view = MasterView(QueryFilter(ordering: o, validInterval: i),
+            persistenceEnabled: true);
 
         var j = KeyValueInterval('key-050', null, 'key-300', null);
         expect(
@@ -61,7 +64,8 @@ void main() {
           () {
         var i =
             KeyValueInterval(Name('key-001'), empty, Name('key-100'), empty);
-        var view = MasterView(QueryFilter(ordering: o, validInterval: i));
+        var view = MasterView(QueryFilter(ordering: o, validInterval: i),
+            persistenceEnabled: true);
 
         var j =
             KeyValueInterval(Name('key-002'), empty, Name('key-300'), empty);
@@ -92,8 +96,9 @@ void main() {
       test('Might be contained when master query limits', () {
         var i =
             KeyValueInterval(Name('key-001'), empty, Name('key-100'), empty);
-        var view =
-            MasterView(QueryFilter(ordering: o, validInterval: i, limit: 3));
+        var view = MasterView(
+            QueryFilter(ordering: o, validInterval: i, limit: 3),
+            persistenceEnabled: true);
 
         var j =
             KeyValueInterval(Name('key-002'), empty, Name('key-050'), empty);
@@ -133,8 +138,9 @@ void main() {
           () {
         var i =
             KeyValueInterval(Name('key-001'), empty, Name('key-100'), empty);
-        var view =
-            MasterView(QueryFilter(ordering: o, validInterval: i, limit: 3));
+        var view = MasterView(
+            QueryFilter(ordering: o, validInterval: i, limit: 3),
+            persistenceEnabled: true);
 
         var j =
             KeyValueInterval(Name('key-002'), empty, Name('key-200'), empty);
@@ -175,6 +181,68 @@ void main() {
     });
   });
   group('SyncPoint', () {
+    test(
+        'Should not notify observers when persistence is disabled and data is complete',
+        () async {
+      var p = SyncPoint('test', Path(),
+          persistenceManager: NoopPersistenceManager());
+
+      var called = 0;
+      void callback(Event event) {
+        called++;
+      }
+
+      p.addEventListener('value', QueryFilter(), callback);
+      p.minimalSetOfQueries;
+      p.views.values.first.state = QueryRegistrationState.registered;
+      p.applyOperation(
+          TreeOperation.overwrite(Path(), TreeStructuredData.fromJson(null)),
+          null,
+          ViewOperationSource.server,
+          null);
+      p.removeEventListener('value', QueryFilter(), callback);
+      p.minimalSetOfQueries;
+      p.views.values.first.state = QueryRegistrationState.unregistered;
+
+      expect(called, 1);
+
+      p.addEventListener('value', QueryFilter(), callback);
+      p.minimalSetOfQueries;
+      expect(called, 1);
+    });
+
+    test(
+        'Should notify observers when persistence is enabled and data is complete',
+        () async {
+      var p = SyncPoint('test', Path(),
+          persistenceManager: FakePersistenceManager((path, filter) {
+        return IncompleteData.empty();
+      }));
+
+      var called = 0;
+      void callback(Event event) {
+        called++;
+      }
+
+      p.addEventListener('value', QueryFilter(), callback);
+      p.minimalSetOfQueries;
+      p.views.values.first.state = QueryRegistrationState.registered;
+      p.applyOperation(
+          TreeOperation.overwrite(Path(), TreeStructuredData.fromJson(null)),
+          null,
+          ViewOperationSource.server,
+          null);
+      p.removeEventListener('value', QueryFilter(), callback);
+      p.minimalSetOfQueries;
+      p.views.values.first.state = QueryRegistrationState.unregistered;
+
+      expect(called, 1);
+
+      p.addEventListener('value', QueryFilter(), callback);
+      p.minimalSetOfQueries;
+      expect(called, 2);
+    });
+
     test('adopt observers', () {
       var p = SyncPoint('test', Path(),
           persistenceManager: FakePersistenceManager((path, filter) {

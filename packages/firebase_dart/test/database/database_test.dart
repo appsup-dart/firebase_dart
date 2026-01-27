@@ -7,6 +7,7 @@ import 'dart:math';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/core.dart' as core;
+import 'package:firebase_dart/src/database/impl/backend_connection.dart';
 import 'package:firebase_dart/src/database/token.dart';
 import 'package:firebase_dart/implementation/testing.dart';
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
@@ -43,6 +44,11 @@ void runDatabaseTests({bool isolated = false}) {
       await logSubscription.cancel();
     });
   }
+
+  setUp(() {
+    BackendConnection.responseDelay = Duration.zero;
+  });
+
   group('mem', () {
     testsWith({'host': 'mem://test/', 'secret': 'x'}, isolated: isolated);
   });
@@ -1935,6 +1941,34 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
   });
 
   group('Bugs', () {
+    test('Should not return out-of-sync data when persistence is disabled',
+        () async {
+      BackendConnection.responseDelay = Duration(milliseconds: 10);
+
+      var ref = FirebaseDatabase(app: app1).reference().child('test/empty');
+
+      // Ensure a view is created that contains child2 with the current value,
+      // but not with the value that is written later.
+      await ref.orderByKey().limitToFirst(1).get();
+
+      // Ensure a sync point is created for child2. As the previous query contains
+      // the value of child2, the value will be complete.
+      await ref.child('child2').get();
+
+      // Write a new value, resulting in child2 not longer being completeFromParent.
+      // The state will change to unregistered, but the data will still be complete.
+      // In this state, we should not notify any observers, unless we have persistence enabled.
+      await ref.update({
+        'child1': 'test1',
+        'child2': 'test2',
+      });
+
+      // The old value should not be notified. We should wait for the new value
+      // to be received from the server.
+      var v = await ref.child('child2').get();
+      expect(v, 'test2');
+    });
+
     test('Initial events should not be dispatched to existing observers',
         () async {
       var ref = db1.reference().child('test/bugs/duplicate-events');

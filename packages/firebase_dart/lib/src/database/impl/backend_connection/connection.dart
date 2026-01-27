@@ -17,6 +17,8 @@ class BackendConnection {
 
   static int nextSessionId = 0;
 
+  static Duration responseDelay = Duration.zero;
+
   void open() {
     _logger.fine('Opening a backend connection');
     _transport = BackendTransport()..open();
@@ -38,7 +40,8 @@ class BackendConnection {
     _runOnDisconnectEvents();
   }
 
-  void sendMessage(Message message) {
+  void sendMessage(Message message) async {
+    if (responseDelay > Duration.zero) await Future.delayed(responseDelay);
     transport!.channel.sink.add(message);
   }
 

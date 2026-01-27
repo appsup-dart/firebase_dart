@@ -53,10 +53,18 @@ class MasterView {
 
   QueryRegistrationState get state => _state;
 
+  final bool persistenceEnabled;
+
   set state(QueryRegistrationState v) {
     if (_state == v) return;
 
     _state = v;
+    for (var q in observers.keys) {
+      var t = observers[q]!;
+
+      var newValue = _valueForFilter(q);
+      t.notifyDataChanged(newValue);
+    }
   }
 
   QueryRegistrationState get effectiveState {
@@ -71,13 +79,14 @@ class MasterView {
 
   final Map<QueryFilter, EventTarget> observers = {};
 
-  MasterView(this.masterFilter, {this.debugName})
+  MasterView(this.masterFilter,
+      {this.debugName, required this.persistenceEnabled})
       : _data = ViewCache(IncompleteData.empty(masterFilter),
             IncompleteData.empty(masterFilter));
 
-  MasterView withFilter(QueryFilter filter) =>
-      MasterView(filter, debugName: debugName)
-        .._data = _data.withFilter(filter);
+  MasterView withFilter(QueryFilter filter) => MasterView(filter,
+      debugName: debugName, persistenceEnabled: persistenceEnabled)
+    .._data = _data.withFilter(filter);
 
   ViewCache get data => _data;
 
@@ -163,7 +172,7 @@ class MasterView {
     if (!contains(filter)) return false;
     observers
         .putIfAbsent(filter, () => EventTarget())
-        .addEventListener(type, listener, _data.valueForFilter(filter));
+        .addEventListener(type, listener, _valueForFilter(filter));
 
     return true;
   }
@@ -171,7 +180,7 @@ class MasterView {
   void adoptEventTarget(QueryFilter filter, EventTarget target) {
     assert(observers[filter] == null);
     observers[filter] = target;
-    target.notifyDataChanged(_data.valueForFilter(filter));
+    target.notifyDataChanged(_valueForFilter(filter));
   }
 
   /// Removes the event listener.
@@ -237,10 +246,17 @@ class MasterView {
     for (var q in observers.keys) {
       var t = observers[q]!;
 
-      var newValue = _data.valueForFilter(q);
+      var newValue = _valueForFilter(q);
       t.notifyDataChanged(newValue);
     }
     return out;
+  }
+
+  IncompleteData _valueForFilter(QueryFilter filter) {
+    if (!persistenceEnabled && !isInSync) {
+      return IncompleteData.empty();
+    }
+    return _data.valueForFilter(filter);
   }
 }
 
@@ -266,7 +282,9 @@ class SyncPoint {
       {ViewCache? data, required this.persistenceManager}) {
     if (data == null) return;
     var q = QueryFilter();
-    views[q] = MasterView(q, debugName: debugName).._data = data;
+    views[q] = MasterView(q,
+        debugName: debugName, persistenceEnabled: persistenceManager.isEnabled)
+      .._data = data;
   }
 
   SyncPoint child(Name child) {
@@ -481,7 +499,8 @@ class SyncPoint {
       cache = cache.applyOperation(op.value, ViewOperationSource.user, op.key);
     }
     // TODO: apply user operations from persistence storage
-    return views[filter] = MasterView(filter, debugName: debugName)
+    return views[filter] = MasterView(filter,
+        debugName: debugName, persistenceEnabled: persistenceManager.isEnabled)
       .._data = cache;
   }
 
@@ -1015,6 +1034,20 @@ class SyncTree {
     var node = root.subtree(path, _createNode);
     var point = node.value;
     if (point.views[filter]?._state == state) return;
+
+    if (point.views[filter]?.state != QueryRegistrationState.registering &&
+        state == QueryRegistrationState.registered) {
+      // We received a confirmation that the query is registered, but we already
+      // started to unregister it. We keep the current state.
+      return;
+    }
+
+    if (point.views[filter]?.state != QueryRegistrationState.unregistering &&
+        state == QueryRegistrationState.unregistered) {
+      // We received a confirmation that the query is unregistered, but we already
+      // started to register it. We keep the current state.
+      return;
+    }
 
     point.views[filter]?.state = state;
     switch (state) {
