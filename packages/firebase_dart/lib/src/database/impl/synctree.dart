@@ -519,7 +519,9 @@ class SyncPoint {
 
   /// Applies an operation to the view for [filter] at this [SyncPoint] or all
   /// views when [filter] is `null`.
-  void applyOperation(TreeOperation operation, QueryFilter? filter,
+  ///
+  /// Returns true when the operation was applied to at least one view.
+  bool applyOperation(TreeOperation operation, QueryFilter? filter,
       ViewOperationSource source, int? writeId) {
     if (source == ViewOperationSource.user) {
       pendingOperations[writeId!] = operation;
@@ -527,6 +529,7 @@ class SyncPoint {
       pendingOperations.remove(writeId);
     }
     if (filter == null || filter == const QueryFilter()) {
+      if (views.isEmpty) return false;
       if (source == ViewOperationSource.server) {
         if (operation.mayUpgrade && operation.path.isEmpty) {
           if (views.isNotEmpty &&
@@ -550,31 +553,37 @@ class SyncPoint {
           _newQueries[q] = d[q]!;
         }
       }
+      return true;
     } else {
-      var d = views[filter]?.applyOperation(operation, source, writeId);
-      if (d != null) {
-        for (var q in d.keys) {
-          _newQueries[q] = d[q]!;
-        }
+      var view = views[filter];
+      if (view == null) return false;
+      var d = view.applyOperation(operation, source, writeId);
+      for (var q in d.keys) {
+        _newQueries[q] = d[q]!;
       }
+      return true;
     }
   }
 
   @override
   String toString() => 'SyncPoint[$debugName]';
 
-  void applyUpgrade(QueryFilter filter) {
+  bool applyUpgrade(QueryFilter filter) {
     var masterView = views[filter];
-    if (masterView == null) return;
+    if (masterView == null) return false;
+
+    var appliedOnViews = false;
     for (var v in views.values) {
       if (v == masterView) continue;
       if (v.masterFilter == const QueryFilter()) continue;
 
+      appliedOnViews = true;
       for (var e in v.observers.entries) {
         masterView.adoptEventTarget(e.key, e.value);
       }
     }
     views.removeWhere((k, v) => k != const QueryFilter() && v != masterView);
+    return appliedOnViews;
   }
 
   /// Removes all observers that do not have any listeners since [from].
@@ -1061,7 +1070,7 @@ class SyncTree {
       case QueryRegistrationState.registering:
         break;
     }
-    _invalidate(path);
+    _invalidate(path, stateChanged: true);
   }
 
   void handleInvalidPaths() {
@@ -1093,20 +1102,24 @@ class SyncTree {
     _handleInvalidPointsFuture = null;
   }
 
-  void _invalidate(Path<Name> path) {
+  void _invalidate(Path<Name> path, {bool stateChanged = false}) {
     assert(!_isDestroyed);
-    var node = root.subtree(path, _createNode);
-    var point = node.value;
 
-    var children = node.children;
-    for (var child in children.keys) {
-      var v = children[child]!;
+    if (stateChanged) {
+      var node = root.subtree(path, _createNode);
+      var point = node.value;
 
-      var newStateFromParent = point.registrationStateForChild(child);
+      var children = node.children;
+      for (var e in children.entries) {
+        var child = e.key;
+        var v = e.value;
 
-      if (v.value._parentState != newStateFromParent) {
-        v.value.parentState = newStateFromParent;
-        _invalidate(path.child(child));
+        var newStateFromParent = point.registrationStateForChild(child);
+
+        if (v.value._parentState != newStateFromParent) {
+          v.value.parentState = newStateFromParent;
+          _invalidate(path.child(child), stateChanged: stateChanged);
+        }
       }
     }
 
@@ -1117,12 +1130,12 @@ class SyncTree {
   }
 
   Future<void> _doOnSyncPoint(
-      Path<Name> path, void Function(SyncPoint point) action) {
+      Path<Name> path, bool Function(SyncPoint point) action) {
     var point = root.subtree(path, _createNode).value;
 
-    action(point);
+    var applied = action(point);
 
-    _invalidate(path);
+    _invalidate(path, stateChanged: applied);
 
     return _handleInvalidPointsFuture!;
   }
@@ -1141,6 +1154,7 @@ class SyncTree {
     assert(!_isDestroyed);
     return _doOnSyncPoint(path, (point) {
       point.addEventListener(type, filter, listener);
+      return false;
     });
   }
 
@@ -1155,6 +1169,7 @@ class SyncTree {
         _pathsWithEmptyObservers[path] ??= _clock.now();
         _pruneObservers();
       }
+      return false;
     });
   }
 
