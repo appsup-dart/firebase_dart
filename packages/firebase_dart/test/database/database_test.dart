@@ -1941,6 +1941,29 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
   });
 
   group('Bugs', () {
+    test('Should return data when has non-limiting filter as sibling',
+        () async {
+      var ref = FirebaseDatabase(app: app1).reference().child('test/empty');
+
+      await ref.set({'child1': 'v', 'child2': 3});
+
+      // Ensure a view is created for a limiting query.
+      await ref.orderByKey().limitToFirst(1).get();
+
+      // Ensure a view is created for a non-limiting query. This will deregister
+      // the limiting query, but not remove the view. The registration state of the limiting
+      // view should mimic the registration state of the non-limiting view, so that
+      // new listeners for the limiting query will receive data when the non-limiting
+      // view is registered.
+      var s = ref.onValue.listen((_) {});
+      await Future.delayed(Duration(milliseconds: 100));
+
+      // A new listener for the limiting query
+      expect(await ref.orderByKey().limitToFirst(1).get(), {'child1': 'v'});
+
+      await s.cancel();
+    });
+
     test('Should not return out-of-sync data when persistence is disabled',
         () async {
       BackendConnection.responseDelay = Duration(milliseconds: 10);

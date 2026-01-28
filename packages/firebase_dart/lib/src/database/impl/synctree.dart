@@ -51,6 +51,8 @@ class MasterView {
 
   QueryRegistrationState? _parentState;
 
+  QueryRegistrationState? _unlimitingSiblingState;
+
   QueryRegistrationState get state => _state;
 
   final bool persistenceEnabled;
@@ -68,11 +70,12 @@ class MasterView {
   }
 
   QueryRegistrationState get effectiveState {
-    if (_parentState == null) return _state;
-    if (Comparable.compare(_parentState!, _state) > 0) {
-      return _parentState!;
-    }
-    return _state;
+    var states = [
+      if (_parentState != null) _parentState!,
+      if (_unlimitingSiblingState != null) _unlimitingSiblingState!,
+      _state,
+    ];
+    return states.reduce((a, b) => a.compareTo(b) > 0 ? a : b);
   }
 
   bool get isInSync => effectiveState == QueryRegistrationState.registered;
@@ -309,6 +312,9 @@ class SyncPoint {
         var defView = views[const QueryFilter()]!;
         if (!defView.observers.containsKey(const QueryFilter())) {
           views.remove(const QueryFilter());
+          for (var v in views.values) {
+            v._unlimitingSiblingState = null;
+          }
           for (var k in defView.observers.keys.toList()) {
             var view = getMasterViewForFilter(k);
             view.adoptEventTarget(k, defView.observers.remove(k)!);
@@ -1033,6 +1039,11 @@ class SyncTree {
     if (v != null && v.observers.isEmpty) {
       if (!point.isCompleteFromParent || filter != const QueryFilter()) {
         point.views.remove(filter);
+        if (filter == const QueryFilter()) {
+          for (var v in point.views.values) {
+            v._unlimitingSiblingState = null;
+          }
+        }
       }
     }
   }
@@ -1059,6 +1070,11 @@ class SyncTree {
     }
 
     point.views[filter]?.state = state;
+    if (!filter.limits) {
+      for (var v in point.views.values) {
+        v._unlimitingSiblingState = state;
+      }
+    }
     switch (state) {
       case QueryRegistrationState.registered:
         applyAckListen(path, filter);
@@ -1208,6 +1224,11 @@ class SyncTree {
     var view = point.views.remove(filter);
 
     if (view == null) return;
+    if (filter == const QueryFilter()) {
+      for (var v in point.views.values) {
+        v._unlimitingSiblingState = null;
+      }
+    }
 
     var filtersToRemove = filter.limits
         ? [filter]
