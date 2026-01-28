@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-01-28
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.5.5`](#firebase_dart---v155)
+ - [`firebase_dart_flutter` - `v1.3.7`](#firebase_dart_flutter---v137)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0+8`](#firebase_dart_flutter_auth_google---v0108)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1+8`](#firebase_dart_flutter_auth_facebook---v0018)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1+8`](#firebase_dart_flutter_auth_apple---v0018)
+ - [`firebase_dart_plus` - `v0.1.0+28`](#firebase_dart_plus---v01028)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.3.7`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0+8`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1+8`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1+8`
+ - `firebase_dart_plus` - `v0.1.0+28`
+
+---
+
+#### `firebase_dart` - `v1.5.5`
+
+ - **FIX**: bug in version 1.5.4 in RTDB preventing certain queries to receive data. ([53a11277](https://github.com/appsup-dart/firebase_dart/commit/53a112777d4fe2806aad73dc081750784810b29b))
+
+
 ## 2026-01-27
 
 ### Changes

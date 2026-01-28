@@ -1,3 +1,7 @@
+## 1.5.5
+
+ - **FIX**: bug in version 1.5.4 in RTDB preventing certain queries to receive data. ([53a11277](https://github.com/appsup-dart/firebase_dart/commit/53a112777d4fe2806aad73dc081750784810b29b))
+
 ## 1.5.4
 
  - **PERF**: better performance when many queries on sibling paths. ([4515957c](https://github.com/appsup-dart/firebase_dart/commit/4515957cba6f22ce27d4a17f9d53f5ca5beca0d0))
