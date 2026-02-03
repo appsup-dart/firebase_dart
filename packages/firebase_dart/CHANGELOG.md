@@ -1,3 +1,7 @@
+## 1.6.0
+
+ - **FEAT**: add clear method to AuthBackend for testing purposes. ([bd438568](https://github.com/appsup-dart/firebase_dart/commit/bd438568dc9e2b386adf8a4df92e43c0dfb206d9))
+
 ## 1.5.5
 
  - **FIX**: bug in version 1.5.4 in RTDB preventing certain queries to receive data. ([53a11277](https://github.com/appsup-dart/firebase_dart/commit/53a112777d4fe2806aad73dc081750784810b29b))

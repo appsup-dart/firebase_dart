@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-02-03
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.6.0`](#firebase_dart---v160)
+ - [`firebase_dart_flutter` - `v1.3.8`](#firebase_dart_flutter---v138)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0+9`](#firebase_dart_flutter_auth_google---v0109)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1+9`](#firebase_dart_flutter_auth_facebook---v0019)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1+9`](#firebase_dart_flutter_auth_apple---v0019)
+ - [`firebase_dart_plus` - `v0.1.0+29`](#firebase_dart_plus---v01029)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.3.8`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0+9`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1+9`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1+9`
+ - `firebase_dart_plus` - `v0.1.0+29`
+
+---
+
+#### `firebase_dart` - `v1.6.0`
+
+ - **FEAT**: add clear method to AuthBackend for testing purposes. ([bd438568](https://github.com/appsup-dart/firebase_dart/commit/bd438568dc9e2b386adf8a4df92e43c0dfb206d9))
+
+
 ## 2026-01-28
 
 ### Changes
