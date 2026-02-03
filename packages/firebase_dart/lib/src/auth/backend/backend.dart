@@ -534,6 +534,8 @@ class BackendConnection {
 }
 
 abstract class AuthBackend {
+  Future<void> clear();
+
   Future<BackendUser> getUserById(String uid);
 
   Future<BackendUser> getUserByEmail(String email);

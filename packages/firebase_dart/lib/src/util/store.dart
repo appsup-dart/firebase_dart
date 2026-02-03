@@ -8,6 +8,8 @@ abstract class Store<K, V> {
   Stream<K> get keys;
 
   Future<V?> remove(K key);
+
+  Future<void> clear();
 }
 
 class MemoryStore<K, V> extends Store<K, V> {
@@ -27,4 +29,7 @@ class MemoryStore<K, V> extends Store<K, V> {
 
   @override
   Stream<K> get keys => Stream.fromIterable(_memory.keys);
+
+  @override
+  Future<void> clear() async => _memory.clear();
 }

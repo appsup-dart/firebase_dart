@@ -12,7 +12,8 @@ class IsolateStore<K, V> extends Store<K, V> {
       ..registerFunction(#set, store.set)
       ..registerFunction(#remove, store.remove)
       ..registerFunction(#values, () => store.values.toList())
-      ..registerFunction(#keys, () => store.keys.toList());
+      ..registerFunction(#keys, () => store.keys.toList())
+      ..registerFunction(#clear, () => store.clear());
     return IsolateStore(worker.commander);
   }
 
@@ -41,5 +42,10 @@ class IsolateStore<K, V> extends Store<K, V> {
   Stream<K> get keys async* {
     yield* Stream.fromIterable(
         await commander.execute(RegisteredFunctionCall(#keys, [])));
+  }
+
+  @override
+  Future<void> clear() {
+    return commander.execute(RegisteredFunctionCall(#clear, []));
   }
 }

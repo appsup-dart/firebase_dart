@@ -152,4 +152,9 @@ class StoreBackend extends BaseBackend {
       await settings.set('tokenSigningKey', tokenSigningKey);
     }
   }
+
+  @override
+  Future<void> clear() {
+    return users.clear();
+  }
 }
