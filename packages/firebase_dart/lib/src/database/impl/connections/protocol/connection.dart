@@ -88,9 +88,9 @@ class Connection {
       _logger.fine('Tried to send on an unconnected connection');
     } else {
       if (request.message is Future) {
-        _logger.fine('Sending data (contents hidden)');
+        _logger.finer('Sending data (contents hidden)');
       } else {
-        _logger.fine(() => 'Sending data: ${json.encode(request.message)}');
+        _logger.finer(() => 'Sending data: ${json.encode(request.message)}');
       }
 
       if (request.message.reqNum != null) {
@@ -101,7 +101,7 @@ class Connection {
   }
 
   void _onDataMessage(DataMessage v) {
-    _logger.fine(() => 'received data message: ${json.encode(v)}');
+    _logger.finer(() => 'received data message: ${json.encode(v)}');
 
     if (v.reqNum != null) {
       var request = _pendingRequests.remove(v.reqNum);
