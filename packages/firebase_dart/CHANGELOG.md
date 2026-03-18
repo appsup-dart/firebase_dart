@@ -1,3 +1,9 @@
+## 1.6.1
+
+ - **REFACTOR**: reduce log level for sent and received rtdb messages. ([92ccb553](https://github.com/appsup-dart/firebase_dart/commit/92ccb553b3926f98e8ba320fd672126c2d0901b0))
+ - **FIX**: `Null check operator used on a null value` when listeners revoked. ([23e24aad](https://github.com/appsup-dart/firebase_dart/commit/23e24aad059489bbc13c6096b56ecbcc7ffd248f))
+ - **FIX**: readable children not loaded after listen revoked on parent. ([494ea70e](https://github.com/appsup-dart/firebase_dart/commit/494ea70e5748105c2c8ab59fe8889c4e22fda1ba))
+
 ## 1.6.0
 
  - **FEAT**: add clear method to AuthBackend for testing purposes. ([bd438568](https://github.com/appsup-dart/firebase_dart/commit/bd438568dc9e2b386adf8a4df92e43c0dfb206d9))

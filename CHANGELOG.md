@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-03-18
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.6.1`](#firebase_dart---v161)
+ - [`firebase_dart_flutter` - `v1.3.9`](#firebase_dart_flutter---v139)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0+10`](#firebase_dart_flutter_auth_google---v01010)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1+10`](#firebase_dart_flutter_auth_facebook---v00110)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1+10`](#firebase_dart_flutter_auth_apple---v00110)
+ - [`firebase_dart_plus` - `v0.1.0+30`](#firebase_dart_plus---v01030)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.3.9`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0+10`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1+10`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1+10`
+ - `firebase_dart_plus` - `v0.1.0+30`
+
+---
+
+#### `firebase_dart` - `v1.6.1`
+
+ - **REFACTOR**: reduce log level for sent and received rtdb messages. ([92ccb553](https://github.com/appsup-dart/firebase_dart/commit/92ccb553b3926f98e8ba320fd672126c2d0901b0))
+ - **FIX**: `Null check operator used on a null value` when listeners revoked. ([23e24aad](https://github.com/appsup-dart/firebase_dart/commit/23e24aad059489bbc13c6096b56ecbcc7ffd248f))
+ - **FIX**: readable children not loaded after listen revoked on parent. ([494ea70e](https://github.com/appsup-dart/firebase_dart/commit/494ea70e5748105c2c8ab59fe8889c4e22fda1ba))
+
+
 ## 2026-02-03
 
 ### Changes
