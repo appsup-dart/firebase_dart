@@ -690,6 +690,17 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       await s.cancel();
     });
 
+    test('Permission denied on parent and child', () async {
+      var protectedRef = db1.reference().child('test-read-protected');
+
+      await Future.wait([
+        expectLater(() => protectedRef.child('child').get(),
+            throwsA(isA<FirebaseDatabaseException>())),
+        expectLater(() => protectedRef.get(),
+            throwsA(isA<FirebaseDatabaseException>())),
+      ]);
+    });
+
     test('Set object', () async {
       await ref.set({
         'object': {'hello': 'world'}

@@ -1221,9 +1221,14 @@ class SyncTree {
 
     filter ??= const QueryFilter();
 
-    var view = point.views.remove(filter);
+    var view = point.views[filter];
 
     if (view == null) return;
+
+    if (!point.isCompleteFromParent || filter != const QueryFilter()) {
+      point.views.remove(filter);
+    }
+
     if (filter == const QueryFilter()) {
       for (var v in point.views.values) {
         v._unlimitingSiblingState = null;
