@@ -1249,6 +1249,8 @@ class SyncTree {
     view.observers.clear();
 
     registrar.revokeActiveQuery(path, filter);
+
+    _invalidate(path, stateChanged: true);
   }
 
   /// Applies a user merge at [path] with [changedChildren]

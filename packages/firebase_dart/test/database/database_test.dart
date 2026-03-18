@@ -303,6 +303,10 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
           '.write': 'true',
           'child': {
             '.read': 'query.orderByChild=="order" && query.equalTo=="first"'
+          },
+          'unprotected': {
+            '.read': 'true',
+            '.write': 'true',
           }
         },
       };
@@ -658,6 +662,32 @@ void testsWith(Map<String, dynamic> secrets, {required bool isolated}) {
       } on FirebaseDatabaseException catch (e) {
         expect(e.code, FirebaseDatabaseException.permissionDenied().code);
       }
+    });
+
+    test('Permission denied error with unprotected children', () async {
+      var protectedRef = db1.reference().child('test-read-protected');
+      var unprotectedRef = protectedRef.child('unprotected');
+
+      await db2
+          .reference()
+          .child('test-read-protected/unprotected')
+          .set('hello');
+
+      var s = unprotectedRef.onValue.listen((event) {});
+      await Future.delayed(Duration(milliseconds: 100));
+      expect(await unprotectedRef.get(), 'hello');
+
+      await expectLater(
+          () => protectedRef.get(), throwsA(isA<FirebaseDatabaseException>()));
+
+      await db2
+          .reference()
+          .child('test-read-protected/unprotected')
+          .set('world');
+      await Future.delayed(Duration(milliseconds: 100));
+      expect(await unprotectedRef.get(), 'world');
+
+      await s.cancel();
     });
 
     test('Set object', () async {
