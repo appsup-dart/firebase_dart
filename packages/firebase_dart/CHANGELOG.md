@@ -1,3 +1,7 @@
+## 1.6.2
+
+ - **REFACTOR**: upgrade jose dependency. ([595dd24c](https://github.com/appsup-dart/firebase_dart/commit/595dd24c98281de05a736d8441cf3bbdff19c6cf))
+
 ## 1.6.1
 
  - **REFACTOR**: reduce log level for sent and received rtdb messages. ([92ccb553](https://github.com/appsup-dart/firebase_dart/commit/92ccb553b3926f98e8ba320fd672126c2d0901b0))

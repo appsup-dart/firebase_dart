@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-03-27
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v1.6.2`](#firebase_dart---v162)
+ - [`firebase_dart_flutter` - `v1.3.10`](#firebase_dart_flutter---v1310)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0+11`](#firebase_dart_flutter_auth_google---v01011)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1+11`](#firebase_dart_flutter_auth_facebook---v00111)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1+11`](#firebase_dart_flutter_auth_apple---v00111)
+ - [`firebase_dart_plus` - `v0.1.0+31`](#firebase_dart_plus---v01031)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.3.10`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0+11`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1+11`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1+11`
+ - `firebase_dart_plus` - `v0.1.0+31`
+
+---
+
+#### `firebase_dart` - `v1.6.2`
+
+ - **REFACTOR**: upgrade jose dependency. ([595dd24c](https://github.com/appsup-dart/firebase_dart/commit/595dd24c98281de05a736d8441cf3bbdff19c6cf))
+
+
 ## 2026-03-18
 
 ### Changes

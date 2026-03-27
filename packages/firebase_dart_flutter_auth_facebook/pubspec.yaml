@@ -1,6 +1,6 @@
 name: firebase_dart_flutter_auth_facebook
 description: Provides a `firebase_dart` auth handler for sign in with Facebook using the native Facebook API
-version: 0.0.1+10
+version: 0.0.1+11
 homepage: https://github.com/appsup-dart/firebase_dart
 
 environment:
@@ -12,7 +12,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  firebase_dart: ^1.6.1
+  firebase_dart: ^1.6.2
   flutter_facebook_auth: ^7.0.0
 
 dev_dependencies:
