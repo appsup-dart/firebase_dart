@@ -14,7 +14,7 @@ import 'package:firebase_dart/src/database/impl/memory_backend.dart'
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/isolate.dart';
 import 'package:firebase_dart/src/implementation/isolate/util.dart';
-import 'package:firebaseapis/identitytoolkit/v1.dart';
+import 'package:googleapis/identitytoolkit/v1.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 

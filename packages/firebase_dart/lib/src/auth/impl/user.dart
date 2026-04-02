@@ -4,7 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/rpc/error.dart';
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
-import 'package:firebaseapis/identitytoolkit/v1.dart';
+import 'package:googleapis/identitytoolkit/v1.dart';
 import 'package:openid_client/openid_client.dart' as openid;
 import 'package:rxdart/rxdart.dart';
 

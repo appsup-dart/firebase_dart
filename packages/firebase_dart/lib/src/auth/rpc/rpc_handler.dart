@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:firebase_dart/src/auth/providers/saml.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/util/proxy.dart';
-import 'package:firebaseapis/identitytoolkit/v2.dart' hide IdentityToolkitApi;
+
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 import 'package:openid_client/openid_client.dart' as openid;

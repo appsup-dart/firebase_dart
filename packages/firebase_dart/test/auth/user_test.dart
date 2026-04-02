@@ -5,7 +5,7 @@ import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/src/auth/backend/backend.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/implementation/isolate/auth.dart';
-import 'package:firebaseapis/identitytoolkit/v1.dart';
+import 'package:googleapis/identitytoolkit/v1.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 
