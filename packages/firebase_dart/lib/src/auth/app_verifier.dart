@@ -1,5 +1,6 @@
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/recaptcha_verifier.dart';
+import 'package:meta/meta.dart';
 
 import 'auth.dart';
 
@@ -26,13 +27,13 @@ class ApplicationVerificationResult {
   }
 }
 
-class RecaptchaApplicationVerifier implements ApplicationVerifier {
+class RecaptchaApplicationVerifier extends BaseApplicationVerifier {
   const RecaptchaApplicationVerifier();
 
   @override
   Future<ApplicationVerificationResult> verify(FirebaseAuth auth, String nonce,
       {bool forceRecaptcha = false}) async {
-    var siteKey = await (auth as FirebaseAuthImpl).getRecaptchaSiteKey();
+    var siteKey = await getRecaptchaSiteKey(auth);
     var verifier = RecaptchaVerifier(siteKey: siteKey);
 
     return ApplicationVerificationResult.recaptcha(await verifier.verify());
@@ -45,5 +46,34 @@ class DummyApplicationVerifier implements ApplicationVerifier {
       {bool forceRecaptcha = false}) async {
     return ApplicationVerificationResult.recaptcha(
         'this_will_only_work_on_testing');
+  }
+}
+
+abstract class BaseApplicationVerifier implements ApplicationVerifier {
+  const BaseApplicationVerifier();
+
+  @protected
+  Future<String> getRecaptchaSiteKey(FirebaseAuth auth) async {
+    if (auth is FirebaseAuthProtectedMethods) {
+      return auth.getRecaptchaSiteKey();
+    }
+    throw UnimplementedError();
+  }
+
+  @protected
+  Future<Duration> verifyIosClient(FirebaseAuth auth,
+      {required String appToken, required bool isSandbox}) async {
+    if (auth is FirebaseAuthProtectedMethods) {
+      return auth.verifyIosClient(appToken: appToken, isSandbox: isSandbox);
+    }
+    throw UnimplementedError();
+  }
+
+  @protected
+  Future<String> getProducerProjectNumber(FirebaseAuth auth) async {
+    if (auth is FirebaseAuthProtectedMethods) {
+      return auth.getProducerProjectNumber();
+    }
+    throw UnimplementedError();
   }
 }

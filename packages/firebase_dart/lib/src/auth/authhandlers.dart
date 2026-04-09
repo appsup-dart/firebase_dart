@@ -4,13 +4,9 @@ import 'dart:math';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/core.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
-import 'package:logging/logging.dart';
-import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../auth.dart';
-import '../implementation.dart';
-import 'impl/auth.dart';
 
 class FirebaseAppAuthCredential extends AuthCredential {
   final String sessionId;
@@ -138,87 +134,10 @@ abstract class FirebaseAppAuthHandler implements AuthHandler {
     await box.put('redirect_session_id', url.queryParameters['sessionId']);
     await box.put('redirect_event_id', url.queryParameters['eventId']);
 
-    var installation = FirebaseImplementation.installation;
-    var launchUrl = (installation as BaseFirebaseImplementation).launchUrl;
-    launchUrl(url, popup: isPopup);
+    FirebaseDart.instance.launchUrl(url, popup: isPopup);
     return true;
   }
 
   @override
   Future<void> signOut(FirebaseApp app, User user) async {}
-}
-
-abstract class BaseApplicationVerifier implements ApplicationVerifier {
-  @override
-  Future<ApplicationVerificationResult> verify(FirebaseAuth auth, String nonce,
-      {bool forceRecaptcha = false}) async {
-    if (!forceRecaptcha) {
-      var p = Platform.current;
-      if (p is IOsPlatform || p is MacOsPlatform) {
-        try {
-          var v = await verifyWithApns(auth);
-          if (v != null) return ApplicationVerificationResult.apns(v);
-        } catch (e, tr) {
-          Logger('FirebaseAuth').warning(
-              'Failed to verify application with APNS, will try recaptcha instead.',
-              e,
-              tr);
-        }
-      } else if (p is AndroidPlatform) {
-        try {
-          var v = await verifyWithPlayIntegrity(auth, nonce);
-          if (v != null) return ApplicationVerificationResult.playItegrity(v);
-        } catch (e, tr) {
-          Logger('FirebaseAuth').warning(
-              'Failed to verify application with Play Integrity, will try recaptcha instead.',
-              e,
-              tr);
-        }
-      }
-    }
-    var v = await verifyWithRecaptcha(auth);
-    return ApplicationVerificationResult.recaptcha(v);
-  }
-
-  Future<String> getRecaptchaSiteKey(FirebaseAuth auth) async {
-    if (auth is FirebaseAuthProtectedMethods) {
-      return auth.getRecaptchaSiteKey();
-    }
-    throw UnimplementedError();
-  }
-
-  @visibleForOverriding
-  Future<String> getVerifyResult(FirebaseApp app);
-
-  @protected
-  Future<Duration> verifyIosClient(FirebaseAuth auth,
-      {required String appToken, required bool isSandbox}) async {
-    if (auth is FirebaseAuthProtectedMethods) {
-      return auth.verifyIosClient(appToken: appToken, isSandbox: isSandbox);
-    }
-    throw UnimplementedError();
-  }
-
-  @protected
-  Future<String> getProducerProjectNumber(FirebaseAuth auth) async {
-    if (auth is FirebaseAuthProtectedMethods) {
-      return auth.getProducerProjectNumber();
-    }
-    throw UnimplementedError();
-  }
-
-  Future<String?> verifyWithApns(FirebaseAuth auth);
-  Future<String?> verifyWithPlayIntegrity(FirebaseAuth auth, String nonce);
-  Future<String> verifyWithRecaptcha(FirebaseAuth auth) {
-    var url = FirebaseAppAuthHandler.createAuthHandlerUrl(
-      app: auth.app,
-      authType: 'verifyApp',
-    );
-
-    var installation = FirebaseImplementation.installation;
-    var launchUrl = (installation as BaseFirebaseImplementation).launchUrl;
-    launchUrl(url);
-
-    return getVerifyResult(auth.app);
-  }
 }

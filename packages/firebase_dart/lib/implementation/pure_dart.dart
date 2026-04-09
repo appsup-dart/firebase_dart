@@ -4,6 +4,7 @@ import 'package:firebase_dart/src/auth/iframeclient/auth_methods.dart';
 import 'package:firebase_dart/src/auth/sms_retriever.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/implementation.dart';
+import 'package:firebase_dart/src/implementation/dart.dart';
 import 'package:firebase_dart/src/implementation/pure_dart_setup_web.dart'
     if (dart.library.io) 'package:firebase_dart/src/implementation/pure_dart_setup_io.dart'
     if (dart.library.js_interop) 'package:firebase_dart/src/implementation/pure_dart_setup_web.dart';
@@ -23,12 +24,14 @@ export 'package:firebase_dart/src/auth/utils.dart'
         WindowsPlatform,
         WebPlatform;
 export 'package:firebase_dart/src/auth/authhandlers.dart'
-    show FirebaseAppAuthHandler, BaseApplicationVerifier;
-export 'package:firebase_dart/src/auth/app_verifier.dart'
-    show ApplicationVerificationResult;
+    show FirebaseAppAuthHandler;
 export 'package:firebase_dart/src/auth/sms_retriever.dart' show SmsRetriever;
 export 'package:firebase_dart/src/auth/app_verifier.dart'
-    show RecaptchaApplicationVerifier, ApplicationVerifier;
+    show
+        ApplicationVerificationResult,
+        RecaptchaApplicationVerifier,
+        ApplicationVerifier,
+        BaseApplicationVerifier;
 
 const bool _kIsWeb = identical(0, 0.0);
 
@@ -91,6 +94,31 @@ class FirebaseDart {
       updateDatabaseConfiguration(
           keepQueriesSyncedDuration: _keepQueriesSyncedDuration);
     }
+  }
+
+  final PureDartFirebaseImplementation _installation;
+
+  FirebaseDart(this._installation);
+
+  /// Returns the current [FirebaseDart] instance representing the setup that was
+  /// configured via [FirebaseDart.setup].
+  ///
+  /// This instance contains the details of the current Firebase implementation,
+  /// including handlers, clients, and configuration resulting from the setup
+  /// process.
+  static FirebaseDart get instance =>
+      FirebaseDart(PureDartFirebaseImplementation.installation);
+
+  /// Opens the given [url] in a browser context.
+  ///
+  /// This can be used to implement [AuthHandler]s or [ApplicationVerifier]s
+  /// when they need to open an URL in a browser for sign in, reCAPTCHA, or
+  /// other purposes.
+  ///
+  /// Override this handler in [setup] using the [launchUrl] parameter if your
+  /// application requires custom UI or navigation.
+  void launchUrl(Uri url, {bool popup = false}) {
+    _installation.launchUrl(url, popup: popup);
   }
 
   static void _defaultLaunchUrl(Uri uri, {bool popup = false}) {
