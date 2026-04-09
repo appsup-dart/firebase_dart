@@ -2,12 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import '../core.dart';
-import 'auth.dart';
-import 'impl/auth.dart';
+import 'error.dart';
+import 'recaptcha_verifier.dart';
 
 class RecaptchaVerifierImpl implements RecaptchaVerifier {
-  final String _appId;
+  final String siteKey;
 
   final String? container;
 
@@ -24,16 +23,14 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
   final Completer<String> _completer = Completer();
 
   RecaptchaVerifierImpl({
-    required FirebaseAuth auth,
+    required this.siteKey,
     this.container,
     this.size = RecaptchaVerifierSize.normal,
     this.theme = RecaptchaVerifierTheme.light,
     this.onSuccess,
     this.onError,
     this.onExpired,
-  }) : _appId = auth.app.name;
-
-  FirebaseAuth get auth => FirebaseAuth.instanceFor(app: Firebase.app(_appId));
+  });
 
   @override
   void clear() {}
@@ -48,35 +45,46 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
 
   @override
   Future<String> verify() async {
-    var siteKey =
-        await (auth as FirebaseAuthImpl).rpcHandler.getRecaptchaSiteKey();
     var html = '''
 <html>
   <head>
     <title>reCAPTCHA demo: Simple page</title>
     <script>
-      var onloadCallback = function() {
-        var widgetId = grecaptcha.render('recaptcha', {
+      var onloadCallback = async function() {
+        var widgetId = grecaptcha.enterprise.render('recaptcha', {
           sitekey: '$siteKey',
           size: 'invisible',
           theme: 'light',
-          callback: function(token) {
-            fetch('', {
+          callback: async function(token) {
+            console.log('callback', token);
+            await fetch('', {
               method: 'POST',
               body: 'g-recaptcha-response=' + token
             });
+            window.close();
           },
-          expiredCallback: function() {
+          'expired-callback': async function() {
             console.log('expired-callback');
+            await fetch('', {
+              method: 'POST',
+              body: 'g-recaptcha-error=expired'
+            });
+            window.close();
           },
-          errorCallback: function(error) {
-            console.log('error-callback', error);
+          'error-callback': async function() {
+            console.log('error-callback');
+            await fetch('', {
+              method: 'POST',
+              body: 'g-recaptcha-error=error'
+            });
+            window.close();
           }
         });
-        grecaptcha.execute(widgetId);
+
+        await grecaptcha.enterprise.execute(widgetId);
       };
     </script>
-    <script src="https://www.google.com/recaptcha/api.js?render=explicit&onload=onloadCallback&sitekey=$siteKey" async defer></script>
+    <script src="https://www.google.com/recaptcha/enterprise.js?render=explicit&onload=onloadCallback" async defer></script>
   </head>
   <body>
     <div id="recaptcha"></div>
@@ -104,7 +112,12 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
             case 'POST':
               var body = await request.map(utf8.decode).join();
               var v = Uri.splitQueryString(body);
-              _completer.complete(v['g-recaptcha-response']);
+              if (v['g-recaptcha-error'] != null) {
+                _completer.completeError(FirebaseAuthException(
+                    'recaptcha-${v['g-recaptcha-error']}'));
+              } else {
+                _completer.complete(v['g-recaptcha-response']);
+              }
               break;
             case 'GET':
             default:

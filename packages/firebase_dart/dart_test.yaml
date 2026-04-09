@@ -1,0 +1,3 @@
+tags:
+  smoke:
+    skip: "Run manually"

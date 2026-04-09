@@ -1,4 +1,4 @@
-@JS('grecaptcha')
+@JS('grecaptcha.enterprise')
 library;
 
 import 'dart:js_interop';

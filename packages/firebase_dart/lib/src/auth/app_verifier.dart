@@ -1,3 +1,5 @@
+import 'package:firebase_dart/src/auth/impl/auth.dart';
+
 import 'auth.dart';
 
 abstract class ApplicationVerifier {
@@ -29,7 +31,8 @@ class RecaptchaApplicationVerifier implements ApplicationVerifier {
   @override
   Future<ApplicationVerificationResult> verify(FirebaseAuth auth, String nonce,
       {bool forceRecaptcha = false}) async {
-    var verifier = RecaptchaVerifier(auth: auth);
+    var siteKey = await (auth as FirebaseAuthImpl).getRecaptchaSiteKey();
+    var verifier = RecaptchaVerifier(siteKey: siteKey);
 
     return ApplicationVerificationResult.recaptcha(await verifier.verify());
   }

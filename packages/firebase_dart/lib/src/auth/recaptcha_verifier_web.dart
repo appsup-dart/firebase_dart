@@ -4,12 +4,12 @@ import 'dart:js_interop_unsafe';
 import 'dart:math';
 import 'package:web/web.dart';
 
-import 'auth.dart';
+import 'error.dart';
 import 'grecaptcha.dart' as grecaptcha;
-import 'impl/auth.dart';
+import 'recaptcha_verifier.dart';
 
 class RecaptchaVerifierImpl implements RecaptchaVerifier {
-  final FirebaseAuth auth;
+  final String siteKey;
 
   final String? container;
 
@@ -30,7 +30,7 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
   Completer<String>? _completer;
 
   RecaptchaVerifierImpl({
-    required this.auth,
+    required this.siteKey,
     this.container,
     this.size = RecaptchaVerifierSize.normal,
     this.theme = RecaptchaVerifierTheme.light,
@@ -72,8 +72,8 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
                 if (onSuccess != null) onSuccess!();
                 _completer!.complete(v);
               }.toJS,
-              errorCallback: (JSAny error) {
-                var e = FirebaseAuthException('recaptcha-error', '$error');
+              errorCallback: () {
+                var e = FirebaseAuthException('recaptcha-error');
                 if (onError != null) onError!(e);
                 _completer!.completeError(e);
               }.toJS,
@@ -84,9 +84,7 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
               }.toJS,
               size: container == null ? 'invisible' : size.name,
               theme: theme.name,
-              sitekey: await (auth as FirebaseAuthImpl)
-                  .rpcHandler
-                  .getRecaptchaSiteKey()));
+              sitekey: siteKey));
       widgetId = newWidgetId;
     }
 
@@ -139,7 +137,7 @@ class RecaptchaLoader {
 
     var name = '_gonload${r.nextInt(1000000)}';
     var script = HTMLScriptElement()
-      ..src = Uri.parse('https://www.google.com/recaptcha/api.js')
+      ..src = Uri.parse('https://www.google.com/recaptcha/enterprise.js')
           .replace(queryParameters: {
         'render': 'explicit',
         'onload': name,
