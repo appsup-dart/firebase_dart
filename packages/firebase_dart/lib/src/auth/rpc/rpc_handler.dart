@@ -7,6 +7,7 @@ import 'package:firebase_dart/src/util/proxy.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 import 'package:openid_client/openid_client.dart' as openid;
+import '../app_verifier.dart';
 import 'identitytoolkit.dart';
 
 import '../action_code.dart';
@@ -696,33 +697,17 @@ class RpcHandler {
   /// Requests sendVerificationCode endpoint for verifying the user's ownership of
   /// a phone number. It resolves with a sessionInfo (verificationId).
   Future<String> sendVerificationCode({
-    String? phoneNumber,
+    required String phoneNumber,
     String? appSignatureHash,
-    String? recaptchaToken,
-    String? playIntegrityToken,
-    String? iosReceipt,
-    String? iosSecret,
+    required ApplicationVerificationResult assertion,
   }) async {
-    // In the future, we could support other types of assertions so for now,
-    // we are keeping the request an object.
-
-    if (phoneNumber == null ||
-        (recaptchaToken == null &&
-            playIntegrityToken == null &&
-            (iosReceipt == null || iosSecret == null))) {
-      throw FirebaseAuthException.internalError();
-    }
-
     var request = GoogleCloudIdentitytoolkitV1SendVerificationCodeRequest()
       ..phoneNumber = phoneNumber
       ..autoRetrievalInfo = appSignatureHash == null
           ? null
           : (GoogleCloudIdentitytoolkitV1AutoRetrievalInfo()
             ..appSignatureHash = appSignatureHash)
-      ..recaptchaToken = recaptchaToken
-      ..playIntegrityToken = playIntegrityToken
-      ..iosReceipt = iosReceipt
-      ..iosSecret = iosSecret;
+      ..assertion = assertion;
 
     var response =
         await identitytoolkitApi.accounts.sendVerificationCode(request);
@@ -822,28 +807,19 @@ class RpcHandler {
     );
   }
 
-  Future<String> startMultiFactorEnrollment(
-      {required String idToken,
-      String? phoneNumber,
-      String? appSignatureHash,
-      String? recaptchaToken,
-      String? playIntegrityToken,
-      String? iosReceipt,
-      String? iosSecret}) async {
-    if (phoneNumber == null ||
-        (recaptchaToken == null && playIntegrityToken == null)) {
-      throw FirebaseAuthException.internalError();
-    }
+  Future<String> startMultiFactorEnrollment({
+    required String idToken,
+    required String phoneNumber,
+    String? appSignatureHash,
+    required ApplicationVerificationResult assertion,
+  }) async {
     var info = GoogleCloudIdentitytoolkitV2StartMfaPhoneRequestInfo()
       ..phoneNumber = phoneNumber
       ..autoRetrievalInfo = appSignatureHash == null
           ? null
           : (GoogleCloudIdentitytoolkitV2AutoRetrievalInfo()
             ..appSignatureHash = appSignatureHash)
-      ..recaptchaToken = recaptchaToken
-      ..playIntegrityToken = playIntegrityToken
-      ..iosReceipt = iosReceipt
-      ..iosSecret = iosSecret;
+      ..assertion = assertion;
 
     var request = GoogleCloudIdentitytoolkitV2StartMfaEnrollmentRequest()
       ..idToken = idToken
@@ -902,23 +878,18 @@ class RpcHandler {
     );
   }
 
-  Future<String> startMultiFactorSignIn(
-      {required String mfaPendingCredential,
-      required String mfaEnrollmentId,
-      String? appSignatureHash,
-      String? recaptchaToken,
-      String? playIntegrityToken,
-      String? iosReceipt,
-      String? iosSecret}) async {
+  Future<String> startMultiFactorSignIn({
+    required String mfaPendingCredential,
+    required String mfaEnrollmentId,
+    String? appSignatureHash,
+    required ApplicationVerificationResult assertion,
+  }) async {
     var info = GoogleCloudIdentitytoolkitV2StartMfaPhoneRequestInfo()
       ..autoRetrievalInfo = appSignatureHash == null
           ? null
           : (GoogleCloudIdentitytoolkitV2AutoRetrievalInfo()
             ..appSignatureHash = appSignatureHash)
-      ..recaptchaToken = recaptchaToken
-      ..playIntegrityToken = playIntegrityToken
-      ..iosReceipt = iosReceipt
-      ..iosSecret = iosSecret;
+      ..assertion = assertion;
 
     var request = GoogleCloudIdentitytoolkitV2StartMfaSignInRequest()
       ..mfaPendingCredential = mfaPendingCredential
@@ -1297,4 +1268,23 @@ class SignInResult {
 
   openid.Credential get credential =>
       _credential ?? (throw FirebaseAuthException.mfaRequired());
+}
+
+extension on RequestWithVerification {
+  set assertion(ApplicationVerificationResult assertion) {
+    switch (assertion.type) {
+      case 'recaptcha':
+        recaptchaToken = assertion.token;
+        break;
+      case 'playintegrity':
+        playIntegrityToken = assertion.token;
+        break;
+      case 'apns':
+        iosReceipt = assertion.token.split(':').first;
+        iosSecret = assertion.token.split(':').last;
+        break;
+      default:
+        throw FirebaseAuthException.internalError();
+    }
+  }
 }

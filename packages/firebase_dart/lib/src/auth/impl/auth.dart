@@ -358,51 +358,32 @@ class FirebaseAuthImpl extends FirebaseService
       if (multiFactorSession != null) {
         if ((multiFactorSession as MultiFactorSessionImpl).type ==
             MultiFactorSessionType.enrollment) {
+          if (phoneNumber == null) {
+            throw FirebaseAuthException.internalError();
+          }
+
           return await rpcHandler.startMultiFactorEnrollment(
             idToken: multiFactorSession.credential,
             phoneNumber: phoneNumber,
             appSignatureHash: appSignatureHash,
-            recaptchaToken:
-                assertion.type == 'recaptcha' ? assertion.token : null,
-            playIntegrityToken:
-                assertion.type == 'playintegrity' ? assertion.token : null,
-            iosReceipt: assertion.type == 'apns'
-                ? assertion.token.split(':').first
-                : null,
-            iosSecret: assertion.type == 'apns'
-                ? assertion.token.split(':').last
-                : null,
+            assertion: assertion,
           );
         } else {
           return await rpcHandler.startMultiFactorSignIn(
             mfaPendingCredential: multiFactorSession.credential,
             mfaEnrollmentId: multiFactorInfo!.uid,
             appSignatureHash: appSignatureHash,
-            recaptchaToken:
-                assertion.type == 'recaptcha' ? assertion.token : null,
-            playIntegrityToken:
-                assertion.type == 'playintegrity' ? assertion.token : null,
-            iosReceipt: assertion.type == 'apns'
-                ? assertion.token.split(':').first
-                : null,
-            iosSecret: assertion.type == 'apns'
-                ? assertion.token.split(':').last
-                : null,
+            assertion: assertion,
           );
         }
       } else {
+        if (phoneNumber == null) {
+          throw FirebaseAuthException.internalError();
+        }
         return await rpcHandler.sendVerificationCode(
           phoneNumber: phoneNumber,
           appSignatureHash: appSignatureHash,
-          recaptchaToken:
-              assertion.type == 'recaptcha' ? assertion.token : null,
-          playIntegrityToken:
-              assertion.type == 'playintegrity' ? assertion.token : null,
-          iosReceipt: assertion.type == 'apns'
-              ? assertion.token.split(':').first
-              : null,
-          iosSecret:
-              assertion.type == 'apns' ? assertion.token.split(':').last : null,
+          assertion: assertion,
         );
       }
     }

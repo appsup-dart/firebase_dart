@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:firebase_dart/auth.dart';
+import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/rpc/http_util.dart';
 import 'package:firebase_dart/src/auth/rpc/rpc_handler.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
@@ -2902,27 +2903,15 @@ void main() {
           },
           expectedResult: (_) => 'SESSION_INFO',
           action: () => rpcHandler.sendVerificationCode(
-              phoneNumber: '15551234567', recaptchaToken: 'RECAPTCHA_TOKEN'),
+            phoneNumber: '15551234567',
+            assertion:
+                ApplicationVerificationResult.recaptcha('RECAPTCHA_TOKEN'),
+          ),
         );
         test('sendVerificationCode: success', () async {
           await tester.shouldSucceed(
             serverResponse: {'sessionInfo': 'SESSION_INFO'},
           );
-        });
-
-        test('sendVerificationCode: invalid request missing phone number',
-            () async {
-          expect(
-              () => rpcHandler.sendVerificationCode(
-                  recaptchaToken: 'RECAPTCHA_TOKEN'),
-              throwsA(FirebaseAuthException.internalError()));
-        });
-
-        test('sendVerificationCode: invalid request missing recaptcha token',
-            () async {
-          expect(
-              () => rpcHandler.sendVerificationCode(phoneNumber: '15551234567'),
-              throwsA(FirebaseAuthException.internalError()));
         });
 
         test('sendVerificationCode: unknown server response', () async {
@@ -3289,7 +3278,7 @@ void main() {
           action: () => rpcHandler.startMultiFactorEnrollment(
             idToken: token,
             phoneNumber: 'phone-number',
-            recaptchaToken: 'captcha-token',
+            assertion: ApplicationVerificationResult.recaptcha('captcha-token'),
           ),
         );
 
@@ -3408,7 +3397,7 @@ void main() {
           expectedBody: {
             'mfaPendingCredential': 'my-creds',
             'mfaEnrollmentId': 'my-enrollment-id',
-            'phoneSignInInfo': {'recaptchaToken': 'catpcha-token'}
+            'phoneSignInInfo': {'recaptchaToken': 'captcha-token'}
           },
           expectedResult: (response) {
             return response['phoneResponseInfo']?['sessionInfo'];
@@ -3416,7 +3405,7 @@ void main() {
           action: () => rpcHandler.startMultiFactorSignIn(
             mfaPendingCredential: 'my-creds',
             mfaEnrollmentId: 'my-enrollment-id',
-            recaptchaToken: 'catpcha-token',
+            assertion: ApplicationVerificationResult.recaptcha('captcha-token'),
           ),
         );
 

@@ -34,7 +34,8 @@ void main() {
       var token = await verifier.verify();
       expect(token, isNotEmpty);
       var v = await auth.rpcHandler.sendVerificationCode(
-          recaptchaToken: token, phoneNumber: '+32123456789');
+          assertion: ApplicationVerificationResult.recaptcha(token),
+          phoneNumber: '+32123456789');
       expect(v, isNotEmpty);
     });
 
