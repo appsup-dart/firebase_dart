@@ -1,4 +1,5 @@
 import 'package:firebase_dart/src/auth/impl/auth.dart';
+import 'package:firebase_dart/src/auth/recaptcha_verifier.dart';
 
 import 'auth.dart';
 

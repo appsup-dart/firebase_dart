@@ -4,14 +4,10 @@ import 'auth.dart';
 
 mixin FirebaseAuthMixin implements FirebaseAuth {
   @override
-  Future<ConfirmationResult> signInWithPhoneNumber(
-    String phoneNumber, [
-    RecaptchaVerifier? verifier,
-  ]) async {
+  Future<ConfirmationResult> signInWithPhoneNumber(String phoneNumber) async {
     var completer = Completer<ConfirmationResult>();
     await verifyPhoneNumber(
         phoneNumber: phoneNumber,
-        verifier: verifier,
         verificationCompleted: (credential) async {
           var r = await completer.future;
           await r.confirm(credential.smsCode!);

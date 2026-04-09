@@ -442,7 +442,6 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
     int? forceResendingToken,
     MultiFactorSession? multiFactorSession,
     PhoneMultiFactorInfo? multiFactorInfo,
-    RecaptchaVerifier? verifier,
   }) async {
     var worker = IsolateWorker()
       ..registerFunction(#verificationCompleted, verificationCompleted)

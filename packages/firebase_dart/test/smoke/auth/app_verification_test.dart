@@ -5,6 +5,7 @@ import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
+import 'package:firebase_dart/src/auth/recaptcha_verifier.dart';
 import 'package:test/test.dart';
 
 import '../_generated/firebase_config.g.dart';

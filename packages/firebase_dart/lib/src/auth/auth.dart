@@ -10,7 +10,6 @@ import 'error.dart';
 import 'multi_factor.dart';
 import 'user.dart';
 import 'action_code.dart';
-import 'recaptcha_verifier.dart';
 
 export 'auth_credential.dart';
 export 'auth_provider.dart';
@@ -18,7 +17,6 @@ export 'error.dart';
 export 'user.dart';
 export 'action_code.dart';
 export 'multi_factor.dart' hide PhoneMultiFactorAssertion;
-export 'recaptcha_verifier.dart';
 
 /// The entry point of the Firebase Authentication SDK.
 abstract class FirebaseAuth {
@@ -293,17 +291,11 @@ abstract class FirebaseAuth {
 
   /// Starts a sign-in flow for a phone number.
   ///
-  /// You can optionally provide a [RecaptchaVerifier] instance to control the
-  /// reCAPTCHA widget appearance and behavior.
-  ///
-  /// Once the reCAPTCHA verification has completed, called [ConfirmationResult.confirm]
+  /// Once the verification has completed, call [ConfirmationResult.confirm]
   /// with the users SMS verification code to complete the authentication flow.
   ///
   /// This method is available on both web based platforms and other platforms.
-  Future<ConfirmationResult> signInWithPhoneNumber(
-    String phoneNumber, [
-    RecaptchaVerifier? verifier,
-  ]);
+  Future<ConfirmationResult> signInWithPhoneNumber(String phoneNumber);
 
   /// Authenticates a Firebase client using a popup-based OAuth authentication
   /// flow.
@@ -416,22 +408,17 @@ abstract class FirebaseAuth {
   ///
   /// [codeAutoRetrievalTimeout] Triggered when SMS auto-retrieval times out and
   ///   provide a [verificationId].
-  ///
-  /// [verifier] The reCAPTCHA verifier instance to control the reCAPTCHA widget
-  /// appearance and behavior on web based platforms.
-  Future<void> verifyPhoneNumber({
-    String? phoneNumber,
-    PhoneMultiFactorInfo? multiFactorInfo,
-    required PhoneVerificationCompleted verificationCompleted,
-    required PhoneVerificationFailed verificationFailed,
-    required PhoneCodeSent codeSent,
-    required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
-    @visibleForTesting String? autoRetrievedSmsCodeForTesting,
-    Duration timeout = const Duration(seconds: 30),
-    int? forceResendingToken,
-    MultiFactorSession? multiFactorSession,
-    RecaptchaVerifier? verifier,
-  });
+  Future<void> verifyPhoneNumber(
+      {String? phoneNumber,
+      PhoneMultiFactorInfo? multiFactorInfo,
+      required PhoneVerificationCompleted verificationCompleted,
+      required PhoneVerificationFailed verificationFailed,
+      required PhoneCodeSent codeSent,
+      required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
+      @visibleForTesting String? autoRetrievedSmsCodeForTesting,
+      Duration timeout = const Duration(seconds: 30),
+      int? forceResendingToken,
+      MultiFactorSession? multiFactorSession});
 
   /// Returns the current [User] if they are currently signed-in, or `null` if
   /// not.

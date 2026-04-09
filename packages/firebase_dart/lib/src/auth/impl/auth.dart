@@ -343,7 +343,6 @@ class FirebaseAuthImpl extends FirebaseService
     Duration timeout = const Duration(seconds: 30),
     int? forceResendingToken,
     MultiFactorSession? multiFactorSession,
-    RecaptchaVerifier? verifier,
   }) async {
     var impl =
         FirebaseImplementation.installation as PureDartFirebaseImplementation;
@@ -388,11 +387,8 @@ class FirebaseAuthImpl extends FirebaseService
       }
     }
 
-    var assertion = await (verifier
-            ?.verify()
-            .then((v) => ApplicationVerificationResult(verifier.type, v)) ??
-        impl.applicationVerifier
-            .verify(this, phoneNumber ?? multiFactorInfo?.phoneNumber ?? ''));
+    var assertion = await impl.applicationVerifier
+        .verify(this, phoneNumber ?? multiFactorInfo?.phoneNumber ?? '');
 
     try {
       verificationId = await requestVerificationId(assertion);
@@ -401,12 +397,9 @@ class FirebaseAuthImpl extends FirebaseService
         rethrow;
       }
 
-      assertion = await (verifier
-              ?.verify()
-              .then((v) => ApplicationVerificationResult(verifier.type, v)) ??
-          impl.applicationVerifier.verify(
-              this, phoneNumber ?? multiFactorInfo?.phoneNumber ?? '',
-              forceRecaptcha: true));
+      assertion = await impl.applicationVerifier.verify(
+          this, phoneNumber ?? multiFactorInfo?.phoneNumber ?? '',
+          forceRecaptcha: true);
       verificationId = await requestVerificationId(assertion);
     }
     codeSent(verificationId, 0 /*TODO*/);
