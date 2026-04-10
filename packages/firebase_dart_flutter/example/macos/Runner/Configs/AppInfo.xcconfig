@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = example
+PRODUCT_NAME = firebase_dart_flutter_example
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = be.appsup.firebase_dart_flutter_example
+PRODUCT_BUNDLE_IDENTIFIER = be.appsup.firebaseDartFlutterExample
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2024 be.appsup. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 be.appsup. All rights reserved.
