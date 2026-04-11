@@ -14,10 +14,14 @@ class FirebaseProjectConfig {
 
   final Map<String, FirebaseOptions> androidConfigs;
 
+  /// iOS bundle IDs for which Firebase has an APNs auth key
+  final List<String> iosBundleIdsWithApnsConfigured;
+
   const FirebaseProjectConfig({
     required this.projectId,
     required this.webConfig,
     required this.iosConfigs,
     required this.androidConfigs,
+    this.iosBundleIdsWithApnsConfigured = const [],
   });
 }

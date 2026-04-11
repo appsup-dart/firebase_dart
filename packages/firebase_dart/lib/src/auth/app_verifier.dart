@@ -53,6 +53,7 @@ abstract class BaseApplicationVerifier implements ApplicationVerifier {
   const BaseApplicationVerifier();
 
   @protected
+  @visibleForTesting
   Future<String> getRecaptchaSiteKey(FirebaseAuth auth) async {
     if (auth is FirebaseAuthProtectedMethods) {
       return auth.getRecaptchaSiteKey();
@@ -61,6 +62,7 @@ abstract class BaseApplicationVerifier implements ApplicationVerifier {
   }
 
   @protected
+  @visibleForTesting
   Future<Duration> verifyIosClient(FirebaseAuth auth,
       {required String appToken, required bool isSandbox}) async {
     if (auth is FirebaseAuthProtectedMethods) {
@@ -70,6 +72,7 @@ abstract class BaseApplicationVerifier implements ApplicationVerifier {
   }
 
   @protected
+  @visibleForTesting
   Future<String> getProducerProjectNumber(FirebaseAuth auth) async {
     if (auth is FirebaseAuthProtectedMethods) {
       return auth.getProducerProjectNumber();
