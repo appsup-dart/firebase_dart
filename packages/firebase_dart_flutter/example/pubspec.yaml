@@ -43,6 +43,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  propertylistserialization: ^1.4.1
 
 dependency_overrides:
   firebase_dart:

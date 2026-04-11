@@ -204,6 +204,7 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				F4ACC936DA6AD43F3F46F69D /* [CP] Embed Pods Frameworks */,
 				EF7E54E96E6CC771FB7CFAE1 /* [CP] Copy Pods Resources */,
+				E01A21B12D002200007C11E0 /* Add reCAPTCHA URL schemes */,
 			);
 			buildRules = (
 			);
@@ -365,6 +366,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		E01A21B12D002200007C11E0 /* Add reCAPTCHA URL schemes */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Add reCAPTCHA URL schemes";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"${SRCROOT}/..\" && \"${FLUTTER_ROOT}/bin/dart\" run tool/add_firebase_auth_url_schemes.dart\n";
 			showEnvVarsInLog = 0;
 		};
 		F4ACC936DA6AD43F3F46F69D /* [CP] Embed Pods Frameworks */ = {

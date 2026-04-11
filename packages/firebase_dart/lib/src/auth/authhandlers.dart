@@ -95,17 +95,15 @@ abstract class FirebaseAppAuthHandler implements AuthHandler {
             'sessionId': sessionId,
             'ibi': platform.appId,
             if (app.options.iosClientId != null)
-              'clientId': app.options.iosClientId
-            else
-              'appId': app.options.appId,
+              'clientId': app.options.iosClientId,
+            'appId': app.options.appId,
           },
           if (platform is MacOsPlatform) ...{
             'sessionId': sessionId,
             'ibi': platform.appId,
             if (app.options.iosClientId != null)
-              'clientId': app.options.iosClientId
-            else
-              'appId': app.options.appId,
+              'clientId': app.options.iosClientId,
+            'appId': app.options.appId,
           },
           if (platform is WebPlatform) ...{
             'redirectUrl': platform.currentUrl,

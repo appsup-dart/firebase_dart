@@ -10,5 +10,9 @@ PRODUCT_NAME = firebase_dart_flutter_example
 // The application's bundle identifier
 PRODUCT_BUNDLE_IDENTIFIER = be.appsup.firebaseDartFlutterExample
 
+// Firebase iOS app bundle id in packages/_integration_testing generated options
+// (used by tool/add_firebase_auth_url_schemes.dart for Firebase Auth custom URL schemes).
+FIREBASE_INTEGRATION_LOOKUP_BUNDLE_ID = be.appsup.firebase-dart-flutter-example
+
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 be.appsup. All rights reserved.

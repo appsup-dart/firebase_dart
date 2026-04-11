@@ -11,7 +11,7 @@ class DeepLinkRetriever with WidgetsBindingObserver {
   final StreamController<Uri> _controller = StreamController.broadcast();
 
   DeepLinkRetriever._() {
-    if (!kIsWeb && !platform_info.Platform.instance.mobile) {
+    if (!kIsWeb && !platform_info.Platform.instance.android) {
       AppLinks().uriLinkStream.listen((uri) {
         didPushRouteInformation(RouteInformation(uri: uri));
       });
