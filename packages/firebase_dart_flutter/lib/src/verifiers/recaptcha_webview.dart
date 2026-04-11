@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,8 +13,13 @@ class RecaptchaWebViewVerifier {
 
   final String baseUrl;
 
+  final String? action;
+
   RecaptchaWebViewVerifier(
-      {required this.context, required this.siteKey, required this.baseUrl});
+      {required this.context,
+      required this.siteKey,
+      required this.baseUrl,
+      this.action});
 
   Future<String> verify() async {
     var overlay = Overlay.maybeOf(context, rootOverlay: true);
@@ -62,7 +68,12 @@ class RecaptchaWebViewVerifier {
                 entry.remove();
                 completer.complete(token);
               },
+              onError: (error) {
+                entry.remove();
+                completer.completeError(error);
+              },
               baseUrl: baseUrl,
+              action: action,
             ));
     overlay.insert(entry);
     var token = await completer.future;
@@ -76,12 +87,18 @@ class RecaptchaWidget extends StatefulWidget {
 
   final String baseUrl;
 
-  final Function(String?) onToken;
+  final Function(String) onToken;
+
+  final Function(Object) onError;
+
+  final String? action;
 
   const RecaptchaWidget(
       {super.key,
       required this.siteKey,
       required this.onToken,
+      required this.onError,
+      this.action,
       this.baseUrl = 'http://127.0.0.1:8080'});
 
   @override
@@ -89,35 +106,64 @@ class RecaptchaWidget extends StatefulWidget {
 }
 
 class _RecaptchaWidgetState extends State<RecaptchaWidget> {
-  static String _getHtml(String siteKey) => '''
-    <html>
-      <head>
-        <meta name="viewport" 
-              content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      
-        <script>
-            var onSubmit = function(token) {
-              dart.postMessage(token);
-            };
+  String _getHtml(String siteKey) {
+    var onloadCallback = widget.action == null
+        ? '''
+      var widgetId = grecaptcha.enterprise.render('recaptcha', {
+        sitekey: '$siteKey',
+        size: 'invisible',
+        theme: 'light',
+        callback: async function(token) {
+          console.log('callback', token);
+          dart.postMessage('g-recaptcha-response=' + token);
+          window.close();
+        },
+        'expired-callback': async function() {
+          console.log('expired-callback');
+          dart.postMessage('g-recaptcha-error=expired');
+          window.close();
+        },
+        'error-callback': async function() {
+          console.log('error-callback');
+          dart.postMessage('g-recaptcha-error=error');
+          window.close();
+        }
+      });
 
-            var onloadCallback = function() {
-              grecaptcha.execute();
-            };
+      await grecaptcha.enterprise.execute(widgetId);
+    '''
+        : '''
+      try {
+        var token = await grecaptcha.enterprise.execute('$siteKey', {
+          action: '${widget.action}'
+        });
+        dart.postMessage('g-recaptcha-response=' + token);
+        window.close();
+      } catch (e) {
+        console.log('error', e);
+        dart.postMessage('g-recaptcha-error=error&error=' + encodeURIComponent(e.message));
+        window.close();
+      }
+    ''';
 
-            var onDismiss = function() {
-              dart.postMessage('');
-            };
-        </script>
-        <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback" async defer></script>
-      </head>
-      <body onclick="onDismiss()">
-        <div class="g-recaptcha"
-              data-sitekey="$siteKey"
-              data-callback="onSubmit"
-              data-size="invisible">
-        </div>
-      </body>
-    </html>''';
+    var html = '''
+<html>
+  <head>
+    <title>reCAPTCHA demo: Simple page</title>
+    <script>
+      var onloadCallback = async function() {
+        $onloadCallback
+      };
+    </script>
+    <script src="https://www.google.com/recaptcha/enterprise.js?render=${widget.action == null ? 'explicit' : siteKey}&onload=onloadCallback" async defer></script>
+  </head>
+  <body>
+    <div id="recaptcha"></div>
+  </body>
+</html>
+  ''';
+    return html;
+  }
 
   final WebViewController _controller = WebViewController();
 
@@ -128,7 +174,13 @@ class _RecaptchaWidgetState extends State<RecaptchaWidget> {
     }
     await _controller.addJavaScriptChannel('dart',
         onMessageReceived: (message) {
-      widget.onToken(message.message.isEmpty ? null : message.message);
+      var v = Uri.splitQueryString(message.message);
+      if (v['g-recaptcha-error'] != null) {
+        widget.onError(FirebaseAuthException(
+            'recaptcha-${v['g-recaptcha-error']}', v['error']));
+      } else {
+        widget.onToken(v['g-recaptcha-response']!);
+      }
     });
     await _controller.loadHtmlString(
       _getHtml(widget.siteKey),

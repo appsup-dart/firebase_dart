@@ -70,6 +70,13 @@ class RpcHandler {
     return response.recaptchaSiteKey!;
   }
 
+  Future<GoogleCloudIdentitytoolkitV2RecaptchaConfig> getRecaptchaConfig(
+      {required String clientType, required String version}) async {
+    var response = await identitytoolkitApi.v2Resource
+        .getRecaptchaConfig(clientType: clientType, version: version);
+    return response;
+  }
+
   Future<String> getProducerProjectNumber() async {
     var response = await identitytoolkitApi.v1.getRecaptchaParams();
 
@@ -1275,6 +1282,15 @@ extension on RequestWithVerification {
     switch (assertion.type) {
       case 'recaptcha':
         recaptchaToken = assertion.token;
+        break;
+      case 'recaptcha-enterprise':
+        var token = assertion.token.split(':');
+        if (token.length != 2) {
+          throw FirebaseAuthException.internalError();
+        }
+        captchaResponse = token.last;
+        clientType = token.first;
+        recaptchaVersion = 'RECAPTCHA_ENTERPRISE';
         break;
       case 'playintegrity':
         playIntegrityToken = assertion.token;

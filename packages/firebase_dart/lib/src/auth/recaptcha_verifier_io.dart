@@ -7,6 +7,7 @@ import 'recaptcha_verifier.dart';
 
 class RecaptchaVerifierImpl implements RecaptchaVerifier {
   final String siteKey;
+  final String? action;
 
   final String? container;
 
@@ -24,6 +25,7 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
 
   RecaptchaVerifierImpl({
     required this.siteKey,
+    this.action,
     this.container,
     this.size = RecaptchaVerifierSize.normal,
     this.theme = RecaptchaVerifierTheme.light,
@@ -45,46 +47,70 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
 
   @override
   Future<String> verify() async {
+    var onloadCallback = action == null
+        ? '''
+      var widgetId = grecaptcha.enterprise.render('recaptcha', {
+        sitekey: '$siteKey',
+        size: 'invisible',
+        theme: 'light',
+        callback: async function(token) {
+          console.log('callback', token);
+          await fetch('', {
+            method: 'POST',
+            body: 'g-recaptcha-response=' + token
+          });
+          window.close();
+        },
+        'expired-callback': async function() {
+          console.log('expired-callback');
+          await fetch('', {
+            method: 'POST',
+            body: 'g-recaptcha-error=expired'
+          });
+          window.close();
+        },
+        'error-callback': async function() {
+          console.log('error-callback');
+          await fetch('', {
+            method: 'POST',
+            body: 'g-recaptcha-error=error'
+          });
+          window.close();
+        }
+      });
+
+      await grecaptcha.enterprise.execute(widgetId);
+    '''
+        : '''
+      try {
+        var token = await grecaptcha.enterprise.execute('$siteKey', {
+          action: '$action'
+        });
+        await fetch('', {
+          method: 'POST',
+          body: 'g-recaptcha-response=' + token
+        });
+        window.close();
+      } catch (e) {
+        console.log('error', e);
+        await fetch('', {
+          method: 'POST',
+          body: 'g-recaptcha-error=error&error=' + encodeURIComponent(e.message)
+        });
+        window.close();
+      }
+    ''';
+
     var html = '''
 <html>
   <head>
     <title>reCAPTCHA demo: Simple page</title>
     <script>
       var onloadCallback = async function() {
-        var widgetId = grecaptcha.enterprise.render('recaptcha', {
-          sitekey: '$siteKey',
-          size: 'invisible',
-          theme: 'light',
-          callback: async function(token) {
-            console.log('callback', token);
-            await fetch('', {
-              method: 'POST',
-              body: 'g-recaptcha-response=' + token
-            });
-            window.close();
-          },
-          'expired-callback': async function() {
-            console.log('expired-callback');
-            await fetch('', {
-              method: 'POST',
-              body: 'g-recaptcha-error=expired'
-            });
-            window.close();
-          },
-          'error-callback': async function() {
-            console.log('error-callback');
-            await fetch('', {
-              method: 'POST',
-              body: 'g-recaptcha-error=error'
-            });
-            window.close();
-          }
-        });
-
-        await grecaptcha.enterprise.execute(widgetId);
+        $onloadCallback
       };
     </script>
-    <script src="https://www.google.com/recaptcha/enterprise.js?render=explicit&onload=onloadCallback" async defer></script>
+    <script src="https://www.google.com/recaptcha/enterprise.js?render=${action == null ? 'explicit' : siteKey}&onload=onloadCallback" async defer></script>
   </head>
   <body>
     <div id="recaptcha"></div>
@@ -114,7 +140,7 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
               var v = Uri.splitQueryString(body);
               if (v['g-recaptcha-error'] != null) {
                 _completer.completeError(FirebaseAuthException(
-                    'recaptcha-${v['g-recaptcha-error']}'));
+                    'recaptcha-${v['g-recaptcha-error']}', v['error']));
               } else {
                 _completer.complete(v['g-recaptcha-response']);
               }

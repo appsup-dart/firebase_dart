@@ -39,6 +39,8 @@ dev_dependencies:
   benchmark_harness: ^2.0.0
   vm_service: ">=9.0.0 <15.0.0"
   lints: ^6.0.0
+  _integration_testing:
+    path: ../_integration_testing
 
 false_secrets:
  - /lib/src/core/options.dart

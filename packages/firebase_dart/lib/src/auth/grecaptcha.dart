@@ -24,6 +24,13 @@ external String getResponse([int widgetId]);
 @JS()
 external void execute([int widgetId]);
 
+/// Programmatically executes score-based reCAPTCHA Enterprise.
+///
+/// [siteKey] is the score-based site key, [action] describes the action name.
+@JS('execute')
+external JSPromise<JSString> executeScore(
+    String siteKey, GRecaptchaExecuteOptions options);
+
 /// Resets the reCAPTCHA widget.
 ///
 /// [widgetId] is optional and defaults to the first widget created if
@@ -87,5 +94,15 @@ extension type GRecaptchaParameters._(JSObject _) implements JSObject {
     JSFunction? callback,
     @JS('expired-callback') JSFunction? expiredCallback,
     @JS('error-callback') JSFunction? errorCallback,
+  });
+}
+
+@JS()
+@anonymous
+extension type GRecaptchaExecuteOptions._(JSObject _) implements JSObject {
+  external String get action;
+
+  external factory GRecaptchaExecuteOptions({
+    required String action,
   });
 }

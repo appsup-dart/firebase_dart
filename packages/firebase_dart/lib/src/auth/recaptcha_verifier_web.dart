@@ -10,6 +10,7 @@ import 'recaptcha_verifier.dart';
 
 class RecaptchaVerifierImpl implements RecaptchaVerifier {
   final String siteKey;
+  final String? action;
 
   final String? container;
 
@@ -31,6 +32,7 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
 
   RecaptchaVerifierImpl({
     required this.siteKey,
+    this.action,
     this.container,
     this.size = RecaptchaVerifierSize.normal,
     this.theme = RecaptchaVerifierTheme.light,
@@ -51,7 +53,10 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
 
   @override
   Future<int> render() async {
-    await RecaptchaLoader().load();
+    await RecaptchaLoader().load(render: action == null ? 'explicit' : siteKey);
+    if (action != null) {
+      return -1;
+    }
     if (widgetId == null) {
       var element = container == null
           ? document.body!
@@ -96,6 +101,24 @@ class RecaptchaVerifierImpl implements RecaptchaVerifier {
 
   @override
   Future<String> verify() async {
+    if (action != null) {
+      await RecaptchaLoader().load(render: siteKey);
+      try {
+        var token = (await grecaptcha
+                .executeScore(siteKey,
+                    grecaptcha.GRecaptchaExecuteOptions(action: action!))
+                .toDart)
+            .toDart;
+        if (onSuccess != null) onSuccess!();
+        return token;
+      } on JSObject catch (error) {
+        var message = error.getProperty<JSString>('message'.toJS).toDart;
+        var e = FirebaseAuthException('recaptcha-error', message);
+        if (onError != null) onError!(e);
+        throw e;
+      }
+    }
+
     if (widgetId == null) {
       await render();
     }
@@ -111,6 +134,7 @@ class RecaptchaLoader {
   static final _instance = RecaptchaLoader._();
 
   String? _hostLanguage;
+  String? _render;
 
   Future<void>? _loadFuture;
 
@@ -122,12 +146,12 @@ class RecaptchaLoader {
     return hl.length <= 6 && RegExp(r'^\s*[a-zA-Z0-9\-]*\s*$').hasMatch(hl);
   }
 
-  Future<void> load([String hl = '']) {
+  Future<void> load({String hl = '', String render = 'explicit'}) {
     if (!_isHostLanguageValid(hl)) {
       throw FirebaseAuthException.argumentError('Invalid hl parameter value.');
     }
 
-    if (_hostLanguage == hl) {
+    if (_hostLanguage == hl && _render == render) {
       return _loadFuture!;
     }
 
@@ -139,7 +163,7 @@ class RecaptchaLoader {
     var script = HTMLScriptElement()
       ..src = Uri.parse('https://www.google.com/recaptcha/enterprise.js')
           .replace(queryParameters: {
-        'render': 'explicit',
+        'render': render,
         'onload': name,
         if (hl.isNotEmpty) 'hl': hl,
       }).toString()
@@ -153,6 +177,8 @@ class RecaptchaLoader {
 
     document.body!.append(script);
 
+    _hostLanguage = hl;
+    _render = render;
     return _loadFuture = completer.future;
   }
 }

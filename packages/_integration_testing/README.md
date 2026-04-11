@@ -1,5 +1,7 @@
 Helpers for integration/smoke testing in this workspace.
 
+The `firebase_dart` **smoke** tests (`packages/firebase_dart/test/smoke/`, run via `dart run test/smoke/run.dart` from that package) use **`allConfigs`** from this package for `Firebase.initializeApp` instead of a checked-in `firebase_config.g.dart`.
+
 ## Generate Firebase options
 
 From this package directory, run:

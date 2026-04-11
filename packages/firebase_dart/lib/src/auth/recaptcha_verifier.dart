@@ -36,8 +36,12 @@ abstract class RecaptchaVerifier {
   ///   (such as a network issue).
   ///
   /// [onExpired] An optional callback which is called when the reCAPTCHA expires.
+  ///
+  /// [action] When provided, the verifier uses score-based reCAPTCHA Enterprise
+  /// and executes directly with this action instead of rendering a widget.
   factory RecaptchaVerifier({
     required String siteKey,
+    String? action,
     String? container,
     RecaptchaVerifierSize size = RecaptchaVerifierSize.normal,
     RecaptchaVerifierTheme theme = RecaptchaVerifierTheme.light,
@@ -47,6 +51,7 @@ abstract class RecaptchaVerifier {
   }) {
     return RecaptchaVerifierImpl(
       siteKey: siteKey,
+      action: action,
       container: container,
       size: size,
       theme: theme,

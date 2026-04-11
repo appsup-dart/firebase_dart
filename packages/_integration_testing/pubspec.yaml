@@ -10,7 +10,9 @@ dependencies:
   args: ^2.5.0
   firebase_dart: ^1.6.2
   firebase_management: ^0.0.5
+  googleapis: '>=15.0.0 <17.0.0'
   googleapis_auth: ^2.0.0
+  http: '>=0.13.0 <2.0.0'
   googleapis_beta: ^9.0.0
   plist_parser: ^0.2.7
 

@@ -9,6 +9,7 @@ import 'package:firebase_dart_flutter/src/verifiers/recaptcha_webview.dart';
 import 'package:firebase_dart_flutter/src/verifiers/recaptcha_redirect.dart';
 import 'package:firebase_dart_flutter/src/verifiers/play_integrity.dart';
 import 'package:firebase_dart_flutter/src/verifiers/apns.dart';
+import 'package:firebase_dart_flutter/src/verifiers/recaptcha_native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -19,8 +20,7 @@ import 'package:_integration_testing/_integration_testing.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  final FlutterApplicationVerifier applicationVerifier =
-      FlutterApplicationVerifier();
+  final applicationVerifier = FlutterApplicationVerifier();
 
   setUpAll(() async {
     await FirebaseDartFlutter.setup(
@@ -127,13 +127,139 @@ void main() {
       expect(token, isNotNull);
     });
   });
+
+  group('RecaptchaEnterpriseNativeVerifier', () {
+    test('verify completes', () async {
+      if (Platform.current is! AndroidPlatform &&
+          Platform.current is! IOsPlatform) {
+        markTestSkipped(
+            'Recaptcha Enterprise native verifier is only supported on Android and iOS');
+        return;
+      }
+      var auth = await getAuth(recaptchaEnterpriseEnabled: true);
+      var siteKey =
+          await applicationVerifier.getRecaptchaEnterpriseSiteKey(auth);
+      var verifier = RecaptchaEnterpriseNativeVerifier(
+          siteKey: siteKey, action: 'sendVerificationCode');
+      var token = await verifier.verify();
+      expect(token, isNotNull);
+    });
+  });
+
+  group('FlutterApplicationVerifier', () {
+    group('with recaptcha enterprise enabled', () {
+      testWidgets(
+          'verify should return recaptcha enterprise token using native verifier',
+          (tester) async {
+        var auth = await getAuth(recaptchaEnterpriseEnabled: true);
+        var result = await tester.verify(auth,
+            nonce: 'nonce', action: 'sendVerificationCode');
+        expect(result.type, 'recaptcha-enterprise');
+        expect(
+            result.token,
+            startsWith('${switch (Platform.current) {
+              AndroidPlatform() => 'CLIENT_TYPE_ANDROID',
+              IOsPlatform() => 'CLIENT_TYPE_IOS',
+              _ => 'CLIENT_TYPE_WEB',
+            }}:'));
+      });
+      testWidgets('verify should fallback to recaptcha webview',
+          (tester) async {
+        var auth = await getAuth(recaptchaEnterpriseEnabled: true);
+        var result = await tester.verify(auth,
+            nonce: 'nonce',
+            action: 'sendVerificationCode',
+            useRecaptchaEnterpriseNative: false);
+        expect(result.type, 'recaptcha-enterprise');
+        expect(result.token, startsWith('CLIENT_TYPE_WEB:'));
+      });
+    });
+
+    group('with recaptcha enterprise disabled', () {
+      testWidgets('verify should return recaptcha token on macos',
+          (tester) async {
+        if (Platform.current is! MacOsPlatform) {
+          markTestSkipped('Recaptcha is default on macOS only');
+          return;
+        }
+        var auth = await getAuth(recaptchaEnterpriseEnabled: false);
+        var result = await tester.verify(auth,
+            nonce: 'nonce', action: 'sendVerificationCode');
+        expect(result.type, 'recaptcha');
+        expect(result.token, isNotEmpty);
+      });
+
+      testWidgets('verify should return play integrity token on android',
+          (tester) async {
+        if (Platform.current is! AndroidPlatform) {
+          markTestSkipped('Play Integrity is only supported on Android');
+          return;
+        }
+        var auth = await getAuth(recaptchaEnterpriseEnabled: false);
+        var result = await tester.verify(auth,
+            nonce: 'nonce', action: 'sendVerificationCode');
+        expect(result.type, 'playintegrity');
+        expect(result.token, isNotEmpty);
+      });
+    });
+  });
 }
 
-Future<FirebaseAuth> getAuth({bool withApns = false}) async {
+extension on WidgetTester {
+  Future<ApplicationVerificationResult> verify(FirebaseAuth auth,
+      {required String nonce,
+      required String action,
+      bool useRecaptchaEnterpriseNative = true,
+      bool useApns = true,
+      bool usePlayIntegrity = true}) async {
+    late BuildContext ctx;
+    await pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            ctx = context;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    if (!ctx.mounted) throw Exception('Context not mounted');
+
+    final verifier = FlutterApplicationVerifier(
+      getBuildContext: () => ctx,
+      useRecaptchaEnterpriseNative: useRecaptchaEnterpriseNative,
+      useApns: useApns,
+      usePlayIntegrity: usePlayIntegrity,
+    );
+
+    ApplicationVerificationResult? result;
+    verifier
+        .verify(auth, nonce: nonce, action: action)
+        .then((value) => result = value)
+        .ignore();
+    while (result == null) {
+      await pump();
+      await pump(const Duration(milliseconds: 50));
+    }
+
+    return result!;
+  }
+}
+
+Future<FirebaseAuth> getAuth(
+    {bool withApns = false, bool? recaptchaEnterpriseEnabled}) async {
   const bundleId = 'be.appsup.firebase-dart-flutter-example';
 
   var project = allConfigs.firstWhere((project) =>
-      !withApns || project.iosBundleIdsWithApnsConfigured.contains(bundleId));
+      (!withApns ||
+          project.iosBundleIdsWithApnsConfigured.contains(bundleId)) &&
+      (recaptchaEnterpriseEnabled == null ||
+          (project.phoneAuthRecaptchaEnforcement ==
+                      PhoneAuthRecaptchaEnforcement.enforce ||
+                  project.phoneAuthRecaptchaEnforcement ==
+                      PhoneAuthRecaptchaEnforcement.audit) ==
+              recaptchaEnterpriseEnabled));
 
   var app = Firebase.apps
       .firstWhereOrNull((v) => v.options.projectId == project.projectId);

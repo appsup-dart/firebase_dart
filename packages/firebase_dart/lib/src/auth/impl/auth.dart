@@ -15,6 +15,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../auth.dart';
 import '../multi_factor.dart';
+import '../rpc/identitytoolkit.dart';
 import '../rpc/rpc_handler.dart';
 import '../usermanager.dart';
 import 'user.dart';
@@ -26,6 +27,12 @@ mixin FirebaseAuthProtectedMethods on FirebaseAuthMixin {
   Future<String> getProducerProjectNumber();
 
   Future<String> getRecaptchaSiteKey();
+
+  /// Whether reCAPTCHA Enterprise applies for [action] (phone / SMS flows).
+  Future<bool> isRecaptchaEnterpriseEnabledForAction(String action);
+
+  /// Site key segment from the Enterprise config; throws if not enabled.
+  Future<String> getRecaptchaEnterpriseSiteKey({bool useNativeVerifier = true});
 }
 
 /// The entry point of the Firebase Authentication SDK.
@@ -35,6 +42,9 @@ class FirebaseAuthImpl extends FirebaseService
       RpcHandler(app.options.apiKey, httpClient: httpClient);
 
   late final UserManager userStorageManager = UserManager(this);
+
+  final Map<String, Future<GoogleCloudIdentitytoolkitV2RecaptchaConfig>>
+      _recaptchaEnterpriseConfigFutures = {};
 
   /// Completes when latest logged in user is loaded from storage
   late final Future<void> _onReady;
@@ -350,55 +360,66 @@ class FirebaseAuthImpl extends FirebaseService
 
     var smsFuture = impl.smsRetriever.retrieveSms();
 
+    String action = switch (multiFactorSession) {
+      MultiFactorSessionImpl(type: MultiFactorSessionType.enrollment) =>
+        'mfaSmsEnrollment',
+      MultiFactorSessionImpl(type: MultiFactorSessionType.signIn) =>
+        'mfaSmsSignIn',
+      _ => 'sendVerificationCode',
+    };
+
     String verificationId;
 
     Future<String> requestVerificationId(
         ApplicationVerificationResult assertion) async {
-      if (multiFactorSession != null) {
-        if ((multiFactorSession as MultiFactorSessionImpl).type ==
-            MultiFactorSessionType.enrollment) {
+      switch (action) {
+        case 'mfaSmsEnrollment':
           if (phoneNumber == null) {
             throw FirebaseAuthException.internalError();
           }
-
           return await rpcHandler.startMultiFactorEnrollment(
-            idToken: multiFactorSession.credential,
+            idToken: (multiFactorSession as MultiFactorSessionImpl).credential,
             phoneNumber: phoneNumber,
             appSignatureHash: appSignatureHash,
             assertion: assertion,
           );
-        } else {
+        case 'mfaSmsSignIn':
           return await rpcHandler.startMultiFactorSignIn(
-            mfaPendingCredential: multiFactorSession.credential,
+            mfaPendingCredential:
+                (multiFactorSession as MultiFactorSessionImpl).credential,
             mfaEnrollmentId: multiFactorInfo!.uid,
             appSignatureHash: appSignatureHash,
             assertion: assertion,
           );
-        }
-      } else {
-        if (phoneNumber == null) {
+        case 'sendVerificationCode':
+          if (phoneNumber == null) {
+            throw FirebaseAuthException.internalError();
+          }
+          return await rpcHandler.sendVerificationCode(
+            phoneNumber: phoneNumber,
+            appSignatureHash: appSignatureHash,
+            assertion: assertion,
+          );
+        default:
           throw FirebaseAuthException.internalError();
-        }
-        return await rpcHandler.sendVerificationCode(
-          phoneNumber: phoneNumber,
-          appSignatureHash: appSignatureHash,
-          assertion: assertion,
-        );
       }
     }
 
-    var assertion = await impl.applicationVerifier
-        .verify(this, phoneNumber ?? multiFactorInfo?.phoneNumber ?? '');
+    var assertion = await impl.applicationVerifier.verify(this,
+        nonce: phoneNumber ?? multiFactorInfo?.phoneNumber ?? '',
+        action: action);
 
     try {
       verificationId = await requestVerificationId(assertion);
     } catch (e) {
-      if (assertion.type == 'recaptcha') {
+      if (assertion.type == 'recaptcha' ||
+          assertion.type == 'recaptcha-enterprise') {
         rethrow;
       }
 
-      assertion = await impl.applicationVerifier.verify(
-          this, phoneNumber ?? multiFactorInfo?.phoneNumber ?? '',
+      assertion = await impl.applicationVerifier.verify(this,
+          nonce: phoneNumber ?? multiFactorInfo?.phoneNumber ?? '',
+          action: action,
           forceRecaptcha: true);
       verificationId = await requestVerificationId(assertion);
     }
@@ -614,6 +635,62 @@ class FirebaseAuthImpl extends FirebaseService
   @override
   Future<String> getRecaptchaSiteKey() {
     return rpcHandler.getRecaptchaSiteKey();
+  }
+
+  Future<GoogleCloudIdentitytoolkitV2RecaptchaConfig>
+      _cachedRecaptchaEnterpriseConfig({bool useNativeVerifier = true}) {
+    var clientType = useNativeVerifier
+        ? switch (Platform.current) {
+            WebPlatform() => 'CLIENT_TYPE_WEB',
+            AndroidPlatform() => 'CLIENT_TYPE_ANDROID',
+            IOsPlatform() || MacOsPlatform() => 'CLIENT_TYPE_IOS',
+            _ => 'CLIENT_TYPE_WEB',
+          }
+        : 'CLIENT_TYPE_WEB';
+    return _recaptchaEnterpriseConfigFutures[clientType] ??=
+        rpcHandler.getRecaptchaConfig(
+      clientType: clientType,
+      version: 'RECAPTCHA_ENTERPRISE',
+    );
+  }
+
+  @override
+  Future<bool> isRecaptchaEnterpriseEnabledForAction(String action) async {
+    if (!const {
+      'sendVerificationCode',
+      'mfaSmsEnrollment',
+      'mfaSmsSignIn',
+    }.contains(action)) {
+      return false;
+    }
+    final config = await _cachedRecaptchaEnterpriseConfig();
+    final key = config.recaptchaKey;
+    if (key == null || key.isEmpty) {
+      return false;
+    }
+    final states = config.recaptchaEnforcementState;
+    if (states == null) {
+      return false;
+    }
+    for (final s in states) {
+      if (s.provider == 'PHONE_PROVIDER') {
+        final es = s.enforcementState;
+        return es == 'ENFORCE' || es == 'AUDIT';
+      }
+    }
+    return false;
+  }
+
+  @override
+  Future<String> getRecaptchaEnterpriseSiteKey(
+      {bool useNativeVerifier = true}) async {
+    final config = await _cachedRecaptchaEnterpriseConfig(
+        useNativeVerifier: useNativeVerifier);
+    final key = config.recaptchaKey;
+    if (key == null || key.isEmpty) {
+      throw StateError('reCAPTCHA Enterprise key is missing');
+    }
+    return key.split('/').last;
   }
 
   @override

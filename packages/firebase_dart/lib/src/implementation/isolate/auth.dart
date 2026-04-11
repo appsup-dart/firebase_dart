@@ -512,6 +512,18 @@ class IsolateFirebaseAuth extends IsolateFirebaseService
   }
 
   @override
+  Future<bool> isRecaptchaEnterpriseEnabledForAction(String action) {
+    return invoke(#isRecaptchaEnterpriseEnabledForAction, [action]);
+  }
+
+  @override
+  Future<String> getRecaptchaEnterpriseSiteKey(
+      {bool useNativeVerifier = true}) {
+    return invoke(#getRecaptchaEnterpriseSiteKey, [],
+        {#useNativeVerifier: useNativeVerifier});
+  }
+
+  @override
   String? get tenantId => _tenantId;
 
   @override
@@ -665,6 +677,13 @@ class FirebaseAuthFunctionCall<T> extends BaseFunctionCall<T> {
         return (auth as FirebaseAuthImpl).rpcHandler.verifyIosClient;
       case #getRecaptchaSiteKey:
         return (auth as FirebaseAuthImpl).rpcHandler.getRecaptchaSiteKey;
+      case #isRecaptchaEnterpriseEnabledForAction:
+        return (String action) => (auth as FirebaseAuthImpl)
+            .isRecaptchaEnterpriseEnabledForAction(action);
+      case #getRecaptchaEnterpriseSiteKey:
+        return ({bool useNativeVerifier = true}) => (auth as FirebaseAuthImpl)
+            .getRecaptchaEnterpriseSiteKey(
+                useNativeVerifier: useNativeVerifier);
       case #getProducerProjectNumber:
         return (auth as FirebaseAuthImpl).rpcHandler.getProducerProjectNumber;
       case #setTenantId:

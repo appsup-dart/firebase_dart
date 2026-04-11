@@ -4,9 +4,14 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:firebase_management/firebase_management.dart';
 import 'package:firebase_management/src/api.dart' show FirebaseApiException;
+import 'package:googleapis/identitytoolkit/v2.dart' as identitytoolkit_v2;
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:googleapis_beta/firebase/v1beta1.dart';
+import 'package:http/http.dart' as http;
 import 'package:plist_parser/plist_parser.dart';
+
+import 'package:_integration_testing/_integration_testing.dart'
+    show PhoneAuthRecaptchaEnforcement;
 
 /// Output directory for generated options (fixed; relative to this package).
 String get _generatedDir {
@@ -54,7 +59,10 @@ Future<void> main(List<String> args) async {
   final firebaseManagement = FirebaseManagement(credential);
 
   final authClient = await clientViaApplicationDefaultCredentials(
-    scopes: [FirebaseManagementApi.firebaseReadonlyScope],
+    scopes: [
+      FirebaseManagementApi.firebaseReadonlyScope,
+      identitytoolkit_v2.IdentityToolkitApi.firebaseScope,
+    ],
   );
   try {
     final api = FirebaseManagementApi(authClient);
@@ -62,6 +70,7 @@ Future<void> main(List<String> args) async {
     if (selectedProjectId != null) {
       await _generateOneProject(
         api: api,
+        authClient: authClient,
         firebaseManagement: firebaseManagement,
         outDir: outDir,
         projectId: selectedProjectId,
@@ -78,6 +87,7 @@ Future<void> main(List<String> args) async {
         for (final projectId in projectIds) {
           await _generateOneProject(
             api: api,
+            authClient: authClient,
             firebaseManagement: firebaseManagement,
             outDir: outDir,
             projectId: projectId,
@@ -136,6 +146,7 @@ String? _readProjectIdHeader(File file) {
 
 Future<void> _generateOneProject({
   required FirebaseManagementApi api,
+  required http.Client authClient,
   required FirebaseManagement firebaseManagement,
   required String outDir,
   required String projectId,
@@ -182,6 +193,9 @@ Future<void> _generateOneProject({
           iosOptions.keys,
         );
 
+  final phoneRecaptcha = await _fetchPhoneAuthRecaptchaEnforcementForProject(
+      authClient, projectId);
+
   final outPath = '$outDir/${_sanitizeProjectId(projectId)}_options.g.dart';
   await _writeGeneratedOptionsFile(
     outPath: outPath,
@@ -190,12 +204,14 @@ Future<void> _generateOneProject({
     androidByPackage: androidOptions,
     iosByBundleId: iosOptions,
     iosBundleIdsWithApnsConfigured: apnsBundles,
+    phoneAuthRecaptchaEnforcement: phoneRecaptcha,
   );
 
   stdout.writeln(
     'Generated options for "$projectId" at $outPath '
     '(android: ${androidOptions.length}, ios: ${iosOptions.length}, '
-    'apnsBundleIds: ${apnsBundles.length})',
+    'apnsBundleIds: ${apnsBundles.length}, '
+    'phoneRecaptcha: ${phoneRecaptcha.name})',
   );
 }
 
@@ -471,6 +487,7 @@ Future<void> _writeGeneratedOptionsFile({
   required Map<String, Map<String, String>> androidByPackage,
   required Map<String, Map<String, String>> iosByBundleId,
   required List<String> iosBundleIdsWithApnsConfigured,
+  required PhoneAuthRecaptchaEnforcement phoneAuthRecaptchaEnforcement,
 }) async {
   final file = File(outPath);
   file.parent.createSync(recursive: true);
@@ -506,6 +523,10 @@ Future<void> _writeGeneratedOptionsFile({
     ..writeln('  webConfig: web,')
     ..writeln('  iosConfigs: ios,')
     ..writeln('  androidConfigs: android,')
+    ..writeln(
+      '  phoneAuthRecaptchaEnforcement: '
+      '${_phoneAuthRecaptchaEnforcementLiteral(phoneAuthRecaptchaEnforcement)},',
+    )
     ..writeln('  iosBundleIdsWithApnsConfigured: <String>[');
   for (final id in iosBundleIdsWithApnsConfigured) {
     buffer.writeln("    '${_escape(id)}',");
@@ -550,6 +571,62 @@ String _firebaseOptionsLiteral(Map<String, String> options) {
 
 String _escape(String value) =>
     value.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
+
+Future<PhoneAuthRecaptchaEnforcement>
+    _fetchPhoneAuthRecaptchaEnforcementForProject(
+  http.Client authClient,
+  String projectId,
+) async {
+  final toolkit = identitytoolkit_v2.IdentityToolkitApi(authClient);
+  try {
+    final config = await toolkit.projects.getConfig(
+      'projects/$projectId/config',
+    );
+    return _phoneEnforcementFromProjectConfig(config);
+  } on identitytoolkit_v2.DetailedApiRequestError catch (e) {
+    stderr.writeln(
+      'Warning: Identity Toolkit getConfig("projects/$projectId/config") '
+      'failed: ${e.status} ${e.message}',
+    );
+    return PhoneAuthRecaptchaEnforcement.unknown;
+  } catch (e, st) {
+    stderr.writeln(
+      'Warning: Identity Toolkit getConfig("projects/$projectId/config") '
+      'failed: $e\n$st',
+    );
+    return PhoneAuthRecaptchaEnforcement.unknown;
+  }
+}
+
+PhoneAuthRecaptchaEnforcement _phoneEnforcementFromProjectConfig(
+  identitytoolkit_v2.GoogleCloudIdentitytoolkitAdminV2Config config,
+) {
+  final state = config.recaptchaConfig?.phoneEnforcementState;
+  return _phoneAuthRecaptchaEnforcementFromAdminApi(state);
+}
+
+PhoneAuthRecaptchaEnforcement _phoneAuthRecaptchaEnforcementFromAdminApi(
+  String? api,
+) {
+  switch (api) {
+    case 'ENFORCE':
+      return PhoneAuthRecaptchaEnforcement.enforce;
+    case 'AUDIT':
+      return PhoneAuthRecaptchaEnforcement.audit;
+    case 'OFF':
+      return PhoneAuthRecaptchaEnforcement.off;
+    case 'RECAPTCHA_PROVIDER_ENFORCEMENT_STATE_UNSPECIFIED':
+    case null:
+      return PhoneAuthRecaptchaEnforcement.unspecified;
+    default:
+      return PhoneAuthRecaptchaEnforcement.unknown;
+  }
+}
+
+String _phoneAuthRecaptchaEnforcementLiteral(
+  PhoneAuthRecaptchaEnforcement value,
+) =>
+    'PhoneAuthRecaptchaEnforcement.${value.name}';
 
 Never _fail(String message, ArgParser parser) {
   stderr.writeln(message);

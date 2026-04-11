@@ -23,6 +23,7 @@ dependencies:
   crypto: ^3.0.3
   app_links: ^6.3.3
   webview_flutter: ^4.10.0
+  recaptcha_enterprise_flutter: ^18.8.2
 
 dev_dependencies:
   flutter_test:

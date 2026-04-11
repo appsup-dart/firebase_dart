@@ -174,22 +174,25 @@ class IsolateApplicationVerifier implements ApplicationVerifier {
 
   IsolateApplicationVerifier.from(ApplicationVerifier applicationVerifier) {
     var worker = IsolateWorker()
-      ..registerFunction(#verify, (String appName, String nonce,
-          {bool forceRecaptcha = false}) {
+      ..registerFunction(#verify, (String appName,
+          {bool forceRecaptcha = false,
+          required String action,
+          required String nonce}) {
         var app = Firebase.app(appName);
-        return applicationVerifier.verify(
-            FirebaseAuth.instanceFor(app: app), nonce,
-            forceRecaptcha: forceRecaptcha);
+        return applicationVerifier.verify(FirebaseAuth.instanceFor(app: app),
+            nonce: nonce, action: action, forceRecaptcha: forceRecaptcha);
       });
 
     _commander = worker.commander;
   }
 
   @override
-  Future<ApplicationVerificationResult> verify(FirebaseAuth auth, String nonce,
-      {bool forceRecaptcha = false}) {
-    return _commander.execute(RegisteredFunctionCall(
-        #verify, [auth.app.name, nonce], {#forceRecaptcha: forceRecaptcha}));
+  Future<ApplicationVerificationResult> verify(FirebaseAuth auth,
+      {bool forceRecaptcha = false,
+      required String action,
+      required String nonce}) {
+    return _commander.execute(RegisteredFunctionCall(#verify, [auth.app.name],
+        {#forceRecaptcha: forceRecaptcha, #action: action, #nonce: nonce}));
   }
 }
 

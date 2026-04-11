@@ -64,6 +64,14 @@ PODS:
     - Flutter
     - FlutterMacOS
   - PromisesObjC (2.4.0)
+  - recaptcha_enterprise_flutter (18.8.2):
+    - Flutter
+    - RecaptchaEnterprise (= 18.8.2)
+  - RecaptchaEnterprise (18.8.2):
+    - RecaptchaEnterpriseSDK (= 18.8.2)
+    - RecaptchaInterop (~> 101.0.0)
+  - RecaptchaEnterpriseSDK (18.8.2)
+  - RecaptchaInterop (101.0.0)
   - sign_in_with_apple (0.0.1):
     - Flutter
   - url_launcher_ios (0.0.1):
@@ -82,6 +90,7 @@ DEPENDENCIES:
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+  - recaptcha_enterprise_flutter (from `.symlinks/plugins/recaptcha_enterprise_flutter/ios`)
   - sign_in_with_apple (from `.symlinks/plugins/sign_in_with_apple/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
   - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
@@ -99,6 +108,9 @@ SPEC REPOS:
     - GTMAppAuth
     - GTMSessionFetcher
     - PromisesObjC
+    - RecaptchaEnterprise
+    - RecaptchaEnterpriseSDK
+    - RecaptchaInterop
 
 EXTERNAL SOURCES:
   app_links:
@@ -119,6 +131,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
+  recaptcha_enterprise_flutter:
+    :path: ".symlinks/plugins/recaptcha_enterprise_flutter/ios"
   sign_in_with_apple:
     :path: ".symlinks/plugins/sign_in_with_apple/ios"
   url_launcher_ios:
@@ -147,10 +161,14 @@ SPEC CHECKSUMS:
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  recaptcha_enterprise_flutter: e85bad8d5f0255a00a1e2b32607aae1277e70191
+  RecaptchaEnterprise: 2d06f415c94253c3e92214a4d1472b5875442cdc
+  RecaptchaEnterpriseSDK: 2fd06a12a27f943c24f643f8814404a27cc74288
+  RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   sign_in_with_apple: c5dcc141574c8c54d5ac99dd2163c0c72ad22418
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
 
-PODFILE CHECKSUM: 4f1c12611da7338d21589c0b2ecd6bd20b109694
+PODFILE CHECKSUM: 15eb5cbd74c66fb33a149a9f0108ad86a4635f89
 
 COCOAPODS: 1.16.2

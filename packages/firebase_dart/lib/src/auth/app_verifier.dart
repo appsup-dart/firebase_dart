@@ -5,8 +5,10 @@ import 'package:meta/meta.dart';
 import 'auth.dart';
 
 abstract class ApplicationVerifier {
-  Future<ApplicationVerificationResult> verify(FirebaseAuth auth, String nonce,
-      {bool forceRecaptcha = false});
+  Future<ApplicationVerificationResult> verify(FirebaseAuth auth,
+      {bool forceRecaptcha = false,
+      required String action,
+      required String nonce});
 }
 
 class ApplicationVerificationResult {
@@ -18,6 +20,8 @@ class ApplicationVerificationResult {
   ApplicationVerificationResult.apns(String token) : this('apns', token);
   ApplicationVerificationResult.recaptcha(String token)
       : this('recaptcha', token);
+  ApplicationVerificationResult.recaptchaEnterprise(String token)
+      : this('recaptcha-enterprise', token);
   ApplicationVerificationResult.playItegrity(String token)
       : this('playintegrity', token);
 
@@ -31,8 +35,17 @@ class RecaptchaApplicationVerifier extends BaseApplicationVerifier {
   const RecaptchaApplicationVerifier();
 
   @override
-  Future<ApplicationVerificationResult> verify(FirebaseAuth auth, String nonce,
-      {bool forceRecaptcha = false}) async {
+  Future<ApplicationVerificationResult> verify(FirebaseAuth auth,
+      {bool forceRecaptcha = false,
+      required String action,
+      required String nonce}) async {
+    if (await isRecaptchaEnterpriseEnabledForAction(auth, action)) {
+      var siteKey = await getRecaptchaEnterpriseSiteKey(auth);
+      var verifier = RecaptchaVerifier(siteKey: siteKey, action: action);
+      return ApplicationVerificationResult.recaptchaEnterprise(
+          'CLIENT_TYPE_WEB:${await verifier.verify()}');
+    }
+
     var siteKey = await getRecaptchaSiteKey(auth);
     var verifier = RecaptchaVerifier(siteKey: siteKey);
 
@@ -42,8 +55,10 @@ class RecaptchaApplicationVerifier extends BaseApplicationVerifier {
 
 class DummyApplicationVerifier implements ApplicationVerifier {
   @override
-  Future<ApplicationVerificationResult> verify(FirebaseAuth auth, String nonce,
-      {bool forceRecaptcha = false}) async {
+  Future<ApplicationVerificationResult> verify(FirebaseAuth auth,
+      {bool forceRecaptcha = false,
+      required String action,
+      required String nonce}) async {
     return ApplicationVerificationResult.recaptcha(
         'this_will_only_work_on_testing');
   }
@@ -76,6 +91,29 @@ abstract class BaseApplicationVerifier implements ApplicationVerifier {
   Future<String> getProducerProjectNumber(FirebaseAuth auth) async {
     if (auth is FirebaseAuthProtectedMethods) {
       return auth.getProducerProjectNumber();
+    }
+    throw UnimplementedError();
+  }
+
+  @protected
+  @visibleForTesting
+  Future<bool> isRecaptchaEnterpriseEnabledForAction(
+    FirebaseAuth auth,
+    String action,
+  ) async {
+    if (auth is FirebaseAuthProtectedMethods) {
+      return auth.isRecaptchaEnterpriseEnabledForAction(action);
+    }
+    throw UnimplementedError();
+  }
+
+  @protected
+  @visibleForTesting
+  Future<String> getRecaptchaEnterpriseSiteKey(FirebaseAuth auth,
+      {bool useNativeVerifier = true}) async {
+    if (auth is FirebaseAuthProtectedMethods) {
+      return auth.getRecaptchaEnterpriseSiteKey(
+          useNativeVerifier: useNativeVerifier);
     }
     throw UnimplementedError();
   }

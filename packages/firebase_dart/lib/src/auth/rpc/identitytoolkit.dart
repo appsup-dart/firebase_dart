@@ -20,7 +20,8 @@ export 'package:googleapis/identitytoolkit/v2.dart'
         GoogleCloudIdentitytoolkitV2FinalizeMfaEnrollmentRequest,
         GoogleCloudIdentitytoolkitV2WithdrawMfaRequest,
         GoogleCloudIdentitytoolkitV2StartMfaSignInRequest,
-        GoogleCloudIdentitytoolkitV2FinalizeMfaSignInRequest;
+        GoogleCloudIdentitytoolkitV2FinalizeMfaSignInRequest,
+        GoogleCloudIdentitytoolkitV2RecaptchaConfig;
 
 class GoogleCloudIdentitytoolkitV1SendVerificationCodeRequest = id
     .GoogleCloudIdentitytoolkitV1SendVerificationCodeRequest
