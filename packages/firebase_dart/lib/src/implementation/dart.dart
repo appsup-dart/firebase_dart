@@ -2,6 +2,8 @@ import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/app_check/app_check.dart';
+import 'package:firebase_dart/src/app_check/impl.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
@@ -69,5 +71,11 @@ class PureDartFirebaseImplementation extends BaseFirebaseImplementation {
     Repo.updateDatabaseConfiguration(
       keepQueriesSyncedDuration: keepQueriesSyncedDuration,
     );
+  }
+
+  @override
+  FirebaseAppCheck createAppCheck(covariant FirebaseApp app) {
+    return FirebaseService.findService<FirebaseAppCheckImpl>(app) ??
+        FirebaseAppCheckImpl(app);
   }
 }

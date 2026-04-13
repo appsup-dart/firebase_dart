@@ -4,7 +4,10 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:firebase_management/firebase_management.dart';
 import 'package:firebase_management/src/api.dart' show FirebaseApiException;
+import 'package:googleapis/firebaseappcheck/v1.dart' as firebaseappcheck_v1;
 import 'package:googleapis/identitytoolkit/v2.dart' as identitytoolkit_v2;
+import 'package:googleapis/recaptchaenterprise/v1.dart'
+    as recaptchaenterprise_v1;
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:googleapis_beta/firebase/v1beta1.dart';
 import 'package:http/http.dart' as http;
@@ -62,6 +65,10 @@ Future<void> main(List<String> args) async {
     scopes: [
       FirebaseManagementApi.firebaseReadonlyScope,
       identitytoolkit_v2.IdentityToolkitApi.firebaseScope,
+      // App Check Admin lists cloud-platform (and firebase); include both so ADC
+      // tokens work under stricter org policies.
+      firebaseappcheck_v1.FirebaseappcheckApi.cloudPlatformScope,
+      firebaseappcheck_v1.FirebaseappcheckApi.firebaseScope,
     ],
   );
   try {
@@ -196,6 +203,33 @@ Future<void> _generateOneProject({
   final phoneRecaptcha = await _fetchPhoneAuthRecaptchaEnforcementForProject(
       authClient, projectId);
 
+  final webFirebaseAppId = webOptions['appId'];
+  final appCheckV3Configured = projectNumber == null ||
+          projectNumber.isEmpty ||
+          webFirebaseAppId == null ||
+          webFirebaseAppId.isEmpty
+      ? false
+      : await _hasWebAppCheckRecaptchaV3Config(
+          authClient,
+          projectNumber,
+          webFirebaseAppId,
+          projectId,
+        );
+  final appCheckRecaptchaV3SiteKey = appCheckV3Configured
+      ? await _lookupRecaptchaV3SiteKeyByDisplayName(authClient, projectId)
+      : null;
+  final appCheckRecaptchaEnterpriseSiteKey = projectNumber == null ||
+          projectNumber.isEmpty ||
+          webFirebaseAppId == null ||
+          webFirebaseAppId.isEmpty
+      ? null
+      : await _fetchWebAppCheckRecaptchaEnterpriseSiteKey(
+          authClient,
+          projectNumber,
+          webFirebaseAppId,
+          projectId,
+        );
+
   final outPath = '$outDir/${_sanitizeProjectId(projectId)}_options.g.dart';
   await _writeGeneratedOptionsFile(
     outPath: outPath,
@@ -205,13 +239,20 @@ Future<void> _generateOneProject({
     iosByBundleId: iosOptions,
     iosBundleIdsWithApnsConfigured: apnsBundles,
     phoneAuthRecaptchaEnforcement: phoneRecaptcha,
+    webAppCheckRecaptchaV3SiteKey: appCheckRecaptchaV3SiteKey,
+    webAppCheckRecaptchaEnterpriseSiteKey:
+        appCheckRecaptchaEnterpriseSiteKey,
   );
 
   stdout.writeln(
     'Generated options for "$projectId" at $outPath '
     '(android: ${androidOptions.length}, ios: ${iosOptions.length}, '
     'apnsBundleIds: ${apnsBundles.length}, '
-    'phoneRecaptcha: ${phoneRecaptcha.name})',
+    'phoneRecaptcha: ${phoneRecaptcha.name}, '
+    'appCheckV3: ${appCheckV3Configured ? "yes" : "no"}, '
+    'appCheckV3SiteKey: ${appCheckRecaptchaV3SiteKey != null ? "yes" : "no"}, '
+    'appCheckEnterpriseSiteKey: '
+    '${appCheckRecaptchaEnterpriseSiteKey != null ? "yes" : "no"})',
   );
 }
 
@@ -488,6 +529,8 @@ Future<void> _writeGeneratedOptionsFile({
   required Map<String, Map<String, String>> iosByBundleId,
   required List<String> iosBundleIdsWithApnsConfigured,
   required PhoneAuthRecaptchaEnforcement phoneAuthRecaptchaEnforcement,
+  required String? webAppCheckRecaptchaV3SiteKey,
+  required String? webAppCheckRecaptchaEnterpriseSiteKey,
 }) async {
   final file = File(outPath);
   file.parent.createSync(recursive: true);
@@ -526,14 +569,25 @@ Future<void> _writeGeneratedOptionsFile({
     ..writeln(
       '  phoneAuthRecaptchaEnforcement: '
       '${_phoneAuthRecaptchaEnforcementLiteral(phoneAuthRecaptchaEnforcement)},',
-    )
-    ..writeln('  iosBundleIdsWithApnsConfigured: <String>[');
+    );
+  if (webAppCheckRecaptchaV3SiteKey != null &&
+      webAppCheckRecaptchaV3SiteKey.isNotEmpty) {
+    buffer.writeln(
+      "  webAppCheckRecaptchaV3SiteKey: '${_escape(webAppCheckRecaptchaV3SiteKey)}',",
+    );
+  }
+  if (webAppCheckRecaptchaEnterpriseSiteKey != null &&
+      webAppCheckRecaptchaEnterpriseSiteKey.isNotEmpty) {
+    buffer.writeln(
+      "  webAppCheckRecaptchaEnterpriseSiteKey: '${_escape(webAppCheckRecaptchaEnterpriseSiteKey)}',",
+    );
+  }
+  buffer.writeln('  iosBundleIdsWithApnsConfigured: <String>[');
   for (final id in iosBundleIdsWithApnsConfigured) {
     buffer.writeln("    '${_escape(id)}',");
   }
-  buffer
-    ..writeln('  ],')
-    ..writeln(');');
+  buffer.writeln('  ],');
+  buffer.writeln(');');
 
   await file.writeAsString(buffer.toString());
 }
@@ -571,6 +625,131 @@ String _firebaseOptionsLiteral(Map<String, String> options) {
 
 String _escape(String value) =>
     value.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
+
+/// Whether App Check reCAPTCHA v3 config exists for the web app.
+///
+/// [firebaseWebAppId] must be the app id from [WebAppConfig.appId] (same as
+/// `FirebaseOptions.appId`, e.g. `1:123:web:abc`), not an opaque management id.
+///
+/// reCAPTCHA **v3** App Check stores only a secret server-side (`siteSecret`);
+/// the Admin API never returns a public site key.
+Future<bool> _hasWebAppCheckRecaptchaV3Config(
+  http.Client authClient,
+  String projectNumber,
+  String firebaseWebAppId,
+  String projectId,
+) async {
+  final api = firebaseappcheck_v1.FirebaseappcheckApi(authClient);
+  final v3Name =
+      'projects/$projectNumber/apps/$firebaseWebAppId/recaptchaV3Config';
+  try {
+    final v3 = await api.projects.apps.recaptchaV3Config.get(v3Name);
+    if (v3.siteSecretSet == true) {
+      return true;
+    }
+    stderr.writeln(
+      'Note: App Check reCAPTCHA v3 config exists for "$projectId" web app '
+      '"$firebaseWebAppId", but site_secret is not set.',
+    );
+    return false;
+  } on firebaseappcheck_v1.DetailedApiRequestError catch (e) {
+    if (e.status == 404) {
+      stderr.writeln(
+        'Note: no App Check reCAPTCHA v3 config for web app '
+        '"$firebaseWebAppId" in "$projectId".',
+      );
+      return false;
+    }
+    stderr.writeln(
+      'Warning: App Check recaptchaV3Config.get("$v3Name") '
+      'for project "$projectId" failed: ${e.status} ${e.message}',
+    );
+    return false;
+  } catch (e, st) {
+    stderr.writeln(
+      'Warning: App Check recaptchaV3Config for project '
+      '"$projectId" failed: $e\n$st',
+    );
+    return false;
+  }
+}
+
+Future<String?> _fetchWebAppCheckRecaptchaEnterpriseSiteKey(
+  http.Client authClient,
+  String projectNumber,
+  String firebaseWebAppId,
+  String projectId,
+) async {
+  final api = firebaseappcheck_v1.FirebaseappcheckApi(authClient);
+  final name =
+      'projects/$projectNumber/apps/$firebaseWebAppId/recaptchaEnterpriseConfig';
+  try {
+    final cfg = await api.projects.apps.recaptchaEnterpriseConfig.get(name);
+    final key = cfg.siteKey?.trim();
+    if (key == null || key.isEmpty) return null;
+    return key;
+  } on firebaseappcheck_v1.DetailedApiRequestError catch (e) {
+    if (e.status == 404) return null;
+    stderr.writeln(
+      'Warning: App Check recaptchaEnterpriseConfig.get("$name") for '
+      'project "$projectId" failed: ${e.status} ${e.message}',
+    );
+    return null;
+  } catch (e, st) {
+    stderr.writeln(
+      'Warning: App Check recaptchaEnterpriseConfig for project '
+      '"$projectId" failed: $e\n$st',
+    );
+    return null;
+  }
+}
+
+/// Looks up reCAPTCHA keys and returns the site key for the web key named
+/// exactly `Firebase AppCheck`.
+///
+/// We use this because App Check reCAPTCHA v3 config does not expose a public
+/// site key; only `siteSecretSet` is returned by the App Check Admin API.
+Future<String?> _lookupRecaptchaV3SiteKeyByDisplayName(
+  http.Client authClient,
+  String projectId,
+) async {
+  final api = recaptchaenterprise_v1.RecaptchaEnterpriseApi(authClient);
+  const targetDisplayName = 'Firebase AppCheck';
+  String? pageToken;
+  try {
+    do {
+      final response = await api.projects.keys.list(
+        'projects/$projectId',
+        pageSize: 1000,
+        pageToken: pageToken,
+      );
+      for (final key in response.keys ?? const []) {
+        if (key.displayName != targetDisplayName) continue;
+        if (key.webSettings == null) continue;
+        final name = key.name;
+        if (name == null || name.isEmpty) continue;
+        final slash = name.lastIndexOf('/');
+        if (slash < 0 || slash == name.length - 1) continue;
+        return name.substring(slash + 1).trim();
+      }
+      pageToken = response.nextPageToken;
+    } while (pageToken != null && pageToken.isNotEmpty);
+  } on recaptchaenterprise_v1.DetailedApiRequestError catch (e) {
+    stderr.writeln(
+      'Warning: recaptchaenterprise keys.list("projects/$projectId") failed: '
+      '${e.status} ${e.message}',
+    );
+  } catch (e, st) {
+    stderr.writeln(
+      'Warning: recaptchaenterprise keys lookup for "$projectId" failed: '
+      '$e\n$st',
+    );
+  }
+  stderr.writeln(
+    'Note: no reCAPTCHA key named "$targetDisplayName" found in "$projectId".',
+  );
+  return null;
+}
 
 Future<PhoneAuthRecaptchaEnforcement>
     _fetchPhoneAuthRecaptchaEnforcementForProject(

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/src/app_check/app_check.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/database.dart';
 import 'package:firebase_dart/src/core.dart';
@@ -11,6 +12,7 @@ import 'package:firebase_dart/src/storage.dart';
 import 'package:http/http.dart' as http;
 
 import '../database/impl/repo.dart';
+import 'isolate/app_check.dart';
 import 'isolate/auth.dart';
 import 'isolate/database.dart';
 import 'isolate/storage.dart';
@@ -146,6 +148,12 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
     return FirebaseService.findService<IsolateFirebaseStorage>(
             app, (s) => s.bucket == storageBucket) ??
         IsolateFirebaseStorage(app: app, storageBucket: storageBucket);
+  }
+
+  @override
+  FirebaseAppCheck createAppCheck(IsolateFirebaseApp app) {
+    return FirebaseService.findService<IsolateFirebaseAppCheck>(app) ??
+        IsolateFirebaseAppCheck(app);
   }
 }
 
