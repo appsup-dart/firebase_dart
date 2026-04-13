@@ -2,6 +2,9 @@ name: _integration_testing
 description: Integration and smoke testing utilities for firebase_dart packages.
 version: 0.1.0
 homepage: https://github.com/appsup-dart/firebase_dart
+publish_to: none
+
+resolution: workspace
 
 environment:
   sdk: '>=3.5.0 <4.0.0'

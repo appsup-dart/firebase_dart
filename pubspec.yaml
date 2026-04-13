@@ -14,6 +14,7 @@ workspace:
   - packages/firebase_dart_flutter_auth_facebook
   - packages/firebase_dart_flutter_auth_apple
   - packages/firebase_dart_plus
+  - packages/_integration_testing
 
 melos:
   ide:
@@ -29,9 +30,9 @@ melos:
             # If the tests fail, exit with the code
             # If the tests pass, exit with 0
             # If there are no serial tests, exit with 0
-            dart test -j 1 -t serial || exit_code=$?; if [[ $exit_code -eq 79 ]]; then exit 0; fi
+            dart test -j 1 -t serial --fail-fast || exit_code=$?; if [[ $exit_code -eq 79 ]]; then exit 0; fi
             # Run non-serial tests in parallel
-            dart test -x serial
+            dart test -x serial --fail-fast || exit_code=$?; if [[ $exit_code -eq 79 ]]; then exit 0; fi
           packageFilters:
             flutter: false
         preCommit:
