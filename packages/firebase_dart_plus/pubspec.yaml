@@ -1,6 +1,6 @@
 name: firebase_dart_plus
 description: Some additional features for the `firebase_dart` package.
-version: 0.1.0+31
+version: 0.1.0-dev.0+32
 homepage: https://github.com/appsup-dart/firebase_dart
 
 environment:
@@ -9,7 +9,7 @@ environment:
 resolution: workspace
 
 dependencies:
-  firebase_dart: ^1.6.2
+  firebase_dart: ^2.0.0-dev.0
   sortedmap: ^0.5.3
   rxdart: ">=0.27.0 <0.29.0"
 

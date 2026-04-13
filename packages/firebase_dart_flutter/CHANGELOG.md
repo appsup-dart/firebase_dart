@@ -1,3 +1,8 @@
+## 1.4.0-dev.0
+
+ - **REFACTOR**: restructure ApplicationVerifier implementations. ([e9a5aad6](https://github.com/appsup-dart/firebase_dart/commit/e9a5aad6b48b2889dc2ba52f23f63a5e31de5526))
+ - **FEAT**(auth): reCAPTCHA SMS defense for SMS-based authentication. ([961ea305](https://github.com/appsup-dart/firebase_dart/commit/961ea3052cd8bf1fda326fe5ec6147d55e8a81bb))
+
 ## 1.3.10
 
  - Update a dependency to the latest release.

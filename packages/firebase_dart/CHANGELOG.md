@@ -1,3 +1,14 @@
+## 2.0.0-dev.0
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: restructure ApplicationVerifier implementations. ([e9a5aad6](https://github.com/appsup-dart/firebase_dart/commit/e9a5aad6b48b2889dc2ba52f23f63a5e31de5526))
+ - **REFACTOR**: use RequestWithVerification common mixin for identity toolkit requests. ([aa9009ab](https://github.com/appsup-dart/firebase_dart/commit/aa9009ab4469f79ab364daed45c9f912d83c622c))
+ - **REFACTOR**: use recaptcha.enterprise js sdk. ([9155ff0f](https://github.com/appsup-dart/firebase_dart/commit/9155ff0f08039766b29fcbde05f46d2cc0beebbf))
+ - **REFACTOR**: replace firebaseapis with googleapis. ([4ff5581a](https://github.com/appsup-dart/firebase_dart/commit/4ff5581ad25d5c2e5ad11afa3eefa9e5530e9f52))
+ - **FEAT**(auth): reCAPTCHA SMS defense for SMS-based authentication. ([961ea305](https://github.com/appsup-dart/firebase_dart/commit/961ea3052cd8bf1fda326fe5ec6147d55e8a81bb))
+ - **BREAKING** **REFACTOR**(auth): remove `verifier` argument from `signInWithPhoneNumber` and `verifyPhoneNumber`. ([f90f4c14](https://github.com/appsup-dart/firebase_dart/commit/f90f4c1419372a982bdd2263f6111f0c1c3bf8d8))
+
 ## 1.6.2
 
  - **REFACTOR**: upgrade jose dependency. ([595dd24c](https://github.com/appsup-dart/firebase_dart/commit/595dd24c98281de05a736d8441cf3bbdff19c6cf))

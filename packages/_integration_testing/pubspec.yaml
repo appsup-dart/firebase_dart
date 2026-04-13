@@ -11,7 +11,7 @@ environment:
 
 dependencies:
   args: ^2.5.0
-  firebase_dart: ^1.6.2
+  firebase_dart: ^2.0.0-dev.0
   firebase_management: ^0.0.5
   googleapis: '>=15.0.0 <17.0.0'
   googleapis_auth: ^2.0.0

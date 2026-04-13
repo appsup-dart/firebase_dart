@@ -3,6 +3,50 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-04-13
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`firebase_dart` - `v2.0.0-dev.0`](#firebase_dart---v200-dev0)
+
+Packages with other changes:
+
+ - [`firebase_dart_flutter` - `v1.4.0-dev.0`](#firebase_dart_flutter---v140-dev0)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0-dev.0+12`](#firebase_dart_flutter_auth_google---v010-dev012)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.0+12`](#firebase_dart_flutter_auth_facebook---v001-dev012)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1-dev.0+12`](#firebase_dart_flutter_auth_apple---v001-dev012)
+ - [`firebase_dart_plus` - `v0.1.0-dev.0+32`](#firebase_dart_plus---v010-dev032)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter_auth_google` - `v0.1.0-dev.0+12`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.0+12`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1-dev.0+12`
+ - `firebase_dart_plus` - `v0.1.0-dev.0+32`
+
+---
+
+#### `firebase_dart` - `v2.0.0-dev.0`
+
+ - **REFACTOR**: restructure ApplicationVerifier implementations. ([e9a5aad6](https://github.com/appsup-dart/firebase_dart/commit/e9a5aad6b48b2889dc2ba52f23f63a5e31de5526))
+ - **REFACTOR**: use RequestWithVerification common mixin for identity toolkit requests. ([aa9009ab](https://github.com/appsup-dart/firebase_dart/commit/aa9009ab4469f79ab364daed45c9f912d83c622c))
+ - **REFACTOR**: use recaptcha.enterprise js sdk. ([9155ff0f](https://github.com/appsup-dart/firebase_dart/commit/9155ff0f08039766b29fcbde05f46d2cc0beebbf))
+ - **REFACTOR**: replace firebaseapis with googleapis. ([4ff5581a](https://github.com/appsup-dart/firebase_dart/commit/4ff5581ad25d5c2e5ad11afa3eefa9e5530e9f52))
+ - **FEAT**(auth): reCAPTCHA SMS defense for SMS-based authentication. ([961ea305](https://github.com/appsup-dart/firebase_dart/commit/961ea3052cd8bf1fda326fe5ec6147d55e8a81bb))
+ - **BREAKING** **REFACTOR**(auth): remove `verifier` argument from `signInWithPhoneNumber` and `verifyPhoneNumber`. ([f90f4c14](https://github.com/appsup-dart/firebase_dart/commit/f90f4c1419372a982bdd2263f6111f0c1c3bf8d8))
+
+#### `firebase_dart_flutter` - `v1.4.0-dev.0`
+
+ - **REFACTOR**: restructure ApplicationVerifier implementations. ([e9a5aad6](https://github.com/appsup-dart/firebase_dart/commit/e9a5aad6b48b2889dc2ba52f23f63a5e31de5526))
+ - **FEAT**(auth): reCAPTCHA SMS defense for SMS-based authentication. ([961ea305](https://github.com/appsup-dart/firebase_dart/commit/961ea3052cd8bf1fda326fe5ec6147d55e8a81bb))
+
+
 ## 2026-03-27
 
 ### Changes
