@@ -35,6 +35,8 @@ melos:
             dart test -x serial --fail-fast || exit_code=$?; if [[ $exit_code -eq 79 ]]; then exit 0; fi
           packageFilters:
             flutter: false
+            ignore:
+              - _integration_testing
         preCommit:
           exec: "$PWD/remove-prereleases-from-changelog.sh"
 
