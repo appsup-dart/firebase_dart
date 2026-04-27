@@ -62,6 +62,8 @@ class Repo {
 
   static DatabaseConfiguration databaseConfiguration = DatabaseConfiguration();
 
+  PersistentConnection get connection => _connection;
+
   factory Repo(firebase.BaseFirebaseDatabase db) {
     return _repos.putIfAbsent(db, () {
       var url = Uri.parse(db.databaseURL);
@@ -114,6 +116,7 @@ class Repo {
             _connection.serverTime.difference(DateTime.now()).inMilliseconds);
       }
       if (!v) {
+        _syncTree.pruneObservers(DateTime.now());
         _runOnDisconnectEvents();
       }
     });

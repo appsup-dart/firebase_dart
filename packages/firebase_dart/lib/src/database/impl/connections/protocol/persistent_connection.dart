@@ -30,6 +30,8 @@ class PersistentConnectionImpl extends PersistentConnection
   final StreamController<Map<String, dynamic>?> _onAuth =
       StreamController.broadcast();
 
+  List<Request> get activeListeners => _listens;
+
   Connection? _connection;
 
   Uri _url;
