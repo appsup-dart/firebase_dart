@@ -21,7 +21,7 @@ class AndroidPlayIntegrityProvider extends AndroidAppCheckProvider {
   const AndroidPlayIntegrityProvider();
 
   @override
-  Future<AppCheckToken> getToken(FirebaseApp app) {
+  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
     throw UnimplementedError(
         'AndroidPlayIntegrityProvider is not implemented yet');
   }
@@ -36,7 +36,7 @@ class AndroidDebugAppCheckProvider extends AndroidAppCheckProvider {
   final String? debugToken;
 
   @override
-  Future<AppCheckToken> getToken(FirebaseApp app) {
+  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
     throw UnimplementedError(
         'AndroidDebugAppCheckProvider is not implemented yet');
   }
@@ -60,7 +60,7 @@ class AppleDeviceCheckProvider extends AppleAppCheckProvider {
   const AppleDeviceCheckProvider();
 
   @override
-  Future<AppCheckToken> getToken(FirebaseApp app) {
+  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
     throw UnimplementedError('AppleDeviceCheckProvider is not implemented yet');
   }
 }
@@ -69,7 +69,7 @@ class AppleAppAttestProvider extends AppleAppCheckProvider {
   const AppleAppAttestProvider();
 
   @override
-  Future<AppCheckToken> getToken(FirebaseApp app) {
+  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
     throw UnimplementedError('AppleAppAttestProvider is not implemented yet');
   }
 }
@@ -79,7 +79,7 @@ class AppleAppAttestWithDeviceCheckFallbackProvider
   const AppleAppAttestWithDeviceCheckFallbackProvider();
 
   @override
-  Future<AppCheckToken> getToken(FirebaseApp app) {
+  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
     throw UnimplementedError(
         'AppleAppAttestWithDeviceCheckFallbackProvider is not implemented yet');
   }
@@ -91,7 +91,7 @@ class AppleDebugAppCheckProvider extends AppleAppCheckProvider {
   final String? debugToken;
 
   @override
-  Future<AppCheckToken> getToken(FirebaseApp app) {
+  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
     throw UnimplementedError(
         'AppleDebugAppCheckProvider is not implemented yet');
   }
@@ -118,9 +118,9 @@ class FlutterAppCheckProvider implements AppCheckProvider {
   final RecaptchaAppCheckProvider? recaptcha;
 
   @override
-  Future<AppCheckToken> getToken(FirebaseApp app) async {
+  Future<AppCheckAttestation> getAttestation(FirebaseApp app) async {
     if (kIsWeb) {
-      return _requireRecaptcha().getToken(app);
+      return _requireRecaptcha().getAttestation(app);
     }
 
     final platform = Platform.current;
@@ -131,7 +131,7 @@ class FlutterAppCheckProvider implements AppCheckProvider {
       return _getWithFallback(apple, app, 'Apple');
     }
 
-    return _requireRecaptcha().getToken(app);
+    return _requireRecaptcha().getAttestation(app);
   }
 
   RecaptchaAppCheckProvider _requireRecaptcha() {
@@ -144,13 +144,13 @@ class FlutterAppCheckProvider implements AppCheckProvider {
     return provider;
   }
 
-  Future<AppCheckToken> _getWithFallback(
+  Future<AppCheckAttestation> _getWithFallback(
     AppCheckProvider primary,
     FirebaseApp app,
     String platformLabel,
   ) async {
     try {
-      return await primary.getToken(app);
+      return await primary.getAttestation(app);
     } catch (e, st) {
       _logger.warning(
         'App Check $platformLabel attestation failed, trying reCAPTCHA.',
@@ -159,7 +159,7 @@ class FlutterAppCheckProvider implements AppCheckProvider {
       );
       final fallback = recaptcha;
       if (fallback != null) {
-        return fallback.getToken(app);
+        return fallback.getAttestation(app);
       }
       Error.throwWithStackTrace(e, st);
     }

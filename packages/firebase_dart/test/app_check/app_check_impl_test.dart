@@ -12,13 +12,13 @@ class _CountingProvider implements AppCheckProvider {
   _CountingProvider({this.ttl = const Duration(hours: 1)});
 
   final Duration ttl;
-  int fetchCount = 0;
+  int attestCount = 0;
 
   @override
-  Future<AppCheckToken> getToken(FirebaseApp app) async {
-    fetchCount++;
-    return AppCheckToken(
-      'token-$fetchCount',
+  Future<AppCheckAttestation> getAttestation(FirebaseApp app) async {
+    attestCount++;
+    return AppCheckAttestation.minted(
+      'token-$attestCount',
       clock.now().add(ttl),
     );
   }
@@ -61,13 +61,13 @@ void main() {
       final provider = _CountingProvider();
 
       await appCheck.activate(provider: provider);
-      expect(provider.fetchCount, 1);
+      expect(provider.attestCount, 1);
 
       expect(await appCheck.getToken(), 'token-1');
-      expect(provider.fetchCount, 1);
+      expect(provider.attestCount, 1);
 
       expect(await appCheck.getToken(true), 'token-2');
-      expect(provider.fetchCount, 2);
+      expect(provider.attestCount, 2);
     });
 
     group('auto refresh', () {
@@ -84,13 +84,13 @@ void main() {
             appCheck.activate(provider: provider);
             async.flushMicrotasks();
 
-            expect(provider.fetchCount, 1);
+            expect(provider.attestCount, 1);
             expect(tokens, ['token-1']);
 
             async.elapse(proactiveRefreshDelay);
             async.flushMicrotasks();
 
-            expect(provider.fetchCount, 2);
+            expect(provider.attestCount, 2);
             expect(tokens, ['token-1', 'token-2']);
           });
         });
@@ -110,9 +110,23 @@ void main() {
             async.elapse(proactiveRefreshDelay);
             async.flushMicrotasks();
 
-            expect(provider.fetchCount, 1);
+            expect(provider.attestCount, 1);
           });
         });
+      });
+
+      test('getLimitedUseToken does not cache or increment attest on getToken',
+          () async {
+        final appCheck = FirebaseAppCheckImpl(app);
+        final provider = _CountingProvider();
+
+        await appCheck.activate(provider: provider);
+        expect(provider.attestCount, 1);
+
+        expect(await appCheck.getLimitedUseToken(), 'token-2');
+        expect(provider.attestCount, 2);
+        expect(await appCheck.getToken(), 'token-1');
+        expect(provider.attestCount, 2);
       });
 
       test('re-enabling auto refresh schedules refresh from cached token', () {
@@ -128,12 +142,12 @@ void main() {
             appCheck.setTokenAutoRefreshEnabled(true);
             async.flushMicrotasks();
 
-            expect(provider.fetchCount, 1);
+            expect(provider.attestCount, 1);
 
             async.elapse(proactiveRefreshDelay);
             async.flushMicrotasks();
 
-            expect(provider.fetchCount, 2);
+            expect(provider.attestCount, 2);
           });
         });
       });

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/app_check/app_check.dart';
+import 'package:firebase_dart/src/app_check/exchange.dart';
 import 'package:firebase_dart/src/app_check/transient_refresh_error.dart';
 import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
@@ -30,9 +31,15 @@ class FirebaseAppCheckImpl extends FirebaseService implements FirebaseAppCheck {
   }
 
   @override
-  Future<String> getLimitedUseToken() {
-    // TODO: implement getLimitedUseToken
-    throw UnimplementedError();
+  Future<String> getLimitedUseToken() async {
+    final provider = _provider;
+    if (provider == null) {
+      throw StateError(
+          'App Check not activated. Call activate() with a provider first.');
+    }
+    final attestation = await provider.getAttestation(app);
+    final token = await exchangeAttestation(app, attestation, limitedUse: true);
+    return token.token;
   }
 
   @override
@@ -72,7 +79,9 @@ class FirebaseAppCheckImpl extends FirebaseService implements FirebaseAppCheck {
     final provider = _provider;
     if (provider == null) return;
 
-    final token = await provider.getToken(app);
+    final attestation = await provider.getAttestation(app);
+    final token =
+        await exchangeAttestation(app, attestation, limitedUse: false);
     _cachedToken = token;
     if (!_tokenChanges.isClosed) {
       _tokenChanges.add(token.token);
