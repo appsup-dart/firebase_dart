@@ -1,7 +1,7 @@
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/auth/rpc/http_util.dart';
 import 'package:firebase_dart/src/implementation.dart';
-import 'package:firebaseapis/firebaseappcheck/v1beta.dart';
+import 'package:googleapis/firebaseappcheck/v1.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -97,7 +97,7 @@ class ReCaptchaV3Provider extends WebProvider {
         .projects
         .apps
         .exchangeRecaptchaV3Token(
-            GoogleFirebaseAppcheckV1betaExchangeRecaptchaV3TokenRequest()
+            GoogleFirebaseAppcheckV1ExchangeRecaptchaV3TokenRequest()
               ..recaptchaV3Token = attestedClaimsToken,
             'projects/${app.options.projectId}/apps/${app.options.appId}');
 
@@ -128,7 +128,7 @@ class ReCaptchaEnterpriseProvider extends WebProvider {
         .projects
         .apps
         .exchangeRecaptchaEnterpriseToken(
-            GoogleFirebaseAppcheckV1betaExchangeRecaptchaEnterpriseTokenRequest()
+            GoogleFirebaseAppcheckV1ExchangeRecaptchaEnterpriseTokenRequest()
               ..recaptchaEnterpriseToken = attestedClaimsToken,
             'projects/${app.options.projectId}/apps/${app.options.appId}');
 
