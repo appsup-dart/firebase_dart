@@ -68,10 +68,12 @@ class Repo {
     return _repos.putIfAbsent(db, () {
       var url = Uri.parse(db.databaseURL);
       var authTokenProvider = db.authTokenProvider;
+      var appCheckTokenProvider = db.appCheckTokenProvider;
 
-      var connection =
-          PersistentConnection(url, authTokenProvider: authTokenProvider)
-            ..initialize();
+      var connection = PersistentConnection(url,
+          authTokenProvider: authTokenProvider,
+          appCheckTokenProvider: appCheckTokenProvider)
+        ..initialize();
 
       return Repo._(url, connection, authTokenProvider, db.persistenceManager);
     });

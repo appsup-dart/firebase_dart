@@ -14,6 +14,7 @@ void main() {
       connection = PersistentConnectionImpl(
         Uri.parse('mem://test'), // Use memory scheme to avoid network
         authTokenProvider: null,
+        appCheckTokenProvider: null,
       )..initialize();
     });
 

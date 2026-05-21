@@ -121,7 +121,6 @@ class ReCaptchaEnterpriseProvider extends WebProvider {
 
   @override
   Future<AppCheckToken> getToken(FirebaseApp app) async {
-    print(app.options.projectId);
     final attestedClaimsToken =
         await RecaptchaVerifier(siteKey: siteKey, action: 'fire_app_check')
             .verify();

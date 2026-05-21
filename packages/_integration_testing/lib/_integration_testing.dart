@@ -45,13 +45,6 @@ class FirebaseProjectConfig {
   /// (`recaptchaEnterpriseConfig.siteKey`).
   final String? webAppCheckRecaptchaEnterpriseSiteKey;
 
-  /// Backward compatibility for previously generated files.
-  ///
-  /// Prefer [webAppCheckRecaptchaV3SiteKey] and
-  /// [webAppCheckRecaptchaEnterpriseSiteKey].
-  @Deprecated('Use webAppCheckRecaptchaV3SiteKey / Enterprise counterpart')
-  final String? webAppCheckRecaptchaSiteKey;
-
   const FirebaseProjectConfig({
     required this.projectId,
     required this.webConfig,
@@ -61,6 +54,5 @@ class FirebaseProjectConfig {
     this.phoneAuthRecaptchaEnforcement = PhoneAuthRecaptchaEnforcement.unknown,
     this.webAppCheckRecaptchaV3SiteKey,
     this.webAppCheckRecaptchaEnterpriseSiteKey,
-    this.webAppCheckRecaptchaSiteKey,
   });
 }

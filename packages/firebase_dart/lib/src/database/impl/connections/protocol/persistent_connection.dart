@@ -42,6 +42,8 @@ class PersistentConnectionImpl extends PersistentConnection
 
   FutureOr<Request>? _authRequest;
 
+  String? _appCheckToken;
+
   DateTime? _lastConnectionEstablishedTime;
 
   final Set<String> _interruptReasons = {};
@@ -60,14 +62,18 @@ class PersistentConnectionImpl extends PersistentConnection
 
   final AuthTokenProvider? _authTokenProvider;
 
+  final AuthTokenProvider? _appCheckTokenProvider;
+
   PersistentConnectionImpl(Uri url,
-      {required AuthTokenProvider? authTokenProvider})
+      {required AuthTokenProvider? authTokenProvider,
+      required AuthTokenProvider? appCheckTokenProvider})
       : _url = url.replace(queryParameters: {
           'ns': url.host.split('.').first,
           ...url.queryParameters,
           'v': '5',
         }),
         _authTokenProvider = authTokenProvider,
+        _appCheckTokenProvider = appCheckTokenProvider,
         super.base();
 
   // ConnectionDelegate methods
@@ -130,6 +136,12 @@ class PersistentConnectionImpl extends PersistentConnection
         break;
       case DataMessage.actionAuthRevoked:
         _onAuth.add(null);
+        break;
+      case DataMessage.actionAppCheckRevoked:
+        _logger.warning(
+            'App Check revoked: ${message.body.status} ${message.body.data}');
+        _appCheckToken = null;
+        interrupt('app_check_revoked');
         break;
       case DataMessage.actionSecurityDebug:
         var msg = message.body.message;
@@ -306,6 +318,16 @@ class PersistentConnectionImpl extends PersistentConnection
   int _invalidAuthTokenCount = 0;
   bool _forceAuthTokenRefresh = false;
 
+  Future<void> _tryAppCheck() async {
+    if (!_connected() || _appCheckToken == null) return;
+
+    _logger.fine('Sending App Check token');
+    await _request(
+      Request.appCheck(_appCheckToken!),
+      forceQueue: true,
+    );
+  }
+
   Future<void> _sendAuthHelper({bool? restoreStateAfterComplete}) async {
     assert(_connected(),
         'Must be connected to send auth, but was: $connectionState');
@@ -473,6 +495,8 @@ class PersistentConnectionImpl extends PersistentConnection
     assert(connectionState == ConnectionState.connected,
         "Should be connected if we're restoring state, but we are: $connectionState");
 
+    await _tryAppCheck();
+
     // Restore listens
     _logger.fine('Restoring outstanding listens');
     for (var r in _listens) {
@@ -507,6 +531,7 @@ class PersistentConnectionImpl extends PersistentConnection
       case DataMessage.actionUnauth:
       case DataMessage.actionAuth:
       case DataMessage.actionGauth:
+      case DataMessage.actionAppCheck:
       case DataMessage.actionStats:
         break;
       default:
@@ -594,8 +619,12 @@ class PersistentConnectionImpl extends PersistentConnection
         _currentGetTokenAttempt++;
         final thisGetTokenAttempt = _currentGetTokenAttempt;
         String? token;
+        String? appCheckToken;
         try {
-          token = await _authTokenProvider?.getToken(forceRefresh);
+          (token, appCheckToken) = await (
+            _authTokenProvider?.getToken(forceRefresh) ?? Future.value(null),
+            _appCheckTokenProvider?.getToken() ?? Future.value(null),
+          ).wait;
         } catch (error) {
           if (thisGetTokenAttempt == _currentGetTokenAttempt) {
             _connectionState = ConnectionState.disconnected;
@@ -611,7 +640,7 @@ class PersistentConnectionImpl extends PersistentConnection
           // marking the connection as Disconnected
           if (connectionState == ConnectionState.gettingToken) {
             _logger.fine('Successfully fetched token, opening connection');
-            _openNetworkConnection(token);
+            _openNetworkConnection(token, appCheckToken);
           } else {
             assert(
               connectionState == ConnectionState.disconnected,
@@ -628,7 +657,7 @@ class PersistentConnectionImpl extends PersistentConnection
     }
   }
 
-  void _openNetworkConnection(String? token) {
+  void _openNetworkConnection(String? token, String? appCheckToken) {
     assert(
       connectionState == ConnectionState.gettingToken,
       'Trying to open network connection while in the wrong state: $connectionState',
@@ -641,8 +670,31 @@ class PersistentConnectionImpl extends PersistentConnection
     if (_authTokenProvider != null) {
       _authRequest = token == null ? null : Request.auth(token);
     }
+
+    // Create headers map
+    final headers = <String, String>{
+      if (appCheckToken != null) 'X-Firebase-AppCheck': appCheckToken,
+      // Note that this header is just used to bypass appcheck in case of admin credentials,
+      // and the token should still be sent through the websocket connection once it is established.
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+
+    _appCheckToken = appCheckToken;
+
     _connectionState = ConnectionState.connecting;
-    _connection = Connection(url: _url, delegate: this)..open();
+
+    final queryParameters = Map<String, String>.from(_url.queryParameters);
+    if (appCheckToken != null) {
+      queryParameters['ac'] = appCheckToken;
+    } else {
+      queryParameters.remove('ac');
+    }
+
+    _connection = Connection(
+        url: _url.replace(queryParameters: queryParameters),
+        delegate: this,
+        headers: headers)
+      ..open();
   }
 
   void _setAuthData(Map<String, dynamic>? data) {

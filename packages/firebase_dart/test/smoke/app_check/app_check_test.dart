@@ -2,6 +2,7 @@
 library;
 
 import 'package:firebase_dart/app_check.dart';
+import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:test/test.dart';
 import 'package:jose/jose.dart';
@@ -70,6 +71,21 @@ void main() {
       expect(
           jwt.claims.audience, contains('projects/${app.options.projectId}'));
       expect(jwt.claims['provider'], 'recaptcha_enterprise');
+    });
+  });
+
+  group('FirebaseDatabase', () {
+    test('one-shot read succeeds with App Check activated', () async {
+      final app = await getApp(appCheckRecaptchaEnterpriseEnabled: true);
+      final siteKey = webAppCheckRecaptchaEnterpriseSiteKeyForApp(app);
+      final appCheck = FirebaseAppCheck.instanceFor(app: app);
+      await appCheck.activate(
+          webProvider: ReCaptchaEnterpriseProvider(siteKey));
+
+      final db = FirebaseDatabase(app: app);
+      final snapshot = await db.reference().child('test').get();
+
+      expect(snapshot, isNotNull);
     });
   });
 }

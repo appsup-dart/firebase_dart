@@ -75,8 +75,11 @@ class OperationEvent {
 /// outstanding writes.
 abstract class PersistentConnection {
   factory PersistentConnection(Uri uri,
-      {required AuthTokenProvider? authTokenProvider}) {
-    return PersistentConnectionImpl(uri, authTokenProvider: authTokenProvider);
+      {required AuthTokenProvider? authTokenProvider,
+      required AuthTokenProvider? appCheckTokenProvider}) {
+    return PersistentConnectionImpl(uri,
+        authTokenProvider: authTokenProvider,
+        appCheckTokenProvider: appCheckTokenProvider);
   }
 
   PersistentConnection.base();

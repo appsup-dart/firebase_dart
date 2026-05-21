@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_dart/app_check.dart';
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
@@ -18,6 +19,7 @@ import 'treestructureddata.dart';
 
 mixin BaseFirebaseDatabase implements FirebaseDatabase {
   AuthTokenProvider? get authTokenProvider;
+  AuthTokenProvider? get appCheckTokenProvider;
 
   @override
   DatabaseReference reference() => ReferenceImpl(this, Path());
@@ -160,6 +162,11 @@ class FirebaseDatabaseImpl extends FirebaseService
   @override
   AuthTokenProvider get authTokenProvider =>
       AuthTokenProvider.fromFirebaseAuth(FirebaseAuth.instanceFor(app: app));
+
+  @override
+  AuthTokenProvider? get appCheckTokenProvider =>
+      AuthTokenProvider.fromFirebaseAppCheck(
+          FirebaseAppCheck.instanceFor(app: app));
 }
 
 abstract class StandaloneFirebaseDatabase implements FirebaseDatabase {
@@ -215,6 +222,9 @@ class StandaloneFirebaseDatabaseImpl
 
   @override
   Map<String, dynamic>? get currentAuth => Repo(this).authData;
+
+  @override
+  AuthTokenProvider? get appCheckTokenProvider => null;
 }
 
 class DataSnapshotImpl extends DataSnapshot {
