@@ -22,6 +22,20 @@ void main() {
       expect(await appCheck.getToken(), isNull);
     });
 
+    test('onTokenChange emits after activate', () async {
+      final app = await getApp(appCheckRecaptchaV3Enabled: true);
+      final siteKey = webAppCheckRecaptchaV3SiteKeyForApp(app);
+      final appCheck = FirebaseAppCheck.instanceFor(app: app);
+      final provider = ReCaptchaV3Provider(siteKey);
+
+      final tokenFuture = appCheck.onTokenChange.first;
+      await appCheck.activate(webProvider: provider);
+
+      final token = await tokenFuture;
+      expect(token, isNotNull);
+      expect(token, await appCheck.getToken());
+    });
+
     test('activate with ReCaptchaV3Provider then getToken returns a JWT',
         () async {
       final app = await getApp(appCheckRecaptchaV3Enabled: true);

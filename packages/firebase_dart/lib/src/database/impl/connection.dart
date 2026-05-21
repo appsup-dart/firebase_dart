@@ -118,6 +118,9 @@ abstract class PersistentConnection {
   /// Authenticates with the token.
   Future<void> refreshAuthToken(FutureOr<String>? token);
 
+  /// Sends an updated App Check token on an established connection.
+  Future<void> refreshAppCheckToken(FutureOr<String>? token);
+
   // listens
 
   /// Registers a listener.

@@ -42,7 +42,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   FutureOr<Request>? _authRequest;
 
-  String? _appCheckToken;
+  FutureOr<String>? _appCheckToken;
 
   DateTime? _lastConnectionEstablishedTime;
 
@@ -312,6 +312,13 @@ class PersistentConnectionImpl extends PersistentConnection
     }
   }
 
+  @override
+  Future<void> refreshAppCheckToken(FutureOr<String>? token) async {
+    _logger.fine('App Check token refreshed.');
+    _appCheckToken = token;
+    await _tryAppCheck();
+  }
+
   Future<void> _upgradeAuth() =>
       _sendAuthHelper(restoreStateAfterComplete: false);
 
@@ -319,11 +326,13 @@ class PersistentConnectionImpl extends PersistentConnection
   bool _forceAuthTokenRefresh = false;
 
   Future<void> _tryAppCheck() async {
-    if (!_connected() || _appCheckToken == null) return;
+    if (!_connected()) return;
+    final appCheckToken = await _appCheckToken;
+    if (appCheckToken == null) return;
 
     _logger.fine('Sending App Check token');
     await _request(
-      Request.appCheck(_appCheckToken!),
+      Request.appCheck(appCheckToken),
       forceQueue: true,
     );
   }

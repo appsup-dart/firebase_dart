@@ -1,6 +1,4 @@
-import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
-import 'package:firebase_dart/src/auth/app_verifier.dart';
 import 'package:firebase_dart/src/auth/rpc/http_util.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebaseapis/firebaseappcheck/v1beta.dart';
@@ -33,7 +31,7 @@ abstract class FirebaseAppCheck {
   Future<String> getLimitedUseToken();
 
   /// Get the current App Check token.
-  Future<String?> getToken([bool? forceRefresh]);
+  Future<String?> getToken([bool forceRefresh = false]);
 
   /// If true, the SDK automatically refreshes App Check tokens as needed.
   Future<void> setTokenAutoRefreshEnabled(bool isTokenAutoRefreshEnabled);
