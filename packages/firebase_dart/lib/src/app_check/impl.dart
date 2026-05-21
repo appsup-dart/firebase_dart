@@ -22,11 +22,8 @@ class FirebaseAppCheckImpl extends FirebaseService implements FirebaseAppCheck {
   Stream<String?> get onTokenChange => _tokenChanges.stream;
 
   @override
-  Future<void> activate(
-      {WebProvider? webProvider,
-      AndroidProvider androidProvider = AndroidProvider.playIntegrity,
-      AppleProvider appleProvider = AppleProvider.deviceCheck}) async {
-    _provider = webProvider;
+  Future<void> activate({AppCheckProvider? provider}) async {
+    _provider = provider;
     if (_provider != null) {
       await _updateToken();
     }

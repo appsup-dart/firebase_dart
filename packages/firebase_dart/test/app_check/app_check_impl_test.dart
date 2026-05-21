@@ -8,8 +8,8 @@ import 'package:test/test.dart';
 
 import '../util.dart';
 
-class _CountingProvider extends WebProvider {
-  _CountingProvider({this.ttl = const Duration(hours: 1)}) : super('test-site-key');
+class _CountingProvider implements AppCheckProvider {
+  _CountingProvider({this.ttl = const Duration(hours: 1)});
 
   final Duration ttl;
   int fetchCount = 0;
@@ -48,7 +48,7 @@ void main() {
       final appCheck = FirebaseAppCheckImpl(app);
       final provider = _CountingProvider();
 
-      await appCheck.activate(webProvider: provider);
+      await appCheck.activate(provider: provider);
 
       expect(
         await appCheck.onTokenChange.first,
@@ -60,7 +60,7 @@ void main() {
       final appCheck = FirebaseAppCheckImpl(app);
       final provider = _CountingProvider();
 
-      await appCheck.activate(webProvider: provider);
+      await appCheck.activate(provider: provider);
       expect(provider.fetchCount, 1);
 
       expect(await appCheck.getToken(), 'token-1');
@@ -81,7 +81,7 @@ void main() {
             final tokens = <String?>[];
 
             appCheck.onTokenChange.listen(tokens.add);
-            appCheck.activate(webProvider: provider);
+            appCheck.activate(provider: provider);
             async.flushMicrotasks();
 
             expect(provider.fetchCount, 1);
@@ -102,7 +102,7 @@ void main() {
             final appCheck = FirebaseAppCheckImpl(app);
             final provider = _CountingProvider(ttl: const Duration(hours: 1));
 
-            appCheck.activate(webProvider: provider);
+            appCheck.activate(provider: provider);
             async.flushMicrotasks();
             appCheck.setTokenAutoRefreshEnabled(false);
             async.flushMicrotasks();
@@ -121,7 +121,7 @@ void main() {
             final appCheck = FirebaseAppCheckImpl(app);
             final provider = _CountingProvider(ttl: const Duration(hours: 1));
 
-            appCheck.activate(webProvider: provider);
+            appCheck.activate(provider: provider);
             async.flushMicrotasks();
             appCheck.setTokenAutoRefreshEnabled(false);
             async.flushMicrotasks();

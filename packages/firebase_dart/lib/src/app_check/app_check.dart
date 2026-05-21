@@ -19,10 +19,13 @@ abstract class FirebaseAppCheck {
 
   Stream<String?> get onTokenChange;
 
-  Future<void> activate(
-      {WebProvider? webProvider,
-      AndroidProvider androidProvider = AndroidProvider.playIntegrity,
-      AppleProvider appleProvider = AppleProvider.deviceCheck});
+  /// Activates App Check for this [app] using [provider].
+  ///
+  /// Pass a [RecaptchaAppCheckProvider] (e.g. [RecaptchaAppCheckProvider.v3]) on
+  /// web and server-side Dart. On Flutter, prefer [FlutterAppCheckProvider] from
+  /// `firebase_dart_flutter`, which selects native attestation per platform and
+  /// can fall back to [RecaptchaAppCheckProvider].
+  Future<void> activate({AppCheckProvider? provider});
 
   /// Requests a limited-use Firebase App Check token.
   ///
@@ -37,34 +40,8 @@ abstract class FirebaseAppCheck {
   Future<void> setTokenAutoRefreshEnabled(bool isTokenAutoRefreshEnabled);
 }
 
-// An enum representing the different types of Android App Attest providers.
-enum AndroidProvider {
-  // The debug provider
-  debug,
-  // The play integrity provider (Firebase recommended)
-  playIntegrity
-}
-
-/// An enum representing the different types of Apple App Attest providers.
-enum AppleProvider {
-  /// The debug provider. No further configuration in your iOS code required. You simply need to copy/paste the debug token
-  /// from the console when you run the app and add the token to your Firebase console. See documentation:
-  /// https://firebase.google.com/docs/app-check/ios/debug-provider
-  debug,
-
-  /// the default deviceCheck provider. See documentation: https://firebase.google.com/docs/app-check/ios/devicecheck-provider
-  deviceCheck,
-  // The app attest provider (Firebase recommended). See documentation: https://firebase.google.com/docs/app-check/ios/app-attest-provider
-  appAttest,
-
-  /// appAttest provider is only available on iOS 14.0+, macOS 14.0+ so this will fall back to deviceCheck provider if appAtest provider
-  /// is not available
-  appAttestWithDeviceCheckFallback
-}
-
-/// An App Check provider.
+/// Exchanges attestation for an App Check JWT.
 abstract class AppCheckProvider {
-  /// Returns an AppCheck token.
   Future<AppCheckToken> getToken(FirebaseApp app);
 }
 
@@ -78,14 +55,21 @@ class AppCheckToken {
   AppCheckToken(this.token, this.expireTime);
 }
 
-abstract class WebProvider extends AppCheckProvider {
-  final String siteKey;
+/// reCAPTCHA-based App Check attestation (web and native fallback).
+abstract class RecaptchaAppCheckProvider implements AppCheckProvider {
+  String get siteKey;
 
-  WebProvider(this.siteKey);
+  factory RecaptchaAppCheckProvider.v3(String siteKey) = ReCaptchaV3Provider;
+
+  factory RecaptchaAppCheckProvider.enterprise(String siteKey) =
+      ReCaptchaEnterpriseProvider;
 }
 
-class ReCaptchaV3Provider extends WebProvider {
-  ReCaptchaV3Provider(super.siteKey);
+class ReCaptchaV3Provider implements RecaptchaAppCheckProvider {
+  ReCaptchaV3Provider(this.siteKey);
+
+  @override
+  final String siteKey;
 
   @override
   Future<AppCheckToken> getToken(FirebaseApp app) async {
@@ -114,8 +98,11 @@ class ReCaptchaV3Provider extends WebProvider {
   }
 }
 
-class ReCaptchaEnterpriseProvider extends WebProvider {
-  ReCaptchaEnterpriseProvider(super.siteKey);
+class ReCaptchaEnterpriseProvider implements RecaptchaAppCheckProvider {
+  ReCaptchaEnterpriseProvider(this.siteKey);
+
+  @override
+  final String siteKey;
 
   @override
   Future<AppCheckToken> getToken(FirebaseApp app) async {

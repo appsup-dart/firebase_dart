@@ -15,6 +15,7 @@ import 'package:hive/hive.dart';
 
 export 'package:firebase_dart/implementation/pure_dart.dart'
     show ApplicationVerifier, RecaptchaApplicationVerifier;
+export 'package:firebase_dart_flutter/src/app_check/app_check_providers.dart';
 export 'package:firebase_dart_flutter/src/app_verifier.dart'
     show FlutterApplicationVerifier;
 

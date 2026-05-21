@@ -6,10 +6,7 @@ class IsolateFirebaseAppCheck extends IsolateFirebaseService
   IsolateFirebaseAppCheck(super.app);
 
   @override
-  Future<void> activate(
-      {WebProvider? webProvider,
-      AndroidProvider androidProvider = AndroidProvider.playIntegrity,
-      AppleProvider appleProvider = AppleProvider.deviceCheck}) {
+  Future<void> activate({AppCheckProvider? provider}) {
     // TODO: implement activate
     throw UnimplementedError();
   }
