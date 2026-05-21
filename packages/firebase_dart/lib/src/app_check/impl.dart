@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/app_check/app_check.dart';
+import 'package:firebase_dart/src/app_check/app_check_protected.dart';
 import 'package:firebase_dart/src/app_check/exchange.dart';
 import 'package:firebase_dart/src/app_check/transient_refresh_error.dart';
+import 'package:googleapis/firebaseappcheck/v1.dart';
 import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../core/impl/app.dart';
 
-class FirebaseAppCheckImpl extends FirebaseService implements FirebaseAppCheck {
+class FirebaseAppCheckImpl extends FirebaseService
+    implements FirebaseAppCheck, FirebaseAppCheckProtectedMethods {
   static final _logger = Logger('FirebaseAppCheck');
   FirebaseAppCheckImpl(super.app);
 
@@ -63,6 +66,20 @@ class FirebaseAppCheckImpl extends FirebaseService implements FirebaseAppCheck {
     } else {
       await _updateToken();
     }
+  }
+
+  @override
+  Future<String> generatePlayIntegrityChallenge() async {
+    final response =
+        await appCheckApi(app).projects.apps.generatePlayIntegrityChallenge(
+              GoogleFirebaseAppcheckV1GeneratePlayIntegrityChallengeRequest(),
+              appCheckAppResourceName(app),
+            );
+    final challenge = response.challenge;
+    if (challenge == null || challenge.isEmpty) {
+      throw StateError('App Check: empty Play Integrity challenge');
+    }
+    return challenge;
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:firebase_dart/app_check.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart_flutter/src/app_check/play_integrity_attestation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
@@ -8,7 +9,7 @@ import 'package:logging/logging.dart';
 ///
 /// Subclass for custom attestation. Built-in providers are available via
 /// [playIntegrity] and [debug].
-abstract class AndroidAppCheckProvider implements AppCheckProvider {
+abstract class AndroidAppCheckProvider extends BaseAppCheckProvider {
   const AndroidAppCheckProvider();
 
   static const playIntegrity = AndroidPlayIntegrityProvider();
@@ -21,9 +22,9 @@ class AndroidPlayIntegrityProvider extends AndroidAppCheckProvider {
   const AndroidPlayIntegrityProvider();
 
   @override
-  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
-    throw UnimplementedError(
-        'AndroidPlayIntegrityProvider is not implemented yet');
+  Future<AppCheckAttestation> getAttestation(FirebaseApp app) async {
+    final challenge = await generatePlayIntegrityChallenge(app);
+    return playIntegrityAttestation(app, challenge: challenge);
   }
 }
 

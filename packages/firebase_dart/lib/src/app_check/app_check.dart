@@ -1,5 +1,7 @@
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/app_check/app_check_protected.dart';
 import 'package:firebase_dart/src/implementation.dart';
+import 'package:meta/meta.dart';
 
 import '../auth/recaptcha_verifier.dart';
 import 'attestation.dart';
@@ -43,6 +45,22 @@ abstract class FirebaseAppCheck {
 /// [FirebaseAppCheck].
 abstract class AppCheckProvider {
   Future<AppCheckAttestation> getAttestation(FirebaseApp app);
+}
+
+/// Base class for platform [AppCheckProvider]s that need App Check REST helpers.
+abstract class BaseAppCheckProvider implements AppCheckProvider {
+  const BaseAppCheckProvider();
+
+  @protected
+  @visibleForTesting
+  Future<String> generatePlayIntegrityChallenge(FirebaseApp app) async {
+    final appCheck = FirebaseAppCheck.instanceFor(app: app);
+    if (appCheck is FirebaseAppCheckProtectedMethods) {
+      return (appCheck as FirebaseAppCheckProtectedMethods)
+          .generatePlayIntegrityChallenge();
+    }
+    throw UnimplementedError();
+  }
 }
 
 class AppCheckToken {
