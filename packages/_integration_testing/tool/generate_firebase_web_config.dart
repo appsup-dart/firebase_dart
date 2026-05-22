@@ -240,8 +240,7 @@ Future<void> _generateOneProject({
     iosBundleIdsWithApnsConfigured: apnsBundles,
     phoneAuthRecaptchaEnforcement: phoneRecaptcha,
     webAppCheckRecaptchaV3SiteKey: appCheckRecaptchaV3SiteKey,
-    webAppCheckRecaptchaEnterpriseSiteKey:
-        appCheckRecaptchaEnterpriseSiteKey,
+    webAppCheckRecaptchaEnterpriseSiteKey: appCheckRecaptchaEnterpriseSiteKey,
   );
 
   stdout.writeln(

@@ -19,6 +19,8 @@ PODS:
   - FBSDKCoreKit_Basics (18.0.2)
   - FBSDKLoginKit (18.0.2):
     - FBSDKCoreKit (= 18.0.2)
+  - firebase_dart_flutter (1.0.0):
+    - Flutter
   - Flutter (1.0.0)
   - flutter_apns_only (0.0.1):
     - Flutter
@@ -82,6 +84,7 @@ PODS:
 
 DEPENDENCIES:
   - app_links (from `.symlinks/plugins/app_links/ios`)
+  - firebase_dart_flutter (from `.symlinks/plugins/firebase_dart_flutter/ios`)
   - Flutter (from `Flutter`)
   - flutter_apns_only (from `.symlinks/plugins/flutter_apns_only/ios`)
   - flutter_facebook_auth (from `.symlinks/plugins/flutter_facebook_auth/ios`)
@@ -115,6 +118,8 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   app_links:
     :path: ".symlinks/plugins/app_links/ios"
+  firebase_dart_flutter:
+    :path: ".symlinks/plugins/firebase_dart_flutter/ios"
   Flutter:
     :path: Flutter
   flutter_apns_only:
@@ -148,6 +153,7 @@ SPEC CHECKSUMS:
   FBSDKCoreKit: 54f1240567e16862ab71c53c33dc347db5c524c5
   FBSDKCoreKit_Basics: eb530cd6a79030dbb11df460aafb2767bcad9028
   FBSDKLoginKit: 6a70798793e499335a98fab1a758d7da34af196e
+  firebase_dart_flutter: 97c07bacd86381d8b25cdf0244a95288286412bc
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_apns_only: bd278c53433cb01cd66152843f7247fe10b9a9ea
   flutter_facebook_auth: fa3b69b1df0831d2178fe87a05ee2d7d0156db70

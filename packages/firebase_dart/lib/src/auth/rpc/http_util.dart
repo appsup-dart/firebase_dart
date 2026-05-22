@@ -28,11 +28,17 @@ class MetadataClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     var platform = Platform.current;
 
+    final bundleId = switch (platform) {
+      IOsPlatform(:final appId) => appId,
+      MacOsPlatform(:final appId) => appId,
+      _ => null,
+    };
+
     request.headers.addAll({
       if (platform is AndroidPlatform) 'X-Android-Package': platform.packageId,
       if (platform is AndroidPlatform)
         'X-Android-Cert': platform.sha1Cert.replaceAll(':', '').toUpperCase(),
-      if (platform is IOsPlatform) 'X-Ios-Bundle-Identifier': platform.appId,
+      if (bundleId != null) 'X-Ios-Bundle-Identifier': bundleId,
       'X-Firebase-Locale': _locale ?? Intl.getCurrentLocale(),
       'X-Firebase-GMPID': firebaseAppId,
       ...request.headers,

@@ -2,6 +2,7 @@ import 'package:firebase_dart/app_check.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart_flutter/src/app_check/app_check_recaptcha.dart';
+import 'package:firebase_dart_flutter/src/app_check/device_check_attestation.dart';
 import 'package:firebase_dart_flutter/src/app_check/play_integrity_attestation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,9 +10,9 @@ import 'package:logging/logging.dart';
 
 /// Firebase App Check provider for Flutter.
 ///
-/// Native attestation is tried per platform; reCAPTCHA fallback uses an in-app
-/// WebView with the **web** App Check site keys, [recaptchaWebDomain], and
-/// [recaptchaWebAppId].
+/// Native attestation is tried per platform (Play Integrity on Android,
+/// Device Check on iOS/macOS); reCAPTCHA fallback uses an in-app WebView with
+/// the **web** App Check site keys, [recaptchaWebDomain], and [recaptchaWebAppId].
 ///
 /// ```dart
 /// await FirebaseAppCheck.instance.activate(
@@ -114,7 +115,12 @@ class FlutterAppCheckProvider extends BaseAppCheckProvider {
   }
 
   Future<AppCheckAttestation?> _appleAttestation(FirebaseApp app) async {
-    if (!useAppAttest && !useDeviceCheck) return null;
+    if (useAppAttest) {
+      // App Attest not implemented yet; fall through to Device Check when enabled.
+    }
+    if (useDeviceCheck && await isDeviceCheckSupported()) {
+      return deviceCheckAttestation();
+    }
     return null;
   }
 
