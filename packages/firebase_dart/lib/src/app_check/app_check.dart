@@ -21,12 +21,12 @@ abstract class FirebaseAppCheck {
 
   Stream<String?> get onTokenChange;
 
-  /// Activates App Check for this [app] using [provider].
+  /// Activates App Check for this [app] using [providers].
   ///
   /// Pass a [RecaptchaAppCheckProvider] (e.g. [RecaptchaAppCheckProvider.v3]) on
-  /// web and server-side Dart. On Flutter, use [FlutterAppCheckProvider] from
+  /// web and server-side Dart. On Flutter, use [FlutterAppCheckProviders] from
   /// `firebase_dart_flutter` with reCAPTCHA site keys and optional `use*` flags.
-  Future<void> activate({AppCheckProvider? provider});
+  Future<void> activate({AppCheckProviders? providers});
 
   /// Requests a limited-use Firebase App Check token.
   ///
@@ -39,6 +39,20 @@ abstract class FirebaseAppCheck {
 
   /// If true, the SDK automatically refreshes App Check tokens as needed.
   Future<void> setTokenAutoRefreshEnabled(bool isTokenAutoRefreshEnabled);
+}
+
+/// Ordered App Check attestation sources for [FirebaseAppCheck.activate].
+///
+/// Providers are tried in list order until attestation and token exchange both
+/// succeed. The instance that succeeds is preferred on later refreshes (in
+/// memory for this App Check instance).
+class AppCheckProviders {
+  const AppCheckProviders(this.providers);
+
+  final List<AppCheckProvider> providers;
+
+  factory AppCheckProviders.single(AppCheckProvider provider) =>
+      AppCheckProviders([provider]);
 }
 
 /// Obtains platform attestation to be exchanged for an App Check JWT by
@@ -72,7 +86,6 @@ abstract class BaseAppCheckProvider implements AppCheckProvider {
     }
     throw UnimplementedError();
   }
-
 }
 
 class AppCheckToken {

@@ -29,7 +29,7 @@ void main() {
       final provider = ReCaptchaV3Provider(siteKey);
 
       final tokenFuture = appCheck.onTokenChange.first;
-      await appCheck.activate(provider: provider);
+      await appCheck.activate(providers: AppCheckProviders.single(provider));
 
       final token = await tokenFuture;
       expect(token, isNotNull);
@@ -43,7 +43,7 @@ void main() {
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
       final provider = ReCaptchaV3Provider(siteKey);
 
-      await appCheck.activate(provider: provider);
+      await appCheck.activate(providers: AppCheckProviders.single(provider));
 
       final token = await appCheck.getToken();
       expect(token, isNotNull);
@@ -69,7 +69,7 @@ void main() {
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
       final provider = ReCaptchaEnterpriseProvider(siteKey);
 
-      await appCheck.activate(provider: provider);
+      await appCheck.activate(providers: AppCheckProviders.single(provider));
 
       final token = await appCheck.getToken();
       expect(token, isNotNull);
@@ -93,7 +93,9 @@ void main() {
       final app = await getApp(appCheckRecaptchaEnterpriseEnabled: true);
       final siteKey = webAppCheckRecaptchaEnterpriseSiteKeyForApp(app);
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
-      await appCheck.activate(provider: ReCaptchaEnterpriseProvider(siteKey));
+      await appCheck.activate(
+          providers:
+              AppCheckProviders.single(ReCaptchaEnterpriseProvider(siteKey)));
 
       final db = FirebaseDatabase(app: app);
       final snapshot = await db.reference().child('test').get();

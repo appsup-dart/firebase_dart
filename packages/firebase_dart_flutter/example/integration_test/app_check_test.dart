@@ -7,10 +7,6 @@ import 'package:firebase_dart/app_check.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
-import 'package:firebase_dart_flutter/src/app_check/app_attest_attestation.dart'
-    show isAppAttestSupported;
-import 'package:firebase_dart_flutter/src/app_check/device_check_attestation.dart'
-    show isDeviceCheckSupported;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -23,9 +19,9 @@ void main() {
     await FirebaseDartFlutter.setup(isolated: false);
   });
 
-  group('FlutterAppCheckProvider', () {
+  group('FlutterAppCheckProviders', () {
     group('Play Integrity', () {
-      test('activate then getToken returns a Play Integrity JWT', () async {
+      test('returns a Play Integrity JWT', () async {
         if (Platform.current is! AndroidPlatform) {
           markTestSkipped('Play Integrity App Check requires Android');
           return;
@@ -35,7 +31,9 @@ void main() {
         final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
         await appCheck.activate(
-          provider: FlutterAppCheckProvider(),
+          providers: AppCheckProviders([
+            const PlayIntegrityAppCheckProvider(),
+          ]),
         );
 
         final token = await appCheck.getToken();
@@ -53,13 +51,13 @@ void main() {
     });
 
     group('App Attest', () {
-      test('activate then getToken returns an App Attest JWT', () async {
+      test('returns an App Attest JWT', () async {
         if (Platform.current is! IOsPlatform &&
             Platform.current is! MacOsPlatform) {
           markTestSkipped('App Attest App Check requires iOS or macOS');
           return;
         }
-        if (!await isAppAttestSupported()) {
+        if (!await AppAttestAppCheckProvider.isSupported()) {
           markTestSkipped(
             'App Attest is not supported on this device '
             '(use a physical iPhone on iOS 14+).',
@@ -71,10 +69,9 @@ void main() {
         final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
         await appCheck.activate(
-          provider: FlutterAppCheckProvider(
-            useAppAttest: true,
-            useDeviceCheck: false,
-          ),
+          providers: AppCheckProviders([
+            const AppAttestAppCheckProvider(),
+          ]),
         );
 
         final token = await appCheck.getToken();
@@ -92,13 +89,13 @@ void main() {
     });
 
     group('Device Check', () {
-      test('activate then getToken returns a Device Check JWT', () async {
+      test('returns a Device Check JWT', () async {
         if (Platform.current is! IOsPlatform &&
             Platform.current is! MacOsPlatform) {
           markTestSkipped('Device Check App Check requires iOS or macOS');
           return;
         }
-        if (!await isDeviceCheckSupported()) {
+        if (!await DeviceCheckAppCheckProvider.isSupported()) {
           markTestSkipped(
             'Device Check is not supported on this device '
             '(use a physical iPhone or Mac).',
@@ -110,10 +107,9 @@ void main() {
         final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
         await appCheck.activate(
-          provider: FlutterAppCheckProvider(
-            useDeviceCheck: true,
-            useAppAttest: false,
-          ),
+          providers: AppCheckProviders([
+            const DeviceCheckAppCheckProvider(),
+          ]),
         );
 
         final token = await appCheck.getToken();
@@ -142,7 +138,7 @@ void main() {
         final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
         await appCheck.activate(
-          provider: FlutterAppCheckProvider(
+          providers: FlutterAppCheckProviders(
             recaptchaV3SiteKey: app.recaptchaV3SiteKey,
             recaptchaWebDomain: 'localhost',
             recaptchaWebAppId: app.webAppId,
@@ -167,9 +163,13 @@ void main() {
           final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
           await appCheck.activate(
-            provider: _recaptchaOnlyProvider(
-              app: app,
+            providers: FlutterAppCheckProviders(
               recaptchaV3SiteKey: app.recaptchaEnterpriseSiteKey,
+              recaptchaWebDomain: 'localhost',
+              recaptchaWebAppId: app.webAppId,
+              usePlayIntegrity: false,
+              useDeviceCheck: false,
+              useAppAttest: false,
               getBuildContext: () => ctx.mounted ? ctx : null,
             ),
           );
@@ -198,9 +198,13 @@ void main() {
           final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
           await appCheck.activate(
-            provider: _recaptchaOnlyProvider(
-              app: app,
+            providers: FlutterAppCheckProviders(
               recaptchaEnterpriseSiteKey: app.recaptchaEnterpriseSiteKey,
+              recaptchaWebDomain: 'localhost',
+              recaptchaWebAppId: app.webAppId,
+              usePlayIntegrity: false,
+              useDeviceCheck: false,
+              useAppAttest: false,
               getBuildContext: () => ctx.mounted ? ctx : null,
             ),
           );
@@ -220,25 +224,6 @@ void main() {
       );
     });
   });
-}
-
-/// App Check via reCAPTCHA WebView only (all native `use*` flags disabled).
-FlutterAppCheckProvider _recaptchaOnlyProvider({
-  required FirebaseApp app,
-  String? recaptchaV3SiteKey,
-  String? recaptchaEnterpriseSiteKey,
-  required BuildContext? Function() getBuildContext,
-}) {
-  return FlutterAppCheckProvider(
-    recaptchaV3SiteKey: recaptchaV3SiteKey,
-    recaptchaEnterpriseSiteKey: recaptchaEnterpriseSiteKey,
-    recaptchaWebDomain: 'localhost',
-    recaptchaWebAppId: app.webAppId,
-    usePlayIntegrity: false,
-    useDeviceCheck: false,
-    useAppAttest: false,
-    getBuildContext: getBuildContext,
-  );
 }
 
 extension on WidgetTester {
