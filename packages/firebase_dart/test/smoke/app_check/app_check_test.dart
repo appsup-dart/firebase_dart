@@ -11,7 +11,7 @@ import '../smoke_test_util.dart';
 
 void main() {
   setUpAll(() async {
-    FirebaseDart.setup();
+    FirebaseDart.setup(isolated: true);
   });
 
   group('FirebaseAppCheck', () {
