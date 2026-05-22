@@ -1,4 +1,5 @@
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/app_check/app_attest_challenge.dart';
 import 'package:firebase_dart/src/app_check/app_check_protected.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:meta/meta.dart';
@@ -60,6 +61,18 @@ abstract class BaseAppCheckProvider implements AppCheckProvider {
     }
     throw UnimplementedError();
   }
+
+  @protected
+  @visibleForTesting
+  Future<AppAttestChallenge> generateAppAttestChallenge(FirebaseApp app) async {
+    final appCheck = FirebaseAppCheck.instanceFor(app: app);
+    if (appCheck is FirebaseAppCheckProtectedMethods) {
+      return (appCheck as FirebaseAppCheckProtectedMethods)
+          .generateAppAttestChallenge();
+    }
+    throw UnimplementedError();
+  }
+
 }
 
 class AppCheckToken {

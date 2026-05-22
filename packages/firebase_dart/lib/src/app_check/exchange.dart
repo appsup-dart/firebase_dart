@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:firebase_dart/core.dart';
+import 'package:firebase_dart/src/app_check/app_attest_store.dart';
 import 'package:firebase_dart/src/app_check/app_check.dart';
 import 'package:firebase_dart/src/app_check/attestation.dart';
 import 'package:firebase_dart/src/auth/rpc/http_util.dart';
@@ -177,6 +180,16 @@ Future<AppCheckToken> exchangeAppAttestAttestation(
               ..limitedUse = limitedUse,
             appCheckAppResourceName(app),
           );
+
+  final artifact = response.artifact;
+  if (artifact != null && artifact.isNotEmpty) {
+    await saveAppAttestState(
+      app.options.appId,
+      keyId,
+      Uint8List.fromList(response.artifactAsBytes),
+    );
+  }
+
   return appCheckTokenFromExchangeResponse(response.appCheckToken!);
 }
 

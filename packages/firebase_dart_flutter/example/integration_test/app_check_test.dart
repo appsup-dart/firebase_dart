@@ -7,6 +7,8 @@ import 'package:firebase_dart/app_check.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
+import 'package:firebase_dart_flutter/src/app_check/app_attest_attestation.dart'
+    show isAppAttestSupported;
 import 'package:firebase_dart_flutter/src/app_check/device_check_attestation.dart'
     show isDeviceCheckSupported;
 import 'package:flutter/material.dart';
@@ -47,6 +49,45 @@ void main() {
           contains('projects/${app.options.projectId}'),
         );
         expect(jwt.claims['provider'], 'play_integrity');
+      });
+    });
+
+    group('App Attest', () {
+      test('activate then getToken returns an App Attest JWT', () async {
+        if (Platform.current is! IOsPlatform &&
+            Platform.current is! MacOsPlatform) {
+          markTestSkipped('App Attest App Check requires iOS or macOS');
+          return;
+        }
+        if (!await isAppAttestSupported()) {
+          markTestSkipped(
+            'App Attest is not supported on this device '
+            '(use a physical iPhone on iOS 14+).',
+          );
+          return;
+        }
+
+        final app = await getApp();
+        final appCheck = FirebaseAppCheck.instanceFor(app: app);
+
+        await appCheck.activate(
+          provider: FlutterAppCheckProvider(
+            useAppAttest: true,
+            useDeviceCheck: false,
+          ),
+        );
+
+        final token = await appCheck.getToken();
+        expect(token, isNotNull);
+        expect(token, isNotEmpty);
+
+        final jwt = await _decodeAppCheckJwt(token!);
+        expect(jwt.claims.subject, app.options.appId);
+        expect(
+          jwt.claims.audience,
+          contains('projects/${app.options.projectId}'),
+        );
+        expect(jwt.claims['provider'] as String, contains('app_attest'));
       });
     });
 

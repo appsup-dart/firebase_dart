@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:firebase_dart/src/app_check/app_attest_challenge.dart';
+import 'package:firebase_dart/src/app_check/app_attest_store.dart' as app_attest_store;
 import 'package:firebase_dart/src/app_check/app_check.dart';
 import 'package:firebase_dart/src/app_check/app_check_protected.dart';
 import 'package:firebase_dart/src/app_check/exchange.dart';
@@ -80,6 +82,28 @@ class FirebaseAppCheckImpl extends FirebaseService
       throw StateError('App Check: empty Play Integrity challenge');
     }
     return challenge;
+  }
+
+  @override
+  Future<AppAttestChallenge> generateAppAttestChallenge() async {
+    final response =
+        await appCheckApi(app).projects.apps.generateAppAttestChallenge(
+              GoogleFirebaseAppcheckV1GenerateAppAttestChallengeRequest(),
+              appCheckAppResourceName(app),
+            );
+    final challenge = response.challenge;
+    if (challenge == null || challenge.isEmpty) {
+      throw StateError('App Check: empty App Attest challenge');
+    }
+    final stored = await app_attest_store.loadAppAttestState(app.options.appId);
+    if (stored == null) {
+      return AppAttestChallenge(challenge: challenge);
+    }
+    return AppAttestChallenge(
+      challenge: challenge,
+      keyId: stored.keyId,
+      artifact: stored.artifact,
+    );
   }
 
   @override
