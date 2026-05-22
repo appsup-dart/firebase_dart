@@ -17,6 +17,7 @@ void main() {
   group('FirebaseAppCheck', () {
     test('getToken returns null before activate', () async {
       final app = await getApp();
+      addTearDown(() => app.delete());
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
       expect(await appCheck.getToken(), isNull);
@@ -24,12 +25,12 @@ void main() {
 
     test('onTokenChange emits after activate', () async {
       final app = await getApp(appCheckRecaptchaV3Enabled: true);
+      addTearDown(() => app.delete());
       final siteKey = webAppCheckRecaptchaV3SiteKeyForApp(app);
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
-      final provider = ReCaptchaV3Provider(siteKey);
-
       final tokenFuture = appCheck.onTokenChange.first;
-      await appCheck.activate(providers: AppCheckProviders.single(provider));
+      await appCheck.activate(
+          providers: AppCheckProviders.recaptchaV3(siteKey));
 
       final token = await tokenFuture;
       expect(token, isNotNull);
@@ -39,11 +40,11 @@ void main() {
     test('activate with ReCaptchaV3Provider then getToken returns a JWT',
         () async {
       final app = await getApp(appCheckRecaptchaV3Enabled: true);
+      addTearDown(() => app.delete());
       final siteKey = webAppCheckRecaptchaV3SiteKeyForApp(app);
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
-      final provider = ReCaptchaV3Provider(siteKey);
-
-      await appCheck.activate(providers: AppCheckProviders.single(provider));
+      await appCheck.activate(
+          providers: AppCheckProviders.recaptchaV3(siteKey));
 
       final token = await appCheck.getToken();
       expect(token, isNotNull);
@@ -65,11 +66,11 @@ void main() {
         'activate with ReCaptchaEnterpriseProvider then getToken returns a JWT',
         () async {
       final app = await getApp(appCheckRecaptchaEnterpriseEnabled: true);
+      addTearDown(() => app.delete());
       final siteKey = webAppCheckRecaptchaEnterpriseSiteKeyForApp(app);
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
-      final provider = ReCaptchaEnterpriseProvider(siteKey);
-
-      await appCheck.activate(providers: AppCheckProviders.single(provider));
+      await appCheck.activate(
+          providers: AppCheckProviders.recaptchaEnterprise(siteKey));
 
       final token = await appCheck.getToken();
       expect(token, isNotNull);
@@ -86,16 +87,46 @@ void main() {
           jwt.claims.audience, contains('projects/${app.options.projectId}'));
       expect(jwt.claims['provider'], 'recaptcha_enterprise');
     });
+
+    test('activate with DebugAppCheckProvider then getToken returns a JWT',
+        () async {
+      final app = await getApp(appCheckDebugEnabled: true);
+      addTearDown(() => app.delete());
+      final debugToken = webAppCheckDebugTokenForApp(app);
+      final appCheck = FirebaseAppCheck.instanceFor(app: app);
+      await appCheck.activate(
+        providers: AppCheckProviders.debug(debugToken: debugToken),
+      );
+
+      final token = await appCheck.getToken();
+      expect(token, isNotNull);
+      expect(token, isNotEmpty);
+
+      var jwt = await JsonWebToken.decodeAndVerify(
+        token!,
+        JsonWebKeyStore()
+          ..addKeySetUrl(
+            Uri.parse('https://firebaseappcheck.googleapis.com/v1/jwks'),
+          ),
+      );
+
+      expect(jwt.claims.subject, app.options.appId);
+      expect(
+        jwt.claims.audience,
+        contains('projects/${app.options.projectId}'),
+      );
+      expect(jwt.claims['provider'], 'debug');
+    });
   });
 
   group('FirebaseDatabase', () {
     test('one-shot read succeeds with App Check activated', () async {
       final app = await getApp(appCheckRecaptchaEnterpriseEnabled: true);
+      addTearDown(() => app.delete());
       final siteKey = webAppCheckRecaptchaEnterpriseSiteKeyForApp(app);
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
       await appCheck.activate(
-          providers:
-              AppCheckProviders.single(ReCaptchaEnterpriseProvider(siteKey)));
+          providers: AppCheckProviders.recaptchaEnterprise(siteKey));
 
       final db = FirebaseDatabase(app: app);
       final snapshot = await db.reference().child('test').get();

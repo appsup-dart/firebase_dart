@@ -45,6 +45,9 @@ class FirebaseProjectConfig {
   /// (`recaptchaEnterpriseConfig.siteKey`).
   final String? webAppCheckRecaptchaEnterpriseSiteKey;
 
+  /// App Check debug secret (UUID) registered for the web app, for smoke tests.
+  final String? webAppCheckDebugToken;
+
   const FirebaseProjectConfig({
     required this.projectId,
     required this.webConfig,
@@ -54,5 +57,6 @@ class FirebaseProjectConfig {
     this.phoneAuthRecaptchaEnforcement = PhoneAuthRecaptchaEnforcement.unknown,
     this.webAppCheckRecaptchaV3SiteKey,
     this.webAppCheckRecaptchaEnterpriseSiteKey,
+    this.webAppCheckDebugToken,
   });
 }

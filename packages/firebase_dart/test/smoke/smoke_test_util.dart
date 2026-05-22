@@ -22,6 +22,26 @@ String webAppCheckRecaptchaV3SiteKeyForApp(FirebaseApp app) {
   );
 }
 
+/// Registered App Check debug secret from generated [FirebaseProjectConfig]
+/// for [app].
+String webAppCheckDebugTokenForApp(FirebaseApp app) {
+  final projectId = app.options.projectId;
+  for (final c in allConfigs) {
+    if (c.projectId != projectId) continue;
+    final token = c.webAppCheckDebugToken;
+    if (token != null && token.isNotEmpty) return token;
+    throw StateError(
+      'FirebaseProjectConfig for projectId "$projectId" has no '
+      'webAppCheckDebugToken. Regenerate from packages/_integration_testing '
+      'with `dart run tool/generate_firebase_web_config.dart` (requires App '
+      'Check Admin API access to register a debug token).',
+    );
+  }
+  throw StateError(
+    'No FirebaseProjectConfig in allConfigs for projectId "$projectId".',
+  );
+}
+
 /// Public App Check reCAPTCHA Enterprise site key from generated
 /// [FirebaseProjectConfig] for [app].
 String webAppCheckRecaptchaEnterpriseSiteKeyForApp(FirebaseApp app) {
@@ -57,6 +77,7 @@ Future<FirebaseApp> getApp({
   bool? phoneAuthRecaptchaEnterpriseEnabled,
   bool? appCheckRecaptchaV3Enabled,
   bool? appCheckRecaptchaEnterpriseEnabled,
+  bool? appCheckDebugEnabled,
 }) async {
   if (allConfigs.isEmpty) {
     throw StateError(
@@ -82,21 +103,28 @@ Future<FirebaseApp> getApp({
 
   bool matchesAppCheckEnterprise(FirebaseProjectConfig c) {
     if (appCheckRecaptchaEnterpriseEnabled == null) return true;
-    final enabled =
-        (c.webAppCheckRecaptchaEnterpriseSiteKey ?? '').isNotEmpty;
+    final enabled = (c.webAppCheckRecaptchaEnterpriseSiteKey ?? '').isNotEmpty;
     return appCheckRecaptchaEnterpriseEnabled ? enabled : !enabled;
+  }
+
+  bool matchesAppCheckDebug(FirebaseProjectConfig c) {
+    if (appCheckDebugEnabled == null) return true;
+    final enabled = (c.webAppCheckDebugToken ?? '').isNotEmpty;
+    return appCheckDebugEnabled ? enabled : !enabled;
   }
 
   final config = allConfigs.firstWhere(
     (c) =>
         matchesPhoneAuth(c) &&
         matchesAppCheckV3(c) &&
-        matchesAppCheckEnterprise(c),
+        matchesAppCheckEnterprise(c) &&
+        matchesAppCheckDebug(c),
     orElse: () => throw StateError(
       'No FirebaseProjectConfig in allConfigs matching filters: '
       'phoneAuthRecaptchaEnterpriseEnabled=$phoneAuthRecaptchaEnterpriseEnabled, '
       'appCheckRecaptchaV3Enabled=$appCheckRecaptchaV3Enabled, '
-      'appCheckRecaptchaEnterpriseEnabled=$appCheckRecaptchaEnterpriseEnabled.',
+      'appCheckRecaptchaEnterpriseEnabled=$appCheckRecaptchaEnterpriseEnabled, '
+      'appCheckDebugEnabled=$appCheckDebugEnabled.',
     ),
   );
 

@@ -164,7 +164,7 @@ void main() {
 
           await appCheck.activate(
             providers: FlutterAppCheckProviders(
-              recaptchaV3SiteKey: app.recaptchaEnterpriseSiteKey,
+              recaptchaV3SiteKey: app.recaptchaV3SiteKey,
               recaptchaWebDomain: 'localhost',
               recaptchaWebAppId: app.webAppId,
               usePlayIntegrity: false,

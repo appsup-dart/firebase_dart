@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 
 import '../auth/recaptcha_verifier.dart';
 import 'attestation.dart';
+import 'debug_app_check_provider.dart';
 
 export 'attestation.dart' show AppCheckAttestation;
 
@@ -23,9 +24,10 @@ abstract class FirebaseAppCheck {
 
   /// Activates App Check for this [app] using [providers].
   ///
-  /// Pass a [RecaptchaAppCheckProvider] (e.g. [RecaptchaAppCheckProvider.v3]) on
-  /// web and server-side Dart. On Flutter, use [FlutterAppCheckProviders] from
-  /// `firebase_dart_flutter` with reCAPTCHA site keys and optional `use*` flags.
+  /// Use [AppCheckProviders.debug], [AppCheckProviders.recaptchaV3], or
+  /// [AppCheckProviders.recaptchaEnterprise] for a single provider. On Flutter,
+  /// use [FlutterAppCheckProviders] from `firebase_dart_flutter` for native
+  /// attestation with optional reCAPTCHA WebView fallback.
   Future<void> activate({AppCheckProviders? providers});
 
   /// Requests a limited-use Firebase App Check token.
@@ -53,6 +55,22 @@ class AppCheckProviders {
 
   factory AppCheckProviders.single(AppCheckProvider provider) =>
       AppCheckProviders([provider]);
+
+  /// Debug provider only ([DebugAppCheckProvider]).
+  ///
+  /// Pass [debugToken] to fix the secret in code; omit it to generate or load
+  /// a UUID from Hive.
+  factory AppCheckProviders.debug({String? debugToken}) => AppCheckProviders([
+        DebugAppCheckProvider(debugToken: debugToken),
+      ]);
+
+  /// reCAPTCHA v3 provider only ([ReCaptchaV3Provider]).
+  factory AppCheckProviders.recaptchaV3(String siteKey) =>
+      AppCheckProviders([ReCaptchaV3Provider(siteKey)]);
+
+  /// reCAPTCHA Enterprise provider only ([ReCaptchaEnterpriseProvider]).
+  factory AppCheckProviders.recaptchaEnterprise(String siteKey) =>
+      AppCheckProviders([ReCaptchaEnterpriseProvider(siteKey)]);
 }
 
 /// Obtains platform attestation to be exchanged for an App Check JWT by

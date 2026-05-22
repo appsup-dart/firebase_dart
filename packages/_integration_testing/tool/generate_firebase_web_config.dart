@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:args/args.dart';
 import 'package:firebase_management/firebase_management.dart';
@@ -229,6 +231,17 @@ Future<void> _generateOneProject({
           webFirebaseAppId,
           projectId,
         );
+  final appCheckDebugToken = projectNumber == null ||
+          projectNumber.isEmpty ||
+          webFirebaseAppId == null ||
+          webFirebaseAppId.isEmpty
+      ? null
+      : await _ensureWebAppCheckDebugToken(
+          authClient,
+          projectNumber,
+          webFirebaseAppId,
+          projectId,
+        );
 
   final outPath = '$outDir/${_sanitizeProjectId(projectId)}_options.g.dart';
   await _writeGeneratedOptionsFile(
@@ -241,6 +254,7 @@ Future<void> _generateOneProject({
     phoneAuthRecaptchaEnforcement: phoneRecaptcha,
     webAppCheckRecaptchaV3SiteKey: appCheckRecaptchaV3SiteKey,
     webAppCheckRecaptchaEnterpriseSiteKey: appCheckRecaptchaEnterpriseSiteKey,
+    webAppCheckDebugToken: appCheckDebugToken,
   );
 
   stdout.writeln(
@@ -251,7 +265,8 @@ Future<void> _generateOneProject({
     'appCheckV3: ${appCheckV3Configured ? "yes" : "no"}, '
     'appCheckV3SiteKey: ${appCheckRecaptchaV3SiteKey != null ? "yes" : "no"}, '
     'appCheckEnterpriseSiteKey: '
-    '${appCheckRecaptchaEnterpriseSiteKey != null ? "yes" : "no"})',
+    '${appCheckRecaptchaEnterpriseSiteKey != null ? "yes" : "no"}, '
+    'appCheckDebugToken: ${appCheckDebugToken != null ? "yes" : "no"})',
   );
 }
 
@@ -530,6 +545,7 @@ Future<void> _writeGeneratedOptionsFile({
   required PhoneAuthRecaptchaEnforcement phoneAuthRecaptchaEnforcement,
   required String? webAppCheckRecaptchaV3SiteKey,
   required String? webAppCheckRecaptchaEnterpriseSiteKey,
+  required String? webAppCheckDebugToken,
 }) async {
   final file = File(outPath);
   file.parent.createSync(recursive: true);
@@ -581,6 +597,11 @@ Future<void> _writeGeneratedOptionsFile({
       "  webAppCheckRecaptchaEnterpriseSiteKey: '${_escape(webAppCheckRecaptchaEnterpriseSiteKey)}',",
     );
   }
+  if (webAppCheckDebugToken != null && webAppCheckDebugToken.isNotEmpty) {
+    buffer.writeln(
+      "  webAppCheckDebugToken: '${_escape(webAppCheckDebugToken)}',",
+    );
+  }
   buffer.writeln('  iosBundleIdsWithApnsConfigured: <String>[');
   for (final id in iosBundleIdsWithApnsConfigured) {
     buffer.writeln("    '${_escape(id)}',");
@@ -624,6 +645,93 @@ String _firebaseOptionsLiteral(Map<String, String> options) {
 
 String _escape(String value) =>
     value.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
+
+String get _debugTokenSecretsPath =>
+    '$_generatedDir/app_check_debug_token_secrets.json';
+
+String _debugTokenCacheKey(String projectNumber, String firebaseWebAppId) =>
+    '$projectNumber:$firebaseWebAppId';
+
+Map<String, String> _readDebugTokenSecrets() {
+  final file = File(_debugTokenSecretsPath);
+  if (!file.existsSync()) return {};
+  try {
+    final decoded = jsonDecode(file.readAsStringSync());
+    if (decoded is! Map) return {};
+    return decoded.map(
+      (k, v) => MapEntry(k.toString(), v.toString()),
+    );
+  } catch (e) {
+    stderr.writeln('Warning: could not read $_debugTokenSecretsPath: $e');
+    return {};
+  }
+}
+
+void _writeDebugTokenSecrets(Map<String, String> secrets) {
+  final file = File(_debugTokenSecretsPath);
+  file.parent.createSync(recursive: true);
+  final sorted = Map.fromEntries(
+    secrets.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
+  );
+  file.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(sorted));
+}
+
+String _generateUuidV4() {
+  final random = Random.secure();
+  final bytes = Uint8List.fromList(
+    List<int>.generate(16, (_) => random.nextInt(256)),
+  );
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+      '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+}
+
+/// Returns a registered App Check debug secret for the web app, creating one if needed.
+Future<String?> _ensureWebAppCheckDebugToken(
+  http.Client authClient,
+  String projectNumber,
+  String firebaseWebAppId,
+  String projectId,
+) async {
+  final cacheKey = _debugTokenCacheKey(projectNumber, firebaseWebAppId);
+  final secrets = _readDebugTokenSecrets();
+  final cached = secrets[cacheKey];
+  if (cached != null && cached.isNotEmpty) {
+    return cached;
+  }
+
+  final token = _generateUuidV4();
+  final api = firebaseappcheck_v1.FirebaseappcheckApi(authClient);
+  final parent = 'projects/$projectNumber/apps/$firebaseWebAppId';
+  try {
+    await api.projects.apps.debugTokens.create(
+      firebaseappcheck_v1.GoogleFirebaseAppcheckV1DebugToken()
+        ..displayName = 'integration-smoke'
+        ..token = token,
+      parent,
+    );
+    secrets[cacheKey] = token;
+    _writeDebugTokenSecrets(secrets);
+    stdout.writeln(
+      'Registered App Check debug token for "$projectId" web app '
+      '"$firebaseWebAppId" (stored in app_check_debug_token_secrets.json).',
+    );
+    return token;
+  } on firebaseappcheck_v1.DetailedApiRequestError catch (e) {
+    stderr.writeln(
+      'Warning: could not create App Check debug token for "$projectId" '
+      'web app "$firebaseWebAppId": ${e.status} ${e.message}',
+    );
+    return null;
+  } catch (e, st) {
+    stderr.writeln(
+      'Warning: App Check debug token setup for "$projectId" failed: $e\n$st',
+    );
+    return null;
+  }
+}
 
 /// Whether App Check reCAPTCHA v3 config exists for the web app.
 ///

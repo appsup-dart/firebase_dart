@@ -2,7 +2,6 @@ import 'package:firebase_dart/app_check.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart_flutter/src/app_check/app_attest.dart';
 import 'package:firebase_dart_flutter/src/app_check/recaptcha.dart';
-import 'package:firebase_dart_flutter/src/app_check/debug.dart';
 import 'package:firebase_dart_flutter/src/app_check/device_check.dart';
 import 'package:firebase_dart_flutter/src/app_check/play_integrity.dart';
 import 'package:flutter/foundation.dart';
@@ -36,12 +35,7 @@ class FlutterAppCheckProviders extends AppCheckProviders {
     bool useDeviceCheck = true,
     bool useAppAttest = true,
     BuildContext? Function()? getBuildContext,
-    String? debugToken,
   }) {
-    final debug = debugToken;
-    if (debug != null && debug.isNotEmpty) {
-      return FlutterAppCheckProviders._([DebugAppCheckProvider(debug)]);
-    }
     if (kIsWeb) {
       return FlutterAppCheckProviders._([
         if (recaptchaEnterpriseSiteKey != null)
