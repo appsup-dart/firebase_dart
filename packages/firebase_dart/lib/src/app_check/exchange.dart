@@ -13,15 +13,19 @@ Future<AppCheckToken> exchangeAttestation(
   return switch (attestation) {
     MintedAppCheckAttestation(:final token, :final expireTime) =>
       Future.value(AppCheckToken(token, expireTime)),
-    RecaptchaV3Attestation(:final token) => exchangeRecaptchaV3(
+    RecaptchaV3Attestation(:final token, :final webAppId) =>
+      exchangeRecaptchaV3(
         app,
         token,
         limitedUse: limitedUse,
+        webAppId: webAppId,
       ),
-    RecaptchaEnterpriseAttestation(:final token) => exchangeRecaptchaEnterprise(
+    RecaptchaEnterpriseAttestation(:final token, :final webAppId) =>
+      exchangeRecaptchaEnterprise(
         app,
         token,
         limitedUse: limitedUse,
+        webAppId: webAppId,
       ),
     PlayIntegrityAttestation(:final token) => exchangePlayIntegrity(
         app,
@@ -70,8 +74,8 @@ Future<AppCheckToken> exchangeAttestation(
   };
 }
 
-String appCheckAppResourceName(FirebaseApp app) =>
-    'projects/${app.options.projectId}/apps/${app.options.appId}';
+String appCheckAppResourceName(FirebaseApp app, {String? webAppId}) =>
+    'projects/${app.options.projectId}/apps/${webAppId ?? app.options.appId}';
 
 FirebaseappcheckApi appCheckApi(FirebaseApp app) => FirebaseappcheckApi(
       ApiKeyClient(http.Client(), apiKey: app.options.apiKey),
@@ -99,13 +103,14 @@ Future<AppCheckToken> exchangeRecaptchaV3(
   FirebaseApp app,
   String recaptchaV3Token, {
   required bool limitedUse,
+  String? webAppId,
 }) async {
   final response =
       await appCheckApi(app).projects.apps.exchangeRecaptchaV3Token(
             GoogleFirebaseAppcheckV1ExchangeRecaptchaV3TokenRequest()
               ..recaptchaV3Token = recaptchaV3Token
               ..limitedUse = limitedUse,
-            appCheckAppResourceName(app),
+            appCheckAppResourceName(app, webAppId: webAppId),
           );
   return appCheckTokenFromExchangeResponse(response);
 }
@@ -114,13 +119,14 @@ Future<AppCheckToken> exchangeRecaptchaEnterprise(
   FirebaseApp app,
   String recaptchaEnterpriseToken, {
   required bool limitedUse,
+  String? webAppId,
 }) async {
   final response =
       await appCheckApi(app).projects.apps.exchangeRecaptchaEnterpriseToken(
             GoogleFirebaseAppcheckV1ExchangeRecaptchaEnterpriseTokenRequest()
               ..recaptchaEnterpriseToken = recaptchaEnterpriseToken
               ..limitedUse = limitedUse,
-            appCheckAppResourceName(app),
+            appCheckAppResourceName(app, webAppId: webAppId),
           );
   return appCheckTokenFromExchangeResponse(response);
 }

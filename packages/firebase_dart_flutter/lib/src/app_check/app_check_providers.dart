@@ -1,168 +1,185 @@
 import 'package:firebase_dart/app_check.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart_flutter/src/app_check/app_check_recaptcha.dart';
 import 'package:firebase_dart_flutter/src/app_check/play_integrity_attestation.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 
-/// Android App Check attestation providers.
+/// Firebase App Check provider for Flutter.
 ///
-/// Subclass for custom attestation. Built-in providers are available via
-/// [playIntegrity] and [debug].
-abstract class AndroidAppCheckProvider extends BaseAppCheckProvider {
-  const AndroidAppCheckProvider();
-
-  static const playIntegrity = AndroidPlayIntegrityProvider();
-
-  static const debug = AndroidDebugAppCheckProvider();
-}
-
-/// Google Play Integrity attestation for App Check.
-class AndroidPlayIntegrityProvider extends AndroidAppCheckProvider {
-  const AndroidPlayIntegrityProvider();
-
-  @override
-  Future<AppCheckAttestation> getAttestation(FirebaseApp app) async {
-    final challenge = await generatePlayIntegrityChallenge(app);
-    return playIntegrityAttestation(app, challenge: challenge);
-  }
-}
-
-/// Debug provider for Android App Check.
-class AndroidDebugAppCheckProvider extends AndroidAppCheckProvider {
-  const AndroidDebugAppCheckProvider({this.debugToken});
-
-  /// Debug token registered in the Firebase console. When null, the native SDK
-  /// may read `FIREBASE_APPCHECK_DEBUG_TOKEN` from the environment.
-  final String? debugToken;
-
-  @override
-  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
-    throw UnimplementedError(
-        'AndroidDebugAppCheckProvider is not implemented yet');
-  }
-}
-
-/// Apple platform App Check attestation providers.
-abstract class AppleAppCheckProvider implements AppCheckProvider {
-  const AppleAppCheckProvider();
-
-  static const deviceCheck = AppleDeviceCheckProvider();
-
-  static const appAttest = AppleAppAttestProvider();
-
-  static const appAttestWithDeviceCheckFallback =
-      AppleAppAttestWithDeviceCheckFallbackProvider();
-
-  static const debug = AppleDebugAppCheckProvider();
-}
-
-class AppleDeviceCheckProvider extends AppleAppCheckProvider {
-  const AppleDeviceCheckProvider();
-
-  @override
-  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
-    throw UnimplementedError('AppleDeviceCheckProvider is not implemented yet');
-  }
-}
-
-class AppleAppAttestProvider extends AppleAppCheckProvider {
-  const AppleAppAttestProvider();
-
-  @override
-  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
-    throw UnimplementedError('AppleAppAttestProvider is not implemented yet');
-  }
-}
-
-class AppleAppAttestWithDeviceCheckFallbackProvider
-    extends AppleAppCheckProvider {
-  const AppleAppAttestWithDeviceCheckFallbackProvider();
-
-  @override
-  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
-    throw UnimplementedError(
-        'AppleAppAttestWithDeviceCheckFallbackProvider is not implemented yet');
-  }
-}
-
-class AppleDebugAppCheckProvider extends AppleAppCheckProvider {
-  const AppleDebugAppCheckProvider({this.debugToken});
-
-  final String? debugToken;
-
-  @override
-  Future<AppCheckAttestation> getAttestation(FirebaseApp app) {
-    throw UnimplementedError(
-        'AppleDebugAppCheckProvider is not implemented yet');
-  }
-}
-
-/// Selects the App Check provider for the current platform.
+/// Native attestation is tried per platform; reCAPTCHA fallback uses an in-app
+/// WebView with the **web** App Check site keys, [recaptchaWebDomain], and
+/// [recaptchaWebAppId].
 ///
-/// On web and desktop, only [recaptcha] is used. On Android and Apple platforms,
-/// [android] defaults to [AndroidAppCheckProvider.playIntegrity] and [apple] to
-/// [AppleAppCheckProvider.deviceCheck]. The native provider is tried first; on
-/// failure, [recaptcha] is used when set (same fallback model as
-/// [FlutterApplicationVerifier] for auth).
-class FlutterAppCheckProvider implements AppCheckProvider {
+/// ```dart
+/// await FirebaseAppCheck.instance.activate(
+///   provider: FlutterAppCheckProvider(
+///     recaptchaV3SiteKey: '...',
+///     recaptchaWebDomain: 'my-project.firebaseapp.com',
+///     recaptchaWebAppId: '1:123456789:web:abc...',
+///     getBuildContext: () => navigatorKey.currentContext,
+///   ),
+/// );
+/// ```
+class FlutterAppCheckProvider extends BaseAppCheckProvider {
   static final _logger = Logger('FlutterAppCheckProvider');
 
+  final String? recaptchaV3SiteKey;
+  final String? recaptchaEnterpriseSiteKey;
+
+  /// Authorized domain for the reCAPTCHA WebView `baseUrl` (e.g. auth domain).
+  final String? recaptchaWebDomain;
+
+  /// Firebase web app id (`1:…:web:…`) for App Check reCAPTCHA token exchange.
+  final String? recaptchaWebAppId;
+
+  final bool usePlayIntegrity;
+  final bool useDeviceCheck;
+  final bool useAppAttest;
+
+  /// Required for reCAPTCHA WebView fallback on mobile and desktop.
+  final BuildContext? Function()? getBuildContext;
+
+  final String? debugToken;
+
   FlutterAppCheckProvider({
-    this.android = AndroidAppCheckProvider.playIntegrity,
-    this.apple = AppleAppCheckProvider.deviceCheck,
-    this.recaptcha,
+    this.recaptchaV3SiteKey,
+    this.recaptchaEnterpriseSiteKey,
+    this.recaptchaWebDomain,
+    this.recaptchaWebAppId,
+    this.usePlayIntegrity = true,
+    this.useDeviceCheck = true,
+    this.useAppAttest = false,
+    this.getBuildContext,
+    this.debugToken,
   });
 
-  final AndroidAppCheckProvider android;
-  final AppleAppCheckProvider apple;
-  final RecaptchaAppCheckProvider? recaptcha;
+  bool get _hasRecaptchaV3 =>
+      recaptchaV3SiteKey != null && recaptchaV3SiteKey!.isNotEmpty;
+
+  bool get _hasRecaptchaEnterprise =>
+      recaptchaEnterpriseSiteKey != null &&
+      recaptchaEnterpriseSiteKey!.isNotEmpty;
+
+  bool get _needsRecaptchaWebViewConfig =>
+      !kIsWeb && (_hasRecaptchaV3 || _hasRecaptchaEnterprise);
 
   @override
   Future<AppCheckAttestation> getAttestation(FirebaseApp app) async {
+    final debug = debugToken;
+    if (debug != null && debug.isNotEmpty) {
+      return AppCheckAttestation.debug(debug);
+    }
+
     if (kIsWeb) {
-      return _requireRecaptcha().getAttestation(app);
+      return _recaptchaAttestationOnWeb(app);
     }
 
     final platform = Platform.current;
     if (platform is AndroidPlatform) {
-      return _getWithFallback(android, app, 'Android');
+      return _getWithRecaptchaFallback(app, _androidAttestation);
     }
     if (platform is IOsPlatform || platform is MacOsPlatform) {
-      return _getWithFallback(apple, app, 'Apple');
+      return _getWithRecaptchaFallback(app, _appleAttestation);
     }
 
-    return _requireRecaptcha().getAttestation(app);
+    return _recaptchaAttestationWithWebView(app);
   }
 
-  RecaptchaAppCheckProvider _requireRecaptcha() {
-    final provider = recaptcha;
-    if (provider == null) {
-      throw StateError(
-          'App Check: a RecaptchaAppCheckProvider is required for this '
-          'platform (e.g. recaptcha: RecaptchaAppCheckProvider.v3(siteKey)).');
-    }
-    return provider;
-  }
-
-  Future<AppCheckAttestation> _getWithFallback(
-    AppCheckProvider primary,
+  Future<AppCheckAttestation> _getWithRecaptchaFallback(
     FirebaseApp app,
-    String platformLabel,
+    Future<AppCheckAttestation?> Function(FirebaseApp) attest,
   ) async {
     try {
-      return await primary.getAttestation(app);
+      final result = await attest(app);
+      if (result != null) return result;
     } catch (e, st) {
       _logger.warning(
-        'App Check $platformLabel attestation failed, trying reCAPTCHA.',
+        'App Check native attestation failed, trying reCAPTCHA WebView.',
         e,
         st,
       );
-      final fallback = recaptcha;
-      if (fallback != null) {
-        return fallback.getAttestation(app);
-      }
-      Error.throwWithStackTrace(e, st);
     }
+    return _recaptchaAttestationWithWebView(app);
   }
+
+  Future<AppCheckAttestation?> _androidAttestation(FirebaseApp app) async {
+    if (!usePlayIntegrity) return null;
+    if (!await isGooglePlayServicesAvailable()) return null;
+
+    final challenge = await generatePlayIntegrityChallenge(app);
+    return playIntegrityAttestation(app, challenge: challenge);
+  }
+
+  Future<AppCheckAttestation?> _appleAttestation(FirebaseApp app) async {
+    if (!useAppAttest && !useDeviceCheck) return null;
+    return null;
+  }
+
+  Future<AppCheckAttestation> _recaptchaAttestationOnWeb(
+      FirebaseApp app) async {
+    if (_hasRecaptchaEnterprise) {
+      return ReCaptchaEnterpriseProvider(recaptchaEnterpriseSiteKey!)
+          .getAttestation(app);
+    }
+    if (_hasRecaptchaV3) {
+      return ReCaptchaV3Provider(recaptchaV3SiteKey!).getAttestation(app);
+    }
+    throw _missingRecaptchaSiteKeyError();
+  }
+
+  Future<AppCheckAttestation> _recaptchaAttestationWithWebView(
+      FirebaseApp app) async {
+    if (!_hasRecaptchaV3 && !_hasRecaptchaEnterprise) {
+      throw _missingRecaptchaSiteKeyError();
+    }
+
+    final domain = recaptchaWebDomain;
+    final webAppId = recaptchaWebAppId;
+    if (_needsRecaptchaWebViewConfig) {
+      if (domain == null || domain.isEmpty) {
+        throw StateError(
+          'App Check: recaptchaWebDomain is required for reCAPTCHA WebView '
+          'fallback on native platforms.',
+        );
+      }
+      if (webAppId == null || webAppId.isEmpty) {
+        throw StateError(
+          'App Check: recaptchaWebAppId (Firebase web app id) is required for '
+          'reCAPTCHA WebView fallback on native platforms.',
+        );
+      }
+      final context = getBuildContext?.call();
+      if (context == null || !context.mounted) {
+        throw StateError(
+          'App Check: getBuildContext must return a mounted BuildContext for '
+          'reCAPTCHA WebView fallback.',
+        );
+      }
+
+      if (_hasRecaptchaEnterprise) {
+        return appCheckRecaptchaEnterpriseAttestation(
+          siteKey: recaptchaEnterpriseSiteKey!,
+          recaptchaWebDomain: domain,
+          recaptchaWebAppId: webAppId,
+          context: context,
+        );
+      }
+      return appCheckRecaptchaV3Attestation(
+        siteKey: recaptchaV3SiteKey!,
+        recaptchaWebDomain: domain,
+        recaptchaWebAppId: webAppId,
+        context: context,
+      );
+    }
+
+    throw StateError('App Check: reCAPTCHA WebView fallback is not available.');
+  }
+
+  StateError _missingRecaptchaSiteKeyError() => StateError(
+        'App Check: set recaptchaV3SiteKey and/or recaptchaEnterpriseSiteKey on '
+        'FlutterAppCheckProvider.',
+      );
 }

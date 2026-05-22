@@ -61,7 +61,6 @@ void main() {
       final provider = _CountingProvider();
 
       await appCheck.activate(provider: provider);
-      expect(provider.attestCount, 1);
 
       expect(await appCheck.getToken(), 'token-1');
       expect(provider.attestCount, 1);

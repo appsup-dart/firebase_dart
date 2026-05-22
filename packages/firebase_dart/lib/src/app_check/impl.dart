@@ -29,7 +29,7 @@ class FirebaseAppCheckImpl extends FirebaseService
   Future<void> activate({AppCheckProvider? provider}) async {
     _provider = provider;
     if (_provider != null) {
-      await _updateToken();
+      _scheduleTokenRefresh(_cachedToken);
     }
   }
 
@@ -92,18 +92,23 @@ class FirebaseAppCheckImpl extends FirebaseService
   static bool _isTokenValid(AppCheckToken? token) =>
       token != null && token.expireTime.isAfter(clock.now());
 
+  Future<void>? _updateTokenFuture;
+
   Future<void> _updateToken() async {
     final provider = _provider;
     if (provider == null) return;
 
-    final attestation = await provider.getAttestation(app);
-    final token =
-        await exchangeAttestation(app, attestation, limitedUse: false);
-    _cachedToken = token;
-    if (!_tokenChanges.isClosed) {
-      _tokenChanges.add(token.token);
-    }
-    _scheduleTokenRefresh(token);
+    return _updateTokenFuture ??= Future.microtask(() async {
+      final attestation = await provider.getAttestation(app);
+      final token =
+          await exchangeAttestation(app, attestation, limitedUse: false);
+      _cachedToken = token;
+      if (!_tokenChanges.isClosed) {
+        _tokenChanges.add(token.token);
+      }
+      _scheduleTokenRefresh(token);
+      _updateTokenFuture = null;
+    });
   }
 
   /// Matches Firebase JS: issuedAt + (50% × TTL) + 5 minutes, capped at
@@ -124,11 +129,11 @@ class FirebaseAppCheckImpl extends FirebaseService
     return delay.isNegative ? Duration.zero : delay;
   }
 
-  void _scheduleTokenRefresh(AppCheckToken token) {
+  void _scheduleTokenRefresh(AppCheckToken? token) {
     _cancelRefreshTimer();
     if (!_isTokenAutoRefreshEnabled) return;
 
-    final delay = _tokenRefreshDelay(token);
+    final delay = token == null ? Duration.zero : _tokenRefreshDelay(token);
     if (delay <= Duration.zero) {
       unawaited(_refreshToken());
       return;

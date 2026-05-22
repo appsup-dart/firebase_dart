@@ -6,10 +6,13 @@
 sealed class AppCheckAttestation {
   const AppCheckAttestation._();
 
-  factory AppCheckAttestation.recaptchaV3(String token) =
+  /// [webAppId] is the Firebase **web** app id (`1:…:web:…`) when attestation was
+  /// obtained for a different platform (e.g. reCAPTCHA WebView fallback on mobile).
+  factory AppCheckAttestation.recaptchaV3(String token, {String? webAppId}) =
       RecaptchaV3Attestation;
 
-  factory AppCheckAttestation.recaptchaEnterprise(String token) =
+  factory AppCheckAttestation.recaptchaEnterprise(String token,
+          {String? webAppId}) =
       RecaptchaEnterpriseAttestation;
 
   factory AppCheckAttestation.playIntegrity(String token) =
@@ -45,15 +48,21 @@ sealed class AppCheckAttestation {
 }
 
 final class RecaptchaV3Attestation extends AppCheckAttestation {
-  RecaptchaV3Attestation(this.token) : super._();
+  RecaptchaV3Attestation(this.token, {this.webAppId}) : super._();
 
   final String token;
+
+  /// Web app id for token exchange when not using [FirebaseApp.options.appId].
+  final String? webAppId;
 }
 
 final class RecaptchaEnterpriseAttestation extends AppCheckAttestation {
-  RecaptchaEnterpriseAttestation(this.token) : super._();
+  RecaptchaEnterpriseAttestation(this.token, {this.webAppId}) : super._();
 
   final String token;
+
+  /// Web app id for token exchange when not using [FirebaseApp.options.appId].
+  final String? webAppId;
 }
 
 final class PlayIntegrityAttestation extends AppCheckAttestation {

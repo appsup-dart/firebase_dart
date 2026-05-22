@@ -23,9 +23,8 @@ abstract class FirebaseAppCheck {
   /// Activates App Check for this [app] using [provider].
   ///
   /// Pass a [RecaptchaAppCheckProvider] (e.g. [RecaptchaAppCheckProvider.v3]) on
-  /// web and server-side Dart. On Flutter, prefer [FlutterAppCheckProvider] from
-  /// `firebase_dart_flutter`, which selects native attestation per platform and
-  /// can fall back to [RecaptchaAppCheckProvider].
+  /// web and server-side Dart. On Flutter, use [FlutterAppCheckProvider] from
+  /// `firebase_dart_flutter` with reCAPTCHA site keys and optional `use*` flags.
   Future<void> activate({AppCheckProvider? provider});
 
   /// Requests a limited-use Firebase App Check token.
