@@ -3,6 +3,29 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:intl/locale.dart';
 
+/// Supplies the current App Check JWT for [AppCheckClient].
+typedef AppCheckTokenProvider = Future<String?> Function();
+
+/// Adds `X-Firebase-AppCheck` when App Check is activated and a token is available.
+class AppCheckClient extends http.BaseClient {
+  final http.Client baseClient;
+  final AppCheckTokenProvider getAppCheckToken;
+
+  AppCheckClient(this.baseClient, {required this.getAppCheckToken});
+
+  @override
+  void close() => baseClient.close();
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final token = await getAppCheckToken();
+    if (token != null && token.isNotEmpty) {
+      request.headers['X-Firebase-AppCheck'] = token;
+    }
+    return baseClient.send(request);
+  }
+}
+
 class MetadataClient extends http.BaseClient {
   final String firebaseAppId;
 
