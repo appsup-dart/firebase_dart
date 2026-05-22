@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_dart/src/auth/rpc/http_util.dart';
 import 'package:firebase_dart/src/storage/impl/http_client.dart';
 import 'package:test/test.dart';
 import 'package:http/testing.dart';
@@ -42,6 +43,23 @@ void main() async {
       expect(response.statusCode, 234);
       expect(response.body, 'I am the server response!!!!');
       expect(response.headers['ResponseHeader1'], 'ResponseValue1');
+    });
+
+    test('adds X-Firebase-AppCheck when App Check token is set', () async {
+      String? appCheckToken = 'app-check-jwt';
+      final client = HttpClient(
+        AppCheckClient(
+          MockClient((request) async {
+            expect(request.headers['X-Firebase-AppCheck'], 'app-check-jwt');
+            expect(request.headers['Authorization'], isNull);
+            return Response('', 200, request: request);
+          }),
+          getAppCheckToken: () async => appCheckToken,
+        ),
+        () async => null,
+      );
+
+      await client.get(Uri.parse('http://my-url.com/'));
     });
   });
 }
