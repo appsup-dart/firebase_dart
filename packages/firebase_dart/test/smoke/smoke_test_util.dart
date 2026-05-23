@@ -1,4 +1,5 @@
 import 'package:_integration_testing/_integration_testing.dart';
+import 'package:firebase_dart/app_check.dart';
 import 'package:firebase_dart/core.dart';
 
 /// Public App Check reCAPTCHA v3 site key from generated [FirebaseProjectConfig]
@@ -62,6 +63,49 @@ String webAppCheckRecaptchaEnterpriseSiteKeyForApp(FirebaseApp app) {
   );
 }
 
+/// Activates App Check for service smoke tests (prefers debug, else Enterprise).
+Future<void> activateAppCheckForSmoke(FirebaseApp app) async {
+  final appCheck = FirebaseAppCheck.instanceFor(app: app);
+  final projectId = app.options.projectId;
+  for (final c in allConfigs) {
+    if (c.projectId != projectId) continue;
+    final debug = c.webAppCheckDebugToken;
+    if (debug != null && debug.isNotEmpty) {
+      await appCheck.activate(
+        providers: AppCheckProviders.debug(debugToken: debug),
+      );
+      return;
+    }
+    final enterprise = c.webAppCheckRecaptchaEnterpriseSiteKey;
+    if (enterprise != null && enterprise.isNotEmpty) {
+      await appCheck.activate(
+        providers: AppCheckProviders.recaptchaEnterprise(enterprise),
+      );
+      return;
+    }
+    final v3 = c.webAppCheckRecaptchaV3SiteKey;
+    if (v3 != null && v3.isNotEmpty) {
+      await appCheck.activate(providers: AppCheckProviders.recaptchaV3(v3));
+      return;
+    }
+    break;
+  }
+  throw StateError(
+    'FirebaseProjectConfig for projectId "$projectId" has no App Check keys. '
+    'Regenerate from packages/_integration_testing with:\n'
+    '  dart run tool/generate_firebase_web_config.dart',
+  );
+}
+
+/// True when [config] has any App Check provider config for smoke service tests.
+bool hasAppCheckForServiceSmoke(FirebaseProjectConfig config) {
+  if ((config.webAppCheckDebugToken ?? '').isNotEmpty) return true;
+  if ((config.webAppCheckRecaptchaEnterpriseSiteKey ?? '').isNotEmpty) {
+    return true;
+  }
+  return (config.webAppCheckRecaptchaV3SiteKey ?? '').isNotEmpty;
+}
+
 /// Returns an existing [FirebaseApp] for the chosen project, or initializes one
 /// with [Firebase.initializeApp] using [FirebaseProjectConfig.webConfig].
 ///
@@ -78,6 +122,8 @@ Future<FirebaseApp> getApp({
   bool? appCheckRecaptchaV3Enabled,
   bool? appCheckRecaptchaEnterpriseEnabled,
   bool? appCheckDebugEnabled,
+  bool? appCheckForServiceSmoke,
+  String? projectId,
 }) async {
   if (allConfigs.isEmpty) {
     throw StateError(
@@ -113,18 +159,33 @@ Future<FirebaseApp> getApp({
     return appCheckDebugEnabled ? enabled : !enabled;
   }
 
+  bool matchesAppCheckForServiceSmoke(FirebaseProjectConfig c) {
+    if (appCheckForServiceSmoke == null) return true;
+    final enabled = hasAppCheckForServiceSmoke(c);
+    return appCheckForServiceSmoke ? enabled : !enabled;
+  }
+
+  bool matchesProjectId(FirebaseProjectConfig c) {
+    if (projectId == null) return true;
+    return c.projectId == projectId;
+  }
+
   final config = allConfigs.firstWhere(
     (c) =>
         matchesPhoneAuth(c) &&
         matchesAppCheckV3(c) &&
         matchesAppCheckEnterprise(c) &&
-        matchesAppCheckDebug(c),
+        matchesAppCheckDebug(c) &&
+        matchesAppCheckForServiceSmoke(c) &&
+        matchesProjectId(c),
     orElse: () => throw StateError(
       'No FirebaseProjectConfig in allConfigs matching filters: '
       'phoneAuthRecaptchaEnterpriseEnabled=$phoneAuthRecaptchaEnterpriseEnabled, '
       'appCheckRecaptchaV3Enabled=$appCheckRecaptchaV3Enabled, '
       'appCheckRecaptchaEnterpriseEnabled=$appCheckRecaptchaEnterpriseEnabled, '
-      'appCheckDebugEnabled=$appCheckDebugEnabled.',
+      'appCheckDebugEnabled=$appCheckDebugEnabled, '
+      'appCheckForServiceSmoke=$appCheckForServiceSmoke, '
+      'projectId=$projectId.',
     ),
   );
 

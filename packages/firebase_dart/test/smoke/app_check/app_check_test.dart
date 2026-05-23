@@ -2,8 +2,11 @@
 library;
 
 import 'package:firebase_dart/app_check.dart';
+import 'package:firebase_dart/auth.dart';
+import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:firebase_dart/storage.dart';
 import 'package:test/test.dart';
 import 'package:jose/jose.dart';
 
@@ -121,17 +124,60 @@ void main() {
 
   group('FirebaseDatabase', () {
     test('one-shot read succeeds with App Check activated', () async {
-      final app = await getApp(appCheckRecaptchaEnterpriseEnabled: true);
+      final app = await getApp(appCheckForServiceSmoke: true);
       addTearDown(() => app.delete());
-      final siteKey = webAppCheckRecaptchaEnterpriseSiteKeyForApp(app);
-      final appCheck = FirebaseAppCheck.instanceFor(app: app);
-      await appCheck.activate(
-          providers: AppCheckProviders.recaptchaEnterprise(siteKey));
+      await activateAppCheckForSmoke(app);
 
       final db = FirebaseDatabase(app: app);
       final snapshot = await db.reference().child('test').get();
 
       expect(snapshot, isNotNull);
+    });
+  });
+
+  group('FirebaseAuth', () {
+    test('signInAnonymously succeeds with App Check activated', () async {
+      final app = await getApp(appCheckForServiceSmoke: true);
+      addTearDown(() => app.delete());
+      await activateAppCheckForSmoke(app);
+
+      final auth = FirebaseAuth.instanceFor(app: app);
+      final credential = await auth.signInAnonymously();
+
+      expect(credential.user, isNotNull);
+      expect(credential.user!.isAnonymous, isTrue);
+
+      await auth.signOut();
+    });
+  });
+
+  group('FirebaseStorage', () {
+    test('getMetadata reaches the API with App Check activated', () async {
+      final app = await getApp(appCheckForServiceSmoke: true);
+      addTearDown(() => app.delete());
+      await activateAppCheckForSmoke(app);
+
+      final storage = FirebaseStorage.instanceFor(app: app);
+      final ref = storage.ref(
+        'smoke/app_check/does-not-exist-${DateTime.now().microsecondsSinceEpoch}.txt',
+      );
+
+      // Proves Storage REST received the request with X-Firebase-AppCheck.
+      // object-not-found / unauthorized / quota-exceeded are all backend responses.
+      await expectLater(
+        ref.getMetadata(),
+        throwsA(
+          isA<FirebaseException>().having(
+            (e) => e.code,
+            'code',
+            anyOf(
+              'object-not-found',
+              'unauthorized',
+              'quota-exceeded',
+            ),
+          ),
+        ),
+      );
     });
   });
 }
