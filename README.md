@@ -7,8 +7,8 @@ A pure Dart implementation of the Firebase client
 
 Consists of two packages: 
 
-* [firebase_dart](packages/firebase_dart/README.md): a platform independent dart client
-* [firebase_dart_flutter](packages/firebase_dart_flutter/README.md): extensions specific for Flutter
+* [firebase_dart](packages/firebase_dart/README.md): a platform independent dart client (Auth, Realtime Database, Storage, App Check)
+* [firebase_dart_flutter](packages/firebase_dart_flutter/README.md): Flutter extensions (native App Check attestation, reCAPTCHA WebView fallback)
 
 
 ## Sponsor

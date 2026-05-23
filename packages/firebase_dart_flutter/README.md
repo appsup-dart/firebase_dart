@@ -5,8 +5,55 @@
 
 A pure Dart implementation of the Firebase client with some Flutter specific extensions.
 
-See [firebase_dart](https://pub.dev/packages/firebase_dart) package for more details.
+See [firebase_dart](https://pub.dev/packages/firebase_dart) package for more details on Authentication, Realtime Database, Cloud Storage, and App Check.
 
+## App Check on Flutter
+
+Import `package:firebase_dart/app_check.dart` and `package:firebase_dart_flutter/firebase_dart_flutter.dart`, then activate with `FlutterAppCheckProviders`. It builds an ordered provider list for the current platform:
+
+| Platform | Default providers (when enabled) |
+| -------- | -------------------------------- |
+| **Android** | `PlayIntegrityAppCheckProvider` |
+| **iOS** | `AppAttestAppCheckProvider`, `DeviceCheckAppCheckProvider` |
+| **macOS** | `DeviceCheckAppCheckProvider` |
+| **Web** | `ReCaptchaV3Provider` / `ReCaptchaEnterpriseProvider` from site keys |
+| **Fallback** | `RecaptchaWebViewAppCheckProvider` when `recaptchaWebDomain`, `recaptchaWebAppId`, and `getBuildContext` are set |
+
+```dart
+import 'package:firebase_dart/app_check.dart';
+import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
+import 'package:flutter/material.dart';
+
+final navigatorKey = GlobalKey<NavigatorState>();
+
+// In main(), after FirebaseDartFlutter.setup() and Firebase.initializeApp():
+await FirebaseAppCheck.instance.activate(
+  providers: FlutterAppCheckProviders(
+    recaptchaV3SiteKey: '6Le...', // from Firebase Console → App Check
+    recaptchaEnterpriseSiteKey: '6Le...', // optional
+    recaptchaWebDomain: 'my-project.firebaseapp.com',
+    recaptchaWebAppId: DefaultFirebaseOptions.currentPlatform.appId,
+    getBuildContext: () => navigatorKey.currentContext,
+    // usePlayIntegrity: true,
+    // useAppAttest: true,
+    // useDeviceCheck: true,
+  ),
+);
+```
+
+For a single native provider in tests or minimal apps:
+
+```dart
+await FirebaseAppCheck.instance.activate(
+  providers: AppCheckProviders([
+    const PlayIntegrityAppCheckProvider(),
+  ]),
+);
+```
+
+On iOS, `AppAttestAppCheckProvider.isSupported()` indicates whether App Attest is available (physical device, iOS 14+). For local development on any platform, use `AppCheckProviders.debug` from `firebase_dart` and register the debug token in the Firebase Console.
+
+Auth, Storage, and Realtime Database pick up App Check tokens automatically once activated; see the [firebase_dart App Check section](https://github.com/appsup-dart/firebase_dart/blob/main/packages/firebase_dart/README.md#app-check).
 
 ## Sponsor
 
