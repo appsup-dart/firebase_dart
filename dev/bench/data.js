@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1779737016872,
+  "lastUpdate": 1779741850564,
   "repoUrl": "https://github.com/appsup-dart/firebase_dart",
   "entries": {
     "Benchmark": [
@@ -101,6 +101,107 @@ window.BENCHMARK_DATA = {
             "range": "±1.06%",
             "unit": "ops/sec",
             "extra": "2061 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rik.bellens@appsup.be",
+            "name": "rikbellens",
+            "username": "rbellens"
+          },
+          "committer": {
+            "email": "rik.bellens@appsup.be",
+            "name": "rikbellens",
+            "username": "rbellens"
+          },
+          "distinct": true,
+          "id": "d78d26e58a9786a5c92ae98a15b4cc32ab30e455",
+          "message": "perf: increase speed of IncompleteData.applyOperation",
+          "timestamp": "2026-05-25T22:42:13+02:00",
+          "tree_id": "49afe01a4a6a6238b329115806c517e9189fa932",
+          "url": "https://github.com/appsup-dart/firebase_dart/commit/d78d26e58a9786a5c92ae98a15b4cc32ab30e455"
+        },
+        "date": 1779741850099,
+        "tool": "benchmarkjs",
+        "benches": [
+          {
+            "name": "IncompleteData merge applyOperation (complete root merge)",
+            "value": 1013,
+            "range": "±1.19%",
+            "unit": "ops/sec",
+            "extra": "2026 samples"
+          },
+          {
+            "name": "synctree merge write path fullWriteCycle (merge + server + ack)",
+            "value": 380,
+            "range": "±4.30%",
+            "unit": "ops/sec",
+            "extra": "761 samples"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete identity merge)",
+            "value": 17332,
+            "range": "±0.39%",
+            "unit": "ops/sec",
+            "extra": "34665 samples"
+          },
+          {
+            "name": "synctree merge write path userMerge only",
+            "value": 877,
+            "range": "±1.33%",
+            "unit": "ops/sec",
+            "extra": "1754 samples"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse merge)",
+            "value": 656,
+            "range": "±1.83%",
+            "unit": "ops/sec",
+            "extra": "1312 samples"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse identity merge)",
+            "value": 15680,
+            "range": "±0.27%",
+            "unit": "ops/sec",
+            "extra": "31360 samples"
+          },
+          {
+            "name": "synctree merge serverMerge only (after user merge) serverMerge",
+            "value": 933,
+            "range": "±0.93%",
+            "unit": "ops/sec",
+            "extra": "1866 samples"
+          },
+          {
+            "name": "calendar queries density: 5 events/day listen acks + first server snapshots",
+            "value": 557,
+            "range": "±2.63%",
+            "unit": "ops/sec",
+            "extra": "1114 samples"
+          },
+          {
+            "name": "calendar queries density: 1 event/day listen acks + first server snapshots",
+            "value": 214,
+            "range": "±1.10%",
+            "unit": "ops/sec",
+            "extra": "429 samples"
+          },
+          {
+            "name": "calendar queries density: 1 event / 10 days listen acks + first server snapshots",
+            "value": 294,
+            "range": "±1.03%",
+            "unit": "ops/sec",
+            "extra": "589 samples"
+          },
+          {
+            "name": "synctree merge ack only (after user merge + server merge) ack",
+            "value": 2565,
+            "range": "±0.73%",
+            "unit": "ops/sec",
+            "extra": "5131 samples"
           }
         ]
       }
