@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes" />
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes" />
+    <title>Benchmarks</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
     <style>
       html {
-        font-family: BlinkMacSystemFont,-apple-system,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Fira Sans","Droid Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+        font-family: BlinkMacSystemFont, -apple-system, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
+          "Fira Sans", "Droid Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
         background-color: #fff;
         font-size: 16px;
@@ -73,86 +77,121 @@
       }
       .benchmark-graphs {
         display: flex;
-        flex-direction: row;
-        justify-content: space-around;
+        flex-direction: column;
         align-items: center;
-        flex-wrap: wrap;
         width: 100%;
       }
+      .benchmark-chart-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: min(100%, 1000px);
+        margin: 24px auto;
+      }
+      .benchmark-chart-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0 0 12px;
+        text-align: center;
+      }
+      .benchmark-chart-container {
+        position: relative;
+        width: 100%;
+        height: 420px;
+      }
       .benchmark-chart {
-        max-width: 1000px;
+        width: 100% !important;
+        height: 100% !important;
       }
     </style>
-    <title>Benchmarks</title>
   </head>
-
   <body>
     <header id="header">
-      <div class="header-item">
-        <strong class="header-label">Last Update:</strong>
+      <div class="spacer"></div>
+      <div>
+        <span class="header-label">Last Update:</span>
         <span id="last-update"></span>
       </div>
-      <div class="header-item">
-        <strong class="header-label">Repository:</strong>
-        <a id="repository-link" rel="noopener"></a>
+      <div>
+        <span class="header-label">Repository:</span>
+        <a id="repository-link"></a>
       </div>
+      <div class="spacer"></div>
     </header>
     <main id="main"></main>
     <footer>
       <button id="dl-button">Download data as JSON</button>
       <div class="spacer"></div>
-      <div class="small">Powered by <a rel="noopener" href="https://github.com/marketplace/actions/continuous-benchmark">github-action-benchmark</a></div>
+      <div class="small">Powered by <a href="https://github.com/benchmark-action/github-action-benchmark">github-action-benchmark</a></div>
     </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.2/dist/Chart.min.js"></script>
     <script src="data.js"></script>
-    <script id="main-script">
+    <script>
       'use strict';
-      (function() {
-        // Colors from https://github.com/github/linguist/blob/master/lib/linguist/languages.yml
-        const toolColors = {
-          cargo: '#dea584',
-          go: '#00add8',
-          benchmarkjs: '#f1e05a',
-          benchmarkluau: '#000080',
-          pytest: '#3572a5',
-          googlecpp: '#f34b7d',
-          catch2: '#f34b7d',
-          julia: '#a270ba',
-          jmh: '#b07219',
-          benchmarkdotnet: '#178600',
-          customBiggerIsBetter: '#38ff38',
-          customSmallerIsBetter: '#ff3838',
-          _: '#333333'
+      (function () {
+        const compileColors = {
+          jit: '#00B4AB',
+          aot: '#01579B',
+          js: '#f1e05a',
+          wasm: '#654FF0',
+          _default: '#333333',
         };
 
-        function init() {
-          function collectBenchesPerTestCase(entries) {
-            const map = new Map();
-            for (const entry of entries) {
-              const {commit, date, tool, benches} = entry;
-              for (const bench of benches) {
-                const result = { commit, date, tool, bench };
-                const arr = map.get(bench.name);
-                if (arr === undefined) {
-                  map.set(bench.name, [result]);
-                } else {
-                  arr.push(result);
-                }
+        function parseBenchName(name) {
+          const match = /^(.*) \[([^\]]+)\]$/.exec(name);
+          if (match) {
+            return { baseName: match[1], compileType: match[2] };
+          }
+          // Legacy entries without a compile suffix are treated as JIT.
+          return { baseName: name, compileType: 'jit' };
+        }
+
+        function mergeAllEntries(data) {
+          const merged = [];
+          for (const suites of Object.values(data.entries)) {
+            merged.push(...suites);
+          }
+          return merged;
+        }
+
+        function collectBenchesGrouped(entries) {
+          const map = new Map();
+          for (const entry of entries) {
+            const { commit, date, tool, benches } = entry;
+            for (const bench of benches) {
+              const { baseName, compileType } = parseBenchName(bench.name);
+              const seriesKey = compileType;
+              const result = { commit, date, tool, bench };
+              if (!map.has(baseName)) {
+                map.set(baseName, new Map());
+              }
+              const seriesMap = map.get(baseName);
+              const arr = seriesMap.get(seriesKey);
+              if (arr === undefined) {
+                seriesMap.set(seriesKey, [result]);
+              } else {
+                arr.push(result);
               }
             }
-            return map;
           }
+          return map;
+        }
 
+        function suiteTitle(data) {
+          const names = Object.keys(data.entries);
+          if (names.length === 1) {
+            return names[0];
+          }
+          return 'Benchmarks';
+        }
+
+        function init() {
           const data = window.BENCHMARK_DATA;
 
-          // Render header
           document.getElementById('last-update').textContent = new Date(data.lastUpdate).toString();
           const repoLink = document.getElementById('repository-link');
           repoLink.href = data.repoUrl;
           repoLink.textContent = data.repoUrl;
 
-          // Render footer
           document.getElementById('dl-button').onclick = () => {
             const dataUrl = 'data:,' + JSON.stringify(data, null, 2);
             const a = document.createElement('a');
@@ -161,33 +200,85 @@
             a.click();
           };
 
-          // Prepare data points for charts
-          return Object.keys(data.entries).map(name => ({
-            name,
-            dataSet: collectBenchesPerTestCase(data.entries[name]),
-          }));
+          // github-action-benchmark stores each `name` input as a separate suite
+          // (e.g. legacy "Benchmark" vs "Dart Benchmarks"). Merge them so history
+          // lines up on one chart per benchmark and compile type.
+          return [
+            {
+              name: suiteTitle(data),
+              dataSet: collectBenchesGrouped(mergeAllEntries(data)),
+            },
+          ];
         }
 
-        function renderAllChars(dataSets) {
+        function renderAllCharts(dataSets) {
+          function sortedCommits(seriesMap) {
+            const byId = new Map();
+            for (const series of seriesMap.values()) {
+              for (const point of series) {
+                byId.set(point.commit.id, point);
+              }
+            }
+            return Array.from(byId.values()).sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+            );
+          }
 
-          function renderGraph(parent, name, dataset) {
+          function renderGroupedGraph(parent, baseName, seriesMap) {
+            const wrap = document.createElement('div');
+            wrap.className = 'benchmark-chart-wrap';
+            parent.appendChild(wrap);
+
+            const titleElem = document.createElement('h2');
+            titleElem.className = 'benchmark-chart-title';
+            titleElem.textContent = baseName;
+            wrap.appendChild(titleElem);
+
+            const chartContainer = document.createElement('div');
+            chartContainer.className = 'benchmark-chart-container';
+            wrap.appendChild(chartContainer);
+
             const canvas = document.createElement('canvas');
             canvas.className = 'benchmark-chart';
-            parent.appendChild(canvas);
+            chartContainer.appendChild(canvas);
 
-            const color = toolColors[dataset.length > 0 ? dataset[0].tool : '_'];
-            const data = {
-              labels: dataset.map(d => d.commit.id.slice(0, 7)),
-              datasets: [
-                {
-                  label: name,
-                  data: dataset.map(d => d.bench.value),
-                  borderColor: color,
-                  backgroundColor: color + '60', // Add alpha for #rrggbbaa
-                }
-              ],
-            };
+            const commits = sortedCommits(seriesMap);
+            const labels = commits.map((c) => c.commit.id.slice(0, 7));
+            const seriesData = [];
+
+            for (const [seriesKey, series] of seriesMap.entries()) {
+              seriesData.push({
+                seriesKey,
+                valueByCommit: new Map(series.map((s) => [s.commit.id, s])),
+              });
+            }
+
+            const datasets = seriesData.map(({ seriesKey, valueByCommit }) => {
+              const color = compileColors[seriesKey] ?? compileColors._default;
+              const label = seriesKey;
+              return {
+                label,
+                data: commits.map((c) => {
+                  const point = valueByCommit.get(c.commit.id);
+                  return point ? point.bench.value : null;
+                }),
+                borderColor: color,
+                backgroundColor: color + '60',
+                spanGaps: true,
+              };
+            });
+
+            const firstPoint = seriesData
+              .map(({ valueByCommit }) => valueByCommit.values().next().value)
+              .find((point) => point !== undefined);
+            const unit = firstPoint ? firstPoint.bench.unit : '';
+
             const options = {
+              responsive: true,
+              maintainAspectRatio: false,
+              legend: {
+                display: true,
+              },
               scales: {
                 xAxes: [
                   {
@@ -195,56 +286,71 @@
                       display: true,
                       labelString: 'commit',
                     },
-                  }
+                  },
                 ],
                 yAxes: [
                   {
                     scaleLabel: {
                       display: true,
-                      labelString: dataset.length > 0 ? dataset[0].bench.unit : '',
+                      labelString: unit,
                     },
                     ticks: {
                       beginAtZero: true,
-                    }
-                  }
+                    },
+                  },
                 ],
               },
               tooltips: {
+                mode: 'index',
+                intersect: false,
                 callbacks: {
-                  afterTitle: items => {
-                    const {index} = items[0];
-                    const data = dataset[index];
-                    return '\n' + data.commit.message + '\n\n' + data.commit.timestamp + ' committed by @' + data.commit.committer.username + '\n';
+                  afterTitle: (items) => {
+                    const commit = commits[items[0].index];
+                    return (
+                      '\n' +
+                      commit.commit.message +
+                      '\n\n' +
+                      commit.commit.timestamp +
+                      ' committed by @' +
+                      commit.commit.committer.username +
+                      '\n'
+                    );
                   },
-                  label: item => {
-                    let label = item.value;
-                    const { range, unit } = dataset[item.index].bench;
-                    label += ' ' + unit;
+                  label: (item, chartData) => {
+                    const { valueByCommit } = seriesData[item.datasetIndex];
+                    const point = valueByCommit.get(commits[item.index].commit.id);
+                    const seriesLabel = chartData.datasets[item.datasetIndex].label;
+                    if (!point) {
+                      return seriesLabel + ': n/a';
+                    }
+                    let label = item.yLabel;
+                    const { range, unit: benchUnit } = point.bench;
+                    label += ' ' + benchUnit;
                     if (range) {
                       label += ' (' + range + ')';
                     }
-                    return label;
+                    return seriesLabel + ': ' + label;
                   },
-                  afterLabel: item => {
-                    const { extra } = dataset[item.index].bench;
+                  afterLabel: (item) => {
+                    const { valueByCommit } = seriesData[item.datasetIndex];
+                    const point = valueByCommit.get(commits[item.index].commit.id);
+                    const extra = point ? point.bench.extra : null;
                     return extra ? '\n' + extra : '';
-                  }
-                }
+                  },
+                },
               },
               onClick: (_mouseEvent, activeElems) => {
                 if (activeElems.length === 0) {
                   return;
                 }
-                // XXX: Undocumented. How can we know the index?
-                const index = activeElems[0]._index;
-                const url = dataset[index].commit.url;
-                window.open(url, '_blank');
+                const commit = commits[activeElems[0]._index];
+                window.open(commit.commit.url, '_blank');
               },
             };
 
             new Chart(canvas, {
               type: 'line',
-              data,
+              data: { labels, datasets },
               options,
             });
           }
@@ -263,18 +369,18 @@
             graphsElem.className = 'benchmark-graphs';
             setElem.appendChild(graphsElem);
 
-            for (const [benchName, benches] of benchSet.entries()) {
-              renderGraph(graphsElem, benchName, benches)
+            for (const [baseName, seriesMap] of benchSet.entries()) {
+              renderGroupedGraph(graphsElem, baseName, seriesMap);
             }
           }
 
           const main = document.getElementById('main');
-          for (const {name, dataSet} of dataSets) {
+          for (const { name, dataSet } of dataSets) {
             renderBenchSet(name, dataSet, main);
           }
         }
 
-        renderAllChars(init()); // Start
+        renderAllCharts(init());
       })();
     </script>
   </body>
