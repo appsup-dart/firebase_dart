@@ -15,27 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: appsup-dart/benchmark_test@action-v1
         with:
-          channel: stable
-      - run: flutter pub get
-      - name: Run benchmark
-        working-directory: packages/firebase_dart
-        run: |
-          set -o pipefail
-          dart test --run-skipped -t benchmark test/benchmark | tee ../../benchmark_raw.txt
-          perl -ne 'if (/(.+ x [0-9.,]+ ops\/sec ±[0-9.]+% \(\d+ runs sampled), average duration: [^)]+\)/) { print "$1)\n" }' ../../benchmark_raw.txt | tee ../../output.txt
-          test -s ../../output.txt
-      - name: Reset generated files
-        run: git reset --hard HEAD
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          tool: 'benchmarkjs'
-          output-file-path: output.txt
+          working-directory: packages/firebase_dart
+          paths: test/benchmark/
+          compile: jit,aot,js,wasm
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
-          # Show alert with commit comment on detecting possible performance regression
-          alert-threshold: '200%'
           comment-on-alert: true
           fail-on-alert: true
+          sdk: flutter

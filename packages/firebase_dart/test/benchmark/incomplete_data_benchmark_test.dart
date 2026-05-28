@@ -1,8 +1,6 @@
 @Tags(['benchmark'])
 library;
 
-import 'dart:io';
-
 import 'package:benchmark_test/benchmark_test.dart';
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
@@ -10,8 +8,7 @@ import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:test/test.dart';
 
-int _childCount =
-    int.tryParse(Platform.environment['BENCHMARK_CHILDREN'] ?? '') ?? 100;
+int _childCount = 100;
 
 TreeStructuredData _initialSnapshot(int childCount) {
   return TreeStructuredData.fromJson({
