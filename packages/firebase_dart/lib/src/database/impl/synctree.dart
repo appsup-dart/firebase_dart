@@ -223,6 +223,7 @@ class MasterView {
   /// view.
   Map<QueryFilter, EventTarget> applyOperation(
       Operation operation, ViewOperationSource source, int? writeId) {
+    var localVersionChanged = false;
     if (source == ViewOperationSource.ack &&
         (operation as Ack).success &&
         effectiveState == QueryRegistrationState.unregistered) {
@@ -233,11 +234,19 @@ class MasterView {
       // TODO: this does not update the persistent storage
       var operation = _data.pendingOperations[writeId];
       if (operation != null) {
-        _data =
+        final result =
             _data.applyOperation(operation, ViewOperationSource.server, null);
+        _data = result.viewCache;
+        localVersionChanged = localVersionChanged || result.localVersionChanged;
       }
     }
-    _data = _data.applyOperation(operation, source, writeId);
+    final result = _data.applyOperation(operation, source, writeId);
+    _data = result.viewCache;
+    localVersionChanged = localVersionChanged || result.localVersionChanged;
+
+    if (!localVersionChanged) {
+      return {};
+    }
 
     var out = <QueryFilter, EventTarget>{};
     for (var q in observers.keys.toList()) {
@@ -502,7 +511,9 @@ class SyncPoint {
         .withFilter(filter);
     var cache = ViewCache(serverVersion, serverVersion);
     for (var op in pendingOperations.entries) {
-      cache = cache.applyOperation(op.value, ViewOperationSource.user, op.key);
+      cache = cache
+          .applyOperation(op.value, ViewOperationSource.user, op.key)
+          .viewCache;
     }
     // TODO: apply user operations from persistence storage
     return views[filter] = MasterView(filter,
