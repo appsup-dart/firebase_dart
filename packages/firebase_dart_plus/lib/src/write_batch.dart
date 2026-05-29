@@ -98,7 +98,7 @@ class WriteBatch {
   }
 
   Map<String, dynamic> _getUpdates() {
-    var ops = SortedMap<int, TreeOperation>()
+    var ops = TreeMap<int, TreeOperation>()
       ..addAll(_onOperationAdded.value.asMap());
     var cache = ViewCache(IncompleteData.empty(), IncompleteData.empty(), ops)
       ..recalcLocalVersion();
@@ -150,7 +150,7 @@ class TransactionalQuery extends Query {
     }
     return CombineLatestStream.combine2(
         _query.onValue, _transaction._onOperationAdded, (v, operations) {
-      var ops = SortedMap<int, TreeOperation>()..addAll(operations.asMap());
+      var ops = TreeMap<int, TreeOperation>()..addAll(operations.asMap());
       var cache = ViewCache(IncompleteData.empty(), IncompleteData.empty(), ops)
         ..recalcLocalVersion();
 

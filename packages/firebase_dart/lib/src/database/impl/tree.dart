@@ -128,17 +128,10 @@ class ModifiableTreeNode<K extends Comparable, V>
   final Map<K, ModifiableTreeNode<K, V>> _children;
 
   ModifiableTreeNode(this.value, [Map<K, ModifiableTreeNode<K, V>>? children])
-      : _children = _cloneMap<K, ModifiableTreeNode<K, V>>(children ?? {});
+      : _children = TreeMap.from(children ?? {});
 
   @override
   Map<K, ModifiableTreeNode<K, V>> get children => _children;
-
-  static Map<K, V> _cloneMap<K extends Comparable, V>(Map<K, V> map) {
-    if (map is SortedMap<K, V>) {
-      return map.clone();
-    }
-    return Map<K, V>.from(map);
-  }
 
   ModifiableTreeNode<K, V> subtree(Path<K> path,
       ModifiableTreeNode<K, V> Function(V parent, K name) newInstance) {
