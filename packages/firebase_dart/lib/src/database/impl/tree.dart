@@ -136,10 +136,8 @@ class ModifiableTreeNode<K extends Comparable, V>
   ModifiableTreeNode<K, V> subtree(Path<K> path,
       ModifiableTreeNode<K, V> Function(V parent, K name) newInstance) {
     if (path.isEmpty) return this;
-    if (!children.containsKey(path.first)) {
-      children[path.first] = newInstance(value, path.first);
-    }
-    var child = children[path.first]!;
+    var child = children[path.first];
+    child ??= children[path.first] = newInstance(value, path.first);
     return child.subtree(path.skip(1), newInstance);
   }
 
