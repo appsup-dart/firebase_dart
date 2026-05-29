@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1780047002912,
+  "lastUpdate": 1780058258456,
   "repoUrl": "https://github.com/appsup-dart/firebase_dart",
   "entries": {
     "Benchmark": [
@@ -868,6 +868,338 @@ window.BENCHMARK_DATA = {
             "range": "±0.62%",
             "unit": "ops/sec",
             "extra": "compile: wasm\nsamples: 3295\nmean latency: 607 microseconds"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rik.bellens@appsup.be",
+            "name": "rikbellens",
+            "username": "rbellens"
+          },
+          "committer": {
+            "email": "rik.bellens@appsup.be",
+            "name": "rikbellens",
+            "username": "rbellens"
+          },
+          "distinct": true,
+          "id": "5bb274c8e0c7bf73d6a21af13b464887cc7d61aa",
+          "message": "perf: use TreeMap iso SortedMap/HashMap for fast cloning",
+          "timestamp": "2026-05-29T14:30:07+02:00",
+          "tree_id": "86538fbfbc2c1d883e22fb468e650d97cbd98720",
+          "url": "https://github.com/appsup-dart/firebase_dart/commit/5bb274c8e0c7bf73d6a21af13b464887cc7d61aa"
+        },
+        "date": 1780058257915,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "calendar queries density: 5 events/day listen acks + first server snapshots [jit]",
+            "value": 1067.7357354054873,
+            "range": "±1.48%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 2136\nmean latency: 937 microseconds"
+          },
+          {
+            "name": "calendar queries density: 1 event/day listen acks + first server snapshots [jit]",
+            "value": 346.3008769957275,
+            "range": "±0.83%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 693\nmean latency: 2888 microseconds"
+          },
+          {
+            "name": "calendar queries density: 1 event / 10 days listen acks + first server snapshots [jit]",
+            "value": 403.9650570225676,
+            "range": "±0.33%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 808\nmean latency: 2475 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete root merge) [jit]",
+            "value": 1965.9292265478443,
+            "range": "±0.59%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 3932\nmean latency: 509 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete identity merge) [jit]",
+            "value": 19415.936937828803,
+            "range": "±0.17%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 38833\nmean latency: 52 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse merge) [jit]",
+            "value": 5123.087591448888,
+            "range": "±0.27%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 10247\nmean latency: 195 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse identity merge) [jit]",
+            "value": 8577.238394228976,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 17155\nmean latency: 117 microseconds"
+          },
+          {
+            "name": "synctree merge write path fullWriteCycle (merge + server + ack) [jit]",
+            "value": 375.30615437126727,
+            "range": "±0.91%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 751\nmean latency: 2664 microseconds"
+          },
+          {
+            "name": "synctree merge write path userMerge only [jit]",
+            "value": 948.9136488579538,
+            "range": "±0.34%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 1898\nmean latency: 1054 microseconds"
+          },
+          {
+            "name": "synctree merge serverMerge only (after user merge) serverMerge [jit]",
+            "value": 908.2193602176927,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 1817\nmean latency: 1101 microseconds"
+          },
+          {
+            "name": "synctree merge ack only (after user merge + server merge) ack [jit]",
+            "value": 2804.6297888678696,
+            "range": "±0.28%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 5610\nmean latency: 357 microseconds"
+          },
+          {
+            "name": "calendar queries density: 5 events/day listen acks + first server snapshots [aot]",
+            "value": 1125.9684728827592,
+            "range": "±0.37%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 2252\nmean latency: 888 microseconds"
+          },
+          {
+            "name": "calendar queries density: 1 event/day listen acks + first server snapshots [aot]",
+            "value": 370.28190395856836,
+            "range": "±0.30%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 741\nmean latency: 2701 microseconds"
+          },
+          {
+            "name": "calendar queries density: 1 event / 10 days listen acks + first server snapshots [aot]",
+            "value": 433.7809406249844,
+            "range": "±0.54%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 868\nmean latency: 2305 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete root merge) [aot]",
+            "value": 1858.4080088035644,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 3717\nmean latency: 538 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete identity merge) [aot]",
+            "value": 16003.759943600846,
+            "range": "±0.15%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 32008\nmean latency: 62 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse merge) [aot]",
+            "value": 4758.262086895656,
+            "range": "±0.21%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 9517\nmean latency: 210 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse identity merge) [aot]",
+            "value": 7425.444309167681,
+            "range": "±0.17%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 14851\nmean latency: 135 microseconds"
+          },
+          {
+            "name": "synctree merge write path fullWriteCycle (merge + server + ack) [aot]",
+            "value": 349.9648285347323,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 700\nmean latency: 2857 microseconds"
+          },
+          {
+            "name": "synctree merge write path userMerge only [aot]",
+            "value": 820.3076378589221,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 1641\nmean latency: 1219 microseconds"
+          },
+          {
+            "name": "synctree merge serverMerge only (after user merge) serverMerge [aot]",
+            "value": 780.3357393268717,
+            "range": "±0.19%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 1561\nmean latency: 1281 microseconds"
+          },
+          {
+            "name": "synctree merge ack only (after user merge + server merge) ack [aot]",
+            "value": 2536.4264436331346,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 5073\nmean latency: 394 microseconds"
+          },
+          {
+            "name": "calendar queries density: 5 events/day listen acks + first server snapshots [js]",
+            "value": 170.5,
+            "range": "±2.82%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 341\nmean latency: 5865 microseconds"
+          },
+          {
+            "name": "calendar queries density: 1 event/day listen acks + first server snapshots [js]",
+            "value": 75.65953210552513,
+            "range": "±1.17%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 152\nmean latency: 13217 microseconds"
+          },
+          {
+            "name": "calendar queries density: 1 event / 10 days listen acks + first server snapshots [js]",
+            "value": 99.15296462381664,
+            "range": "±1.53%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 199\nmean latency: 10085 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete root merge) [js]",
+            "value": 120.57797708021924,
+            "range": "±1.05%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 242\nmean latency: 8293 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete identity merge) [js]",
+            "value": 2475,
+            "range": "±3.39%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 4950\nmean latency: 404 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse merge) [js]",
+            "value": 675.5,
+            "range": "±1.88%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 1351\nmean latency: 1480 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse identity merge) [js]",
+            "value": 1162,
+            "range": "±1.68%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 2324\nmean latency: 861 microseconds"
+          },
+          {
+            "name": "synctree merge write path fullWriteCycle (merge + server + ack) [js]",
+            "value": 58.560794044665016,
+            "range": "±1.53%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 118\nmean latency: 17076 microseconds"
+          },
+          {
+            "name": "synctree merge write path userMerge only [js]",
+            "value": 143.928035982009,
+            "range": "±0.64%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 288\nmean latency: 6948 microseconds"
+          },
+          {
+            "name": "synctree merge serverMerge only (after user merge) serverMerge [js]",
+            "value": 137.29405891163253,
+            "range": "±0.75%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 275\nmean latency: 7284 microseconds"
+          },
+          {
+            "name": "synctree merge ack only (after user merge + server merge) ack [js]",
+            "value": 379.6203796203796,
+            "range": "±1.33%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 760\nmean latency: 2634 microseconds"
+          },
+          {
+            "name": "calendar queries density: 5 events/day listen acks + first server snapshots [wasm]",
+            "value": 369.3891832450265,
+            "range": "±1.36%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 739\nmean latency: 2707 microseconds"
+          },
+          {
+            "name": "calendar queries density: 1 event/day listen acks + first server snapshots [wasm]",
+            "value": 127.67156489929656,
+            "range": "±0.45%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 256\nmean latency: 7833 microseconds"
+          },
+          {
+            "name": "calendar queries density: 1 event / 10 days listen acks + first server snapshots [wasm]",
+            "value": 162.58694785896432,
+            "range": "±0.44%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 326\nmean latency: 6151 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete root merge) [wasm]",
+            "value": 400.16266287519625,
+            "range": "±0.44%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 801\nmean latency: 2499 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete identity merge) [wasm]",
+            "value": 7472.066620136032,
+            "range": "±0.26%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 14945\nmean latency: 134 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse merge) [wasm]",
+            "value": 1753.3553481837746,
+            "range": "±0.35%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 3507\nmean latency: 570 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse identity merge) [wasm]",
+            "value": 3547.1718866004894,
+            "range": "±0.27%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 7095\nmean latency: 282 microseconds"
+          },
+          {
+            "name": "synctree merge write path fullWriteCycle (merge + server + ack) [wasm]",
+            "value": 167.31227562674678,
+            "range": "±0.39%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 335\nmean latency: 5977 microseconds"
+          },
+          {
+            "name": "synctree merge write path userMerge only [wasm]",
+            "value": 396.6836447932773,
+            "range": "±0.52%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 794\nmean latency: 2521 microseconds"
+          },
+          {
+            "name": "synctree merge serverMerge only (after user merge) serverMerge [wasm]",
+            "value": 384.21894384257916,
+            "range": "±0.54%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 769\nmean latency: 2603 microseconds"
+          },
+          {
+            "name": "synctree merge ack only (after user merge + server merge) ack [wasm]",
+            "value": 1071.6088627650909,
+            "range": "±0.42%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 2144\nmean latency: 933 microseconds"
           }
         ]
       }
