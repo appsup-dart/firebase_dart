@@ -180,14 +180,14 @@ class IncompleteData {
           safeToOverwrite || operation.path.length == 1 && n is! SetValue;
 
       // when the path was not yet complete, we can safely overwrite
-      safeToOverwrite = safeToOverwrite || !isCompleteForPath(operation.path);
+      var pathIsComplete = isCompleteForPath(operation.path);
+      safeToOverwrite = safeToOverwrite || !pathIsComplete;
 
       // when the filter is not limiting and the data is already complete, it is safe to overwrite
       safeToOverwrite = safeToOverwrite || (!filter.limits && isComplete);
 
       // when the path to overwrite is complete, it is safe to overwrite
-      safeToOverwrite =
-          safeToOverwrite || (!isComplete && isCompleteForPath(operation.path));
+      safeToOverwrite = safeToOverwrite || (!isComplete && pathIsComplete);
 
       // when some parent was already complete, it is safe to overwrite
       safeToOverwrite = safeToOverwrite ||
@@ -306,15 +306,17 @@ extension _WriteTreeX on ModifiableTreeNode<Name, TreeStructuredData?> {
   ModifiableTreeNode<Name, TreeStructuredData?> addOverwrite(
       Path<Name> path, TreeStructuredData data) {
     if (value != null) {
-      return ModifiableTreeNode(
-          TreeOperation.overwrite(path, data).apply(value!));
+      var newValue = TreeOperation.overwrite(path, data).apply(value!);
+      if (identical(value, newValue)) return this;
+      return ModifiableTreeNode(newValue);
     }
 
     if (path.isEmpty) return ModifiableTreeNode(data);
     var c = path.first;
-    return clone()
-      ..children[c] = (children[c] ?? ModifiableTreeNode(null))
-          .addOverwrite(path.skip(1), data);
+    var newChild = (children[c] ?? ModifiableTreeNode(null))
+        .addOverwrite(path.skip(1), data);
+    if (identical(newChild, children[c])) return this;
+    return clone()..children[c] = newChild;
   }
 
   ModifiableTreeNode<Name, TreeStructuredData?> addPriority(
