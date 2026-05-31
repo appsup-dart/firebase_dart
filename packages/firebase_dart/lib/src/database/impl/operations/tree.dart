@@ -131,13 +131,14 @@ class Merge extends Operation {
   Iterable<Path<Name>> get completesPaths =>
       overwrites.expand<Path<Name>>((c) => c.completesPaths);
 
+  late final Map<Name, List<TreeOperation>> _operationsByChild =
+      overwrites.groupListsBy((o) => o.path.first);
+
   @override
   Operation? operationForChild(Name key) {
-    var o = overwrites
-        .map((o) => o.operationForChild(key))
-        .whereType<TreeOperation>();
-    if (o.isEmpty) return null;
-    return Merge._(o.toList());
+    var o = _operationsByChild[key];
+    if (o == null) return null;
+    return Merge._(o);
   }
 
   @override
