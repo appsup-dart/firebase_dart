@@ -20,11 +20,11 @@ class ViewCache {
   final IncompleteData serverVersion;
 
   /// User operations that are not yet acknowledged by the server
-  final SortedMap<int, TreeOperation> pendingOperations;
+  final TreeMap<int, TreeOperation> pendingOperations;
 
   ViewCache(this._localVersion, this.serverVersion,
-      [SortedMap<int, TreeOperation>? pendingOperations])
-      : pendingOperations = pendingOperations ?? SortedMap();
+      [TreeMap<int, TreeOperation>? pendingOperations])
+      : pendingOperations = pendingOperations ?? TreeMap();
 
   /// The local version of the data, i.e. the server version with the pending
   /// operations applied to
@@ -38,11 +38,11 @@ class ViewCache {
   ViewCache withFilter(QueryFilter filter) => ViewCache(
       localVersion.withFilter(filter),
       serverVersion.withFilter(filter),
-      SortedMap.from(pendingOperations));
+      TreeMap.from(pendingOperations));
 
   /// Returns a view for a child
   ViewCache child(Name c) {
-    var childPendingOperations = SortedMap<int, TreeOperation>();
+    var childPendingOperations = TreeMap<int, TreeOperation>();
     for (var k in pendingOperations.keys) {
       var o = pendingOperations[k]!.operationForChild(c);
       if (o != null) {
@@ -93,7 +93,7 @@ class ViewCache {
   /// The operation will be applied to the local version.
   ViewCacheApplyResult addOperation(int writeId, Operation op) {
     final viewCache = ViewCache(localVersion, serverVersion,
-        pendingOperations.clone()..[writeId] = op as TreeOperation);
+        TreeMap.from(pendingOperations)..[writeId] = op as TreeOperation);
     final localVersionChanged = viewCache._applyPendingOperation(op);
     return (viewCache: viewCache, localVersionChanged: localVersionChanged);
   }
@@ -103,7 +103,7 @@ class ViewCache {
   /// This will cause the local version to be recalculated.
   ViewCacheApplyResult removeOperation(int writeId) {
     final viewCache = ViewCache(localVersion, serverVersion,
-        pendingOperations.clone()..remove(writeId));
+        TreeMap.from(pendingOperations)..remove(writeId));
     final localVersionChanged = viewCache.recalcLocalVersion();
     return (viewCache: viewCache, localVersionChanged: localVersionChanged);
   }
