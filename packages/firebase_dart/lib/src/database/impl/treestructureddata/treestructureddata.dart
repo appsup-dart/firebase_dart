@@ -232,8 +232,10 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
 
   Filter<Name, TreeStructuredData> get filter;
 
-  TreeStructuredData withPriority(Value? priority) =>
-      TreeStructuredDataImpl._(value, childrenAsFilteredMap, priority);
+  TreeStructuredData withPriority(Value? priority) {
+    if (this.priority == priority) return this;
+    return TreeStructuredDataImpl._(value, childrenAsFilteredMap, priority);
+  }
 
   @override
   Map<Name, TreeStructuredData> get children;
@@ -315,6 +317,7 @@ abstract class TreeStructuredData extends ComparableTreeNode<Name, Value?> {
   }
 
   TreeStructuredData withChild(Name k, TreeStructuredData newChild) {
+    if (children[k] == newChild) return this;
     return TreeStructuredData.nonLeaf(
         childrenAsFilteredMap._map.clone()..[k] = newChild, priority);
   }

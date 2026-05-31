@@ -61,7 +61,7 @@ class TreeOperation extends Operation {
       var k = path.first;
       var child = value.children[k] ?? TreeStructuredData();
       var newChild = _applyOnPath(path.skip(1), child);
-      if (newChild == child) return value;
+      if (identical(newChild, child)) return value;
       if (newChild.isNil) {
         return value.withoutChild(k);
       } else {
@@ -175,8 +175,9 @@ class Overwrite extends Operation {
 
   @override
   TreeStructuredData apply(TreeStructuredData value) {
-    if (this.value == value) return value;
-    return this.value.withFilter(value.filter);
+    final result = this.value.withFilter(value.filter);
+    if (result == value) return value;
+    return result;
   }
 
   @override

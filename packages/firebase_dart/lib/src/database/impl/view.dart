@@ -6,6 +6,12 @@ import 'package:sortedmap/sortedmap.dart';
 import 'treestructureddata.dart';
 import 'operations/tree.dart';
 
+/// Result of applying an operation to a [ViewCache].
+typedef ViewCacheApplyResult = ({
+  ViewCache viewCache,
+  bool localVersionChanged
+});
+
 /// Contains a view of a remote resource
 class ViewCache {
   IncompleteData _localVersion;
@@ -51,48 +57,59 @@ class ViewCache {
     return v;
   }
 
-  /// Recalculates the local version
-  void recalcLocalVersion() {
+  /// Recalculates the local version from [serverVersion] and [pendingOperations].
+  ///
+  /// Returns `true` when [localVersion] changed (not the same instance as before).
+  bool recalcLocalVersion() {
+    final previous = _localVersion;
     _localVersion = serverVersion;
     for (var op in pendingOperations.values) {
       _applyPendingOperation(op);
     }
+    return !identical(_localVersion, previous);
   }
 
-  void _applyPendingOperation(TreeOperation operation) {
+  /// Applies [operation] to the local version.
+  ///
+  /// Returns `false` when [localVersion] was unchanged.
+  bool _applyPendingOperation(Operation operation) {
     // TODO: the operation might influence completeness
     // we ignore this for now and allow some queries to return incorrect intermediate values
-    _localVersion = localVersion.applyOperation(operation);
+    final updated = localVersion.applyOperation(operation as TreeOperation);
+    if (identical(updated, localVersion)) return false;
+    _localVersion = updated;
+    return true;
   }
 
-  /// Updates the server version
-  ViewCache updateServerVersion(IncompleteData newValue) {
-    return ViewCache(localVersion, newValue, pendingOperations)
-      ..recalcLocalVersion();
+  /// Updates the server version.
+  ViewCacheApplyResult updateServerVersion(IncompleteData newValue) {
+    final viewCache = ViewCache(localVersion, newValue, pendingOperations);
+    final localVersionChanged = viewCache.recalcLocalVersion();
+    return (viewCache: viewCache, localVersionChanged: localVersionChanged);
   }
 
-  /// Add a user operation
+  /// Add a user operation.
   ///
-  /// The operation will be applied to the local version
-  ViewCache addOperation(int writeId, Operation op) {
-    return ViewCache(localVersion, serverVersion,
-        pendingOperations.clone()..[writeId] = op as TreeOperation)
-      .._applyPendingOperation(op);
+  /// The operation will be applied to the local version.
+  ViewCacheApplyResult addOperation(int writeId, Operation op) {
+    final viewCache = ViewCache(localVersion, serverVersion,
+        pendingOperations.clone()..[writeId] = op as TreeOperation);
+    final localVersionChanged = viewCache._applyPendingOperation(op);
+    return (viewCache: viewCache, localVersionChanged: localVersionChanged);
   }
 
-  /// Remove a user operation
+  /// Remove a user operation.
   ///
-  /// This will cause the local version to be recalculated
-  ViewCache removeOperation(int writeId) {
-    var viewCache = ViewCache(localVersion, serverVersion,
+  /// This will cause the local version to be recalculated.
+  ViewCacheApplyResult removeOperation(int writeId) {
+    final viewCache = ViewCache(localVersion, serverVersion,
         pendingOperations.clone()..remove(writeId));
-    viewCache.recalcLocalVersion();
-    return viewCache;
+    final localVersionChanged = viewCache.recalcLocalVersion();
+    return (viewCache: viewCache, localVersionChanged: localVersionChanged);
   }
 
-  /// Applies a user or server operation to this view and returns the updated
-  /// view
-  ViewCache applyOperation(
+  /// Applies a user or server operation to this view.
+  ViewCacheApplyResult applyOperation(
       Operation operation, ViewOperationSource source, int? writeId) {
     switch (source) {
       case ViewOperationSource.user:
@@ -100,7 +117,7 @@ class ViewCache {
       case ViewOperationSource.ack:
         return removeOperation(writeId!);
       case ViewOperationSource.server:
-        var result = serverVersion.applyOperation(operation as TreeOperation);
+        final result = serverVersion.applyOperation(operation as TreeOperation);
         return updateServerVersion(result);
     }
   }

@@ -12,12 +12,20 @@ import 'utils.dart';
 import 'treestructureddata.dart';
 
 abstract class Operation {
+  /// Applies this operation to [value].
+  ///
+  /// When the operation does not change [value], returns [value] itself (same
+  /// instance), not merely an equal value. Callers may use [identical] to detect
+  /// no-op applications.
   TreeStructuredData apply(TreeStructuredData value);
 
   Iterable<Path<Name>> get completesPaths;
 
   Operation? operationForChild(Name key);
 }
+
+/// Write tree used by [IncompleteData].
+typedef WriteTree = ModifiableTreeNode<Name, TreeStructuredData?>;
 
 extension _FilterX on Filter<Name, TreeStructuredData> {
   QueryFilter toQueryFilter() {
@@ -41,33 +49,31 @@ extension _FilterX on Filter<Name, TreeStructuredData> {
 /// Any write to an existing path or shadowing an existing path will modify that
 /// existing write to reflect the write added.
 class IncompleteData {
-  final ModifiableTreeNode<Name, TreeStructuredData?> _writeTree;
+  final WriteTree _writeTree;
   final QueryFilter filter;
 
   IncompleteData.empty([QueryFilter filter = const QueryFilter()])
-      : this._(ModifiableTreeNode(null), filter);
+      : this._(WriteTree(null), filter);
   IncompleteData.complete(TreeStructuredData data)
-      : this._(ModifiableTreeNode(data), data.filter.toQueryFilter());
-  IncompleteData._(ModifiableTreeNode<Name, TreeStructuredData?> writeTree,
-      [this.filter = const QueryFilter()])
+      : this._(WriteTree(data), data.filter.toQueryFilter());
+  IncompleteData._(WriteTree writeTree, [this.filter = const QueryFilter()])
       : _writeTree = writeTree.withFilter(filter);
 
   bool get isNil => _writeTree.isNil;
 
   factory IncompleteData.fromLeafs(Map<Path<Name>, TreeStructuredData> leafs) {
-    var tree = ModifiableTreeNode<Name, TreeStructuredData?>(null);
+    var tree = WriteTree(null);
     for (var e in leafs.entries) {
-      tree
-          .subtree(
-              e.key,
-              (parent, name) =>
-                  ModifiableTreeNode<Name, TreeStructuredData?>(null))
-          .value = e.value;
+      tree.subtree(e.key, (parent, name) => WriteTree(null)).value = e.value;
     }
     return IncompleteData._(tree);
   }
 
+  /// Returns a view of this data with [filter] applied when composing [value].
+  ///
+  /// When [filter] is unchanged, returns [this] (same instance).
   IncompleteData withFilter(QueryFilter filter) {
+    if (filter == this.filter) return this;
     return IncompleteData._(_writeTree.withFilter(filter), filter);
   }
 
@@ -100,23 +106,23 @@ class IncompleteData {
     if (isComplete) {
       var c = _writeTree.value!.children[child];
       if (c != null) {
-        return IncompleteData._(ModifiableTreeNode(c));
+        return IncompleteData._(WriteTree(c));
       }
 
       var f = value.filter;
       if (f.validInterval.isUnlimited &&
           (f.limit == null || f.limit! > value.children.length)) {
-        return IncompleteData._(ModifiableTreeNode(TreeStructuredData()));
+        return IncompleteData._(WriteTree(TreeStructuredData()));
       }
       if (f.ordering == KeyOrdering() &&
           value.childrenAsFilteredMap.completeInterval.containsPoint(
               KeyOrdering().mapKeyValue(child, TreeStructuredData()))) {
-        return IncompleteData._(ModifiableTreeNode(TreeStructuredData()));
+        return IncompleteData._(WriteTree(TreeStructuredData()));
       }
     }
     var tree = _writeTree.children[child];
     if (tree != null) return IncompleteData._(tree);
-    return IncompleteData._(ModifiableTreeNode(null));
+    return IncompleteData._(WriteTree(null));
   }
 
   IncompleteData child(Path<Name> path) {
@@ -155,11 +161,14 @@ class IncompleteData {
   @override
   String toString() => 'IncompleteData[$_writeTree]';
 
+  /// Applies [operation] to this write tree.
+  ///
+  /// When the operation does not change this data, returns [this] (same
+  /// instance). Callers may use [identical] to detect no-op applications.
   IncompleteData applyOperation(TreeOperation operation) {
     var n = operation.nodeOperation;
     if (n is SetPriority) {
-      return IncompleteData._(
-          _writeTree.addPriority(operation.path, n.priority), filter);
+      return _rebuild(_writeTree.addPriority(operation.path, n.priority));
     } else if (n is Overwrite) {
       // when the data to overwrite with is filtered, do a merge instead
       if (n.value.filter.limits && !n.value.isLeaf) {
@@ -198,16 +207,15 @@ class IncompleteData {
         return this;
       }
 
-      var v = IncompleteData._(
-          _writeTree.addOverwrite(operation.path, n.value), filter);
-      return v;
+      return _rebuild(_writeTree.addOverwrite(operation.path, n.value));
     } else if (n is Merge) {
       var v = this;
       if (isComplete && operation.path.isEmpty) {
         // use Merge.apply here as it will make sure that operations are applied
         // in the correct order (first delete, then add)
-        return IncompleteData._(
-            _writeTree.clone()..value = n.apply(_writeTree.value!), filter);
+        final applied = n.apply(_writeTree.value!);
+        if (identical(applied, _writeTree.value)) return this;
+        return _rebuild(_writeTree.clone()..value = applied);
       }
       for (var o in n.overwrites) {
         v = v.applyOperation(TreeOperation.overwrite(
@@ -216,23 +224,22 @@ class IncompleteData {
       }
       return v;
     } else if (n is Forget) {
-      ModifiableTreeNode<Name, TreeStructuredData?> forget(
-          ModifiableTreeNode<Name, TreeStructuredData?> tree, Path<Name> path) {
+      WriteTree forget(WriteTree tree, Path<Name> path) {
         if (path.isEmpty) {
           if (tree.isNil) return tree;
-          if (tree.value == null) return ModifiableTreeNode(null);
+          if (tree.value == null) return WriteTree(null);
           return tree.clone()..value = null;
         }
         if (tree.value != null) {
-          tree = ModifiableTreeNode(null, {
+          tree = WriteTree(null, {
             for (var k in tree.value!.children.keys)
-              k: ModifiableTreeNode(tree.value!.children[k])
+              k: WriteTree(tree.value!.children[k])
           });
         }
         var child = tree.children[path.first];
         if (child == null) return tree;
         var newChild = forget(child, path.skip(1));
-        if (newChild == child) return tree;
+        if (identical(newChild, child)) return tree;
         tree = tree.clone();
         if (newChild.isNil) {
           if (tree.children.containsKey(path.first)) {
@@ -245,20 +252,23 @@ class IncompleteData {
       }
 
       var tree = forget(_writeTree, operation.path);
-      if (tree == _writeTree) return this;
-      return IncompleteData._(tree, filter);
+      return _rebuild(tree);
     }
     throw UnsupportedError('Operation of type ${n.runtimeType} not supported');
   }
 
+  /// Removes the write at [path].
+  ///
+  /// When there is no write at [path], returns [this] (same instance).
   IncompleteData removeWrite(Path<Name> path) {
-    if (path.isEmpty) {
-      return IncompleteData._(ModifiableTreeNode(null), filter);
-    } else {
-      var newWriteTree =
-          _writeTree.setPath(path, ModifiableTreeNode(null), null);
-      return IncompleteData._(newWriteTree, filter);
-    }
+    return _rebuild(_writeTree.removeWrite(path));
+  }
+
+  /// Returns [this] when [writeTree] and [newFilter] describe the same state.
+  IncompleteData _rebuild(WriteTree writeTree) {
+    final tree = writeTree.withFilter(filter);
+    if (identical(tree, _writeTree)) return this;
+    return IncompleteData._(writeTree, filter);
   }
 
   void forEachCompleteNode(Function(Path<Name> k, TreeStructuredData v) f,
@@ -302,31 +312,62 @@ class EventGenerator {
   }
 }
 
-extension _WriteTreeX on ModifiableTreeNode<Name, TreeStructuredData?> {
-  ModifiableTreeNode<Name, TreeStructuredData?> addOverwrite(
-      Path<Name> path, TreeStructuredData data) {
+/// Extensions for mutating a [WriteTree].
+extension WriteTreeX on WriteTree {
+  /// Adds an overwrite at [path].
+  ///
+  /// When the overwrite does not change this tree, returns [this] (same
+  /// instance). Callers may use [identical] to detect no-op updates.
+  WriteTree addOverwrite(Path<Name> path, TreeStructuredData data) {
     if (value != null) {
       var newValue = TreeOperation.overwrite(path, data).apply(value!);
-      if (identical(value, newValue)) return this;
-      return ModifiableTreeNode(newValue);
+      if (identical(newValue, value)) return this;
+      return WriteTree(newValue);
     }
 
-    if (path.isEmpty) return ModifiableTreeNode(data);
+    if (path.isEmpty) {
+      if (identical(value, data)) return this;
+      return WriteTree(data);
+    }
+
     var c = path.first;
-    var newChild = (children[c] ?? ModifiableTreeNode(null))
-        .addOverwrite(path.skip(1), data);
-    if (identical(newChild, children[c])) return this;
+    var existing = children[c];
+    var newChild =
+        (existing ?? WriteTree(null)).addOverwrite(path.skip(1), data);
+    if (identical(newChild, existing)) return this;
     return clone()..children[c] = newChild;
   }
 
-  ModifiableTreeNode<Name, TreeStructuredData?> addPriority(
-      Path<Name> path, Value? data) {
+  /// Sets priority at [path].
+  ///
+  /// When the priority does not change this tree, returns [this].
+  WriteTree addPriority(Path<Name> path, Value? data) {
     return addOverwrite(path.child(Name('.priority')),
         data == null ? TreeStructuredData() : TreeStructuredData.leaf(data));
   }
 
-  ModifiableTreeNode<Name, TreeStructuredData?> withFilter(QueryFilter filter) {
+  /// Applies [filter] to the value at this node.
+  ///
+  /// When filtering does not change this tree, returns [this].
+  WriteTree withFilter(QueryFilter filter) {
     if (value == null) return this;
-    return clone()..value = value!.withFilter(filter);
+    final filtered = value!.withFilter(filter);
+    if (identical(filtered, value)) return this;
+    return clone()..value = filtered;
+  }
+
+  /// Removes the write at [path].
+  ///
+  /// When there is no write at [path], returns [this] (same instance).
+  WriteTree removeWrite(Path<Name> path) {
+    if (path.isEmpty) {
+      if (isNil) return this;
+      return WriteTree(null);
+    }
+    var c = children[path.first];
+    if (c == null) return this;
+    var newChild = c.removeWrite(path.skip(1));
+    if (identical(newChild, c)) return this;
+    return clone()..children[path.first] = newChild;
   }
 }

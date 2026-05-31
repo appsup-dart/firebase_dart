@@ -162,7 +162,7 @@ class TransactionalQuery extends Query {
         var serverVersion = IncompleteData.empty().applyOperation(
             TreeOperation.overwrite(
                 p, TreeStructuredData.fromJson(v.snapshot.value)));
-        cache = cache.updateServerVersion(serverVersion);
+        cache = cache.updateServerVersion(serverVersion).viewCache;
       }
 
       return cache.localVersion

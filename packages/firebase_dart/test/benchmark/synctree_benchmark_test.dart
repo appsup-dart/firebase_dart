@@ -1,8 +1,6 @@
 @Tags(['benchmark'])
 library;
 
-import 'dart:io';
-
 import 'package:benchmark_test/benchmark_test.dart';
 import 'package:test/test.dart';
 
@@ -83,8 +81,7 @@ void main() {
   });
 }
 
-int synctreeMergeBenchmarkChildCount =
-    int.tryParse(Platform.environment['BENCHMARK_CHILDREN'] ?? '') ?? 100;
+int synctreeMergeBenchmarkChildCount = 100;
 
 /// SyncTree with parent + per-child listeners, initial server snapshot, parent
 /// registered so children are [SyncPoint.isCompleteFromParent].
