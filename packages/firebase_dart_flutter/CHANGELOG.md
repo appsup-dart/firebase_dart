@@ -1,3 +1,7 @@
+## 1.4.0-dev.1
+
+ - Update a dependency to the latest release.
+
 ## 1.4.0-dev.0
 
  - **REFACTOR**: restructure ApplicationVerifier implementations. ([e9a5aad6](https://github.com/appsup-dart/firebase_dart/commit/e9a5aad6b48b2889dc2ba52f23f63a5e31de5526))

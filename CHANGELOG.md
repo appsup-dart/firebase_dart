@@ -3,6 +3,56 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-06-02
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v2.0.0-dev.1`](#firebase_dart---v200-dev1)
+ - [`firebase_dart_plus` - `v0.1.0-dev.1`](#firebase_dart_plus---v010-dev1)
+ - [`firebase_dart_flutter` - `v1.4.0-dev.1`](#firebase_dart_flutter---v140-dev1)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0-dev.1`](#firebase_dart_flutter_auth_google---v010-dev1)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.1`](#firebase_dart_flutter_auth_facebook---v001-dev1)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1-dev.1`](#firebase_dart_flutter_auth_apple---v001-dev1)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.4.0-dev.1`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0-dev.1`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.1`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1-dev.1`
+
+---
+
+#### `firebase_dart` - `v2.0.0-dev.1`
+
+ - **PERF**: use TreeMap for children of WriteTree and HashMap for other ModifiableTreeNodes. ([3b455cc0](https://github.com/appsup-dart/firebase_dart/commit/3b455cc07fa90ad682b3a1771a4c8a49218aa384))
+ - **PERF**: avoid double lookup (operator[] after containsKey) in ModifiableTreeNode.subtree. ([3d86f2d1](https://github.com/appsup-dart/firebase_dart/commit/3d86f2d11afb27a5a23dc6c22dd4fb1cd866919b))
+ - **PERF**: speed up operationForChild for Merge operations. ([618727d6](https://github.com/appsup-dart/firebase_dart/commit/618727d61d3d3659dfc4f56c954880efb14eb083))
+ - **PERF**: use TreeMap iso SortedMap/HashMap for fast cloning. ([5bb274c8](https://github.com/appsup-dart/firebase_dart/commit/5bb274c8e0c7bf73d6a21af13b464887cc7d61aa))
+ - **PERF**: avoid creating new IncompleteData instances on no-ops. ([d68e2e61](https://github.com/appsup-dart/firebase_dart/commit/d68e2e61b43ca7c532f91f958c7049419732e263))
+ - **PERF**: increase speed of IncompleteData.applyOperation. ([d78d26e5](https://github.com/appsup-dart/firebase_dart/commit/d78d26e58a9786a5c92ae98a15b4cc32ab30e455))
+ - **PERF**: prune observers on reconnect. ([35035b69](https://github.com/appsup-dart/firebase_dart/commit/35035b6935dbbced32dcb47e74d4fc239125efcc))
+ - **FIX**: revoking one query should keep other active filters and avoid duplicate registration. ([d5a4ec9b](https://github.com/appsup-dart/firebase_dart/commit/d5a4ec9bb5585ad9ef2ef122df288671e2905b84))
+ - **FIX**: preparing operationForChild on Merge. ([57f2ca63](https://github.com/appsup-dart/firebase_dart/commit/57f2ca6399b46a7cd0b470283cf8c45b6210aa34))
+ - **FIX**: cast children of TransactionsNode and SparseSnapshotTree. ([3c281091](https://github.com/appsup-dart/firebase_dart/commit/3c2810919d127fa4f44613a9f40f663165504ee2))
+ - **FIX**: observers not notified when state of view changes. ([0a01bf75](https://github.com/appsup-dart/firebase_dart/commit/0a01bf7537b56270649df1c686ec90064d2128cf))
+
+#### `firebase_dart_plus` - `v0.1.0-dev.1`
+
+ - **PERF**: use TreeMap iso SortedMap/HashMap for fast cloning. ([5bb274c8](https://github.com/appsup-dart/firebase_dart/commit/5bb274c8e0c7bf73d6a21af13b464887cc7d61aa))
+ - **PERF**: avoid creating new IncompleteData instances on no-ops. ([d68e2e61](https://github.com/appsup-dart/firebase_dart/commit/d68e2e61b43ca7c532f91f958c7049419732e263))
+
+
 ## 2026-04-13
 
 ### Changes
