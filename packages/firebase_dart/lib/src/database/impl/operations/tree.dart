@@ -103,7 +103,12 @@ class Ack extends TreeOperation {
 class Merge extends Operation {
   final List<TreeOperation> overwrites;
 
-  Merge._(this.overwrites);
+  Merge._(this.overwrites)
+      : assert(
+            overwrites.every(
+                (o) => o.path.isNotEmpty || o.nodeOperation is SetPriority),
+            'Merge operations must have a non-empty path, except for SetPriority');
+
   Merge.fromOperations(this.overwrites);
   Merge(Map<Path<Name>, TreeStructuredData> children)
       : this._(children.keys
@@ -131,15 +136,55 @@ class Merge extends Operation {
   Iterable<Path<Name>> get completesPaths =>
       overwrites.expand<Path<Name>>((c) => c.completesPaths);
 
-  late final Map<Name, List<TreeOperation>> _operationsByChild =
-      overwrites.groupListsBy((o) => o.path.first);
+  late final Map<Name, Operation> _operationsByChild = {
+    for (var e in overwrites.groupListsBy((o) => o.path.first).entries)
+      if (_foldOperationsForChild(e.value) case final op?) e.key: op,
+  };
+
+  static Operation? _foldOperationsForChild(List<TreeOperation> ops) {
+    Overwrite? overwrite;
+    var mergeOps = <TreeOperation>[];
+
+    for (var o in ops) {
+      var path = o.path.skip(1);
+      if (path.isEmpty) {
+        if (o.nodeOperation is SetPriority) {
+          if (overwrite != null) {
+            overwrite = Overwrite(o.nodeOperation!.apply(overwrite.value));
+          } else {
+            mergeOps.add(TreeOperation(path, o.nodeOperation));
+          }
+        } else {
+          overwrite = o.nodeOperation as Overwrite;
+          mergeOps.clear();
+        }
+      } else {
+        var childOp = TreeOperation(path, o.nodeOperation);
+        if (overwrite != null) {
+          overwrite = Overwrite(childOp.apply(overwrite.value));
+        } else {
+          mergeOps.add(childOp);
+        }
+      }
+    }
+
+    if (overwrite != null) return overwrite;
+    if (mergeOps.length == 1 && mergeOps.single.path.isEmpty) {
+      var op = mergeOps.single;
+      if (op.path.isEmpty) {
+        return op.nodeOperation;
+      }
+      // we should not return `op` as this is a TreeOperation and we might up
+      // having operations wrapped in multiple TreeOperations which breaks
+      // certain assumptions. This could probably be optimized and made more
+      // explicit.
+    }
+    if (mergeOps.isEmpty) return null;
+    return Merge._(mergeOps);
+  }
 
   @override
-  Operation? operationForChild(Name key) {
-    var o = _operationsByChild[key];
-    if (o == null) return null;
-    return Merge._(o);
-  }
+  Operation? operationForChild(Name key) => _operationsByChild[key];
 
   @override
   String toString() => 'Merge[$overwrites]';
