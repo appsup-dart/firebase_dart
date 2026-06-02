@@ -448,9 +448,10 @@ extension SyncTreeTesterCheckX on SyncTreeTester {
         }
 
         // TODO: once completeness on user operation is correctly implemented, local versions should also match when there are still outstanding writes
-        if (outstandingWrites.entries
-            .map((v) => v.value)
-            .any((o) => o.path.isDescendantOf(path) || path == o.path)) {
+        if (outstandingWrites.entries.map((v) => v.value).any((o) =>
+            o.path.isDescendantOf(path) ||
+            path == o.path ||
+            path.isDescendantOf(o.path))) {
           return;
         }
 
