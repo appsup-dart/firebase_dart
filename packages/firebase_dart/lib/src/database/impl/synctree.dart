@@ -57,22 +57,33 @@ class MasterView {
 
   final bool persistenceEnabled;
 
+  set parentState(QueryRegistrationState? v) {
+    if (_parentState == v) return;
+    _parentState = v;
+    notifyDataChanged();
+  }
+
+  QueryRegistrationState? get parentState => _parentState;
+
+  set unlimitingSiblingState(QueryRegistrationState? v) {
+    if (_unlimitingSiblingState == v) return;
+    _unlimitingSiblingState = v;
+    notifyDataChanged();
+  }
+
+  QueryRegistrationState? get unlimitingSiblingState => _unlimitingSiblingState;
+
   set state(QueryRegistrationState v) {
     if (_state == v) return;
 
     _state = v;
-    for (var q in observers.keys) {
-      var t = observers[q]!;
-
-      var newValue = _valueForFilter(q);
-      t.notifyDataChanged(newValue);
-    }
+    notifyDataChanged();
   }
 
   QueryRegistrationState get effectiveState {
     var states = [
-      if (_parentState != null) _parentState!,
-      if (_unlimitingSiblingState != null) _unlimitingSiblingState!,
+      if (parentState != null) parentState!,
+      if (unlimitingSiblingState != null) unlimitingSiblingState!,
       _state,
     ];
     return states.reduce((a, b) => a.compareTo(b) > 0 ? a : b);
@@ -93,10 +104,18 @@ class MasterView {
 
   ViewCache get data => _data;
 
-  void upgrade() {
+  Map<QueryFilter, EventTarget> upgrade() {
     masterFilter = QueryFilter(
         ordering: masterFilter.ordering as TreeStructuredDataOrdering);
     _data = _data.withFilter(masterFilter);
+
+    var out = <QueryFilter, EventTarget>{};
+    for (var q in observers.keys.toList()) {
+      if (!contains(q)) {
+        out[q] = observers.remove(q)!;
+      }
+    }
+    return out;
   }
 
   /// Checks if the filter [f] is contained by the data in this master view
@@ -255,13 +274,17 @@ class MasterView {
       }
     }
 
+    notifyDataChanged();
+    return out;
+  }
+
+  void notifyDataChanged() {
     for (var q in observers.keys) {
       var t = observers[q]!;
 
       var newValue = _valueForFilter(q);
       t.notifyDataChanged(newValue);
     }
-    return out;
   }
 
   IncompleteData _valueForFilter(QueryFilter filter) {
@@ -322,7 +345,7 @@ class SyncPoint {
         if (!defView.observers.containsKey(const QueryFilter())) {
           views.remove(const QueryFilter());
           for (var v in views.values) {
-            v._unlimitingSiblingState = null;
+            v.unlimitingSiblingState = null;
           }
           for (var k in defView.observers.keys.toList()) {
             var view = getMasterViewForFilter(k);
@@ -332,7 +355,7 @@ class SyncPoint {
       }
     }
     for (var v in views.values) {
-      v._parentState = _parentState;
+      v.parentState = _parentState;
     }
   }
 
@@ -559,7 +582,10 @@ class SyncPoint {
             // so we will upgrade all queries here and adopt all event targets
             // once we know the master filter.
             for (var v in views.values) {
-              v.upgrade();
+              var d = v.upgrade();
+              for (var q in d.keys) {
+                _newQueries[q] = d[q]!;
+              }
             }
           }
         }
@@ -1052,7 +1078,7 @@ class SyncTree {
         point.views.remove(filter);
         if (filter == const QueryFilter()) {
           for (var v in point.views.values) {
-            v._unlimitingSiblingState = null;
+            v.unlimitingSiblingState = null;
           }
         }
       }
@@ -1083,7 +1109,7 @@ class SyncTree {
     point.views[filter]?.state = state;
     if (!filter.limits) {
       for (var v in point.views.values) {
-        v._unlimitingSiblingState = state;
+        v.unlimitingSiblingState = state;
       }
     }
     switch (state) {
@@ -1242,7 +1268,7 @@ class SyncTree {
 
     if (filter == const QueryFilter()) {
       for (var v in point.views.values) {
-        v._unlimitingSiblingState = null;
+        v.unlimitingSiblingState = null;
       }
     }
 

@@ -7,6 +7,7 @@ import 'dart:math';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/core.dart' as core;
+import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/database/impl/backend_connection.dart';
 import 'package:firebase_dart/src/database/impl/firebase_impl.dart';
 import 'package:firebase_dart/src/database/token.dart';
@@ -30,7 +31,11 @@ void main() {
   group('database service', () => runDatabaseTests(isolated: false));
 }
 
-void runDatabaseTests({bool isolated = false}) {
+void runDatabaseTests({bool isolated = false, bool keepQueriesSynced = true}) {
+  if (!keepQueriesSynced) {
+    FirebaseDart.updateDatabaseConfiguration(
+        keepQueriesSyncedDuration: Duration());
+  }
   setUpAll(() async {
     await FirebaseTesting.setup(isolated: isolated);
   });
@@ -58,34 +63,41 @@ void runDatabaseTests({bool isolated = false}) {
     testsWith(s.secrets, isolated: isolated);
   }, tags: ['serial']);
 
-  group('pruneObservers', () {
-    test('should prune observers after a disconnect', () async {
-      var app = await core.Firebase.initializeApp(
-          name: 'my_app', options: getOptions());
+  if (!isolated && keepQueriesSynced) {
+    group('pruneObservers', () {
+      test('should prune observers after a disconnect', () async {
+        var app = await core.Firebase.initializeApp(
+            name: 'my_app', options: getOptions());
 
-      var db = FirebaseDatabase(app: app, databaseURL: 'mem://test');
-      var ref = db.reference().child('test/some-key');
+        addTearDown(() async {
+          await app.delete();
+        });
 
-      await ref.get();
-      await wait(10);
+        var db = FirebaseDatabase(app: app, databaseURL: 'mem://test');
+        var ref = db.reference().child('test/some-key');
 
-      bool hasActiveListeners() => (Repo(db as BaseFirebaseDatabase).connection
-              as PersistentConnectionImpl)
-          .activeListeners
-          .isNotEmpty;
+        await ref.get();
+        await wait(10);
 
-      expect(hasActiveListeners(), isTrue);
+        bool hasActiveListeners() =>
+            (Repo(db as BaseFirebaseDatabase).connection
+                    as PersistentConnectionImpl)
+                .activeListeners
+                .isNotEmpty;
 
-      db.mockConnectionLost();
-      await wait(10);
+        expect(hasActiveListeners(), isTrue);
 
-      // We keep observers around for `keepQueriesSyncedDuration`, even when
-      // they have no registered listeners anymore, for caching purposes.
-      // However, when a connection is lost, we should not restore those listeners,
-      // as that would slow down the reconnect process.
-      expect(hasActiveListeners(), isFalse);
+        db.mockConnectionLost();
+        await wait(10);
+
+        // We keep observers around for `keepQueriesSyncedDuration`, even when
+        // they have no registered listeners anymore, for caching purposes.
+        // However, when a connection is lost, we should not restore those listeners,
+        // as that would slow down the reconnect process.
+        expect(hasActiveListeners(), isFalse);
+      });
     });
-  });
+  }
 
   group('FirebaseDatabase.delete', () {
     var testUrl = 'mem://test2';

@@ -30,7 +30,7 @@ void main() {
       final cache = ViewCache(
         server,
         server,
-        SortedMap.from({1: TreeOperation.overwrite(Path(), leaf)}),
+        TreeMap.from({1: TreeOperation.overwrite(Path(), leaf)}),
       );
       expect(cache.recalcLocalVersion(), isFalse);
     });
@@ -48,7 +48,7 @@ void main() {
       final cache = ViewCache(
         server,
         server,
-        SortedMap.from({1: TreeOperation.overwrite(Path(), leaf)}),
+        TreeMap.from({1: TreeOperation.overwrite(Path(), leaf)}),
       );
       expect(cache.recalcLocalVersion(), isTrue);
       expect(cache.localVersion.value, leaf);
@@ -61,9 +61,9 @@ void main() {
         IncompleteData.empty()
             .applyOperation(TreeOperation.overwrite(Path(), leaf)),
         server,
-        SortedMap.from({1: TreeOperation.overwrite(Path(), leaf)}),
+        TreeMap.from({1: TreeOperation.overwrite(Path(), leaf)}),
       );
-      final pending = cache.pendingOperations.clone()..remove(1);
+      final pending = TreeMap.from(cache.pendingOperations)..remove(1);
       final withoutPending = ViewCache(cache.localVersion, server, pending);
       expect(withoutPending.recalcLocalVersion(), isTrue);
       expect(withoutPending.localVersion.isNil, isTrue);
@@ -79,7 +79,7 @@ void main() {
       final cache = ViewCache(
         server,
         server,
-        SortedMap.from({1: TreeOperation.overwrite(Path(), leaf)}),
+        TreeMap.from({1: TreeOperation.overwrite(Path(), leaf)}),
       );
       final result = cache.applyOperation(
           TreeOperation.overwrite(Path(), leaf), ViewOperationSource.user, 2);
@@ -103,7 +103,7 @@ void main() {
       var cache = ViewCache(
         server,
         server,
-        SortedMap.from({1: TreeOperation.overwrite(Path(), leaf)}),
+        TreeMap.from({1: TreeOperation.overwrite(Path(), leaf)}),
       );
       cache = cache
           .applyOperation(TreeOperation.overwrite(Path(), leaf),

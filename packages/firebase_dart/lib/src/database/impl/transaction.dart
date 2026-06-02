@@ -254,8 +254,7 @@ class TransactionsNode extends ModifiableTreeNode<Name, List<Transaction>> {
   TransactionsNode() : super([], SortedMap<Name, TransactionsNode>());
 
   @override
-  Map<Name, TransactionsNode> get children =>
-      super.children as Map<Name, TransactionsNode>;
+  Map<Name, TransactionsNode> get children => super.children.cast();
 
   @override
   TransactionsNode? subtreeNullable(Path<Name> path) =>
@@ -507,8 +506,7 @@ class SparseSnapshotTree extends ModifiableTreeNode<Name, TreeStructuredData?> {
   SparseSnapshotTree() : super(null, SortedMap<Name, SparseSnapshotTree>());
 
   @override
-  Map<Name, SparseSnapshotTree> get children =>
-      super.children as Map<Name, SparseSnapshotTree>;
+  Map<Name, SparseSnapshotTree> get children => super.children.cast();
 
   void remember(Path<Name> path, TreeStructuredData data) {
     if (path.isEmpty) {
