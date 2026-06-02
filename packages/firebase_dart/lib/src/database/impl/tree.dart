@@ -1,7 +1,6 @@
 // Copyright (c) 2016, Rik Bellens. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-import 'package:sortedmap/sortedmap.dart';
 import 'package:collection/collection.dart';
 
 class Path<K> extends UnmodifiableListView<K> implements Comparable<Path<K>> {
@@ -128,7 +127,7 @@ class ModifiableTreeNode<K extends Comparable, V>
   final Map<K, ModifiableTreeNode<K, V>> _children;
 
   ModifiableTreeNode(this.value, [Map<K, ModifiableTreeNode<K, V>>? children])
-      : _children = TreeMap.from(children ?? {});
+      : _children = children ?? {};
 
   @override
   Map<K, ModifiableTreeNode<K, V>> get children => _children;
@@ -140,6 +139,4 @@ class ModifiableTreeNode<K extends Comparable, V>
     child ??= children[path.first] = newInstance(value, path.first);
     return child.subtree(path.skip(1), newInstance);
   }
-
-  ModifiableTreeNode<K, V> clone() => ModifiableTreeNode(value, children);
 }

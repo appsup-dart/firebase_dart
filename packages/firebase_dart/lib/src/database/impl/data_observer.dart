@@ -53,18 +53,19 @@ class IncompleteData {
   final QueryFilter filter;
 
   IncompleteData.empty([QueryFilter filter = const QueryFilter()])
-      : this._(WriteTree(null), filter);
+      : this._(WriteTree(null, TreeMap()), filter);
   IncompleteData.complete(TreeStructuredData data)
-      : this._(WriteTree(data), data.filter.toQueryFilter());
+      : this._(WriteTree(data, TreeMap()), data.filter.toQueryFilter());
   IncompleteData._(WriteTree writeTree, [this.filter = const QueryFilter()])
       : _writeTree = writeTree.withFilter(filter);
 
   bool get isNil => _writeTree.isNil;
 
   factory IncompleteData.fromLeafs(Map<Path<Name>, TreeStructuredData> leafs) {
-    var tree = WriteTree(null);
+    var tree = WriteTree(null, TreeMap());
     for (var e in leafs.entries) {
-      tree.subtree(e.key, (parent, name) => WriteTree(null)).value = e.value;
+      tree.subtree(e.key, (parent, name) => WriteTree(null, TreeMap())).value =
+          e.value;
     }
     return IncompleteData._(tree);
   }
@@ -106,23 +107,23 @@ class IncompleteData {
     if (isComplete) {
       var c = _writeTree.value!.children[child];
       if (c != null) {
-        return IncompleteData._(WriteTree(c));
+        return IncompleteData._(WriteTree(c, TreeMap()));
       }
 
       var f = value.filter;
       if (f.validInterval.isUnlimited &&
           (f.limit == null || f.limit! > value.children.length)) {
-        return IncompleteData._(WriteTree(TreeStructuredData()));
+        return IncompleteData._(WriteTree(TreeStructuredData(), TreeMap()));
       }
       if (f.ordering == KeyOrdering() &&
           value.childrenAsFilteredMap.completeInterval.containsPoint(
               KeyOrdering().mapKeyValue(child, TreeStructuredData()))) {
-        return IncompleteData._(WriteTree(TreeStructuredData()));
+        return IncompleteData._(WriteTree(TreeStructuredData(), TreeMap()));
       }
     }
     var tree = _writeTree.children[child];
     if (tree != null) return IncompleteData._(tree);
-    return IncompleteData._(WriteTree(null));
+    return IncompleteData._(WriteTree(null, TreeMap()));
   }
 
   IncompleteData child(Path<Name> path) {
@@ -227,14 +228,16 @@ class IncompleteData {
       WriteTree forget(WriteTree tree, Path<Name> path) {
         if (path.isEmpty) {
           if (tree.isNil) return tree;
-          if (tree.value == null) return WriteTree(null);
+          if (tree.value == null) return WriteTree(null, TreeMap());
           return tree.clone()..value = null;
         }
         if (tree.value != null) {
-          tree = WriteTree(null, {
-            for (var k in tree.value!.children.keys)
-              k: WriteTree(tree.value!.children[k])
-          });
+          tree = WriteTree(
+              null,
+              TreeMap.from({
+                for (var k in tree.value!.children.keys)
+                  k: WriteTree(tree.value!.children[k], TreeMap())
+              }));
         }
         var child = tree.children[path.first];
         if (child == null) return tree;
@@ -322,18 +325,18 @@ extension WriteTreeX on WriteTree {
     if (value != null) {
       var newValue = TreeOperation.overwrite(path, data).apply(value!);
       if (identical(newValue, value)) return this;
-      return WriteTree(newValue);
+      return WriteTree(newValue, TreeMap());
     }
 
     if (path.isEmpty) {
       if (identical(value, data)) return this;
-      return WriteTree(data);
+      return WriteTree(data, TreeMap());
     }
 
     var c = path.first;
     var existing = children[c];
-    var newChild =
-        (existing ?? WriteTree(null)).addOverwrite(path.skip(1), data);
+    var newChild = (existing ?? WriteTree(null, TreeMap()))
+        .addOverwrite(path.skip(1), data);
     if (identical(newChild, existing)) return this;
     return clone()..children[c] = newChild;
   }
@@ -362,7 +365,7 @@ extension WriteTreeX on WriteTree {
   WriteTree removeWrite(Path<Name> path) {
     if (path.isEmpty) {
       if (isNil) return this;
-      return WriteTree(null);
+      return WriteTree(null, TreeMap());
     }
     var c = children[path.first];
     if (c == null) return this;
@@ -370,4 +373,6 @@ extension WriteTreeX on WriteTree {
     if (identical(newChild, c)) return this;
     return clone()..children[path.first] = newChild;
   }
+
+  WriteTree clone() => WriteTree(value, TreeMap.from(children));
 }
