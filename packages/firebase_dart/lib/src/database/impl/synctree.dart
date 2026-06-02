@@ -902,7 +902,7 @@ class QueryRegistrarTree {
   }
 
   void revokeActiveQuery(Path<Name> path, QueryFilter filter) {
-    _activeQueries.remove(path);
+    _activeQueries[path]?.remove(filter);
     queryRegistrar.revoke(QuerySpec(path, filter));
   }
 

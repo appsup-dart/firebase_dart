@@ -337,6 +337,53 @@ void main() {
       expect(value2bis,
           null); // query2 is not complete, so new registrations should not get a value
     });
+
+    test(
+        'Revoking one query should keep other active filters and avoid duplicate registration',
+        () {
+      var path = Name.parsePath('/indexes/reservationsByPerson/-ORamwIN2rHIgPVYuSgB');
+      var registrar =
+          QueryRegistrarTree(PrioritizedQueryRegistrar(_Registrar()));
+
+      var allowedQuery = QueryFilter().copyWith(
+        orderBy: '.key',
+        startAtKey: Name('current-'),
+        endAtKey: Name('current0'),
+      );
+      var deniedQuery = QueryFilter().copyWith(
+        orderBy: '.key',
+        startAtKey: Name('denied-'),
+        endAtKey: Name('denied0'),
+      );
+      var followUpQuery = QueryFilter().copyWith(
+        orderBy: '.key',
+        startAtKey: Name('next-'),
+        endAtKey: Name('next0'),
+      );
+
+      registrar.setActiveQueriesOnPath(
+        path,
+        [allowedQuery, deniedQuery],
+        hashFcn: (filter) => filter.hashCode.toString(),
+        priorityFcn: (filter) => 0,
+        onRegistrationStateChanged: (filter, state) {},
+      );
+
+      // Simulate one query being revoked by the server.
+      registrar.revokeActiveQuery(path, deniedQuery);
+
+      // The remaining active query should not be registered twice.
+      expect(
+        () => registrar.setActiveQueriesOnPath(
+          path,
+          [allowedQuery, followUpQuery],
+          hashFcn: (filter) => filter.hashCode.toString(),
+          priorityFcn: (filter) => 0,
+          onRegistrationStateChanged: (filter, state) {},
+        ),
+        returnsNormally,
+      );
+    });
     group('Completeness on user operation', () {
       late SyncTree syncTree;
       SyncPoint syncPoint;
