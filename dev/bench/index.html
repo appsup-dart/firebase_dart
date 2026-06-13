@@ -212,6 +212,13 @@
         }
 
         function renderAllCharts(dataSets) {
+          function commitTime(point) {
+            // `date` is when the GitHub Action ran; `commit.timestamp` is when
+            // the commit was authored. Sort by commit time so out-of-order CI
+            // runs still appear in chronological order on the chart.
+            return new Date(point.commit.timestamp || point.date).getTime();
+          }
+
           function sortedCommits(seriesMap) {
             const byId = new Map();
             for (const series of seriesMap.values()) {
@@ -219,9 +226,13 @@
                 byId.set(point.commit.id, point);
               }
             }
-            return Array.from(byId.values()).sort(
-              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-            );
+            return Array.from(byId.values()).sort((a, b) => {
+              const timeDiff = commitTime(a) - commitTime(b);
+              if (timeDiff !== 0) {
+                return timeDiff;
+              }
+              return a.commit.id.localeCompare(b.commit.id);
+            });
           }
 
           function renderGroupedGraph(parent, baseName, seriesMap) {
