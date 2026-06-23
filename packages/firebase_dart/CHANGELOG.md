@@ -1,3 +1,7 @@
+## 2.0.0-dev.2
+
+ - **FIX**: retry http requests on network errors. ([33409e21](https://github.com/appsup-dart/firebase_dart/commit/33409e2131275a0e7e814a2452376d19c72d76f3))
+
 ## 2.0.0-dev.1
 
  - **PERF**: use TreeMap for children of WriteTree and HashMap for other ModifiableTreeNodes. ([3b455cc0](https://github.com/appsup-dart/firebase_dart/commit/3b455cc07fa90ad682b3a1771a4c8a49218aa384))

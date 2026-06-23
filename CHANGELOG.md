@@ -3,6 +3,46 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-06-23
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v2.0.0-dev.2`](#firebase_dart---v200-dev2)
+ - [`firebase_dart_plus` - `v0.1.1-dev.2`](#firebase_dart_plus---v011-dev2)
+ - [`firebase_dart_flutter` - `v1.4.0-dev.2`](#firebase_dart_flutter---v140-dev2)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0-dev.2`](#firebase_dart_flutter_auth_google---v010-dev2)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.2`](#firebase_dart_flutter_auth_facebook---v001-dev2)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1-dev.2`](#firebase_dart_flutter_auth_apple---v001-dev2)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.4.0-dev.2`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0-dev.2`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.2`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1-dev.2`
+
+---
+
+#### `firebase_dart` - `v2.0.0-dev.2`
+
+ - **FIX**: retry http requests on network errors. ([33409e21](https://github.com/appsup-dart/firebase_dart/commit/33409e2131275a0e7e814a2452376d19c72d76f3))
+
+#### `firebase_dart_plus` - `v0.1.1-dev.2`
+
+ - **PERF**: use TreeMap iso SortedMap/HashMap for fast cloning. ([5bb274c8](https://github.com/appsup-dart/firebase_dart/commit/5bb274c8e0c7bf73d6a21af13b464887cc7d61aa))
+ - **PERF**: avoid creating new IncompleteData instances on no-ops. ([d68e2e61](https://github.com/appsup-dart/firebase_dart/commit/d68e2e61b43ca7c532f91f958c7049419732e263))
+
+
 ## 2026-06-02
 
 ### Changes
