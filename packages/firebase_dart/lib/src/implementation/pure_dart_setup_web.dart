@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/auth/utils.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/implementation/dart.dart';
+import 'package:firebase_dart/src/util/retry_http_client.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
-
 import 'package:jose/jose.dart';
 import 'package:web/web.dart';
 
@@ -55,13 +57,20 @@ void setupPureDartImplementation(
   }
 
   initPlatform(platform);
+  final effectiveHttpClient = createRetryHttpClient(
+      inner: httpClient, whenError: _isRetryableNetworkError);
   JsonWebKeySetLoader.global =
-      DefaultJsonWebKeySetLoader(httpClient: httpClient);
+      DefaultJsonWebKeySetLoader(httpClient: effectiveHttpClient);
 
   FirebaseImplementation.install(PureDartFirebaseImplementation(
       launchUrl: launchUrl,
       authHandler: authHandler,
       applicationVerifier: applicationVerifier,
       smsRetriever: smsRetriever,
-      httpClient: httpClient));
+      httpClient: effectiveHttpClient));
+}
+
+bool _isRetryableNetworkError(Object error, StackTrace stackTrace) {
+  if (error is TimeoutException) return true;
+  return error is http.ClientException;
 }
