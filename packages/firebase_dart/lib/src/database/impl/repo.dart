@@ -246,6 +246,7 @@ class Repo {
         await Future.microtask(() => _syncTree.applyAck(path, writeId, true));
       } on firebase.FirebaseDatabaseException {
         _syncTree.applyAck(path, writeId, false);
+        rethrow;
       }
     }
   }
