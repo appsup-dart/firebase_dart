@@ -109,6 +109,20 @@ class FirebaseDart {
   static FirebaseDart get instance =>
       FirebaseDart(PureDartFirebaseImplementation.installation);
 
+  /// The HTTP client used by the installed Firebase Dart implementation, or
+  /// `null` if [setup] was never called.
+  ///
+  /// After [setup], this is the effective client (possibly wrapped with
+  /// retries), not necessarily the same instance passed as [setup]'s
+  /// [httpClient].
+  static http.Client? get httpClient {
+    try {
+      return instance._installation.httpClient;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Opens the given [url] in a browser context.
   ///
   /// This can be used to implement [AuthHandler]s or [ApplicationVerifier]s

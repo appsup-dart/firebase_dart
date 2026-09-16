@@ -21,6 +21,9 @@ class PureDartFirebaseImplementation extends BaseFirebaseImplementation {
 
   final SmsRetriever smsRetriever;
 
+  /// The HTTP client used by this implementation.
+  http.Client? get httpClient => _httpClient;
+
   PureDartFirebaseImplementation(
       {required super.launchUrl,
       required this.authHandler,
