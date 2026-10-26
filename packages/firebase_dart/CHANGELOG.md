@@ -1,3 +1,9 @@
+## 2.0.0-dev.3
+
+ - **FIX**: drop empty unregistered sync views so uncovered children register again. ([d75d7a2d](https://github.com/appsup-dart/firebase_dart/commit/d75d7a2d2f982f2cb71e93cd3a359a04a4f604bd))
+ - **FIX**: rethrow database update failures after reverting pending write. ([2ad06a3d](https://github.com/appsup-dart/firebase_dart/commit/2ad06a3df06016da2fc8b79a7aa13fb21a3b4026))
+ - **FEAT**: expose the HTTP client used after FirebaseDart.setup. ([2c49f47d](https://github.com/appsup-dart/firebase_dart/commit/2c49f47dd733ed6eb63684474ab39979a149e6d0))
+
 ## 2.0.0-dev.2
 
  - **FIX**: retry http requests on network errors. ([33409e21](https://github.com/appsup-dart/firebase_dart/commit/33409e2131275a0e7e814a2452376d19c72d76f3))

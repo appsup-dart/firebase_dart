@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-10-26
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v2.0.0-dev.3`](#firebase_dart---v200-dev3)
+ - [`firebase_dart_flutter` - `v1.4.0-dev.3`](#firebase_dart_flutter---v140-dev3)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0-dev.3`](#firebase_dart_flutter_auth_google---v010-dev3)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.3`](#firebase_dart_flutter_auth_facebook---v001-dev3)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1-dev.3`](#firebase_dart_flutter_auth_apple---v001-dev3)
+ - [`firebase_dart_plus` - `v0.1.1-dev.3`](#firebase_dart_plus---v011-dev3)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.4.0-dev.3`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0-dev.3`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.3`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1-dev.3`
+ - `firebase_dart_plus` - `v0.1.1-dev.3`
+
+---
+
+#### `firebase_dart` - `v2.0.0-dev.3`
+
+ - **FIX**: drop empty unregistered sync views so uncovered children register again. ([d75d7a2d](https://github.com/appsup-dart/firebase_dart/commit/d75d7a2d2f982f2cb71e93cd3a359a04a4f604bd))
+ - **FIX**: rethrow database update failures after reverting pending write. ([2ad06a3d](https://github.com/appsup-dart/firebase_dart/commit/2ad06a3df06016da2fc8b79a7aa13fb21a3b4026))
+ - **FEAT**: expose the HTTP client used after FirebaseDart.setup. ([2c49f47d](https://github.com/appsup-dart/firebase_dart/commit/2c49f47dd733ed6eb63684474ab39979a149e6d0))
+
+
 ## 2026-06-23
 
 ### Changes

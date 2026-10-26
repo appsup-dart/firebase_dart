@@ -1,3 +1,7 @@
+## 0.1.1-dev.3
+
+ - Update a dependency to the latest release.
+
 ## 0.1.1-dev.2
 
  - **PERF**: use TreeMap iso SortedMap/HashMap for fast cloning. ([5bb274c8](https://github.com/appsup-dart/firebase_dart/commit/5bb274c8e0c7bf73d6a21af13b464887cc7d61aa))
