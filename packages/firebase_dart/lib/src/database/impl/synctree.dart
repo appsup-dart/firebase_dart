@@ -389,6 +389,30 @@ class SyncPoint {
     }
   }
 
+  /// Removes views that are no longer needed and returns true when at least one view was removed.
+  bool _pruneViews() {
+    var removed = false;
+    for (var e in views.entries.toList()) {
+      var filter = e.key;
+      var v = e.value;
+      if (v._state == QueryRegistrationState.unregistered) {
+        v.pruneObservers(DateTime(9000));
+        if (v.observers.isEmpty) {
+          if (!isCompleteFromParent || filter != const QueryFilter()) {
+            removed = true;
+            views.remove(filter);
+            if (filter == const QueryFilter()) {
+              for (var v in views.values) {
+                v.unlimitingSiblingState = null;
+              }
+            }
+          }
+        }
+      }
+    }
+    return removed;
+  }
+
   @visibleForTesting
   void processNewQueries() {
     if (isCompleteFromParent) {
@@ -1072,16 +1096,8 @@ class SyncTree {
   void applyAckUnlisten(Path<Name> path, QueryFilter filter) {
     var node = root.subtree(path, _createNode);
     var point = node.value;
-    var v = point.views[filter];
-    if (v != null && v.observers.isEmpty) {
-      if (!point.isCompleteFromParent || filter != const QueryFilter()) {
-        point.views.remove(filter);
-        if (filter == const QueryFilter()) {
-          for (var v in point.views.values) {
-            v.unlimitingSiblingState = null;
-          }
-        }
-      }
+    if (point._pruneViews()) {
+      _invalidate(path, stateChanged: true);
     }
   }
 
@@ -1218,6 +1234,9 @@ class SyncTree {
     assert(!_isDestroyed);
     return _doOnSyncPoint(path, (point) {
       var isEmpty = point.removeEventListener(type, filter, listener);
+      if (point._pruneViews()) {
+        _invalidate(path, stateChanged: true);
+      }
       if (isEmpty) {
         _pathsWithEmptyObservers[path] ??= _clock.now();
         _pruneObservers();
