@@ -125,6 +125,27 @@ class TrackedQueryManager {
       _currentQueryId = max(query.id + 1, _currentQueryId);
       cacheTrackedQuery(query);
     }
+    _removeServerCacheNotCoveredByTrackedQueries(trackedQueries);
+  }
+
+  /// Drops server cache that no tracked query covers. Existing installs can
+  /// already contain that data; this runs once per database.
+  void _removeServerCacheNotCoveredByTrackedQueries(
+      List<TrackedQuery> trackedQueries) {
+    if (storageLayer.orphanedServerCacheRemoved) return;
+
+    try {
+      storageLayer.beginTransaction();
+      var forest = PruneForest().prune(Path());
+      for (var query in trackedQueries) {
+        forest = _keepQuery(forest, query);
+      }
+      storageLayer.pruneCache(forest);
+      storageLayer.markOrphanedServerCacheRemoved();
+      storageLayer.setTransactionSuccessful();
+    } finally {
+      storageLayer.endTransaction();
+    }
   }
 
   void resetPreviouslyActiveTrackedQueries() {

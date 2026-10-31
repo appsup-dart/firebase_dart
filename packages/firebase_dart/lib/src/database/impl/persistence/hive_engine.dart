@@ -13,16 +13,20 @@ import '../treestructureddata.dart';
 import 'engine.dart';
 
 class PersistenceStorageTransaction {
+  static const orphanedServerCacheKey = 'M:orphan-cache-cleanup';
+
   final Map<int, TrackedQuery?> _trackedQueries = {};
   final Map<int, TreeOperation?> _userOperations = {};
   IncompleteData? _serverCache;
+  bool markOrphanedServerCacheRemoved = false;
 
   PersistenceStorageTransaction();
 
   bool get isEmpty =>
       _trackedQueries.isEmpty &&
       _userOperations.isEmpty &&
-      _serverCache == null;
+      _serverCache == null &&
+      !markOrphanedServerCacheRemoved;
 
   void deleteTrackedQuery(int trackedQueryId) {
     _trackedQueries[trackedQueryId] = null;
@@ -48,6 +52,8 @@ class PersistenceStorageTransaction {
     _trackedQueries.addAll(transaction._trackedQueries);
     _userOperations.addAll(transaction._userOperations);
     _serverCache = transaction._serverCache ?? _serverCache;
+    markOrphanedServerCacheRemoved = markOrphanedServerCacheRemoved ||
+        transaction.markOrphanedServerCacheRemoved;
   }
 }
 
@@ -59,6 +65,8 @@ abstract class PersistenceStorageDatabase {
   Map<int, TreeOperation> loadUserOperations();
 
   Future<void> applyTransaction(PersistenceStorageTransaction transaction);
+
+  bool get orphanedServerCacheRemoved;
 
   Future<void> close();
 
@@ -145,6 +153,10 @@ class PersistenceStorageDatabaseImpl extends PersistenceStorageDatabase {
       }
     }
 
+    if (transaction.markOrphanedServerCacheRemoved) {
+      database.put(PersistenceStorageTransaction.orphanedServerCacheKey, true);
+    }
+
     var serverCache = transaction._serverCache;
 
     if (serverCache != null) {
@@ -193,6 +205,10 @@ class PersistenceStorageDatabaseImpl extends PersistenceStorageDatabase {
     assert(isOpen);
     return database.close();
   }
+
+  @override
+  bool get orphanedServerCacheRemoved => database
+      .containsKey(PersistenceStorageTransaction.orphanedServerCacheKey);
 
   @override
   bool get isOpen => database.box.isOpen;
@@ -270,6 +286,11 @@ class DebouncedPersistenceStorageDatabase
   }
 
   @override
+  bool get orphanedServerCacheRemoved =>
+      _transaction.markOrphanedServerCacheRemoved ||
+      delegateTo.orphanedServerCacheRemoved;
+
+  @override
   bool get isOpen => delegateTo.isOpen;
 }
 
@@ -319,6 +340,15 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
   void _saveServerCache(IncompleteData serverCache) {
     assert(_transaction != null);
     _transaction!.saveServerCache(serverCache);
+  }
+
+  @override
+  bool get orphanedServerCacheRemoved => database.orphanedServerCacheRemoved;
+
+  @override
+  void markOrphanedServerCacheRemoved() {
+    assert(_transaction != null);
+    _transaction!.markOrphanedServerCacheRemoved = true;
   }
 
   @override

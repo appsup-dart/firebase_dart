@@ -42,6 +42,12 @@ abstract class PersistenceStorageEngine {
 
   void pruneCache(PruneForest pruneForest);
 
+  /// Whether uncovered server cache from older versions has already been removed.
+  bool get orphanedServerCacheRemoved;
+
+  /// Records that [orphanedServerCacheRemoved] is done. Requires a transaction.
+  void markOrphanedServerCacheRemoved();
+
   void beginTransaction();
 
   void endTransaction();
