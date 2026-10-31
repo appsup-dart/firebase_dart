@@ -244,18 +244,35 @@ class TrackedQueryManager {
 
     // Keep the rest of the prunable queries.
     for (var i = countToPrune; i < prunable.length; i++) {
-      var toKeep = prunable[i];
-      forest = forest.keep(toKeep.querySpec.path);
+      forest = _keepQuery(forest, prunable[i]);
     }
 
     // Also keep the unprunable queries.
     var unprunable = getQueriesMatching(_isQueryUnprunablePredicate);
     _logger.fine('Unprunable queries: ${unprunable.length}');
     for (var toKeep in unprunable) {
-      forest = forest.keep(toKeep.querySpec.path);
+      forest = _keepQuery(forest, toKeep);
     }
 
     return forest;
+  }
+
+  /// A default query covers its whole path. A limited query only covers the
+  /// children currently in the cache that match its filter, so other queries
+  /// on the same path can still drop their own children.
+  PruneForest _keepQuery(PruneForest forest, TrackedQuery query) {
+    var spec = query.querySpec;
+    if (!spec.params.limits) {
+      return forest.keep(spec.path);
+    }
+    var keys = storageLayer
+        .serverCache(spec.path)
+        .withFilter(spec.params)
+        .value
+        .children
+        .keys
+        .toSet();
+    return forest.keepAll(spec.path, keys);
   }
 
   static int calculateCountToPrune(CachePolicy cachePolicy, int prunableCount) {

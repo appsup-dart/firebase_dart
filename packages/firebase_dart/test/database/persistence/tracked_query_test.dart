@@ -255,13 +255,14 @@ void main() async {
             QuerySpec(Name.parsePath('foo/b'), sampleQueryParams));
         manager.setQueryInactive(QuerySpec(Name.parsePath('foo')));
 
-        // prune foo, but keep foo/a and foo/b
+        // prune foo; the limited queries at foo/a and foo/b keep only the
+        // children present in the cache, which is empty here
         var forest = manager.pruneOldQueries(TestCachePolicy(1.0));
         manager.storageLayer.endTransaction();
         var expected = PruneForest()
             .prune(Name.parsePath('foo'))
-            .keep(Name.parsePath('foo/a'))
-            .keep(Name.parsePath('foo/b'));
+            .keepAll(Name.parsePath('foo/a'), {})
+            .keepAll(Name.parsePath('foo/b'), {});
         expect(forest, expected);
         manager.verifyCache();
       });

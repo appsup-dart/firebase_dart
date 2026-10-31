@@ -328,7 +328,7 @@ class HivePersistenceStorageEngine extends PersistenceStorageEngine {
       return;
     }
 
-    var serverCache = database.loadServerCache();
+    var serverCache = _transaction!._serverCache ?? database.loadServerCache();
 
     serverCache.forEachCompleteNode((dataPath, value) {
       final dataNode = value;
