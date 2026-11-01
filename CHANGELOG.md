@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-11-01
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v2.0.0-dev.4`](#firebase_dart---v200-dev4)
+ - [`firebase_dart_flutter` - `v1.4.0-dev.4`](#firebase_dart_flutter---v140-dev4)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0-dev.4`](#firebase_dart_flutter_auth_google---v010-dev4)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.4`](#firebase_dart_flutter_auth_facebook---v001-dev4)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1-dev.4`](#firebase_dart_flutter_auth_apple---v001-dev4)
+ - [`firebase_dart_plus` - `v0.1.1-dev.4`](#firebase_dart_plus---v011-dev4)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.4.0-dev.4`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0-dev.4`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.4`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1-dev.4`
+ - `firebase_dart_plus` - `v0.1.1-dev.4`
+
+---
+
+#### `firebase_dart` - `v2.0.0-dev.4`
+
+ - **FIX**: settle DelayedCancellableFuture when it is cancelled. ([1fc286a9](https://github.com/appsup-dart/firebase_dart/commit/1fc286a9747d9555690bae39a5b282f027e6bddf))
+ - **FIX**: clear the pending sync update when the tree is destroyed. ([ffbc9adb](https://github.com/appsup-dart/firebase_dart/commit/ffbc9adbab740d32a436e621a77594a0d7ac4549))
+ - **FIX**: drop uncovered persistence cache once when the database opens. ([87720c62](https://github.com/appsup-dart/firebase_dart/commit/87720c62907597c67b087622717306dc0927f7a9))
+ - **FIX**: prune persistence cache without dropping the pending update or sibling query data. ([9877f138](https://github.com/appsup-dart/firebase_dart/commit/9877f138c2f8c522b2e757eb60561fce8a2ef49b))
+
+
 ## 2026-10-26
 
 ### Changes

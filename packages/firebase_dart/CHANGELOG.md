@@ -1,3 +1,10 @@
+## 2.0.0-dev.4
+
+ - **FIX**: settle DelayedCancellableFuture when it is cancelled. ([1fc286a9](https://github.com/appsup-dart/firebase_dart/commit/1fc286a9747d9555690bae39a5b282f027e6bddf))
+ - **FIX**: clear the pending sync update when the tree is destroyed. ([ffbc9adb](https://github.com/appsup-dart/firebase_dart/commit/ffbc9adbab740d32a436e621a77594a0d7ac4549))
+ - **FIX**: drop uncovered persistence cache once when the database opens. ([87720c62](https://github.com/appsup-dart/firebase_dart/commit/87720c62907597c67b087622717306dc0927f7a9))
+ - **FIX**: prune persistence cache without dropping the pending update or sibling query data. ([9877f138](https://github.com/appsup-dart/firebase_dart/commit/9877f138c2f8c522b2e757eb60561fce8a2ef49b))
+
 ## 2.0.0-dev.3
 
  - **FIX**: drop empty unregistered sync views so uncovered children register again. ([d75d7a2d](https://github.com/appsup-dart/firebase_dart/commit/d75d7a2d2f982f2cb71e93cd3a359a04a4f604bd))
