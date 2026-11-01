@@ -1370,6 +1370,7 @@ class SyncTree {
   void destroy() {
     _isDestroyed = true;
     _handleInvalidPointsFuture?.cancel();
+    _handleInvalidPointsFuture = null;
     _pruneObserversTimer?.cancel();
     registrar.close();
     root.forEachNode((key, value) {
