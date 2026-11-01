@@ -160,16 +160,22 @@ class PersistenceStorageDatabaseImpl extends PersistenceStorageDatabase {
     var serverCache = transaction._serverCache;
 
     if (serverCache != null) {
+      void deleteStored(
+          Path<Name> path, TreeNode<Name, TreeStructuredData?> node) {
+        if (node.value != null) {
+          database.delete('$_serverCachePrefix:${path.join('/')}/');
+        }
+        for (var entry in node.children.entries) {
+          deleteStored(path.child(entry.key), entry.value);
+        }
+      }
+
       void write(Path<Name> path, TreeNode<Name, TreeStructuredData?> value,
           TreeNode<Name, TreeStructuredData?> lastWritten) {
         if (value.value != null && lastWritten.value == value.value) return;
 
         if (value.value != null || lastWritten.value != null) {
-          var p = path.join('/');
-          database.deleteAll(database.keysBetween(
-            startKey: '$_serverCachePrefix:$p/',
-            endKey: '$_serverCachePrefix:${p}0',
-          ));
+          deleteStored(path, lastWritten);
         }
 
         if (value.value != null) {
