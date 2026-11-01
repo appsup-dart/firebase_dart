@@ -242,12 +242,20 @@ class DelayedCancellableFuture<T> extends DelegatingFuture<T> {
   factory DelayedCancellableFuture(
       Duration duration, FutureOr<T> Function() computation) {
     var c = Completer<T>();
-    var t = Timer(duration, () {
-      c.complete(computation());
+    late final Timer timer;
+    timer = Timer(duration, () async {
+      if (c.isCompleted) return;
+      try {
+        var value = await computation();
+        if (!c.isCompleted) c.complete(value);
+      } catch (e, tr) {
+        if (!c.isCompleted) c.completeError(e, tr);
+      }
     });
 
     return DelayedCancellableFuture._(c.future, () {
-      t.cancel();
+      if (timer.isActive) timer.cancel();
+      if (!c.isCompleted) c.complete();
     });
   }
 }
