@@ -1,3 +1,9 @@
+## 2.0.0-dev.5
+
+ - **FIX**: defer persistence cache prune off the server update. ([c7277470](https://github.com/appsup-dart/firebase_dart/commit/c72774709645d71867a333361ca528ae44ffe45b))
+ - **FIX**: prune the persistence cache in one pass. ([2bde8e41](https://github.com/appsup-dart/firebase_dart/commit/2bde8e41d1c6b147f1905e8225117938012ced33))
+ - **FIX**: delete stored cache keys without scanning the box. ([3bc114d8](https://github.com/appsup-dart/firebase_dart/commit/3bc114d866fbe957919d8dc5cefe562f8a857bb2))
+
 ## 2.0.0-dev.4
 
  - **FIX**: settle DelayedCancellableFuture when it is cancelled. ([1fc286a9](https://github.com/appsup-dart/firebase_dart/commit/1fc286a9747d9555690bae39a5b282f027e6bddf))

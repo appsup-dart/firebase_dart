@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-11-02
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v2.0.0-dev.5`](#firebase_dart---v200-dev5)
+ - [`firebase_dart_flutter` - `v1.4.0-dev.5`](#firebase_dart_flutter---v140-dev5)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0-dev.5`](#firebase_dart_flutter_auth_google---v010-dev5)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.5`](#firebase_dart_flutter_auth_facebook---v001-dev5)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1-dev.5`](#firebase_dart_flutter_auth_apple---v001-dev5)
+ - [`firebase_dart_plus` - `v0.1.1-dev.5`](#firebase_dart_plus---v011-dev5)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.4.0-dev.5`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0-dev.5`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.5`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1-dev.5`
+ - `firebase_dart_plus` - `v0.1.1-dev.5`
+
+---
+
+#### `firebase_dart` - `v2.0.0-dev.5`
+
+ - **FIX**: defer persistence cache prune off the server update. ([c7277470](https://github.com/appsup-dart/firebase_dart/commit/c72774709645d71867a333361ca528ae44ffe45b))
+ - **FIX**: prune the persistence cache in one pass. ([2bde8e41](https://github.com/appsup-dart/firebase_dart/commit/2bde8e41d1c6b147f1905e8225117938012ced33))
+ - **FIX**: delete stored cache keys without scanning the box. ([3bc114d8](https://github.com/appsup-dart/firebase_dart/commit/3bc114d866fbe957919d8dc5cefe562f8a857bb2))
+
+
 ## 2026-11-01
 
 ### Changes
