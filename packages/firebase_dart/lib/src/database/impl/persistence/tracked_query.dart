@@ -257,7 +257,7 @@ class TrackedQueryManager {
     var nodesUnder = <Path<Name>, List<_CacheNode>>{};
     var current = 0;
     storageLayer.serverCache(Path()).forEachCompleteNode((path, value) {
-      var node = _CacheNode(path, _estimatedNodeStorageSize(path, value));
+      var node = _CacheNode(path, estimatedNodeStorageSize(path, value));
       current += node.bytes;
       for (var l = 0; l <= path.length; l++) {
         (nodesUnder[Path.from(path.take(l))] ??= []).add(node);
@@ -408,9 +408,14 @@ class TrackedQueryManager {
   }
 }
 
-int _estimatedNodeStorageSize(Path<Name> path, TreeStructuredData value) {
+/// Encoded size of each cached value. Values are immutable, so a node that
+/// did not change since the last measurement is not encoded again.
+final Expando<int> _encodedSize = Expando('encodedSize');
+
+/// Estimated bytes stored for the complete cache node at [path].
+int estimatedNodeStorageSize(Path<Name> path, TreeStructuredData value) {
   return path.join('/').length +
-      json.encode(value.toJson(true)).toString().length;
+      (_encodedSize[value] ??= json.encode(value.toJson(true)).length);
 }
 
 class _CacheNode {
