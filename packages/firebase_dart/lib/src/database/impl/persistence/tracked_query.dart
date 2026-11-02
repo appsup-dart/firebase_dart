@@ -8,6 +8,7 @@ import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/utils.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
+import 'package:sortedmap/sortedmap.dart' show Pair;
 
 import '../tree.dart';
 import '../treestructureddata.dart';
@@ -134,8 +135,9 @@ class TrackedQueryManager {
     if (storageLayer.orphanedServerCacheRemoved) return;
 
     var forest = PruneForest().prune(Path());
+    var keys = _LimitedQueryKeys(storageLayer);
     for (var query in getQueriesMatching((_) => true)) {
-      forest = _keepQuery(forest, query);
+      forest = _keepQuery(forest, query, keys);
     }
     storageLayer.pruneCache(forest);
     storageLayer.markOrphanedServerCacheRemoved();
@@ -246,14 +248,37 @@ class TrackedQueryManager {
     var prunable = getQueriesMatching(_isQueryPrunablePredicate);
     prunable.sort((q1, q2) => Comparable.compare(q1.lastUse, q2.lastUse));
     var unprunable = getQueriesMatching(_isQueryUnprunablePredicate);
+    // The cache does not change while we decide, so the keys of every limited
+    // query are computed once (one ordered child list per path + ordering).
+    var keys = _LimitedQueryKeys(storageLayer);
 
-    var nodes = <_CacheNode>[];
-    storageLayer.serverCache(Path()).forEachCompleteNode((path, value) {
-      nodes.add(_CacheNode(path, _estimatedNodeStorageSize(path, value)));
-    });
+    // Index every complete node under each of its ancestor paths, so the nodes
+    // a query covers are a map lookup instead of a scan of the whole cache.
+    var nodesUnder = <Path<Name>, List<_CacheNode>>{};
     var current = 0;
-    for (var node in nodes) {
+    storageLayer.serverCache(Path()).forEachCompleteNode((path, value) {
+      var node = _CacheNode(path, _estimatedNodeStorageSize(path, value));
       current += node.bytes;
+      for (var l = 0; l <= path.length; l++) {
+        (nodesUnder[Path.from(path.take(l))] ??= []).add(node);
+      }
+    });
+
+    Iterable<_CacheNode> covered(TrackedQuery query) {
+      var path = query.querySpec.path;
+      if (!query.querySpec.params.limits) return nodesUnder[path] ?? const [];
+      return [
+        for (var k in keys.of(query)) ...?nodesUnder[path.child(k)],
+      ];
+    }
+
+    // Reference count: how many remaining queries keep each node.
+    var coverage = <TrackedQuery, Iterable<_CacheNode>>{};
+    for (var query in [...unprunable, ...prunable]) {
+      var c = coverage[query] = covered(query);
+      for (var node in c) {
+        node.keptBy++;
+      }
     }
 
     var dropped = <TrackedQuery>[];
@@ -263,14 +288,8 @@ class TrackedQueryManager {
       if (dropped.length >= minDrop && current <= targetBytes) break;
       dropped.add(query);
       droppedSet.add(query);
-      for (var node in nodes) {
-        if (node.freed || !_queryCovers(query, node.path)) continue;
-        if (_keptByRemainingQuery(
-            node.path, prunable, unprunable, droppedSet)) {
-          continue;
-        }
-        current -= node.bytes;
-        node.freed = true;
+      for (var node in coverage[query]!) {
+        if (--node.keptBy == 0) current -= node.bytes;
       }
     }
 
@@ -281,56 +300,25 @@ class TrackedQueryManager {
     }
     for (var query in prunable) {
       if (droppedSet.contains(query)) continue;
-      forest = _keepQuery(forest, query);
+      forest = _keepQuery(forest, query, keys);
     }
     for (var query in unprunable) {
-      forest = _keepQuery(forest, query);
+      forest = _keepQuery(forest, query, keys);
     }
     return forest;
-  }
-
-  bool _queryCovers(TrackedQuery query, Path<Name> node) {
-    var path = query.querySpec.path;
-    if (node != path && !node.isDescendantOf(path)) return false;
-    if (!query.querySpec.params.limits) return true;
-    if (node.length == path.length) return false;
-    var keys = storageLayer
-        .serverCache(path)
-        .withFilter(query.querySpec.params)
-        .value
-        .children
-        .keys;
-    return keys.contains(node[path.length]);
-  }
-
-  bool _keptByRemainingQuery(Path<Name> node, List<TrackedQuery> prunable,
-      List<TrackedQuery> unprunable, Set<TrackedQuery> dropped) {
-    for (var query in unprunable) {
-      if (_queryCovers(query, node)) return true;
-    }
-    for (var query in prunable) {
-      if (dropped.contains(query)) continue;
-      if (_queryCovers(query, node)) return true;
-    }
-    return false;
   }
 
   /// A default query covers its whole path. A limited query only covers the
   /// children currently in the cache that match its filter, so other queries
   /// on the same path can still drop their own children.
-  PruneForest _keepQuery(PruneForest forest, TrackedQuery query) {
+  PruneForest _keepQuery(PruneForest forest, TrackedQuery query,
+      [_LimitedQueryKeys? keys]) {
     var spec = query.querySpec;
     if (!spec.params.limits) {
       return forest.keep(spec.path);
     }
-    var keys = storageLayer
-        .serverCache(spec.path)
-        .withFilter(spec.params)
-        .value
-        .children
-        .keys
-        .toSet();
-    return forest.keepAll(spec.path, keys);
+    return forest.keepAll(
+        spec.path, (keys ?? _LimitedQueryKeys(storageLayer)).of(query));
   }
 
   void ensureCompleteTrackedQuery(Path<Name> path) {
@@ -428,7 +416,41 @@ int _estimatedNodeStorageSize(Path<Name> path, TreeStructuredData value) {
 class _CacheNode {
   final Path<Name> path;
   final int bytes;
-  bool freed = false;
+  int keptBy = 0;
 
   _CacheNode(this.path, this.bytes);
+}
+
+/// Child keys each limited query keeps, computed against one ordered copy of
+/// the children per (path, ordering) instead of re-sorting the whole path for
+/// every query.
+class _LimitedQueryKeys {
+  final PersistenceStorageEngine storageLayer;
+  final Map<(Path<Name>, Object), TreeStructuredData> _ordered = {};
+  final Map<QuerySpec, Set<Name>> _keys = {};
+
+  _LimitedQueryKeys(this.storageLayer);
+
+  Set<Name> of(TrackedQuery query) {
+    var spec = query.querySpec;
+    return _keys[spec] ??= () {
+      var params = spec.params;
+      var ordered = _ordered[(spec.path, params.ordering)] ??= storageLayer
+          .serverCache(spec.path)
+          .withFilter(QueryFilter(
+              ordering: params.ordering as TreeStructuredDataOrdering))
+          .value;
+      // A view is a range lookup on the ordered tree: O(log n + limit).
+      var keys = ordered
+          .view(
+              start: Pair.min(params.startKey, params.startValue),
+              end: Pair.max(params.endKey, params.endValue),
+              limit: params.limit,
+              reversed: params.reversed)
+          .children
+          .keys
+          .toSet();
+      return keys;
+    }();
+  }
 }
