@@ -26,7 +26,7 @@ void main() {
         ? Hive.box(boxName)
         : await Hive.openBox(boxName, bytes: Uint8List(0));
     await box.clear();
-    policy = TestCachePolicy(1);
+    policy = TestCachePolicy();
     engine = HivePersistenceStorageEngine(KeyValueDatabase(box));
     manager = DefaultPersistenceManager(engine, policy);
   });

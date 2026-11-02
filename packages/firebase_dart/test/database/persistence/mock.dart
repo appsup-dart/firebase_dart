@@ -2,11 +2,13 @@ import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
 
 class TestCachePolicy implements CachePolicy {
   bool _timeToPrune = false;
-  final double _percentToPruneAtOnce;
+  final int _maximumCacheSizeAfterPrune;
   final int _maxNumberToKeep;
 
-  TestCachePolicy(this._percentToPruneAtOnce,
-      [this._maxNumberToKeep = 1 << 31]);
+  TestCachePolicy(
+      {int maximumCacheSizeAfterPrune = 0, int maxNumberToKeep = 1 << 31})
+      : _maximumCacheSizeAfterPrune = maximumCacheSizeAfterPrune,
+        _maxNumberToKeep = maxNumberToKeep;
 
   void pruneOnNextServerUpdate() {
     _timeToPrune = true;
@@ -28,12 +30,8 @@ class TestCachePolicy implements CachePolicy {
   }
 
   @override
-  double getPercentOfQueriesToPruneAtOnce() {
-    return _percentToPruneAtOnce;
-  }
+  int get maxNumberOfQueriesToKeep => _maxNumberToKeep;
 
   @override
-  int getMaxNumberOfQueriesToKeep() {
-    return _maxNumberToKeep;
-  }
+  int get maximumCacheSizeAfterPrune => _maximumCacheSizeAfterPrune;
 }

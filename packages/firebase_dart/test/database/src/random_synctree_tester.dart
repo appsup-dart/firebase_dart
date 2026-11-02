@@ -67,7 +67,7 @@ class SyncTreeTester {
             HivePersistenceStorageEngine(
                 KeyValueDatabase(Hive.box('firebase-db-storage')))
               ..clear(),
-            TestCachePolicy(0.1))
+            TestCachePolicy())
         : null,
   );
 

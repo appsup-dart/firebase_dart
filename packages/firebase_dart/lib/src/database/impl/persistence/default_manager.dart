@@ -150,20 +150,18 @@ class DefaultPersistenceManager implements PersistenceManager {
         .shouldCheckCacheSize(_serverCacheUpdatesSinceLastPruneCheck)) {
       _logger.fine('Reached prune check threshold.');
       _serverCacheUpdatesSinceLastPruneCheck = 0;
-      var canPrune = true;
       var cacheSize = storageLayer.serverCacheEstimatedSizeInBytes();
       _logger.fine('Cache size: $cacheSize');
-      while (canPrune &&
-          cachePolicy.shouldPrune(
-              cacheSize, _trackedQueryManager.countOfPrunableQueries())) {
-        var pruneForest = _trackedQueryManager.pruneOldQueries(cachePolicy);
+      if (cachePolicy.shouldPrune(
+          cacheSize, _trackedQueryManager.countOfPrunableQueries())) {
+        var pruneForest = _trackedQueryManager.pruneToMaximumSize(
+            cachePolicy.maximumCacheSizeAfterPrune,
+            cachePolicy.maxNumberOfQueriesToKeep);
         if (pruneForest.prunesAnything()) {
           storageLayer.pruneCache(pruneForest);
-        } else {
-          canPrune = false;
         }
-        cacheSize = storageLayer.serverCacheEstimatedSizeInBytes();
-        _logger.fine('Cache size after prune: $cacheSize');
+        _logger.fine(
+            'Cache size after prune: ${storageLayer.serverCacheEstimatedSizeInBytes()}');
       }
     }
   }

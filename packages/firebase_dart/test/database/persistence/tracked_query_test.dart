@@ -12,8 +12,6 @@ import 'package:hive/hive.dart';
 import 'package:sortedmap/sortedmap.dart';
 import 'package:test/test.dart';
 
-import 'mock.dart';
-
 void main() async {
   await Hive.openBox('firebase-db-storage', bytes: Uint8List(0));
 
@@ -184,7 +182,7 @@ void main() async {
         manager.setQueryInactive(QuerySpec(Name.parsePath('inactive4')));
 
         // Should prune the first two inactive queries.
-        var forest = manager.pruneOldQueries(TestCachePolicy(0.5));
+        var forest = manager.pruneToMaximumSize(1 << 30, 2);
         var expected = PruneForest()
             .prune(Name.parsePath('inactive1'))
             .prune(Name.parsePath('inactive2'))
@@ -195,7 +193,7 @@ void main() async {
         expect(forest, expected);
 
         // Should prune the other two inactive queries.
-        forest = manager.pruneOldQueries(TestCachePolicy(1.0));
+        forest = manager.pruneToMaximumSize(1 << 30, 0);
         expected = PruneForest()
             .prune(Name.parsePath('inactive3'))
             .prune(Name.parsePath('inactive4'))
@@ -203,7 +201,7 @@ void main() async {
             .keep(Name.parsePath('active2'));
         expect(forest, expected);
 
-        forest = manager.pruneOldQueries(TestCachePolicy(1.0));
+        forest = manager.pruneToMaximumSize(1 << 30, 0);
         expect(forest.prunesAnything(), false);
         manager.storageLayer.endTransaction();
 
@@ -225,7 +223,7 @@ void main() async {
         manager.storageLayer.endTransaction();
 
         manager.storageLayer.beginTransaction();
-        var forest = manager.pruneOldQueries(TestCachePolicy(0.2, 10));
+        var forest = manager.pruneToMaximumSize(1 << 30, 10);
         manager.storageLayer.endTransaction();
 
         // Should prune down to the max of 10, so 5 pruned.
@@ -257,7 +255,7 @@ void main() async {
 
         // prune foo; the limited queries at foo/a and foo/b keep only the
         // children present in the cache, which is empty here
-        var forest = manager.pruneOldQueries(TestCachePolicy(1.0));
+        var forest = manager.pruneToMaximumSize(1 << 30, 0);
         manager.storageLayer.endTransaction();
         var expected = PruneForest()
             .prune(Name.parsePath('foo'))
@@ -286,7 +284,7 @@ void main() async {
 
         // prune foo/a and foo/b, but keep foo
         manager.storageLayer.beginTransaction();
-        var forest = manager.pruneOldQueries(TestCachePolicy(1.0));
+        var forest = manager.pruneToMaximumSize(1 << 30, 0);
         manager.storageLayer.endTransaction();
         var expected = PruneForest()
             .prune(Name.parsePath('foo/a'))

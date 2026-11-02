@@ -1,8 +1,8 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:clock/clock.dart';
 import 'package:firebase_dart/src/database/impl/persistence/engine.dart';
-import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
 import 'package:firebase_dart/src/database/impl/persistence/prune_forest.dart';
 import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/utils.dart';
@@ -247,35 +247,79 @@ class TrackedQueryManager {
     }
   }
 
-  PruneForest pruneOldQueries(CachePolicy cachePolicy) {
+  /// Drops the oldest prunable queries until the cache is at or below
+  /// [targetBytes] and at most [maxQueriesToKeep] prunable queries remain.
+  PruneForest pruneToMaximumSize(int targetBytes, int maxQueriesToKeep) {
     var prunable = getQueriesMatching(_isQueryPrunablePredicate);
-    var countToPrune = calculateCountToPrune(cachePolicy, prunable.length);
-    var forest = PruneForest();
-
-    _logger.fine(
-        'Pruning old queries. Prunable: ${prunable.length}. Count to prune: $countToPrune');
-
     prunable.sort((q1, q2) => Comparable.compare(q1.lastUse, q2.lastUse));
-
-    for (var i = 0; i < countToPrune; i++) {
-      var toPrune = prunable[i];
-      forest = forest.prune(toPrune.querySpec.path);
-      removeTrackedQuery(toPrune.querySpec);
-    }
-
-    // Keep the rest of the prunable queries.
-    for (var i = countToPrune; i < prunable.length; i++) {
-      forest = _keepQuery(forest, prunable[i]);
-    }
-
-    // Also keep the unprunable queries.
     var unprunable = getQueriesMatching(_isQueryUnprunablePredicate);
-    _logger.fine('Unprunable queries: ${unprunable.length}');
-    for (var toKeep in unprunable) {
-      forest = _keepQuery(forest, toKeep);
+
+    var nodes = <_CacheNode>[];
+    storageLayer.serverCache(Path()).forEachCompleteNode((path, value) {
+      nodes.add(_CacheNode(path, _estimatedNodeStorageSize(path, value)));
+    });
+    var current = 0;
+    for (var node in nodes) {
+      current += node.bytes;
     }
 
+    var dropped = <TrackedQuery>[];
+    var droppedSet = <TrackedQuery>{};
+    var minDrop = max(0, prunable.length - maxQueriesToKeep);
+    for (var query in prunable) {
+      if (dropped.length >= minDrop && current <= targetBytes) break;
+      dropped.add(query);
+      droppedSet.add(query);
+      for (var node in nodes) {
+        if (node.freed || !_queryCovers(query, node.path)) continue;
+        if (_keptByRemainingQuery(
+            node.path, prunable, unprunable, droppedSet)) {
+          continue;
+        }
+        current -= node.bytes;
+        node.freed = true;
+      }
+    }
+
+    var forest = PruneForest();
+    for (var query in dropped) {
+      forest = forest.prune(query.querySpec.path);
+      removeTrackedQuery(query.querySpec);
+    }
+    for (var query in prunable) {
+      if (droppedSet.contains(query)) continue;
+      forest = _keepQuery(forest, query);
+    }
+    for (var query in unprunable) {
+      forest = _keepQuery(forest, query);
+    }
     return forest;
+  }
+
+  bool _queryCovers(TrackedQuery query, Path<Name> node) {
+    var path = query.querySpec.path;
+    if (node != path && !node.isDescendantOf(path)) return false;
+    if (!query.querySpec.params.limits) return true;
+    if (node.length == path.length) return false;
+    var keys = storageLayer
+        .serverCache(path)
+        .withFilter(query.querySpec.params)
+        .value
+        .children
+        .keys;
+    return keys.contains(node[path.length]);
+  }
+
+  bool _keptByRemainingQuery(Path<Name> node, List<TrackedQuery> prunable,
+      List<TrackedQuery> unprunable, Set<TrackedQuery> dropped) {
+    for (var query in unprunable) {
+      if (_queryCovers(query, node)) return true;
+    }
+    for (var query in prunable) {
+      if (dropped.contains(query)) continue;
+      if (_queryCovers(query, node)) return true;
+    }
+    return false;
   }
 
   /// A default query covers its whole path. A limited query only covers the
@@ -294,20 +338,6 @@ class TrackedQueryManager {
         .keys
         .toSet();
     return forest.keepAll(spec.path, keys);
-  }
-
-  static int calculateCountToPrune(CachePolicy cachePolicy, int prunableCount) {
-    var countToKeep = prunableCount;
-
-    // prune by percentage.
-    var percentToKeep = 1 - cachePolicy.getPercentOfQueriesToPruneAtOnce();
-    countToKeep = (countToKeep * percentToKeep).floor();
-
-    // Make sure we're not keeping more than the max.
-    countToKeep = min(countToKeep, cachePolicy.getMaxNumberOfQueriesToKeep());
-
-    // Now we know how many to prune.
-    return prunableCount - countToKeep;
   }
 
   void ensureCompleteTrackedQuery(Path<Name> path) {
@@ -395,4 +425,17 @@ class TrackedQueryManager {
       })
     ];
   }
+}
+
+int _estimatedNodeStorageSize(Path<Name> path, TreeStructuredData value) {
+  return path.join('/').length +
+      json.encode(value.toJson(true)).toString().length;
+}
+
+class _CacheNode {
+  final Path<Name> path;
+  final int bytes;
+  bool freed = false;
+
+  _CacheNode(this.path, this.bytes);
 }

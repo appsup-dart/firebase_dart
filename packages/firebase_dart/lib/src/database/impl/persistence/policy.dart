@@ -3,9 +3,10 @@ abstract class CachePolicy {
 
   bool shouldCheckCacheSize(int serverUpdatesSinceLastCheck);
 
-  double getPercentOfQueriesToPruneAtOnce();
+  int get maxNumberOfQueriesToKeep;
 
-  int getMaxNumberOfQueriesToKeep();
+  /// Byte size to reach in one prune.
+  int get maximumCacheSizeAfterPrune;
 
   static const CachePolicy none = NoneCachePolicy();
 }
@@ -20,17 +21,15 @@ class NoneCachePolicy implements CachePolicy {
   bool shouldCheckCacheSize(int serverUpdatesSinceLastCheck) => false;
 
   @override
-  double getPercentOfQueriesToPruneAtOnce() => 0;
+  int get maxNumberOfQueriesToKeep => 1 << 31;
 
   @override
-  int getMaxNumberOfQueriesToKeep() => 1 << 31;
+  int get maximumCacheSizeAfterPrune => 0;
 }
 
 class LRUCachePolicy implements CachePolicy {
   static final int _serverUpdatesBetweenCacheSizeChecks = 1000;
   static final int maxNumberOfPrunableQueriesToKeep = 1000;
-  static final double percentOfQueriesToPruneAtOnce =
-      0.2; // 20% at a time until we're below our max.
 
   final int maxSizeBytes;
 
@@ -48,12 +47,8 @@ class LRUCachePolicy implements CachePolicy {
   }
 
   @override
-  double getPercentOfQueriesToPruneAtOnce() {
-    return percentOfQueriesToPruneAtOnce;
-  }
+  int get maxNumberOfQueriesToKeep => maxNumberOfPrunableQueriesToKeep;
 
   @override
-  int getMaxNumberOfQueriesToKeep() {
-    return maxNumberOfPrunableQueriesToKeep;
-  }
+  int get maximumCacheSizeAfterPrune => (maxSizeBytes * 0.8).floor();
 }
