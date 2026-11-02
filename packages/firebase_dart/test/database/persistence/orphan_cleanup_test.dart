@@ -68,7 +68,7 @@ void main() {
         TreeStructuredData.fromJson({'entry': 2}),
         reason: 'cleanup waits for a later task');
 
-    await Future<void>.value();
+    await Future<void>.delayed(Duration.zero);
 
     expect(engine.serverCache(orphanPath).value, TreeStructuredData(),
         reason: 'cache data with no tracked query should be removed');
@@ -84,7 +84,7 @@ void main() {
     engine.endTransaction();
 
     DefaultPersistenceManager(engine, CachePolicy.none);
-    await Future<void>.value();
+    await Future<void>.delayed(Duration.zero);
 
     expect(engine.serverCache(orphanPath).value,
         TreeStructuredData.fromJson({'entry': 3}),

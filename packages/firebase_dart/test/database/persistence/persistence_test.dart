@@ -36,6 +36,7 @@ void _doTest(int? seed) {
     for (var i = 0; i < 1000; i++) {
       generator.next();
       fakeAsync.flushMicrotasks();
+      fakeAsync.elapse(Duration.zero);
 
       generator.tester.checkPersistedActiveQueries();
       generator.tester.checkPersistedWrites();

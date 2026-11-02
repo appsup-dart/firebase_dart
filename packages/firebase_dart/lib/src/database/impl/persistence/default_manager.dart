@@ -37,12 +37,14 @@ class DefaultPersistenceManager implements PersistenceManager {
   final CachePolicy cachePolicy;
   int _serverCacheUpdatesSinceLastPruneCheck = 0;
   bool _pruneNeeded = false;
+  bool _sizeCheckPending = false;
   bool _maintenanceScheduled = false;
   bool _closed = false;
 
   DefaultPersistenceManager(this.storageLayer, this.cachePolicy)
       : _trackedQueryManager = TrackedQueryManager(storageLayer) {
-    _notePruneIfNeeded();
+    // Measure the cache in the deferred maintenance, not during startup.
+    _sizeCheckPending = true;
     _scheduleMaintenance();
   }
 
@@ -170,7 +172,7 @@ class DefaultPersistenceManager implements PersistenceManager {
         .shouldCheckCacheSize(_serverCacheUpdatesSinceLastPruneCheck)) {
       _logger.fine('Reached prune check threshold.');
       _serverCacheUpdatesSinceLastPruneCheck = 0;
-      _notePruneIfNeeded();
+      _sizeCheckPending = true;
       _scheduleMaintenance();
     }
   }
@@ -188,14 +190,24 @@ class DefaultPersistenceManager implements PersistenceManager {
 
   void _scheduleMaintenance() {
     if (_closed || _maintenanceScheduled) return;
-    if (!_pruneNeeded && storageLayer.orphanedServerCacheRemoved) return;
+    if (!_pruneNeeded &&
+        !_sizeCheckPending &&
+        storageLayer.orphanedServerCacheRemoved) {
+      return;
+    }
     _maintenanceScheduled = true;
-    scheduleMicrotask(_runMaintenance);
+    // A timer lets the current frame and pending events run first; a
+    // microtask would run before the next frame.
+    Timer(Duration.zero, _runMaintenance);
   }
 
   void _runMaintenance() {
     _maintenanceScheduled = false;
     if (_closed) return;
+    if (_sizeCheckPending) {
+      _sizeCheckPending = false;
+      _notePruneIfNeeded();
+    }
     if (!_pruneNeeded && storageLayer.orphanedServerCacheRemoved) return;
 
     var prune = _pruneNeeded;
@@ -205,7 +217,8 @@ class DefaultPersistenceManager implements PersistenceManager {
         '(orphan cleanup: $orphanCleanup, size prune: $prune).');
     var elapsedUs = 0;
     runInTransaction(() {
-      var size = _logger.isLoggable(Level.FINE)
+      // Logged sizes cost a full cache walk, so only measure them at FINEST.
+      var size = _logger.isLoggable(Level.FINEST)
           ? storageLayer.serverCacheEstimatedSizeInBytes()
           : null;
       if (orphanCleanup) {
@@ -236,8 +249,8 @@ class DefaultPersistenceManager implements PersistenceManager {
 
   /// Runs [body] and logs its cache size, prunable-query count, and duration.
   ///
-  /// The end size is measured only when the log will be emitted. That size is
-  /// returned so a following prune can use it as its start size.
+  /// The end size is measured only at [Level.FINEST]. That size is returned so
+  /// a following prune can use it as its start size.
   _TimedWork _runTimed(String action, int? startBytes, void Function() body) {
     var queriesBefore = _trackedQueryManager.countOfPrunableQueries();
     var watch = Stopwatch()..start();
@@ -245,7 +258,9 @@ class DefaultPersistenceManager implements PersistenceManager {
     watch.stop();
     int? endBytes;
     if (_logger.isLoggable(Level.FINE)) {
-      endBytes = storageLayer.serverCacheEstimatedSizeInBytes();
+      endBytes = _logger.isLoggable(Level.FINEST)
+          ? storageLayer.serverCacheEstimatedSizeInBytes()
+          : null;
       var queriesAfter = _trackedQueryManager.countOfPrunableQueries();
       _logger.fine('$action: ${startBytes ?? '?'} -> $endBytes bytes, '
           '$queriesBefore -> $queriesAfter prunable queries, '

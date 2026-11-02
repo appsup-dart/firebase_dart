@@ -60,7 +60,7 @@ void main() {
     expect(afterUpdate, greaterThan(lowWater),
         reason: 'the size check only marks the cache; it does not prune yet');
 
-    await Future<void>.value();
+    await Future<void>.delayed(Duration.zero);
 
     var after = engine.serverCacheEstimatedSizeInBytes();
     expect(after, lessThanOrEqualTo(lowWater));
@@ -93,7 +93,7 @@ void main() {
     expect(engine.serverCacheEstimatedSizeInBytes(), greaterThan(lowWater),
         reason: 'opening only marks the cache; it does not prune yet');
 
-    await Future<void>.value();
+    await Future<void>.delayed(Duration.zero);
 
     expect(engine.serverCacheEstimatedSizeInBytes(),
         lessThanOrEqualTo(lowWater));

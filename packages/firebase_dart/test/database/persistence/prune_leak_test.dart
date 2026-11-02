@@ -54,7 +54,7 @@ void main() {
       manager.updateServerCache(
           newQuery, TreeOperation.overwrite(newQuery.path, newData));
     });
-    await Future<void>.value();
+    await Future<void>.delayed(Duration.zero);
 
     expect(querySpecs(engine), isNot(contains(oldQuery)));
     expect(querySpecs(engine), contains(newQuery));
@@ -101,7 +101,7 @@ void main() {
           TreeOperation.overwrite(
               path, TreeStructuredData.fromJson({'b': 2, 'c': 3})));
     });
-    await Future<void>.value();
+    await Future<void>.delayed(Duration.zero);
 
     expect(querySpecs(engine), isNot(contains(older)));
     expect(querySpecs(engine), contains(newer));
