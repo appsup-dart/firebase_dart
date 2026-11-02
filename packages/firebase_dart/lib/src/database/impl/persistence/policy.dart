@@ -28,7 +28,7 @@ class NoneCachePolicy implements CachePolicy {
 }
 
 class LRUCachePolicy implements CachePolicy {
-  static final int _serverUpdatesBetweenCacheSizeChecks = 1000;
+  static final int _serverUpdatesBetweenCacheSizeChecks = 100;
   static final int maxNumberOfPrunableQueriesToKeep = 1000;
 
   final int maxSizeBytes;

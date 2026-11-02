@@ -11,9 +11,9 @@ import 'package:test/test.dart';
 
 import 'mock.dart';
 
-/// A prune that runs in the same transaction as a server update must drop the
-/// pruned data and still store that update. Limited queries that share a path
-/// must drop children that only the pruned query covered.
+/// A prune that runs after a server update must drop the pruned data and still
+/// store that update. Limited queries that share a path must drop children that
+/// only the pruned query covered.
 void main() {
   const boxName = 'prune-leak';
 
@@ -35,9 +35,7 @@ void main() {
     await manager.close();
   });
 
-  test(
-      'pruning in the transaction that wrote a server update keeps that update',
-      () {
+  test('pruning after a server update keeps that update', () async {
     var oldQuery = QuerySpec(Name.parsePath('carDiaries/old'));
     var newQuery = QuerySpec(Name.parsePath('carDiaries/new'));
     var oldData = TreeStructuredData.fromJson({'entry': 1});
@@ -56,19 +54,19 @@ void main() {
       manager.updateServerCache(
           newQuery, TreeOperation.overwrite(newQuery.path, newData));
     });
+    await Future<void>.value();
 
     expect(querySpecs(engine), isNot(contains(oldQuery)));
     expect(querySpecs(engine), contains(newQuery));
     expect(engine.serverCache(oldQuery.path).value, TreeStructuredData(),
         reason: 'data for the pruned query should be removed');
     expect(engine.serverCache(newQuery.path).value, newData,
-        reason:
-            'the server update applied in the same transaction as the prune should be kept');
+        reason: 'the server update applied before the prune should be kept');
   });
 
   test(
       'pruning the oldest limited query drops children only that query covered',
-      () {
+      () async {
     var path = Name.parsePath('carDiaries/veh1');
     var older = QuerySpec(path, QueryFilter(limit: 2));
     var newer = QuerySpec(path, QueryFilter(limit: 2, reversed: true));
@@ -103,6 +101,7 @@ void main() {
           TreeOperation.overwrite(
               path, TreeStructuredData.fromJson({'b': 2, 'c': 3})));
     });
+    await Future<void>.value();
 
     expect(querySpecs(engine), isNot(contains(older)));
     expect(querySpecs(engine), contains(newer));

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:logging/logging.dart';
@@ -14,6 +16,18 @@ import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 
 final _logger = Logger('firebase.persistence');
 
+String _formatElapsed(int microseconds) {
+  if (microseconds < 1000) return '${microseconds}us';
+  return '${(microseconds / 1000).toStringAsFixed(1)}ms';
+}
+
+class _TimedWork {
+  final int elapsedUs;
+  final int? endBytes;
+
+  _TimedWork(this.elapsedUs, this.endBytes);
+}
+
 class DefaultPersistenceManager implements PersistenceManager {
   @override
   bool get isEnabled => true;
@@ -22,9 +36,15 @@ class DefaultPersistenceManager implements PersistenceManager {
   final TrackedQueryManager _trackedQueryManager;
   final CachePolicy cachePolicy;
   int _serverCacheUpdatesSinceLastPruneCheck = 0;
+  bool _pruneNeeded = false;
+  bool _maintenanceScheduled = false;
+  bool _closed = false;
 
   DefaultPersistenceManager(this.storageLayer, this.cachePolicy)
-      : _trackedQueryManager = TrackedQueryManager(storageLayer);
+      : _trackedQueryManager = TrackedQueryManager(storageLayer) {
+    _notePruneIfNeeded();
+    _scheduleMaintenance();
+  }
 
   /// Save a user overwrite
   @override
@@ -150,24 +170,93 @@ class DefaultPersistenceManager implements PersistenceManager {
         .shouldCheckCacheSize(_serverCacheUpdatesSinceLastPruneCheck)) {
       _logger.fine('Reached prune check threshold.');
       _serverCacheUpdatesSinceLastPruneCheck = 0;
-      var cacheSize = storageLayer.serverCacheEstimatedSizeInBytes();
-      _logger.fine('Cache size: $cacheSize');
-      if (cachePolicy.shouldPrune(
-          cacheSize, _trackedQueryManager.countOfPrunableQueries())) {
-        var pruneForest = _trackedQueryManager.pruneToMaximumSize(
-            cachePolicy.maximumCacheSizeAfterPrune,
-            cachePolicy.maxNumberOfQueriesToKeep);
-        if (pruneForest.prunesAnything()) {
-          storageLayer.pruneCache(pruneForest);
-        }
-        _logger.fine(
-            'Cache size after prune: ${storageLayer.serverCacheEstimatedSizeInBytes()}');
-      }
+      _notePruneIfNeeded();
+      _scheduleMaintenance();
     }
+  }
+
+  /// Measures the cache and, when it should be pruned, only records that.
+  void _notePruneIfNeeded() {
+    var cacheSize = storageLayer.serverCacheEstimatedSizeInBytes();
+    var prunable = _trackedQueryManager.countOfPrunableQueries();
+    if (cachePolicy.shouldPrune(cacheSize, prunable)) {
+      _pruneNeeded = true;
+    }
+    _logger.fine('Cache size check: $cacheSize bytes, $prunable prunable '
+        'queries${_pruneNeeded ? ', prune marked' : ''}.');
+  }
+
+  void _scheduleMaintenance() {
+    if (_closed || _maintenanceScheduled) return;
+    if (!_pruneNeeded && storageLayer.orphanedServerCacheRemoved) return;
+    _maintenanceScheduled = true;
+    scheduleMicrotask(_runMaintenance);
+  }
+
+  void _runMaintenance() {
+    _maintenanceScheduled = false;
+    if (_closed) return;
+    if (!_pruneNeeded && storageLayer.orphanedServerCacheRemoved) return;
+
+    var prune = _pruneNeeded;
+    _pruneNeeded = false;
+    var orphanCleanup = !storageLayer.orphanedServerCacheRemoved;
+    _logger.fine('Persistence maintenance started '
+        '(orphan cleanup: $orphanCleanup, size prune: $prune).');
+    var elapsedUs = 0;
+    runInTransaction(() {
+      var size = _logger.isLoggable(Level.FINE)
+          ? storageLayer.serverCacheEstimatedSizeInBytes()
+          : null;
+      if (orphanCleanup) {
+        var result = _runTimed('Orphan cache cleanup', size, () {
+          _trackedQueryManager.removeOrphanedServerCacheOnce();
+        });
+        size = result.endBytes;
+        elapsedUs += result.elapsedUs;
+      }
+      if (prune) {
+        var result = _runTimed(
+            'Cache prune (target ${cachePolicy.maximumCacheSizeAfterPrune} '
+            'bytes, keep ${cachePolicy.maxNumberOfQueriesToKeep} queries)',
+            size, () {
+          var pruneForest = _trackedQueryManager.pruneToMaximumSize(
+              cachePolicy.maximumCacheSizeAfterPrune,
+              cachePolicy.maxNumberOfQueriesToKeep);
+          if (pruneForest.prunesAnything()) {
+            storageLayer.pruneCache(pruneForest);
+          }
+        });
+        elapsedUs += result.elapsedUs;
+      }
+    });
+    _logger.fine(
+        'Persistence maintenance finished in ${_formatElapsed(elapsedUs)}.');
+  }
+
+  /// Runs [body] and logs its cache size, prunable-query count, and duration.
+  ///
+  /// The end size is measured only when the log will be emitted. That size is
+  /// returned so a following prune can use it as its start size.
+  _TimedWork _runTimed(String action, int? startBytes, void Function() body) {
+    var queriesBefore = _trackedQueryManager.countOfPrunableQueries();
+    var watch = Stopwatch()..start();
+    body();
+    watch.stop();
+    int? endBytes;
+    if (_logger.isLoggable(Level.FINE)) {
+      endBytes = storageLayer.serverCacheEstimatedSizeInBytes();
+      var queriesAfter = _trackedQueryManager.countOfPrunableQueries();
+      _logger.fine('$action: ${startBytes ?? '?'} -> $endBytes bytes, '
+          '$queriesBefore -> $queriesAfter prunable queries, '
+          '${_formatElapsed(watch.elapsedMicroseconds)}.');
+    }
+    return _TimedWork(watch.elapsedMicroseconds, endBytes);
   }
 
   @override
   Future<void> close() {
+    _closed = true;
     return storageLayer.close();
   }
 }

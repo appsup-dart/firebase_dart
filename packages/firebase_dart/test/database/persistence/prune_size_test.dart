@@ -33,7 +33,7 @@ void main() {
     await manager.close();
   });
 
-  test('a size prune stops at the low-water mark', () {
+  test('a size prune stops at the low-water mark', () async {
     var data = TreeStructuredData.fromJson({'v': 1});
     for (var i = 0; i < 5; i++) {
       var query = QuerySpec(_path(i));
@@ -56,9 +56,47 @@ void main() {
           again, TreeOperation.overwrite(again.path, data));
     });
 
+    var afterUpdate = engine.serverCacheEstimatedSizeInBytes();
+    expect(afterUpdate, greaterThan(lowWater),
+        reason: 'the size check only marks the cache; it does not prune yet');
+
+    await Future<void>.value();
+
     var after = engine.serverCacheEstimatedSizeInBytes();
     expect(after, lessThanOrEqualTo(lowWater));
     expect(after, engine.serverCache(Path<Name>()).estimatedStorageSize);
+  });
+
+  test('an LRU policy checks the cache size about every 100 updates', () {
+    var policy = LRUCachePolicy(1);
+    expect(policy.shouldCheckCacheSize(100), isFalse);
+    expect(policy.shouldCheckCacheSize(101), isTrue);
+  });
+
+  test('opening an over-size cache prunes in a later task', () async {
+    var data = TreeStructuredData.fromJson({'v': 1});
+    for (var i = 0; i < 5; i++) {
+      var query = QuerySpec(_path(i));
+      manager.runInTransaction(() {
+        manager.setQueryActive(query);
+        manager.updateServerCache(
+            query, TreeOperation.overwrite(query.path, data));
+        manager.setQueryInactive(query);
+      });
+    }
+
+    var size = engine.serverCacheEstimatedSizeInBytes();
+    var lowPolicy = _SizePolicy((size ~/ 5) * 3);
+    var lowWater = lowPolicy.maximumCacheSizeAfterPrune;
+    DefaultPersistenceManager(engine, lowPolicy);
+
+    expect(engine.serverCacheEstimatedSizeInBytes(), greaterThan(lowWater),
+        reason: 'opening only marks the cache; it does not prune yet');
+
+    await Future<void>.value();
+
+    expect(engine.serverCacheEstimatedSizeInBytes(),
+        lessThanOrEqualTo(lowWater));
   });
 }
 

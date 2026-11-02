@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:firebase_dart/src/database/impl/operations/tree.dart';
+import 'package:firebase_dart/src/database/impl/persistence/default_manager.dart';
 import 'package:firebase_dart/src/database/impl/persistence/hive_engine.dart';
+import 'package:firebase_dart/src/database/impl/persistence/policy.dart';
 import 'package:firebase_dart/src/database/impl/persistence/tracked_query.dart';
 import 'package:firebase_dart/src/database/impl/query_spec.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
@@ -26,7 +28,8 @@ void main() {
     await engine.close();
   });
 
-  test('opening persistence drops cache data no tracked query covers', () {
+  test('opening persistence drops cache data no tracked query covers',
+      () async {
     var kept = QuerySpec(Name.parsePath('carDiaries/kept'));
     var keptData = TreeStructuredData.fromJson({'entry': 1});
     var orphanPath = Name.parsePath('carDiaries/orphan');
@@ -59,7 +62,13 @@ void main() {
         TreeOperation.overwrite(writePath, TreeStructuredData.fromJson(1)), 7);
     engine.endTransaction();
 
-    TrackedQueryManager(engine);
+    DefaultPersistenceManager(engine, CachePolicy.none);
+
+    expect(engine.serverCache(orphanPath).value,
+        TreeStructuredData.fromJson({'entry': 2}),
+        reason: 'cleanup waits for a later task');
+
+    await Future<void>.value();
 
     expect(engine.serverCache(orphanPath).value, TreeStructuredData(),
         reason: 'cache data with no tracked query should be removed');
@@ -74,7 +83,8 @@ void main() {
         orphanPath, TreeStructuredData.fromJson({'entry': 3})));
     engine.endTransaction();
 
-    TrackedQueryManager(engine);
+    DefaultPersistenceManager(engine, CachePolicy.none);
+    await Future<void>.value();
 
     expect(engine.serverCache(orphanPath).value,
         TreeStructuredData.fromJson({'entry': 3}),
