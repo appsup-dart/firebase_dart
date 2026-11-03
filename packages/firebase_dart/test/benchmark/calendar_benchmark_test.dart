@@ -34,49 +34,51 @@ final _eventsPath = Name.parsePath('events');
 /// dart test --run-skipped -t benchmark test/benchmark/calendar_benchmark_test.dart
 /// ```
 void main() {
-  group('calendar queries', () {
-    group('density: 5 events/day', () {
-      const useCase = _CalendarDensity(5);
-      final tester = _UseCaseTester(useCase);
+  group('Calendar', () {
+    group('queries', () {
+      group('density: 5 events/day', () {
+        const useCase = _CalendarDensity(5);
+        final tester = _UseCaseTester(useCase);
 
-      tester.setUp();
+        tester.setUp();
 
-      test('planned listeners are attached to complete views', () {
-        tester.checkPlannedListenersComplete();
+        test('planned listeners are attached to complete views', () {
+          tester.checkPlannedListenersComplete();
+        });
+
+        benchmark('listen acks + first server snapshots', () {
+          tester.processPendingRegistrationsUntilStable();
+        });
       });
 
-      benchmark('listen acks + first server snapshots', () {
-        tester.processPendingRegistrationsUntilStable();
-      });
-    });
+      group('density: 1 event/day', () {
+        const useCase = _CalendarDensity(1);
+        final tester = _UseCaseTester(useCase);
 
-    group('density: 1 event/day', () {
-      const useCase = _CalendarDensity(1);
-      final tester = _UseCaseTester(useCase);
+        tester.setUp();
 
-      tester.setUp();
+        test('planned listeners are attached to complete views', () {
+          tester.checkPlannedListenersComplete();
+        });
 
-      test('planned listeners are attached to complete views', () {
-        tester.checkPlannedListenersComplete();
-      });
-
-      benchmark('listen acks + first server snapshots', () {
-        tester.processPendingRegistrationsUntilStable();
-      });
-    });
-
-    group('density: 1 event / 10 days', () {
-      const useCase = _CalendarDensity(0.1);
-      final tester = _UseCaseTester(useCase);
-
-      tester.setUp();
-
-      test('planned listeners are attached to complete views', () {
-        tester.checkPlannedListenersComplete();
+        benchmark('listen acks + first server snapshots', () {
+          tester.processPendingRegistrationsUntilStable();
+        });
       });
 
-      benchmark('listen acks + first server snapshots', () {
-        tester.processPendingRegistrationsUntilStable();
+      group('density: 1 event / 10 days', () {
+        const useCase = _CalendarDensity(0.1);
+        final tester = _UseCaseTester(useCase);
+
+        tester.setUp();
+
+        test('planned listeners are attached to complete views', () {
+          tester.checkPlannedListenersComplete();
+        });
+
+        benchmark('listen acks + first server snapshots', () {
+          tester.processPendingRegistrationsUntilStable();
+        });
       });
     });
   });

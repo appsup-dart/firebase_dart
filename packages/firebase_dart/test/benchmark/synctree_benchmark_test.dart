@@ -23,60 +23,62 @@ import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 /// BENCHMARK_CHILDREN=50 dart test -t benchmark test/benchmark/
 /// ```
 void main() {
-  group('synctree merge', () {
-    group('write path', () {
-      late SynctreeMergeHarness harness;
+  group('SyncTree', () {
+    group('merge', () {
+      group('write path', () {
+        late SynctreeMergeHarness harness;
 
-      setUp(() async {
-        harness = await SynctreeMergeHarness.create(
-          childCount: synctreeMergeBenchmarkChildCount,
-        );
+        setUp(() async {
+          harness = await SynctreeMergeHarness.create(
+            childCount: synctreeMergeBenchmarkChildCount,
+          );
+        });
+
+        tearDown(() => harness.dispose());
+
+        benchmark('fullWriteCycle (merge + server + ack)', () {
+          harness.applyUserMerge();
+          harness.applyMatchingServerMerge();
+          harness.applyAck();
+        });
+
+        benchmark('userMerge only', () => harness.applyUserMerge());
       });
 
-      tearDown(() => harness.dispose());
+      group('serverMerge only (after user merge)', () {
+        late SynctreeMergeHarness harness;
 
-      benchmark('fullWriteCycle (merge + server + ack)', () {
-        harness.applyUserMerge();
-        harness.applyMatchingServerMerge();
-        harness.applyAck();
+        setUp(() async {
+          harness = await SynctreeMergeHarness.create(
+            childCount: synctreeMergeBenchmarkChildCount,
+          );
+        });
+
+        tearDown(() => harness.dispose());
+
+        setUpEach(() => harness.applyUserMerge());
+
+        benchmark('serverMerge', () => harness.applyMatchingServerMerge());
       });
 
-      benchmark('userMerge only', () => harness.applyUserMerge());
-    });
+      group('ack only (after user merge + server merge)', () {
+        late SynctreeMergeHarness harness;
 
-    group('serverMerge only (after user merge)', () {
-      late SynctreeMergeHarness harness;
+        setUp(() async {
+          harness = await SynctreeMergeHarness.create(
+            childCount: synctreeMergeBenchmarkChildCount,
+          );
+        });
 
-      setUp(() async {
-        harness = await SynctreeMergeHarness.create(
-          childCount: synctreeMergeBenchmarkChildCount,
-        );
+        tearDown(() => harness.dispose());
+
+        setUpEach(() {
+          harness.applyUserMerge();
+          harness.applyMatchingServerMerge();
+        });
+
+        benchmark('ack', () => harness.applyAck());
       });
-
-      tearDown(() => harness.dispose());
-
-      setUpEach(() => harness.applyUserMerge());
-
-      benchmark('serverMerge', () => harness.applyMatchingServerMerge());
-    });
-
-    group('ack only (after user merge + server merge)', () {
-      late SynctreeMergeHarness harness;
-
-      setUp(() async {
-        harness = await SynctreeMergeHarness.create(
-          childCount: synctreeMergeBenchmarkChildCount,
-        );
-      });
-
-      tearDown(() => harness.dispose());
-
-      setUpEach(() {
-        harness.applyUserMerge();
-        harness.applyMatchingServerMerge();
-      });
-
-      benchmark('ack', () => harness.applyAck());
     });
   });
 }
