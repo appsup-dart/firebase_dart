@@ -424,6 +424,130 @@ class TreeStructuredDataImpl extends TreeStructuredData {
       children;
 }
 
+/// A [TreeStructuredData] stored with the default filter: unlimited, ordered
+/// by priority.
+///
+/// [addIndex] keeps an extra sorted map of these children. A node with any
+/// other filter is a plain [TreeStructuredData] and cannot be indexed.
+class IndexedTreeStructuredData extends TreeStructuredDataImpl {
+  final Map<TreeStructuredDataOrdering, SortedMap<Name, TreeStructuredData>>
+      _indexes;
+
+  /// An indexed copy of [node].
+  ///
+  /// [node] must use the default filter: unlimited, ordered by priority.
+  factory IndexedTreeStructuredData.from(TreeStructuredData node) {
+    return IndexedTreeStructuredData._(
+      node.value,
+      node.childrenAsFilteredMap._map,
+      node.priority,
+      {},
+    );
+  }
+
+  IndexedTreeStructuredData._(
+    Value? value,
+    FilteredMap<Name, TreeStructuredData> children,
+    Value? priority,
+    this._indexes,
+  )   : assert(children.filter == const QueryFilter()),
+        super._(value, children, priority);
+
+  /// Remembers [ordering] as a sorted map of [children].
+  ///
+  /// The default priority ordering is already how [children] are stored, so
+  /// registering it does nothing. A later [withFilter] for [ordering] reads
+  /// this map instead of sorting every child again.
+  void addIndex(TreeStructuredDataOrdering ordering) {
+    if (ordering == const TreeStructuredDataOrdering.byPriority()) return;
+    if (_indexes.containsKey(ordering)) return;
+    _indexes[ordering] = SortedMap<Name, TreeStructuredData>(ordering)
+      ..addAll(children);
+  }
+
+  /// Orderings registered with [addIndex], plus this node's priority ordering.
+  Set<TreeStructuredDataOrdering> get indexedOrderings => {
+        ..._indexes.keys,
+        filter.ordering as TreeStructuredDataOrdering,
+      };
+
+  @override
+  TreeStructuredData withFilter(Filter<Name, TreeStructuredData> f) {
+    if (filter == f) return this;
+    final ordering = f.ordering;
+    final index = _indexes[ordering];
+    if (index == null) return super.withFilter(f);
+    return TreeStructuredDataImpl._(
+      f.limits ? null : value,
+      index.filteredMap(
+        start: Pair.min(f.startKey, f.startValue),
+        end: Pair.max(f.endKey, f.endValue),
+        limit: f.limit,
+        reversed: f.reversed,
+      ),
+      f.limits ? null : priority,
+    );
+  }
+
+  @override
+  IndexedTreeStructuredData withPriority(Value? priority) {
+    if (this.priority == priority) return this;
+    return IndexedTreeStructuredData._(
+      value,
+      childrenAsFilteredMap._map,
+      priority,
+      _cloneIndexes(),
+    );
+  }
+
+  @override
+  IndexedTreeStructuredData withoutChild(Name k) {
+    if (!children.containsKey(k)) return this;
+    return _withChildren(_clonedChildren()..remove(k), {k});
+  }
+
+  @override
+  IndexedTreeStructuredData withChild(Name k, TreeStructuredData newChild) {
+    if (children[k] == newChild) return this;
+    return _withChildren(_clonedChildren()..[k] = newChild, {k});
+  }
+
+  FilteredMap<Name, TreeStructuredData> _clonedChildren() =>
+      childrenAsFilteredMap._map.clone()
+          as FilteredMap<Name, TreeStructuredData>;
+
+  IndexedTreeStructuredData _withChildren(
+    FilteredMap<Name, TreeStructuredData> children,
+    Set<Name> changed,
+  ) {
+    final next = IndexedTreeStructuredData._(
+      value,
+      children,
+      priority,
+      _cloneIndexes(),
+    );
+    for (final name in changed) {
+      next._reindex(name);
+    }
+    return next;
+  }
+
+  Map<TreeStructuredDataOrdering, SortedMap<Name, TreeStructuredData>>
+      _cloneIndexes() => {
+            for (final entry in _indexes.entries)
+              entry.key: entry.value.clone(),
+          };
+
+  void _reindex(Name name) {
+    final child = children[name];
+    final keep = child != null && !child.isNil;
+    for (final index in _indexes.values) {
+      index.remove(name);
+      if (keep) index[name] = child;
+    }
+  }
+}
+
 String _doubleToIEEE754String(num v) {
   var l = Float64List.fromList([v.toDouble()]);
   var hex = '';

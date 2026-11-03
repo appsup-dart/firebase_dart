@@ -20,6 +20,8 @@ final _childOrderingPage = QueryFilter(
   reversed: true,
 );
 
+const _priority = TreeStructuredDataOrdering.byPriority();
+
 final _childOrdering = TreeStructuredDataOrdering.byChild('field');
 
 /// [TreeStructuredData.withFilter] and the child updates around it.
@@ -35,12 +37,14 @@ void main() {
   group('TreeStructuredData', () {
     group('100 children', () {
       group('node', () {
-        late TreeStructuredData node;
+        late IndexedTreeStructuredData node;
         late Name newest;
 
         setUp(() {
-          node = _tree(100);
+          node = _node(100);
           newest = _newest(100);
+          node.addIndex(_priority);
+          node.addIndex(_childOrdering);
         });
 
         test('limited filter returns the page', () {
@@ -99,12 +103,14 @@ void main() {
 
     group('1000 children', () {
       group('node', () {
-        late TreeStructuredData node;
+        late IndexedTreeStructuredData node;
         late Name newest;
 
         setUp(() {
-          node = _tree(1000);
+          node = _node(1000);
           newest = _newest(1000);
+          node.addIndex(_priority);
+          node.addIndex(_childOrdering);
         });
 
         test('limited filter returns the page', () {
@@ -163,9 +169,10 @@ void main() {
   });
 }
 
-void _expectPage(TreeStructuredData node) {
+void _expectPage(IndexedTreeStructuredData node) {
   expect(node.withFilter(_sameOrderingPage).children.length, _pageSize);
   expect(node.withFilter(_childOrderingPage).children.length, _pageSize);
+  expect(node.indexedOrderings, contains(_childOrdering));
 }
 
 TreeStructuredData _tree(int childCount) {
@@ -174,6 +181,9 @@ TreeStructuredData _tree(int childCount) {
       'key-${i.toString().padLeft(6, '0')}': {'field': 'value-$i'},
   });
 }
+
+IndexedTreeStructuredData _node(int childCount) =>
+    IndexedTreeStructuredData.from(_tree(childCount));
 
 Name _newest(int childCount) =>
     Name('key-${(childCount - 1).toString().padLeft(6, '0')}');
