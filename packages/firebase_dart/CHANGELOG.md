@@ -1,3 +1,9 @@
+## 2.0.0-dev.6
+
+ - **FIX**: measure the persistence cache after the current frame. ([2408106d](https://github.com/appsup-dart/firebase_dart/commit/2408106d3d906b0e54e75fd511884d1d004291f9))
+ - **FIX**: reuse the encoded size of an unchanged cache node. ([bf84dd28](https://github.com/appsup-dart/firebase_dart/commit/bf84dd28f4234ad00bafc066a161de9ab8aa44d5))
+ - **FIX**: prune limited queries from one ordered child list. ([42033d07](https://github.com/appsup-dart/firebase_dart/commit/42033d0791951f419e8818819f42830694e793cf))
+
 ## 2.0.0-dev.5
 
  - **FIX**: defer persistence cache prune off the server update. ([c7277470](https://github.com/appsup-dart/firebase_dart/commit/c72774709645d71867a333361ca528ae44ffe45b))
