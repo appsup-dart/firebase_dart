@@ -24,9 +24,6 @@ abstract class Operation {
   Operation? operationForChild(Name key);
 }
 
-/// Write tree used by [IncompleteData].
-typedef WriteTree = ModifiableTreeNode<Name, TreeStructuredData?>;
-
 extension _FilterX on Filter<Name, TreeStructuredData> {
   QueryFilter toQueryFilter() {
     if (this is QueryFilter) return this as QueryFilter;
@@ -70,6 +67,15 @@ class IncompleteData {
     return IncompleteData._(tree);
   }
 
+  /// Registers [ordering] on the write tree so [value] can use its sorted map.
+  void addIndex(TreeStructuredDataOrdering ordering) {
+    _writeTree.addIndex(ordering);
+  }
+
+  /// Orderings registered with [addIndex].
+  Set<TreeStructuredDataOrdering> get indexedOrderings =>
+      _writeTree.indexedOrderings;
+
   /// Returns a view of this data with [filter] applied when composing [value].
   ///
   /// When [filter] is unchanged, returns [this] (same instance).
@@ -83,16 +89,28 @@ class IncompleteData {
     return _cachedValue ??= _composeValue(_writeTree, filter);
   }
 
-  TreeNode<Name, TreeStructuredData?> get writeTree => _writeTree;
+  WriteTree get writeTree => _writeTree;
 
-  static TreeStructuredData _composeValue(
-      ModifiableTreeNode<Name, TreeStructuredData?> tree, QueryFilter filter) {
+  static TreeStructuredData _composeValue(WriteTree tree, QueryFilter filter) {
     if (tree.value != null) return tree.value!.withFilter(filter);
 
-    return TreeStructuredData.nonLeaf({
-      for (var k in tree.children.keys)
-        k: _composeValue(tree.children[k]!, const QueryFilter())
-    }).withFilter(filter);
+    final ordering = filter.ordering;
+    final index = ordering is TreeStructuredDataOrdering
+        ? tree.sortedValues(ordering)
+        : null;
+    if (index == null) {
+      return TreeStructuredData.nonLeaf({
+        for (var k in tree.children.keys)
+          k: _composeValue(tree.children[k]! as WriteTree, const QueryFilter())
+      }).withFilter(filter);
+    }
+
+    return TreeStructuredData.nonLeaf(index.filteredMap(
+      start: Pair.min(filter.startKey, filter.startValue),
+      end: Pair.max(filter.endKey, filter.endValue),
+      limit: filter.limit,
+      reversed: filter.reversed,
+    ));
   }
 
   /// Returns true if all the data is complete
@@ -121,7 +139,7 @@ class IncompleteData {
         return IncompleteData._(WriteTree(TreeStructuredData(), TreeMap()));
       }
     }
-    var tree = _writeTree.children[child];
+    var tree = _writeTree.children[child] as WriteTree?;
     if (tree != null) return IncompleteData._(tree);
     return IncompleteData._(WriteTree(null, TreeMap()));
   }
@@ -239,19 +257,11 @@ class IncompleteData {
                   k: WriteTree(tree.value!.children[k], TreeMap())
               }));
         }
-        var child = tree.children[path.first];
+        var child = tree.children[path.first] as WriteTree?;
         if (child == null) return tree;
         var newChild = forget(child, path.skip(1));
         if (identical(newChild, child)) return tree;
-        tree = tree.clone();
-        if (newChild.isNil) {
-          if (tree.children.containsKey(path.first)) {
-            return tree..children.remove(path.first);
-          }
-          return tree;
-        } else {
-          return tree..children[path.first] = newChild;
-        }
+        return tree._replacingChild(path.first, newChild, removeNil: true);
       }
 
       var tree = forget(_writeTree, operation.path);
@@ -315,8 +325,84 @@ class EventGenerator {
   }
 }
 
-/// Extensions for mutating a [WriteTree].
-extension WriteTreeX on WriteTree {
+/// Write tree used by [IncompleteData].
+///
+/// [addIndex] keeps a sorted map of each child that composes to a value.
+/// A child with no value of its own is stored as the composition of its
+/// children, so a filtered read is the window of that map.
+class WriteTree extends ModifiableTreeNode<Name, TreeStructuredData?> {
+  final Map<TreeStructuredDataOrdering, SortedMap<Name, TreeStructuredData>>
+      _indexes = {};
+
+  WriteTree(super.value, [super.children]);
+
+  /// Records [ordering] for every child that composes to a value.
+  ///
+  /// A complete node stores that map on an [IndexedTreeStructuredData]. A
+  /// second call for the same ordering does nothing. The map is updated by
+  /// later overwrites and removals on the trees copied from this one.
+  void addIndex(TreeStructuredDataOrdering ordering) {
+    final current = value;
+    if (current != null) {
+      if (current.children.isEmpty || current.filter != const QueryFilter()) {
+        return;
+      }
+      final indexed = current is IndexedTreeStructuredData
+          ? current
+          : IndexedTreeStructuredData.from(current);
+      if (!identical(indexed, current)) value = indexed;
+      indexed.addIndex(ordering);
+      return;
+    }
+    if (_indexes.containsKey(ordering)) return;
+    final index = SortedMap<Name, TreeStructuredData>(ordering);
+    for (final entry in children.entries) {
+      final value = _indexedValue(entry.value as WriteTree);
+      if (value != null) index[entry.key] = value;
+    }
+    _indexes[ordering] = index;
+  }
+
+  /// Complete child values in [ordering], when [addIndex] has recorded it.
+  SortedMap<Name, TreeStructuredData>? sortedValues(
+          TreeStructuredDataOrdering ordering) =>
+      _indexes[ordering];
+
+  /// Orderings registered with [addIndex].
+  Set<TreeStructuredDataOrdering> get indexedOrderings {
+    final current = value;
+    if (current is IndexedTreeStructuredData) return current.indexedOrderings;
+    return {..._indexes.keys};
+  }
+
+  static TreeStructuredData? _indexedValue(WriteTree child) {
+    final value = child.value;
+    if (value != null) return value.isNil ? null : value;
+    final composed = IncompleteData._composeValue(child, const QueryFilter());
+    return composed.isNil ? null : composed;
+  }
+
+  void _syncIndexes(Name name, WriteTree child) {
+    final value = _indexedValue(child);
+    for (final index in _indexes.values) {
+      index.remove(name);
+      if (value != null) index[name] = value;
+    }
+  }
+
+  WriteTree _replacingChild(Name name, WriteTree child,
+      {required bool removeNil}) {
+    if (identical(children[name], child)) return this;
+    final copy = clone();
+    if (removeNil && child.isNil) {
+      copy.children.remove(name);
+    } else {
+      copy.children[name] = child;
+    }
+    copy._syncIndexes(name, child);
+    return copy;
+  }
+
   /// Adds an overwrite at [path].
   ///
   /// When the overwrite does not change this tree, returns [this] (same
@@ -334,11 +420,11 @@ extension WriteTreeX on WriteTree {
     }
 
     var c = path.first;
-    var existing = children[c];
+    var existing = children[c] as WriteTree?;
     var newChild = (existing ?? WriteTree(null, TreeMap()))
         .addOverwrite(path.skip(1), data);
     if (identical(newChild, existing)) return this;
-    return clone()..children[c] = newChild;
+    return _replacingChild(c, newChild, removeNil: false);
   }
 
   /// Sets priority at [path].
@@ -367,12 +453,18 @@ extension WriteTreeX on WriteTree {
       if (isNil) return this;
       return WriteTree(null, TreeMap());
     }
-    var c = children[path.first];
+    var c = children[path.first] as WriteTree?;
     if (c == null) return this;
     var newChild = c.removeWrite(path.skip(1));
     if (identical(newChild, c)) return this;
-    return clone()..children[path.first] = newChild;
+    return _replacingChild(path.first, newChild, removeNil: false);
   }
 
-  WriteTree clone() => WriteTree(value, TreeMap.from(children));
+  WriteTree clone() {
+    final copy = WriteTree(value, TreeMap.from(children));
+    for (final entry in _indexes.entries) {
+      copy._indexes[entry.key] = entry.value.clone();
+    }
+    return copy;
+  }
 }

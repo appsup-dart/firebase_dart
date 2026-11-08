@@ -117,6 +117,9 @@ class _Harness {
       null,
     );
     view.addEventListener('value', _orderedPage, (_) {});
+    // The timed orderBy reads use this map. Build it outside the sample.
+    view.data.serverVersion.addIndex(_childOrdering);
+    view.data.localVersion.addIndex(_childOrdering);
     return _Harness._(
       view,
       Name(newest),

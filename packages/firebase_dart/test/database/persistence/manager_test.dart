@@ -110,6 +110,78 @@ void main() async {
       expect(node.completeValue, data);
       expect(node.filter, QueryFilter(ordering: index));
     });
+
+    test('serverCache builds an orderBy index on first read', () {
+      var manager = newTestPersistenceManager();
+      manager.runInTransaction(() {
+        for (final entry in {'a': 'm', 'b': 'a', 'c': 'z'}.entries) {
+          manager.updateServerCache(
+            QuerySpec(Name.parsePath('foo/${entry.key}')),
+            TreeOperation.overwrite(
+              Name.parsePath('foo/${entry.key}'),
+              TreeStructuredData.fromJson({'field': entry.value}),
+            ),
+          );
+        }
+      });
+
+      final ordering = TreeStructuredDataOrdering.byChild('field');
+      final cache = manager.serverCache(QuerySpec(
+        Name.parsePath('foo'),
+        QueryFilter(ordering: ordering, limit: 2),
+      ));
+
+      expect(
+        cache.value.children.keys.map((key) => key.asString()),
+        ['b', 'a'],
+      );
+      expect(cache.writeTree.sortedValues(ordering), isNotNull);
+    });
+
+    test('serverCache indexes a complete node on first orderBy read', () {
+      var manager = newTestPersistenceManager();
+      final data = TreeStructuredData.fromJson({
+        'a': {'field': 'm'},
+        'b': {'field': 'a'},
+        'c': {'field': 'z'},
+      });
+      manager.runInTransaction(() {
+        manager.updateServerCache(
+          QuerySpec(Name.parsePath('foo')),
+          TreeOperation.overwrite(Name.parsePath('foo'), data),
+        );
+      });
+
+      final ordering = TreeStructuredDataOrdering.byChild('field');
+      final cache = manager.serverCache(QuerySpec(
+        Name.parsePath('foo'),
+        QueryFilter(ordering: ordering, limit: 2, reversed: true),
+      ));
+      expect(cache.value, data.withFilter(cache.filter));
+
+      final stored = (manager as DefaultPersistenceManager)
+          .storageLayer
+          .serverCache(Name.parsePath('foo'));
+      expect(stored.writeTree.value, isA<IndexedTreeStructuredData>());
+    });
+
+    test('a priority serverCache does not build an index', () {
+      var manager = newTestPersistenceManager();
+      manager.runInTransaction(() {
+        manager.updateServerCache(
+          QuerySpec(Name.parsePath('foo/a')),
+          TreeOperation.overwrite(Name.parsePath('foo/a'),
+              TreeStructuredData.fromJson({'field': 'm'})),
+        );
+      });
+
+      final cache = manager.serverCache(QuerySpec(Name.parsePath('foo')));
+      expect(
+        cache.writeTree
+            .sortedValues(TreeStructuredDataOrdering.byChild('field')),
+        isNull,
+      );
+    });
   });
 }
 

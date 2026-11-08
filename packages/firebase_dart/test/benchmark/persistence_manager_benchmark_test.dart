@@ -272,6 +272,8 @@ class _Harness {
       manager.setQueryActive(limited);
       manager.setQueryActive(limitedByChild);
     });
+    // The timed orderBy reads use this map. Build it outside the sample.
+    manager.storageLayer.serverCache(path).addIndex(_childOrdering);
 
     return _Harness(
       manager: manager,

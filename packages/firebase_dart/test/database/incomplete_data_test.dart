@@ -15,6 +15,17 @@ void main() {
 
     var empty = IncompleteData.empty();
 
+    test('addIndex records the ordering', () {
+      var data = IncompleteData.empty();
+      data.addIndex(const TreeStructuredDataOrdering.byPriority());
+      data.addIndex(const TreeStructuredDataOrdering.byPriority());
+      data.addIndex(TreeStructuredDataOrdering.byChild('field'));
+      expect(data.indexedOrderings, {
+        const TreeStructuredDataOrdering.byPriority(),
+        TreeStructuredDataOrdering.byChild('field'),
+      });
+    });
+
     group('Forget operation', () {
       var path = Name.parsePath('child');
       test('forget operation on complete data, removes the node', () {

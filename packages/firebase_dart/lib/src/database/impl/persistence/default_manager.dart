@@ -116,8 +116,14 @@ class DefaultPersistenceManager implements PersistenceManager {
   @override
   IncompleteData serverCache(QuerySpec query) {
     var v = storageLayer.serverCache(query.path);
+    final ordering = query.params.ordering;
+    if (ordering is TreeStructuredDataOrdering &&
+        ordering != const TreeStructuredDataOrdering.byPriority()) {
+      v.writeTree.addIndex(ordering);
+    }
     if (_trackedQueryManager.isQueryComplete(query)) {
-      return IncompleteData.complete(v.value).withFilter(query.params);
+      return IncompleteData.complete(v.withFilter(query.params).value)
+          .withFilter(query.params);
     } else {
       var queries = _trackedQueryManager.trackedQueryTree
               .subtreeNullable(query.path)
@@ -127,7 +133,8 @@ class DefaultPersistenceManager implements PersistenceManager {
         if (p.ordering == query.params.ordering &&
             queries[p]!.complete &&
             _completeQueryContains(p, v, query.params)) {
-          return IncompleteData.complete(v.value).withFilter(query.params);
+          return IncompleteData.complete(v.withFilter(query.params).value)
+              .withFilter(query.params);
         }
       }
 

@@ -1,4 +1,5 @@
 import 'package:firebase_dart/src/database/impl/data_observer.dart';
+import 'package:firebase_dart/src/database/impl/operations/tree.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:test/test.dart';
@@ -85,6 +86,126 @@ void main() {
       final result = tree.removeWrite(Name.parsePath('child-1'));
       expect(identical(result, tree), isFalse);
       expect(result.children[Name('child-1')]!.isNil, isTrue);
+    });
+  });
+
+  group('WriteTree index', () {
+    final ordering = TreeStructuredDataOrdering.byChild('field');
+
+    WriteTree treeWith(Map<String, String> fields) {
+      var tree = WriteTree(null);
+      for (final entry in fields.entries) {
+        tree = tree.addOverwrite(
+          Path.from([Name(entry.key)]),
+          TreeStructuredData.fromJson({'field': entry.value}),
+        );
+      }
+      return tree;
+    }
+
+    test('addIndex stores complete child values in query order', () {
+      final tree = treeWith({'a': 'm', 'b': 'a', 'c': 'z'})..addIndex(ordering);
+
+      expect(tree.sortedValues(ordering)!.keys.map((key) => key.asString()),
+          ['b', 'a', 'c']);
+    });
+
+    test('addIndex stores a composed incomplete child', () {
+      var tree = treeWith({'a': 'm'});
+      tree = tree.addOverwrite(
+        Path.from([Name('partial'), Name('field')]),
+        TreeStructuredData.fromJson('m'),
+      )..addIndex(ordering);
+
+      expect(tree.sortedValues(ordering)!.keys.map((key) => key.asString()),
+          ['a', 'partial']);
+      expect(tree.sortedValues(ordering)![Name('partial')],
+          TreeStructuredData.fromJson({'field': 'm'}));
+
+      final updated = tree.addOverwrite(
+        Path.from([Name('partial'), Name('field')]),
+        TreeStructuredData.fromJson('z'),
+      );
+      expect(updated.sortedValues(ordering)!.keys.map((key) => key.asString()),
+          ['a', 'partial']);
+      expect(updated.sortedValues(ordering)![Name('partial')],
+          TreeStructuredData.fromJson({'field': 'z'}));
+    });
+
+    test('a copied tree keeps the index and a child update changes it', () {
+      final tree = treeWith({'a': 'm', 'b': 'a'})..addIndex(ordering);
+      final updated = tree.addOverwrite(
+        Path.from([Name('a')]),
+        TreeStructuredData.fromJson({'field': 'zzz'}),
+      );
+
+      expect(tree.sortedValues(ordering)![Name('a')]!.children[Name('field')],
+          TreeStructuredData.fromJson('m'));
+      expect(updated.sortedValues(ordering)!.keys.map((key) => key.asString()),
+          ['b', 'a']);
+      expect(
+          updated.sortedValues(ordering)![Name('a')]!.children[Name('field')],
+          TreeStructuredData.fromJson('zzz'));
+    });
+
+    test('an indexed withFilter matches the unindexed value', () {
+      IncompleteData build() => IncompleteData.fromLeafs({
+            for (final entry in {'a': 'm', 'b': 'a', 'c': 'z'}.entries)
+              Path.from([Name(entry.key)]):
+                  TreeStructuredData.fromJson({'field': entry.value}),
+            Path.from([Name('partial'), Name('field')]):
+                TreeStructuredData.fromJson('y'),
+          });
+      var indexed = build();
+      var plain = build();
+      final filter = QueryFilter(ordering: ordering, limit: 2, reversed: true);
+      indexed.writeTree.addIndex(ordering);
+      expect(indexed.withFilter(filter).value, plain.withFilter(filter).value);
+
+      final operation = TreeOperation.overwrite(
+        Path.from([Name('a')]),
+        TreeStructuredData.fromJson({'field': 'zzz'}),
+      );
+      indexed = indexed.applyOperation(operation);
+      plain = plain.applyOperation(operation);
+      expect(indexed.withFilter(filter).value, plain.withFilter(filter).value);
+    });
+
+    test('addIndex on a complete node indexes that value', () {
+      final data = TreeStructuredData.fromJson({
+        'a': {'field': 'm'},
+        'b': {'field': 'a'},
+        'c': {'field': 'z'},
+      });
+      final tree = WriteTree(data)..addIndex(ordering);
+      expect(tree.value, isA<IndexedTreeStructuredData>());
+
+      final filter = QueryFilter(ordering: ordering, limit: 2, reversed: true);
+      expect(tree.value!.withFilter(filter), data.withFilter(filter));
+
+      final updated = tree.addOverwrite(
+        Path.from([Name('a'), Name('field')]),
+        TreeStructuredData.fromJson('zzz'),
+      );
+      expect(updated.value, isA<IndexedTreeStructuredData>());
+      expect(
+        updated.value!.withFilter(filter),
+        data
+            .withChild(Name('a'), TreeStructuredData.fromJson({'field': 'zzz'}))
+            .withFilter(filter),
+      );
+
+      final leaf = WriteTree(TreeStructuredData.fromJson('x'))
+        ..addIndex(ordering);
+      expect(leaf.value, isNot(isA<IndexedTreeStructuredData>()));
+    });
+
+    test('removeWrite drops the child from the index', () {
+      final tree = treeWith({'a': 'm', 'b': 'a'})..addIndex(ordering);
+      final removed = tree.removeWrite(Path.from([Name('a')]));
+
+      expect(tree.sortedValues(ordering)!.containsKey(Name('a')), isTrue);
+      expect(removed.sortedValues(ordering)!.containsKey(Name('a')), isFalse);
     });
   });
 }

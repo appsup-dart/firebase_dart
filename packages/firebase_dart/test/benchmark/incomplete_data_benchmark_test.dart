@@ -46,7 +46,9 @@ TreeOperation _mergeOperation(int childCount, {bool identity = false}) {
 ///
 /// The merge group updates every child. The later groups cover
 /// [IncompleteData.withFilter] and a one-child [IncompleteData.applyOperation]
-/// for a complete node and for partial writes.
+/// for a complete node and for partial writes. Those filter reads use a sorted
+/// map of the child values. A complete node keeps that map on
+/// [IndexedTreeStructuredData].
 ///
 /// Run:
 /// ```bash
@@ -380,6 +382,8 @@ class _Fixture {
     final data = shape == _Shape.complete
         ? IncompleteData.complete(_snapshot(keys))
         : _partialFrom(keys);
+    data.addIndex(const TreeStructuredDataOrdering.byPriority());
+    data.addIndex(TreeStructuredDataOrdering.byChild('field'));
     return _Fixture(
       data: data,
       sameOrdering: _sameOrderingPage,
