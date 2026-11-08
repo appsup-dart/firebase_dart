@@ -60,10 +60,26 @@ class DefaultPersistenceManager implements PersistenceManager {
     storageLayer.removeUserOperation(writeId);
   }
 
+  /// Registers [filter]'s ordering on [data] so a later filtered read is a window.
+  ///
+  /// Priority order is already how a complete node stores its children.
+  void _ensureIndex(IncompleteData data, QueryFilter filter) {
+    final ordering = filter.ordering;
+    if (ordering is TreeStructuredDataOrdering &&
+        ordering != const TreeStructuredDataOrdering.byPriority()) {
+      data.writeTree.addIndex(ordering);
+    }
+  }
+
+  TreeStructuredData _serverValue(QuerySpec query) {
+    final stored = storageLayer.serverCache(query.path);
+    _ensureIndex(stored, query.params);
+    return stored.withFilter(query.params).value;
+  }
+
   @override
   void updateServerCache(QuerySpec query, TreeOperation operation) {
-    var currentValue =
-        storageLayer.serverCache(query.path).withFilter(query.params).value;
+    var currentValue = _serverValue(query);
     var expected = query.path
         .fold(operation, (o, k) => o.operationForChild(k)!)
         .apply(currentValue);
@@ -80,8 +96,7 @@ class DefaultPersistenceManager implements PersistenceManager {
     setQueryComplete(query);
 
     // check if the value is as expected, if not, forget the extra keys
-    var actual =
-        storageLayer.serverCache(query.path).withFilter(query.params).value;
+    var actual = _serverValue(query);
     while (actual != expected) {
       var wrongKeys = actual.children.keys
           .toSet()
@@ -98,8 +113,7 @@ class DefaultPersistenceManager implements PersistenceManager {
             .overwriteServerCache(TreeOperation(query.path.child(k), Forget()));
       }
 
-      actual =
-          storageLayer.serverCache(query.path).withFilter(query.params).value;
+      actual = _serverValue(query);
     }
 
     _doPruneCheckAfterServerUpdate();
@@ -116,11 +130,7 @@ class DefaultPersistenceManager implements PersistenceManager {
   @override
   IncompleteData serverCache(QuerySpec query) {
     var v = storageLayer.serverCache(query.path);
-    final ordering = query.params.ordering;
-    if (ordering is TreeStructuredDataOrdering &&
-        ordering != const TreeStructuredDataOrdering.byPriority()) {
-      v.writeTree.addIndex(ordering);
-    }
+    _ensureIndex(v, query.params);
     if (_trackedQueryManager.isQueryComplete(query)) {
       return IncompleteData.complete(v.withFilter(query.params).value)
           .withFilter(query.params);
