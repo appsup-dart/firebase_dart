@@ -16,6 +16,14 @@ workspace:
   - packages/firebase_dart_plus
   - packages/_integration_testing
 
+# Flutter 3.47.9 pins test_api 0.7.12. package:test 1.31.2 is the release
+# whose Node Wasm loader matches this SDK, and it needs the matching test_api
+# and test_core.
+dependency_overrides:
+  test: '>=1.31.2 <1.31.3'
+  test_api: '>=0.7.13 <0.7.14'
+  test_core: '>=0.6.19 <0.6.20'
+
 melos:
   ide:
     intellij: false
