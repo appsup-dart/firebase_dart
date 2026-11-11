@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-11-11
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`firebase_dart` - `v2.0.0-dev.7`](#firebase_dart---v200-dev7)
+ - [`firebase_dart_flutter` - `v1.4.0-dev.7`](#firebase_dart_flutter---v140-dev7)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0-dev.7`](#firebase_dart_flutter_auth_google---v010-dev7)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.7`](#firebase_dart_flutter_auth_facebook---v001-dev7)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1-dev.7`](#firebase_dart_flutter_auth_apple---v001-dev7)
+ - [`firebase_dart_plus` - `v0.1.1-dev.7`](#firebase_dart_plus---v011-dev7)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter` - `v1.4.0-dev.7`
+ - `firebase_dart_flutter_auth_google` - `v0.1.0-dev.7`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.7`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1-dev.7`
+ - `firebase_dart_plus` - `v0.1.1-dev.7`
+
+---
+
+#### `firebase_dart` - `v2.0.0-dev.7`
+
+ - **PERF**: use the query index when updating the server cache. ([5f101544](https://github.com/appsup-dart/firebase_dart/commit/5f1015441aea1dddf33c59857c1af7a8d7576f2f))
+ - **PERF**: serve cache queries from a sorted child index. ([5803a6e5](https://github.com/appsup-dart/firebase_dart/commit/5803a6e5be348f61420e6383363e037e094fc37f))
+ - **PERF**: serve an indexed withFilter from a sorted child map. ([c05fe0c8](https://github.com/appsup-dart/firebase_dart/commit/c05fe0c88ce35a9f1010a5676311d729818ee194))
+ - **FIX**: load Wasm benchmarks with the current dart2wasm loader. ([6196a91a](https://github.com/appsup-dart/firebase_dart/commit/6196a91a3aed524a55f1e16a959cc89d5755f50c))
+
+
 ## 2026-11-04
 
 ### Changes

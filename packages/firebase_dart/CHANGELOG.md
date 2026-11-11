@@ -1,3 +1,10 @@
+## 2.0.0-dev.7
+
+ - **PERF**: use the query index when updating the server cache. ([5f101544](https://github.com/appsup-dart/firebase_dart/commit/5f1015441aea1dddf33c59857c1af7a8d7576f2f))
+ - **PERF**: serve cache queries from a sorted child index. ([5803a6e5](https://github.com/appsup-dart/firebase_dart/commit/5803a6e5be348f61420e6383363e037e094fc37f))
+ - **PERF**: serve an indexed withFilter from a sorted child map. ([c05fe0c8](https://github.com/appsup-dart/firebase_dart/commit/c05fe0c88ce35a9f1010a5676311d729818ee194))
+ - **FIX**: load Wasm benchmarks with the current dart2wasm loader. ([6196a91a](https://github.com/appsup-dart/firebase_dart/commit/6196a91a3aed524a55f1e16a959cc89d5755f50c))
+
 ## 2.0.0-dev.6
 
  - **FIX**: measure the persistence cache after the current frame. ([2408106d](https://github.com/appsup-dart/firebase_dart/commit/2408106d3d906b0e54e75fd511884d1d004291f9))
