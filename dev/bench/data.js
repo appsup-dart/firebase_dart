@@ -5386,7 +5386,7 @@ window.BENCHMARK_DATA = {
           "distinct": true,
           "id": "c05fe0c88ce35a9f1010a5676311d729818ee194",
           "message": "perf: serve an indexed withFilter from a sorted child map\n\naddIndex stores the children in the requested ordering. withFilter reads that map instead of sorting every child again.\n\nCo-authored-by: Cursor <cursoragent@cursor.com>",
-          "timestamp": "2026-11-11T14:48:30+01:00",
+          "timestamp": "2026-11-11T14:48:31+01:00",
           "tree_id": "69ff052d0156765eb14b4ee069b67521c8e5af2b",
           "url": "https://github.com/appsup-dart/firebase_dart/commit/c05fe0c88ce35a9f1010a5676311d729818ee194"
         },
@@ -7230,7 +7230,7 @@ window.BENCHMARK_DATA = {
           "distinct": true,
           "id": "5803a6e5be348f61420e6383363e037e094fc37f",
           "message": "perf: serve cache queries from a sorted child index\n\nKeep each non-priority ordering on the write tree, and on the cached value when that node is complete, so a limited read is the window of that map. The persistence and master view benchmarks register that ordering before the timed call.\n\nCo-authored-by: Cursor <cursoragent@cursor.com>",
-          "timestamp": "2026-11-11T14:48:30+01:00",
+          "timestamp": "2026-11-11T14:48:32+01:00",
           "tree_id": "3268f0f5eace2ebfa4c74ad93fa3ba79558d1bf9",
           "url": "https://github.com/appsup-dart/firebase_dart/commit/5803a6e5be348f61420e6383363e037e094fc37f"
         },
@@ -9074,7 +9074,7 @@ window.BENCHMARK_DATA = {
           "distinct": true,
           "id": "5f1015441aea1dddf33c59857c1af7a8d7576f2f",
           "message": "perf: use the query index when updating the server cache\n\nAn order-by update sorted every child to read the page and again to check the result. Register the ordering first so both reads are a window of the sorted map.\n\nCo-authored-by: Cursor <cursoragent@cursor.com>",
-          "timestamp": "2026-11-11T14:48:30+01:00",
+          "timestamp": "2026-11-11T14:48:33+01:00",
           "tree_id": "8667d6029fdaf8c3f3de60180196fabac09b244f",
           "url": "https://github.com/appsup-dart/firebase_dart/commit/5f1015441aea1dddf33c59857c1af7a8d7576f2f"
         },
