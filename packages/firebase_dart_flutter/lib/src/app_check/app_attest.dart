@@ -11,11 +11,14 @@ import 'package:platform_info/platform_info.dart' as platform_info;
 class AppAttestAppCheckProvider extends BaseAppCheckProvider {
   const AppAttestAppCheckProvider();
 
-  static bool get _onIos => !kIsWeb && platform_info.Platform.instance.iOS;
+  static bool get _onApple =>
+      !kIsWeb &&
+      (platform_info.Platform.instance.iOS ||
+          platform_info.Platform.instance.macOS);
 
-  /// Whether App Attest is available (iOS 14+ on a supported physical device).
+  /// Whether App Attest is available (iOS 14+ or macOS 11+ on a supported device).
   static Future<bool> isSupported() async {
-    if (!_onIos) return false;
+    if (!_onApple) return false;
     try {
       return await channel.invokeMethod<bool>('isAppAttestSupported') ?? false;
     } catch (_) {
@@ -28,7 +31,7 @@ class AppAttestAppCheckProvider extends BaseAppCheckProvider {
     if (!await isSupported()) {
       throw UnsupportedError(
         'App Attest is not supported on this device '
-        '(requires iOS 14+ on a physical device).',
+        '(requires iOS 14+ or macOS 11+ on a physical device).',
       );
     }
     return _attest(

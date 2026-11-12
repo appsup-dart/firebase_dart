@@ -60,7 +60,7 @@ void main() {
         if (!await AppAttestAppCheckProvider.isSupported()) {
           markTestSkipped(
             'App Attest is not supported on this device '
-            '(use a physical iPhone on iOS 14+).',
+            '(use a physical iPhone on iOS 14+ or a Mac on macOS 11+).',
           );
           return;
         }

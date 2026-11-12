@@ -15,7 +15,7 @@ Import `package:firebase_dart/app_check.dart` and `package:firebase_dart_flutter
 | -------- | -------------------------------- |
 | **Android** | `PlayIntegrityAppCheckProvider` |
 | **iOS** | `AppAttestAppCheckProvider`, `DeviceCheckAppCheckProvider` |
-| **macOS** | `DeviceCheckAppCheckProvider` |
+| **macOS** | `AppAttestAppCheckProvider`, `DeviceCheckAppCheckProvider` |
 | **Web** | `ReCaptchaV3Provider` / `ReCaptchaEnterpriseProvider` from site keys |
 | **Fallback** | `RecaptchaWebViewAppCheckProvider` when `recaptchaWebDomain`, `recaptchaWebAppId`, and `getBuildContext` are set |
 
@@ -51,7 +51,7 @@ await FirebaseAppCheck.instance.activate(
 );
 ```
 
-On iOS, `AppAttestAppCheckProvider.isSupported()` indicates whether App Attest is available (physical device, iOS 14+). For local development on any platform, use `AppCheckProviders.debug` from `firebase_dart` and register the debug token in the Firebase Console.
+On iOS and macOS, `AppAttestAppCheckProvider.isSupported()` indicates whether App Attest is available (iOS 14+ or macOS 11+ on a supported device). For local development on any platform, use `AppCheckProviders.debug` from `firebase_dart` and register the debug token in the Firebase Console.
 
 Auth, Storage, and Realtime Database pick up App Check tokens automatically once activated; see the [firebase_dart App Check section](https://github.com/appsup-dart/firebase_dart/blob/main/packages/firebase_dart/README.md#app-check).
 

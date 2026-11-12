@@ -52,15 +52,13 @@ class FlutterAppCheckProviders extends AppCheckProviders {
       providers.add(const PlayIntegrityAppCheckProvider());
     }
 
-    if (platform is IOsPlatform) {
+    if (platform is IOsPlatform || platform is MacOsPlatform) {
       if (useAppAttest) {
         providers.add(const AppAttestAppCheckProvider());
       }
       if (useDeviceCheck) {
         providers.add(const DeviceCheckAppCheckProvider());
       }
-    } else if (platform is MacOsPlatform && useDeviceCheck) {
-      providers.add(const DeviceCheckAppCheckProvider());
     }
 
     if (recaptchaWebDomain != null &&
