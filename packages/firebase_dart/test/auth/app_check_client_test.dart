@@ -12,7 +12,7 @@ void main() {
     setUp(() {
       client = AppCheckClient(
         MockClient((request) => handler(request)),
-        getAppCheckToken: () async => token,
+        getAppCheckToken: ({bool forceRefresh = false}) async => token,
       );
     });
 
@@ -34,6 +34,62 @@ void main() {
       };
 
       await client.get(Uri.parse('https://example.com/'));
+    });
+
+    test('fetches a new token once when the server rejects App Check',
+        () async {
+      token = 'stale';
+      var calls = 0;
+      var refreshes = 0;
+      client = AppCheckClient(
+        MockClient((request) async {
+          calls++;
+          if (calls == 1) {
+            expect(request.headers['X-Firebase-AppCheck'], 'stale');
+            return Response(
+              'Firebase App Check token is invalid.',
+              401,
+              request: request,
+            );
+          }
+          expect(request.headers['X-Firebase-AppCheck'], 'fresh');
+          return Response('ok', 200, request: request);
+        }),
+        getAppCheckToken: ({bool forceRefresh = false}) async {
+          if (forceRefresh) {
+            refreshes++;
+            token = 'fresh';
+          }
+          return token;
+        },
+      );
+
+      final response = await client.get(Uri.parse('https://example.com/'));
+
+      expect(response.statusCode, 200);
+      expect(response.body, 'ok');
+      expect(refreshes, 1);
+      expect(calls, 2);
+    });
+
+    test('keeps an unrelated 401', () async {
+      token = 'app-check-jwt';
+      var refreshes = 0;
+      client = AppCheckClient(
+        MockClient((request) async {
+          return Response('missing credentials', 401, request: request);
+        }),
+        getAppCheckToken: ({bool forceRefresh = false}) async {
+          if (forceRefresh) refreshes++;
+          return token;
+        },
+      );
+
+      final response = await client.get(Uri.parse('https://example.com/'));
+
+      expect(response.statusCode, 401);
+      expect(response.body, 'missing credentials');
+      expect(refreshes, 0);
     });
   });
 }

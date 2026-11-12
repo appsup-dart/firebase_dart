@@ -54,7 +54,8 @@ void main() async {
             expect(request.headers['Authorization'], isNull);
             return Response('', 200, request: request);
           }),
-          getAppCheckToken: () async => appCheckToken,
+          getAppCheckToken: ({bool forceRefresh = false}) async =>
+              appCheckToken,
         ),
         () async => null,
       );

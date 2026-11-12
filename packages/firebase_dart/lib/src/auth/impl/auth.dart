@@ -62,8 +62,8 @@ class FirebaseAuthImpl extends FirebaseService
       : httpClient = MetadataClient(
           AppCheckClient(
             httpClient ?? Client(),
-            getAppCheckToken: () =>
-                FirebaseAppCheck.instanceFor(app: app).getToken(),
+            getAppCheckToken: ({bool forceRefresh = false}) =>
+                FirebaseAppCheck.instanceFor(app: app).getToken(forceRefresh),
           ),
           firebaseAppId: app.options.appId,
         ) {

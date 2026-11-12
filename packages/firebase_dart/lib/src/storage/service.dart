@@ -23,8 +23,8 @@ class FirebaseStorageImpl extends FirebaseService implements FirebaseStorage {
         httpClient = HttpClient(
           AppCheckClient(
             httpClient ?? http.Client(),
-            getAppCheckToken: () =>
-                FirebaseAppCheck.instanceFor(app: app).getToken(),
+            getAppCheckToken: ({bool forceRefresh = false}) =>
+                FirebaseAppCheck.instanceFor(app: app).getToken(forceRefresh),
           ),
           () async => AuthTokenProvider.fromFirebaseAuth(
             FirebaseAuth.instanceFor(app: app),
