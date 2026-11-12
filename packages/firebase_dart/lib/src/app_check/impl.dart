@@ -8,6 +8,7 @@ import 'package:firebase_dart/src/app_check/app_check.dart';
 import 'package:firebase_dart/src/app_check/app_check_protected.dart';
 import 'package:firebase_dart/src/app_check/exchange.dart';
 import 'package:firebase_dart/src/app_check/firebase_app_check_exception.dart';
+import 'package:firebase_dart/src/app_check/token_store.dart';
 import 'package:firebase_dart/src/app_check/transient_refresh_error.dart';
 import 'package:googleapis/firebaseappcheck/v1.dart';
 import 'package:logging/logging.dart';
@@ -23,6 +24,7 @@ class FirebaseAppCheckImpl extends FirebaseService
   AppCheckProviders? _providers;
   AppCheckProvider? _preferredProvider;
   AppCheckToken? _cachedToken;
+  bool _hydrated = false;
   bool _isTokenAutoRefreshEnabled = true;
   Timer? _refreshTimer;
   final _tokenChanges = BehaviorSubject<String?>(sync: true);
@@ -35,6 +37,7 @@ class FirebaseAppCheckImpl extends FirebaseService
     _providers = providers;
     _preferredProvider = null;
     if (_providers == null) return;
+    await _hydrateCachedToken();
     if (_isTokenValid(_cachedToken)) {
       _scheduleTokenRefresh(_cachedToken);
     } else {
@@ -51,6 +54,9 @@ class FirebaseAppCheckImpl extends FirebaseService
   @override
   Future<String?> getToken([bool forceRefresh = false]) async {
     if (_providers == null) return null;
+    if (!forceRefresh) {
+      await _hydrateCachedToken();
+    }
     if (forceRefresh || !_isTokenValid(_cachedToken)) {
       await _updateToken();
     }
@@ -119,6 +125,17 @@ class FirebaseAppCheckImpl extends FirebaseService
 
   Future<void>? _updateTokenFuture;
 
+  Future<void> _hydrateCachedToken() async {
+    if (_hydrated || _cachedToken != null) return;
+    _hydrated = true;
+    final stored = await loadAppCheckToken(app.options.appId);
+    if (_cachedToken != null || !_isTokenValid(stored)) return;
+    _cachedToken = stored;
+    if (!_tokenChanges.isClosed) {
+      _tokenChanges.add(stored!.token);
+    }
+  }
+
   Future<void> _updateToken() {
     if (_providers == null) return Future<void>.value();
     return _updateTokenFuture ??= _replaceToken().whenComplete(() {
@@ -129,6 +146,7 @@ class FirebaseAppCheckImpl extends FirebaseService
   Future<void> _replaceToken() async {
     final token = await _obtainToken(limitedUse: false);
     _cachedToken = token;
+    await saveAppCheckToken(app.options.appId, token);
     if (!_tokenChanges.isClosed) {
       _tokenChanges.add(token.token);
     }

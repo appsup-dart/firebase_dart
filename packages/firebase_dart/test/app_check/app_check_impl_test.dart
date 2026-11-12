@@ -7,6 +7,7 @@ import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/app_check/app_check.dart';
 import 'package:firebase_dart/src/app_check/firebase_app_check_exception.dart';
 import 'package:firebase_dart/src/app_check/impl.dart';
+import 'package:firebase_dart/src/app_check/token_store.dart';
 import 'package:test/test.dart';
 
 import '../util.dart';
@@ -87,6 +88,7 @@ void main() {
         options: getOptions(appId: '1:2:web:abc'),
         name: 'app-check-${DateTime.now().microsecondsSinceEpoch}',
       );
+      await deleteAppCheckToken(app.options.appId);
     });
 
     tearDown(() async {
@@ -290,6 +292,45 @@ void main() {
       );
       expect(await appCheck.getToken(), 'token-2');
       expect(provider.attestCount, 2);
+    });
+
+    test('reuses a persisted token in a new instance', () async {
+      final firstProvider = _CountingProvider();
+      final first = FirebaseAppCheckImpl(app);
+      await first.activate(providers: AppCheckProviders.single(firstProvider));
+      expect(await first.getToken(), 'token-1');
+      await first.delete();
+
+      final secondProvider = _CountingProvider(prefix: 'second');
+      final second = FirebaseAppCheckImpl(app);
+      await second.activate(
+          providers: AppCheckProviders.single(secondProvider));
+
+      expect(await second.getToken(), 'token-1');
+      expect(secondProvider.attestCount, 0);
+    });
+
+    test('ignores an expired persisted token', () async {
+      final start = DateTime.utc(2025, 6, 1, 12);
+      await withClock(Clock.fixed(start), () async {
+        final first = FirebaseAppCheckImpl(app);
+        await first.activate(
+          providers: AppCheckProviders.single(
+            _CountingProvider(ttl: const Duration(minutes: 1), prefix: 'old'),
+          ),
+        );
+        expect(await first.getToken(), 'old-1');
+        await first.delete();
+      });
+
+      final fresh = _CountingProvider(prefix: 'new');
+      await withClock(Clock.fixed(start.add(const Duration(minutes: 2))),
+          () async {
+        final second = FirebaseAppCheckImpl(app);
+        await second.activate(providers: AppCheckProviders.single(fresh));
+        expect(await second.getToken(), 'new-1');
+      });
+      expect(fresh.attestCount, 1);
     });
   });
 }
