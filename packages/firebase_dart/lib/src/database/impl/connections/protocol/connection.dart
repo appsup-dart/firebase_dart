@@ -62,6 +62,7 @@ class Connection {
     if (state != ConnectionState.disconnected) {
       _logger.fine('closing realtime connection');
       _state = ConnectionState.disconnected;
+      _keepAlivePeriodicStreamSubscription.cancel();
 
       await _outputSink.close();
 
@@ -74,8 +75,6 @@ class Connection {
       }
 
       delegate.onDisconnect(reason);
-
-      await _keepAlivePeriodicStreamSubscription.cancel();
     }
   }
 

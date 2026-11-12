@@ -141,7 +141,8 @@ class PersistentConnectionImpl extends PersistentConnection
         _logger.warning(
             'App Check revoked: ${message.body.status} ${message.body.data}');
         _appCheckToken = null;
-        interrupt('app_check_revoked');
+        _forceAppCheckTokenRefresh = true;
+        _connection?.close();
         break;
       case DataMessage.actionSecurityDebug:
         var msg = message.body.message;
@@ -324,6 +325,7 @@ class PersistentConnectionImpl extends PersistentConnection
 
   int _invalidAuthTokenCount = 0;
   bool _forceAuthTokenRefresh = false;
+  bool _forceAppCheckTokenRefresh = false;
 
   Future<void> _tryAppCheck() async {
     if (!_connected()) return;
@@ -617,7 +619,9 @@ class PersistentConnectionImpl extends PersistentConnection
           'Not in disconnected state: $connectionState');
       _logger.fine('Scheduling connection attempt');
       final forceRefresh = _forceAuthTokenRefresh;
+      final forceAppCheckRefresh = _forceAppCheckTokenRefresh;
       _forceAuthTokenRefresh = false;
+      _forceAppCheckTokenRefresh = false;
       _retryHelper.retry(() async {
         _logger.fine('Trying to fetch auth token');
         assert(
@@ -632,7 +636,8 @@ class PersistentConnectionImpl extends PersistentConnection
         try {
           (token, appCheckToken) = await (
             _authTokenProvider?.getToken(forceRefresh) ?? Future.value(null),
-            _appCheckTokenProvider?.getToken() ?? Future.value(null),
+            _appCheckTokenProvider?.getToken(forceAppCheckRefresh) ??
+                Future.value(null),
           ).wait;
         } catch (error) {
           if (thisGetTokenAttempt == _currentGetTokenAttempt) {
