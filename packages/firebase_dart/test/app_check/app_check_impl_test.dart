@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/implementation/pure_dart.dart';
 import 'package:firebase_dart/src/app_check/app_check.dart';
+import 'package:firebase_dart/src/app_check/firebase_app_check_exception.dart';
 import 'package:firebase_dart/src/app_check/impl.dart';
 import 'package:test/test.dart';
 
@@ -27,9 +30,47 @@ class _CountingProvider implements AppCheckProvider {
 }
 
 class _FailingProvider implements AppCheckProvider {
+  int attestCount = 0;
+
   @override
   Future<AppCheckAttestation> getAttestation(FirebaseApp app) async {
+    attestCount++;
     throw StateError('attestation failed');
+  }
+}
+
+class _FlakyProvider implements AppCheckProvider {
+  _FlakyProvider({this.failures = 1});
+
+  int failures;
+  int attestCount = 0;
+
+  @override
+  Future<AppCheckAttestation> getAttestation(FirebaseApp app) async {
+    attestCount++;
+    if (attestCount <= failures) {
+      throw StateError('attestation failed');
+    }
+    return AppCheckAttestation.minted(
+      'token-$attestCount',
+      clock.now().add(const Duration(hours: 1)),
+    );
+  }
+}
+
+class _TransientThenOkProvider implements AppCheckProvider {
+  int attestCount = 0;
+
+  @override
+  Future<AppCheckAttestation> getAttestation(FirebaseApp app) async {
+    attestCount++;
+    if (attestCount == 1) {
+      throw TimeoutException('app check exchange timed out');
+    }
+    return AppCheckAttestation.minted(
+      'token-$attestCount',
+      clock.now().add(const Duration(hours: 1)),
+    );
   }
 }
 
@@ -168,6 +209,46 @@ void main() {
         expect(provider.attestCount, 2);
       });
 
+      test('retries a transient failure even when no token is cached', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(DateTime.utc(2025, 6, 1, 12)), () {
+            final appCheck = FirebaseAppCheckImpl(app);
+            final provider = _TransientThenOkProvider();
+            final tokens = <String?>[];
+
+            appCheck.onTokenChange.listen(tokens.add);
+            appCheck.activate(providers: AppCheckProviders.single(provider));
+            async.flushMicrotasks();
+
+            expect(provider.attestCount, 1);
+            expect(tokens, isEmpty);
+
+            async.elapse(const Duration(seconds: 30));
+            async.flushMicrotasks();
+
+            expect(provider.attestCount, 2);
+            expect(tokens, ['token-2']);
+          });
+        });
+      });
+
+      test('a provider failure during background refresh stays in the caller',
+          () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(DateTime.utc(2025, 6, 1, 12)), () {
+            final appCheck = FirebaseAppCheckImpl(app);
+            final provider = _FailingProvider();
+
+            appCheck.activate(providers: AppCheckProviders.single(provider));
+            async.flushMicrotasks();
+            async.elapse(const Duration(seconds: 30));
+            async.flushMicrotasks();
+
+            expect(provider.attestCount, 1);
+          });
+        });
+      });
+
       test('re-enabling auto refresh schedules refresh from cached token', () {
         fakeAsync((async) {
           withClock(Clock.fixed(DateTime.utc(2025, 6, 1, 12)), () {
@@ -190,6 +271,25 @@ void main() {
           });
         });
       });
+    });
+
+    test('getToken can try again after every provider fails', () async {
+      final appCheck = FirebaseAppCheckImpl(app);
+      final provider = _FlakyProvider();
+
+      await appCheck.setTokenAutoRefreshEnabled(false);
+      await appCheck.activate(providers: AppCheckProviders.single(provider));
+
+      await expectLater(
+        appCheck.getToken(),
+        throwsA(isA<FirebaseAppCheckException>().having(
+          (error) => error.code,
+          'code',
+          'attestation-failed',
+        )),
+      );
+      expect(await appCheck.getToken(), 'token-2');
+      expect(provider.attestCount, 2);
     });
   });
 }

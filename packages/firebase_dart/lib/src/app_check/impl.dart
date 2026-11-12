@@ -7,6 +7,7 @@ import 'package:firebase_dart/src/app_check/app_attest_store.dart'
 import 'package:firebase_dart/src/app_check/app_check.dart';
 import 'package:firebase_dart/src/app_check/app_check_protected.dart';
 import 'package:firebase_dart/src/app_check/exchange.dart';
+import 'package:firebase_dart/src/app_check/firebase_app_check_exception.dart';
 import 'package:firebase_dart/src/app_check/transient_refresh_error.dart';
 import 'package:googleapis/firebaseappcheck/v1.dart';
 import 'package:logging/logging.dart';
@@ -33,8 +34,11 @@ class FirebaseAppCheckImpl extends FirebaseService
   Future<void> activate({AppCheckProviders? providers}) async {
     _providers = providers;
     _preferredProvider = null;
-    if (_providers != null) {
+    if (_providers == null) return;
+    if (_isTokenValid(_cachedToken)) {
       _scheduleTokenRefresh(_cachedToken);
+    } else {
+      _scheduleTokenRefresh(null);
     }
   }
 
@@ -115,34 +119,43 @@ class FirebaseAppCheckImpl extends FirebaseService
 
   Future<void>? _updateTokenFuture;
 
-  Future<void> _updateToken() async {
-    if (_providers == null) return;
-
-    return _updateTokenFuture ??= Future.microtask(() async {
-      final token = await _obtainToken(limitedUse: false);
-      _cachedToken = token;
-      if (!_tokenChanges.isClosed) {
-        _tokenChanges.add(token.token);
-      }
-      _scheduleTokenRefresh(token);
+  Future<void> _updateToken() {
+    if (_providers == null) return Future<void>.value();
+    return _updateTokenFuture ??= _replaceToken().whenComplete(() {
       _updateTokenFuture = null;
     });
+  }
+
+  Future<void> _replaceToken() async {
+    final token = await _obtainToken(limitedUse: false);
+    _cachedToken = token;
+    if (!_tokenChanges.isClosed) {
+      _tokenChanges.add(token.token);
+    }
+    _scheduleTokenRefresh(token);
   }
 
   Future<AppCheckToken> _obtainToken({required bool limitedUse}) async {
     final providers = _providers;
     if (providers == null) {
-      throw StateError(
-          'App Check not activated. Call activate() with providers first.');
+      throw FirebaseAppCheckException(
+        code: 'not-activated',
+        message:
+            'App Check not activated. Call activate() with providers first.',
+      );
     }
     final ordered = {
       if (_preferredProvider != null) _preferredProvider!,
       ...providers.providers,
     };
     if (ordered.isEmpty) {
-      throw StateError('App Check: no providers configured');
+      throw FirebaseAppCheckException(
+        code: 'no-providers',
+        message: 'App Check: no providers configured',
+      );
     }
 
+    final failures = <Object>[];
     for (final provider in ordered) {
       try {
         final attestation = await provider.getAttestation(app);
@@ -157,11 +170,16 @@ class FirebaseAppCheckImpl extends FirebaseService
         if (isTransientRefreshError(e)) {
           rethrow;
         }
+        failures.add(e);
         _logger.warning('App Check provider failed, trying next', e, st);
       }
     }
 
-    throw StateError('App Check: all providers failed');
+    throw FirebaseAppCheckException(
+      code: 'attestation-failed',
+      message: 'App Check: all providers failed',
+      causes: failures,
+    );
   }
 
   /// Matches Firebase JS: issuedAt + (50% × TTL) + 5 minutes, capped at
@@ -201,14 +219,13 @@ class FirebaseAppCheckImpl extends FirebaseService
     try {
       await _updateToken();
     } catch (e, st) {
+      if (isDeleted || !_isTokenAutoRefreshEnabled) return;
       if (!isTransientRefreshError(e)) {
-        rethrow;
+        _logger.warning('App Check token refresh failed', e, st);
+        return;
       }
       _logger.fine('App Check token refresh failed, will retry', e, st);
-      final cached = _cachedToken;
-      if (cached == null || !_isTokenValid(cached)) return;
       _cancelRefreshTimer();
-      if (!_isTokenAutoRefreshEnabled) return;
       _refreshTimer =
           Timer(_refreshRetryDelay, () => unawaited(_refreshToken()));
     }
