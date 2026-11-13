@@ -632,13 +632,9 @@ class PersistentConnectionImpl extends PersistentConnection
         _currentGetTokenAttempt++;
         final thisGetTokenAttempt = _currentGetTokenAttempt;
         String? token;
-        String? appCheckToken;
         try {
-          (token, appCheckToken) = await (
-            _authTokenProvider?.getToken(forceRefresh) ?? Future.value(null),
-            _appCheckTokenProvider?.getToken(forceAppCheckRefresh) ??
-                Future.value(null),
-          ).wait;
+          token = await (_authTokenProvider?.getToken(forceRefresh) ??
+              Future<String?>.value(null));
         } catch (error) {
           if (thisGetTokenAttempt == _currentGetTokenAttempt) {
             _connectionState = ConnectionState.disconnected;
@@ -648,6 +644,27 @@ class PersistentConnectionImpl extends PersistentConnection
             _logger.fine(
                 'Ignoring getToken error, because this was not the latest attempt.');
           }
+          return;
+        }
+        if (thisGetTokenAttempt != _currentGetTokenAttempt) {
+          _logger.fine(
+              'Ignoring getToken result, because this was not the latest attempt.');
+          return;
+        }
+
+        // App Check failure must not keep the database offline. Firebase still
+        // opens the connection and sends a token later if one becomes available.
+        String? appCheckToken;
+        try {
+          appCheckToken = await _appCheckTokenProvider
+              ?.getToken(forceAppCheckRefresh);
+        } catch (error, stackTrace) {
+          _logger.warning(
+            'Failed to get App Check token',
+            error,
+            stackTrace,
+          );
+          appCheckToken = null;
         }
         if (thisGetTokenAttempt == _currentGetTokenAttempt) {
           // Someone could have interrupted us while fetching the token,

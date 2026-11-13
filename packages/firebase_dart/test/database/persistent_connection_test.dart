@@ -181,6 +181,25 @@ void main() {
     });
   });
 
+  test('app check token failure still connects', () async {
+    final connection = PersistentConnectionImpl(
+      Uri.parse('mem://app-check-failure'),
+      authTokenProvider: null,
+      appCheckTokenProvider: _FailingAppCheck(),
+    );
+    addTearDown(() {
+      connection.close();
+    });
+
+    final states = <bool>[];
+    final subscription = connection.onConnect.listen(states.add);
+    addTearDown(subscription.cancel);
+    connection.initialize();
+
+    await _waitUntil(() => states.contains(true));
+    expect(connection.connectionState, ConnectionState.connected);
+  });
+
   test('app check revoked reconnects with a refreshed token', () async {
     final tokens = _AppCheckTokens();
     final connection = PersistentConnectionImpl(
@@ -209,6 +228,16 @@ void main() {
     expect(tokens.calls, [false, true]);
     expect(connection.isInterrupted('app_check_revoked'), isFalse);
   });
+}
+
+class _FailingAppCheck implements AuthTokenProvider {
+  @override
+  Future<String?> getToken([bool forceRefresh = false]) async {
+    throw StateError('App Check: all providers failed');
+  }
+
+  @override
+  Stream<Future<String>?> get onTokenChanged => const Stream.empty();
 }
 
 class _AppCheckTokens implements AuthTokenProvider {
