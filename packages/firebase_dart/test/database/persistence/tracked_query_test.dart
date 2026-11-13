@@ -257,10 +257,8 @@ void main() async {
         // children present in the cache, which is empty here
         var forest = manager.pruneToMaximumSize(1 << 30, 0);
         manager.storageLayer.endTransaction();
-        var expected = PruneForest()
-            .prune(Name.parsePath('foo'))
-            .keepAll(Name.parsePath('foo/a'), {})
-            .keepAll(Name.parsePath('foo/b'), {});
+        var expected = PruneForest().prune(Name.parsePath('foo')).keepAll(
+            Name.parsePath('foo/a'), {}).keepAll(Name.parsePath('foo/b'), {});
         expect(forest, expected);
         manager.verifyCache();
       });

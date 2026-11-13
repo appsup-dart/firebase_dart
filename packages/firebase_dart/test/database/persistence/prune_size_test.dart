@@ -95,8 +95,8 @@ void main() {
 
     await Future<void>.delayed(Duration.zero);
 
-    expect(engine.serverCacheEstimatedSizeInBytes(),
-        lessThanOrEqualTo(lowWater));
+    expect(
+        engine.serverCacheEstimatedSizeInBytes(), lessThanOrEqualTo(lowWater));
   });
 }
 

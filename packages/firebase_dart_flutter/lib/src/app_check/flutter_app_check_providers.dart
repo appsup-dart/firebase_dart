@@ -79,9 +79,7 @@ class FlutterAppCheckProviders extends FallbackAppCheckProvider {
       );
     }
 
-    if (webAppId != null &&
-        webAppId.isNotEmpty &&
-        getBuildContext != null) {
+    if (webAppId != null && webAppId.isNotEmpty && getBuildContext != null) {
       providers.addAll([
         if (webRecaptchaEnterpriseSiteKey != null)
           RecaptchaWebViewAppCheckProvider(

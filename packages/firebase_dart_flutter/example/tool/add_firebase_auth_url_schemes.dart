@@ -44,8 +44,7 @@ extension type XcodeBuildEnvironment(Map<String, String> _env) {
 
   /// Prefer [fullProductName], then [wrapperName], for the bundle directory name
   /// under [builtProductsDir].
-  String? get builtProductOrWrapperName =>
-      fullProductName ?? wrapperName;
+  String? get builtProductOrWrapperName => fullProductName ?? wrapperName;
 
   /// Optional project var: bundle id override when matching
   /// `package:_integration_testing` [allConfigs]. When empty,
@@ -84,8 +83,7 @@ extension type XcodeBuildEnvironment(Map<String, String> _env) {
 /// Used for OAuth redirects (Microsoft, Apple, etc.) and phone auth reCAPTCHA
 /// return URLs.
 extension FirebaseOptionsFirebaseAuthUrlScheme on FirebaseOptions {
-  String get firebaseAuthCustomUrlScheme =>
-      'app-${appId.replaceAll(':', '-')}';
+  String get firebaseAuthCustomUrlScheme => 'app-${appId.replaceAll(':', '-')}';
 }
 
 /// Info.plist root as a [Map] (binary or XML plist on disk).
@@ -101,8 +99,8 @@ extension InfoPlist on Map<String, Object> {
           ByteData.sublistView(bytes),
         );
       } else {
-        decoded =
-            PropertyListSerialization.propertyListWithString(utf8.decode(bytes));
+        decoded = PropertyListSerialization.propertyListWithString(
+            utf8.decode(bytes));
       }
     } else {
       decoded =

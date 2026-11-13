@@ -12,8 +12,7 @@ sealed class AppCheckAttestation {
       RecaptchaV3Attestation;
 
   factory AppCheckAttestation.recaptchaEnterprise(String token,
-          {String? webAppId}) =
-      RecaptchaEnterpriseAttestation;
+      {String? webAppId}) = RecaptchaEnterpriseAttestation;
 
   factory AppCheckAttestation.playIntegrity(String token) =
       PlayIntegrityAttestation;

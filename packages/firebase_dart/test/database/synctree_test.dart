@@ -341,7 +341,8 @@ void main() {
     test(
         'Revoking one query should keep other active filters and avoid duplicate registration',
         () {
-      var path = Name.parsePath('/indexes/reservationsByPerson/-ORamwIN2rHIgPVYuSgB');
+      var path =
+          Name.parsePath('/indexes/reservationsByPerson/-ORamwIN2rHIgPVYuSgB');
       var registrar =
           QueryRegistrarTree(PrioritizedQueryRegistrar(_Registrar()));
 

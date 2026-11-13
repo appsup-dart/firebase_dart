@@ -9,7 +9,8 @@ import 'package:test/test.dart';
 
 import '../smoke_test_util.dart';
 
-Future<FirebaseAuthImpl> getAuth({bool? phoneAuthRecaptchaEnterpriseEnabled}) async {
+Future<FirebaseAuthImpl> getAuth(
+    {bool? phoneAuthRecaptchaEnterpriseEnabled}) async {
   final app = await getApp(
       phoneAuthRecaptchaEnterpriseEnabled: phoneAuthRecaptchaEnterpriseEnabled);
   return FirebaseAuth.instanceFor(app: app) as FirebaseAuthImpl;

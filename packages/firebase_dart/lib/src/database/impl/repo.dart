@@ -81,7 +81,10 @@ class Repo {
     });
   }
 
-  Repo._(this.url, this._connection, AuthTokenProvider? authTokenProvider,
+  Repo._(
+      this.url,
+      this._connection,
+      AuthTokenProvider? authTokenProvider,
       AuthTokenProvider? appCheckTokenProvider,
       PersistenceManager persistenceManager)
       : _syncTree = SyncTree(url.toString(),

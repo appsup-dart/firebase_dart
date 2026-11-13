@@ -656,8 +656,8 @@ class PersistentConnectionImpl extends PersistentConnection
         // opens the connection and sends a token later if one becomes available.
         String? appCheckToken;
         try {
-          appCheckToken = await _appCheckTokenProvider
-              ?.getToken(forceAppCheckRefresh);
+          appCheckToken =
+              await _appCheckTokenProvider?.getToken(forceAppCheckRefresh);
         } catch (error, stackTrace) {
           _logger.warning(
             'Failed to get App Check token',
