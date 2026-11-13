@@ -72,20 +72,20 @@ Future<void> activateAppCheckForSmoke(FirebaseApp app) async {
     final debug = c.webAppCheckDebugToken;
     if (debug != null && debug.isNotEmpty) {
       await appCheck.activate(
-        providers: AppCheckProviders.debug(debugToken: debug),
+        provider: AppCheckProvider.debug(debugToken: debug),
       );
       return;
     }
     final enterprise = c.webAppCheckRecaptchaEnterpriseSiteKey;
     if (enterprise != null && enterprise.isNotEmpty) {
       await appCheck.activate(
-        providers: AppCheckProviders.recaptchaEnterprise(enterprise),
+        provider: AppCheckProvider.recaptchaEnterprise(enterprise),
       );
       return;
     }
     final v3 = c.webAppCheckRecaptchaV3SiteKey;
     if (v3 != null && v3.isNotEmpty) {
-      await appCheck.activate(providers: AppCheckProviders.recaptchaV3(v3));
+      await appCheck.activate(provider: AppCheckProvider.recaptchaV3(v3));
       return;
     }
     break;

@@ -28,7 +28,7 @@ final navigatorKey = GlobalKey<NavigatorState>();
 
 // In main(), after FirebaseDartFlutter.setup() and Firebase.initializeApp():
 await FirebaseAppCheck.instance.activate(
-  providers: FlutterAppCheckProviders(
+  provider: FlutterAppCheckProviders(
     recaptchaV3SiteKey: '6Le...', // from Firebase Console → App Check
     recaptchaEnterpriseSiteKey: '6Le...', // optional
     recaptchaWebDomain: 'my-project.firebaseapp.com',
@@ -45,13 +45,11 @@ For a single native provider in tests or minimal apps:
 
 ```dart
 await FirebaseAppCheck.instance.activate(
-  providers: AppCheckProviders([
-    const PlayIntegrityAppCheckProvider(),
-  ]),
+  provider: const PlayIntegrityAppCheckProvider(),
 );
 ```
 
-On iOS and macOS, `AppAttestAppCheckProvider.isSupported()` indicates whether App Attest is available (iOS 14+ or macOS 11+ on a supported device). For local development on any platform, use `AppCheckProviders.debug` from `firebase_dart` and register the debug token in the Firebase Console.
+On iOS and macOS, `AppAttestAppCheckProvider.isSupported()` indicates whether App Attest is available (iOS 14+ or macOS 11+ on a supported device). For local development on any platform, use `AppCheckProvider.debug` from `firebase_dart` and register the debug token in the Firebase Console.
 
 Auth, Storage, and Realtime Database pick up App Check tokens automatically once activated; see the [firebase_dart App Check section](https://github.com/appsup-dart/firebase_dart/blob/main/packages/firebase_dart/README.md#app-check).
 

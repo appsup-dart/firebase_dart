@@ -31,7 +31,7 @@ void main() {
         final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
         await appCheck.activate(
-          providers: AppCheckProviders([
+          provider: AppCheckProvider.fallback([
             const PlayIntegrityAppCheckProvider(),
           ]),
         );
@@ -69,7 +69,7 @@ void main() {
         final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
         await appCheck.activate(
-          providers: AppCheckProviders([
+          provider: AppCheckProvider.fallback([
             const AppAttestAppCheckProvider(),
           ]),
         );
@@ -107,7 +107,7 @@ void main() {
         final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
         await appCheck.activate(
-          providers: AppCheckProviders([
+          provider: AppCheckProvider.fallback([
             const DeviceCheckAppCheckProvider(),
           ]),
         );
@@ -138,7 +138,7 @@ void main() {
         final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
         await appCheck.activate(
-          providers: FlutterAppCheckProviders(
+          provider: FlutterAppCheckProviders(
             recaptchaV3SiteKey: app.recaptchaV3SiteKey,
             recaptchaWebDomain: 'localhost',
             recaptchaWebAppId: app.webAppId,
@@ -163,7 +163,7 @@ void main() {
           final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
           await appCheck.activate(
-            providers: FlutterAppCheckProviders(
+            provider: FlutterAppCheckProviders(
               recaptchaV3SiteKey: app.recaptchaV3SiteKey,
               recaptchaWebDomain: 'localhost',
               recaptchaWebAppId: app.webAppId,
@@ -198,7 +198,7 @@ void main() {
           final appCheck = FirebaseAppCheck.instanceFor(app: app);
 
           await appCheck.activate(
-            providers: FlutterAppCheckProviders(
+            provider: FlutterAppCheckProviders(
               recaptchaEnterpriseSiteKey: app.recaptchaEnterpriseSiteKey,
               recaptchaWebDomain: 'localhost',
               recaptchaWebAppId: app.webAppId,

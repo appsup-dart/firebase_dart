@@ -10,7 +10,7 @@ import 'package:uuid/uuid.dart';
 /// Uses [debugToken] when set in code; otherwise loads or generates a UUID v4
 /// stored in Hive per [FirebaseApp.appId] and logs it for Firebase Console
 /// registration.
-class DebugAppCheckProvider implements AppCheckProvider {
+class DebugAppCheckProvider extends AttestingAppCheckProvider {
   DebugAppCheckProvider({this.debugToken});
 
   static final _logger = Logger('DebugAppCheckProvider');

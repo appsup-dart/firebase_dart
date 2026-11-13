@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 const appCheckRecaptchaEnterpriseAction = 'fire_app_check';
 
 /// reCAPTCHA App Check via in-app WebView (native fallback using web app id).
-class RecaptchaWebViewAppCheckProvider implements AppCheckProvider {
+class RecaptchaWebViewAppCheckProvider extends AttestingAppCheckProvider {
   RecaptchaWebViewAppCheckProvider({
     required this.siteKey,
     required this.recaptchaWebDomain,

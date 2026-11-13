@@ -12,7 +12,7 @@ import 'package:test/test.dart';
 
 import '../util.dart';
 
-class _CountingProvider implements AppCheckProvider {
+class _CountingProvider extends AttestingAppCheckProvider {
   _CountingProvider(
       {this.ttl = const Duration(hours: 1), this.prefix = 'token'});
 
@@ -30,7 +30,7 @@ class _CountingProvider implements AppCheckProvider {
   }
 }
 
-class _FailingProvider implements AppCheckProvider {
+class _FailingProvider extends AttestingAppCheckProvider {
   int attestCount = 0;
 
   @override
@@ -40,7 +40,7 @@ class _FailingProvider implements AppCheckProvider {
   }
 }
 
-class _FlakyProvider implements AppCheckProvider {
+class _FlakyProvider extends AttestingAppCheckProvider {
   _FlakyProvider({this.failures = 1});
 
   int failures;
@@ -59,7 +59,7 @@ class _FlakyProvider implements AppCheckProvider {
   }
 }
 
-class _TransientThenOkProvider implements AppCheckProvider {
+class _TransientThenOkProvider extends AttestingAppCheckProvider {
   int attestCount = 0;
 
   @override
@@ -95,12 +95,20 @@ void main() {
       await app.delete();
     });
 
+    test('activate without providers leaves App Check inactive', () async {
+      final appCheck = FirebaseAppCheckImpl(app);
+
+      await appCheck.activate();
+
+      expect(await appCheck.getToken(), isNull);
+    });
+
     test('onTokenChange emits current token when listened after activate',
         () async {
       final appCheck = FirebaseAppCheckImpl(app);
       final provider = _CountingProvider();
 
-      await appCheck.activate(providers: AppCheckProviders.single(provider));
+      await appCheck.activate(provider: provider);
 
       expect(
         await appCheck.onTokenChange.first,
@@ -114,7 +122,7 @@ void main() {
       final working = _CountingProvider(prefix: 'ok');
 
       await appCheck.activate(
-        providers: AppCheckProviders([failing, working]),
+        provider: AppCheckProvider.fallback([failing, working]),
       );
 
       expect(await appCheck.getToken(), 'ok-1');
@@ -127,7 +135,7 @@ void main() {
       final second = _CountingProvider(prefix: 'second');
 
       await appCheck.activate(
-        providers: AppCheckProviders([first, second]),
+        provider: AppCheckProvider.fallback([first, second]),
       );
 
       expect(await appCheck.getToken(), 'first-1');
@@ -143,7 +151,7 @@ void main() {
       final appCheck = FirebaseAppCheckImpl(app);
       final provider = _CountingProvider();
 
-      await appCheck.activate(providers: AppCheckProviders.single(provider));
+      await appCheck.activate(provider: provider);
 
       expect(await appCheck.getToken(), 'token-1');
       expect(provider.attestCount, 1);
@@ -163,7 +171,7 @@ void main() {
             final tokens = <String?>[];
 
             appCheck.onTokenChange.listen(tokens.add);
-            appCheck.activate(providers: AppCheckProviders.single(provider));
+            appCheck.activate(provider: provider);
             async.flushMicrotasks();
 
             expect(provider.attestCount, 1);
@@ -184,7 +192,7 @@ void main() {
             final appCheck = FirebaseAppCheckImpl(app);
             final provider = _CountingProvider(ttl: const Duration(hours: 1));
 
-            appCheck.activate(providers: AppCheckProviders.single(provider));
+            appCheck.activate(provider: provider);
             async.flushMicrotasks();
             appCheck.setTokenAutoRefreshEnabled(false);
             async.flushMicrotasks();
@@ -202,7 +210,7 @@ void main() {
         final appCheck = FirebaseAppCheckImpl(app);
         final provider = _CountingProvider();
 
-        await appCheck.activate(providers: AppCheckProviders.single(provider));
+        await appCheck.activate(provider: provider);
         expect(provider.attestCount, 1);
 
         expect(await appCheck.getLimitedUseToken(), 'token-2');
@@ -219,7 +227,7 @@ void main() {
             final tokens = <String?>[];
 
             appCheck.onTokenChange.listen(tokens.add);
-            appCheck.activate(providers: AppCheckProviders.single(provider));
+            appCheck.activate(provider: provider);
             async.flushMicrotasks();
 
             expect(provider.attestCount, 1);
@@ -241,7 +249,7 @@ void main() {
             final appCheck = FirebaseAppCheckImpl(app);
             final provider = _FailingProvider();
 
-            appCheck.activate(providers: AppCheckProviders.single(provider));
+            appCheck.activate(provider: provider);
             async.flushMicrotasks();
             async.elapse(const Duration(seconds: 30));
             async.flushMicrotasks();
@@ -257,7 +265,7 @@ void main() {
             final appCheck = FirebaseAppCheckImpl(app);
             final provider = _CountingProvider(ttl: const Duration(hours: 1));
 
-            appCheck.activate(providers: AppCheckProviders.single(provider));
+            appCheck.activate(provider: provider);
             async.flushMicrotasks();
             appCheck.setTokenAutoRefreshEnabled(false);
             async.flushMicrotasks();
@@ -280,7 +288,9 @@ void main() {
       final provider = _FlakyProvider();
 
       await appCheck.setTokenAutoRefreshEnabled(false);
-      await appCheck.activate(providers: AppCheckProviders.single(provider));
+      await appCheck.activate(
+        provider: AppCheckProvider.fallback([provider]),
+      );
 
       await expectLater(
         appCheck.getToken(),
@@ -297,14 +307,13 @@ void main() {
     test('reuses a persisted token in a new instance', () async {
       final firstProvider = _CountingProvider();
       final first = FirebaseAppCheckImpl(app);
-      await first.activate(providers: AppCheckProviders.single(firstProvider));
+      await first.activate(provider: firstProvider);
       expect(await first.getToken(), 'token-1');
       await first.delete();
 
       final secondProvider = _CountingProvider(prefix: 'second');
       final second = FirebaseAppCheckImpl(app);
-      await second.activate(
-          providers: AppCheckProviders.single(secondProvider));
+      await second.activate(provider: secondProvider);
 
       expect(await second.getToken(), 'token-1');
       expect(secondProvider.attestCount, 0);
@@ -315,8 +324,9 @@ void main() {
       await withClock(Clock.fixed(start), () async {
         final first = FirebaseAppCheckImpl(app);
         await first.activate(
-          providers: AppCheckProviders.single(
-            _CountingProvider(ttl: const Duration(minutes: 1), prefix: 'old'),
+          provider: _CountingProvider(
+            ttl: const Duration(minutes: 1),
+            prefix: 'old',
           ),
         );
         expect(await first.getToken(), 'old-1');
@@ -327,7 +337,7 @@ void main() {
       await withClock(Clock.fixed(start.add(const Duration(minutes: 2))),
           () async {
         final second = FirebaseAppCheckImpl(app);
-        await second.activate(providers: AppCheckProviders.single(fresh));
+        await second.activate(provider: fresh);
         expect(await second.getToken(), 'new-1');
       });
       expect(fresh.attestCount, 1);

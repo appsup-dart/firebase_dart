@@ -21,8 +21,7 @@ class FirebaseAppCheckImpl extends FirebaseService
   static final _logger = Logger('FirebaseAppCheck');
   FirebaseAppCheckImpl(super.app);
 
-  AppCheckProviders? _providers;
-  AppCheckProvider? _preferredProvider;
+  AppCheckProvider? _provider;
   AppCheckToken? _cachedToken;
   bool _hydrated = false;
   bool _isTokenAutoRefreshEnabled = true;
@@ -33,10 +32,9 @@ class FirebaseAppCheckImpl extends FirebaseService
   Stream<String?> get onTokenChange => _tokenChanges.stream;
 
   @override
-  Future<void> activate({AppCheckProviders? providers}) async {
-    _providers = providers;
-    _preferredProvider = null;
-    if (_providers == null) return;
+  Future<void> activate({AppCheckProvider? provider}) async {
+    _provider = provider;
+    if (_provider == null) return;
     await _hydrateCachedToken();
     if (_isTokenValid(_cachedToken)) {
       _scheduleTokenRefresh(_cachedToken);
@@ -53,7 +51,7 @@ class FirebaseAppCheckImpl extends FirebaseService
 
   @override
   Future<String?> getToken([bool forceRefresh = false]) async {
-    if (_providers == null) return null;
+    if (_provider == null) return null;
     if (!forceRefresh) {
       await _hydrateCachedToken();
     }
@@ -68,7 +66,7 @@ class FirebaseAppCheckImpl extends FirebaseService
       bool isTokenAutoRefreshEnabled) async {
     _isTokenAutoRefreshEnabled = isTokenAutoRefreshEnabled;
     _cancelRefreshTimer();
-    if (!isTokenAutoRefreshEnabled || _providers == null) return;
+    if (!isTokenAutoRefreshEnabled || _provider == null) return;
     final cached = _cachedToken;
     if (cached != null && _isTokenValid(cached)) {
       _scheduleTokenRefresh(cached);
@@ -137,7 +135,7 @@ class FirebaseAppCheckImpl extends FirebaseService
   }
 
   Future<void> _updateToken() {
-    if (_providers == null) return Future<void>.value();
+    if (_provider == null) return Future<void>.value();
     return _updateTokenFuture ??= _replaceToken().whenComplete(() {
       _updateTokenFuture = null;
     });
@@ -153,51 +151,16 @@ class FirebaseAppCheckImpl extends FirebaseService
     _scheduleTokenRefresh(token);
   }
 
-  Future<AppCheckToken> _obtainToken({required bool limitedUse}) async {
-    final providers = _providers;
-    if (providers == null) {
+  Future<AppCheckToken> _obtainToken({required bool limitedUse}) {
+    final provider = _provider;
+    if (provider == null) {
       throw FirebaseAppCheckException(
         code: 'not-activated',
         message:
-            'App Check not activated. Call activate() with providers first.',
+            'App Check not activated. Call activate() with a provider first.',
       );
     }
-    final ordered = {
-      if (_preferredProvider != null) _preferredProvider!,
-      ...providers.providers,
-    };
-    if (ordered.isEmpty) {
-      throw FirebaseAppCheckException(
-        code: 'no-providers',
-        message: 'App Check: no providers configured',
-      );
-    }
-
-    final failures = <Object>[];
-    for (final provider in ordered) {
-      try {
-        final attestation = await provider.getAttestation(app);
-        final token = await exchangeAttestation(
-          app,
-          attestation,
-          limitedUse: limitedUse,
-        );
-        _preferredProvider = provider;
-        return token;
-      } catch (e, st) {
-        if (isTransientRefreshError(e)) {
-          rethrow;
-        }
-        failures.add(e);
-        _logger.warning('App Check provider failed, trying next', e, st);
-      }
-    }
-
-    throw FirebaseAppCheckException(
-      code: 'attestation-failed',
-      message: 'App Check: all providers failed',
-      causes: failures,
-    );
+    return provider.getToken(app, limitedUse: limitedUse);
   }
 
   /// Matches Firebase JS: issuedAt + (50% × TTL) + 5 minutes, capped at
@@ -233,7 +196,7 @@ class FirebaseAppCheckImpl extends FirebaseService
   static const _refreshRetryDelay = Duration(seconds: 30);
 
   Future<void> _refreshToken() async {
-    if (isDeleted || _providers == null) return;
+    if (isDeleted || _provider == null) return;
     try {
       await _updateToken();
     } catch (e, st) {

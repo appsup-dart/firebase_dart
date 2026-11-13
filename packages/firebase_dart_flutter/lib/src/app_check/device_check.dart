@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
 
 /// Device Check App Check provider (iOS / macOS).
-class DeviceCheckAppCheckProvider implements AppCheckProvider {
+class DeviceCheckAppCheckProvider extends AttestingAppCheckProvider {
   const DeviceCheckAppCheckProvider();
 
   static bool get _onApple =>

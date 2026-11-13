@@ -32,8 +32,7 @@ void main() {
       final siteKey = webAppCheckRecaptchaV3SiteKeyForApp(app);
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
       final tokenFuture = appCheck.onTokenChange.first;
-      await appCheck.activate(
-          providers: AppCheckProviders.recaptchaV3(siteKey));
+      await appCheck.activate(provider: AppCheckProvider.recaptchaV3(siteKey));
 
       final token = await tokenFuture;
       expect(token, isNotNull);
@@ -46,8 +45,7 @@ void main() {
       addTearDown(() => app.delete());
       final siteKey = webAppCheckRecaptchaV3SiteKeyForApp(app);
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
-      await appCheck.activate(
-          providers: AppCheckProviders.recaptchaV3(siteKey));
+      await appCheck.activate(provider: AppCheckProvider.recaptchaV3(siteKey));
 
       final token = await appCheck.getToken();
       expect(token, isNotNull);
@@ -73,7 +71,7 @@ void main() {
       final siteKey = webAppCheckRecaptchaEnterpriseSiteKeyForApp(app);
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
       await appCheck.activate(
-          providers: AppCheckProviders.recaptchaEnterprise(siteKey));
+          provider: AppCheckProvider.recaptchaEnterprise(siteKey));
 
       final token = await appCheck.getToken();
       expect(token, isNotNull);
@@ -98,7 +96,7 @@ void main() {
       final debugToken = webAppCheckDebugTokenForApp(app);
       final appCheck = FirebaseAppCheck.instanceFor(app: app);
       await appCheck.activate(
-        providers: AppCheckProviders.debug(debugToken: debugToken),
+        provider: AppCheckProvider.debug(debugToken: debugToken),
       );
 
       final token = await appCheck.getToken();

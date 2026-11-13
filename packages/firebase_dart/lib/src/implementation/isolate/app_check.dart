@@ -28,14 +28,9 @@ class IsolateFirebaseAppCheck extends IsolateFirebaseService
   }
 
   @override
-  Future<void> activate({AppCheckProviders? providers}) {
+  Future<void> activate({AppCheckProvider? provider}) {
     return invoke(#activate, [
-      providers == null
-          ? null
-          : [
-              for (var provider in providers.providers)
-                IsolateAppCheckProvider.from(provider)
-            ]
+      provider == null ? null : _wrapForIsolate(provider),
     ]);
   }
 
@@ -58,10 +53,21 @@ class IsolateFirebaseAppCheck extends IsolateFirebaseService
   }
 }
 
-class IsolateAppCheckProvider extends AppCheckProvider {
+AppCheckProvider _wrapForIsolate(AppCheckProvider provider) {
+  switch (provider) {
+    case FallbackAppCheckProvider():
+      return FallbackAppCheckProvider([
+        for (final child in provider.providers) _wrapForIsolate(child),
+      ]);
+    case AttestingAppCheckProvider():
+      return IsolateAppCheckProvider.from(provider);
+  }
+}
+
+class IsolateAppCheckProvider extends AttestingAppCheckProvider {
   late final IsolateCommander _commander;
 
-  IsolateAppCheckProvider.from(AppCheckProvider provider) {
+  IsolateAppCheckProvider.from(AttestingAppCheckProvider provider) {
     var worker = IsolateWorker()
       ..registerFunction(#getAttestation, (String appName) {
         var app = Firebase.app(appName);
@@ -102,8 +108,8 @@ class AppCheckFunctionCall<T> extends BaseFunctionCall<T> {
       case #setTokenAutoRefreshEnabled:
         return appCheck.setTokenAutoRefreshEnabled;
       case #activate:
-        return (List<AppCheckProvider>? providers) => appCheck.activate(
-            providers: providers == null ? null : AppCheckProviders(providers));
+        return (AppCheckProvider? provider) =>
+            appCheck.activate(provider: provider);
       case #onTokenChange:
         return () => appCheck.onTokenChange;
     }

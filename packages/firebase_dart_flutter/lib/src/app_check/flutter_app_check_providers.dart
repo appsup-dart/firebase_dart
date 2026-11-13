@@ -15,7 +15,7 @@ import 'package:flutter/material.dart';
 ///
 /// ```dart
 /// await FirebaseAppCheck.instance.activate(
-///   providers: FlutterAppCheckProviders(
+///   provider: FlutterAppCheckProviders(
 ///     recaptchaV3SiteKey: '...',
 ///     recaptchaWebDomain: 'my-project.firebaseapp.com',
 ///     recaptchaWebAppId: '1:123456789:web:abc...',
@@ -23,7 +23,7 @@ import 'package:flutter/material.dart';
 ///   ),
 /// );
 /// ```
-class FlutterAppCheckProviders extends AppCheckProviders {
+class FlutterAppCheckProviders extends FallbackAppCheckProvider {
   FlutterAppCheckProviders._(super.providers);
 
   factory FlutterAppCheckProviders({

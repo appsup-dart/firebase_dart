@@ -2,13 +2,19 @@ import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/app_check/app_attest_challenge.dart';
 import 'package:firebase_dart/src/app_check/app_check_protected.dart';
 import 'package:firebase_dart/src/implementation.dart';
+import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 
 import '../auth/recaptcha_verifier.dart';
 import 'attestation.dart';
 import 'debug_app_check_provider.dart';
+import 'exchange.dart';
+import 'firebase_app_check_exception.dart';
+import 'token.dart';
+import 'transient_refresh_error.dart';
 
 export 'attestation.dart' show AppCheckAttestation;
+export 'token.dart' show AppCheckToken;
 
 abstract class FirebaseAppCheck {
   factory FirebaseAppCheck.instanceFor({required FirebaseApp app}) {
@@ -22,13 +28,18 @@ abstract class FirebaseAppCheck {
 
   Stream<String?> get onTokenChange;
 
-  /// Activates App Check for this [app] using [providers].
+  /// Activates App Check for this [app] using [provider].
   ///
-  /// Use [AppCheckProviders.debug], [AppCheckProviders.recaptchaV3], or
-  /// [AppCheckProviders.recaptchaEnterprise] for a single provider. On Flutter,
-  /// use [FlutterAppCheckProviders] from `firebase_dart_flutter` for native
-  /// attestation with optional reCAPTCHA WebView fallback.
-  Future<void> activate({AppCheckProviders? providers});
+  /// Use [AppCheckProvider.debug], [AppCheckProvider.recaptchaV3], or
+  /// [AppCheckProvider.recaptchaEnterprise] for a single provider. Use
+  /// [AppCheckProvider.fallback] to try several providers until attestation and
+  /// token exchange both succeed. On Flutter, use [FlutterAppCheckProviders]
+  /// from `firebase_dart_flutter` for native attestation with optional
+  /// reCAPTCHA WebView fallback.
+  ///
+  /// When [provider] is omitted, App Check stays inactive and [getToken]
+  /// returns null.
+  Future<void> activate({AppCheckProvider? provider});
 
   /// Requests a limited-use Firebase App Check token.
   ///
@@ -43,45 +54,117 @@ abstract class FirebaseAppCheck {
   Future<void> setTokenAutoRefreshEnabled(bool isTokenAutoRefreshEnabled);
 }
 
-/// Ordered App Check attestation sources for [FirebaseAppCheck.activate].
+/// Obtains an App Check token for one [FirebaseApp].
 ///
-/// Providers are tried in list order until attestation and token exchange both
-/// succeed. The instance that succeeds is preferred on later refreshes (in
-/// memory for this App Check instance).
-class AppCheckProviders {
-  const AppCheckProviders(this.providers);
-
-  final List<AppCheckProvider> providers;
-
-  factory AppCheckProviders.single(AppCheckProvider provider) =>
-      AppCheckProviders([provider]);
-
-  /// Debug provider only ([DebugAppCheckProvider]).
+/// The direct subtypes are [AttestingAppCheckProvider] and
+/// [FallbackAppCheckProvider]. Extend [AttestingAppCheckProvider] to attest
+/// and exchange that attestation. [AppCheckProvider.fallback] tries each child
+/// until one returns a token.
+sealed class AppCheckProvider {
+  /// Debug provider ([DebugAppCheckProvider]).
   ///
   /// Pass [debugToken] to fix the secret in code; omit it to generate or load
   /// a UUID from Hive.
-  factory AppCheckProviders.debug({String? debugToken}) => AppCheckProviders([
-        DebugAppCheckProvider(debugToken: debugToken),
-      ]);
+  factory AppCheckProvider.debug({String? debugToken}) = DebugAppCheckProvider;
 
-  /// reCAPTCHA v3 provider only ([ReCaptchaV3Provider]).
-  factory AppCheckProviders.recaptchaV3(String siteKey) =>
-      AppCheckProviders([ReCaptchaV3Provider(siteKey)]);
+  /// reCAPTCHA v3 provider ([ReCaptchaV3Provider]).
+  factory AppCheckProvider.recaptchaV3(String siteKey) = ReCaptchaV3Provider;
 
-  /// reCAPTCHA Enterprise provider only ([ReCaptchaEnterpriseProvider]).
-  factory AppCheckProviders.recaptchaEnterprise(String siteKey) =>
-      AppCheckProviders([ReCaptchaEnterpriseProvider(siteKey)]);
+  /// reCAPTCHA Enterprise provider ([ReCaptchaEnterpriseProvider]).
+  factory AppCheckProvider.recaptchaEnterprise(String siteKey) =
+      ReCaptchaEnterpriseProvider;
+
+  /// Tries [providers] in order until attestation and token exchange succeed.
+  ///
+  /// The child that succeeds is preferred on later non-limited refreshes.
+  factory AppCheckProvider.fallback(List<AppCheckProvider> providers) =
+      FallbackAppCheckProvider;
+
+  /// Returns an App Check token for [app].
+  Future<AppCheckToken> getToken(
+    FirebaseApp app, {
+    required bool limitedUse,
+  });
 }
 
-/// Obtains platform attestation to be exchanged for an App Check JWT by
-/// [FirebaseAppCheck].
-abstract class AppCheckProvider {
+/// Leaf provider: [getToken] exchanges [getAttestation].
+abstract class AttestingAppCheckProvider implements AppCheckProvider {
+  const AttestingAppCheckProvider();
+
+  /// Platform attestation before it is exchanged for an App Check JWT.
   Future<AppCheckAttestation> getAttestation(FirebaseApp app);
+
+  @override
+  Future<AppCheckToken> getToken(
+    FirebaseApp app, {
+    required bool limitedUse,
+  }) {
+    return getAttestation(app).then((attestation) => exchangeAttestation(
+          app,
+          attestation,
+          limitedUse: limitedUse,
+        ));
+  }
 }
 
-/// Base class for platform [AppCheckProvider]s that need App Check REST helpers.
-abstract class BaseAppCheckProvider implements AppCheckProvider {
-  const BaseAppCheckProvider();
+/// Tries [providers] in order until one returns a token.
+///
+/// Attestation and exchange both belong to the child. An exchange failure tries
+/// the next child. A transient error stops the list so the caller can retry.
+/// The child that last produced a normal token is tried first on the next
+/// non-limited request.
+class FallbackAppCheckProvider implements AppCheckProvider {
+  FallbackAppCheckProvider(List<AppCheckProvider> providers)
+      : providers = List.unmodifiable(providers);
+
+  static final _logger = Logger('FirebaseAppCheck');
+
+  /// Providers in the order they are tried after the preferred child.
+  final List<AppCheckProvider> providers;
+
+  AppCheckProvider? _preferred;
+
+  @override
+  Future<AppCheckToken> getToken(
+    FirebaseApp app, {
+    required bool limitedUse,
+  }) async {
+    final ordered = <AppCheckProvider>{
+      if (!limitedUse && _preferred != null) _preferred!,
+      ...providers,
+    };
+    if (ordered.isEmpty) {
+      throw FirebaseAppCheckException(
+        code: 'no-providers',
+        message: 'App Check: no providers configured',
+      );
+    }
+
+    final failures = <Object>[];
+    for (final provider in ordered) {
+      try {
+        final token = await provider.getToken(app, limitedUse: limitedUse);
+        if (!limitedUse) _preferred = provider;
+        return token;
+      } catch (e, st) {
+        if (isTransientRefreshError(e)) rethrow;
+        failures.add(e);
+        _logger.warning('App Check provider failed, trying next', e, st);
+      }
+    }
+
+    throw FirebaseAppCheckException(
+      code: 'attestation-failed',
+      message: 'App Check: all providers failed',
+      causes: failures,
+    );
+  }
+}
+
+/// Play Integrity provider that loads its challenge from the App Check API.
+abstract class BasePlayIntegrityAppCheckProvider
+    extends AttestingAppCheckProvider {
+  const BasePlayIntegrityAppCheckProvider() : super();
 
   @protected
   @visibleForTesting
@@ -93,6 +176,11 @@ abstract class BaseAppCheckProvider implements AppCheckProvider {
     }
     throw UnimplementedError();
   }
+}
+
+/// App Attest provider that loads its challenge from the App Check API.
+abstract class BaseAppAttestAppCheckProvider extends AttestingAppCheckProvider {
+  const BaseAppAttestAppCheckProvider() : super();
 
   @protected
   @visibleForTesting
@@ -106,18 +194,10 @@ abstract class BaseAppCheckProvider implements AppCheckProvider {
   }
 }
 
-class AppCheckToken {
-  /// The token string in JWT format.
-  final String token;
-
-  /// The local timestamp after which the token will expire.
-  final DateTime expireTime;
-
-  AppCheckToken(this.token, this.expireTime);
-}
-
 /// reCAPTCHA-based App Check attestation (web and native fallback).
-abstract class RecaptchaAppCheckProvider implements AppCheckProvider {
+abstract class RecaptchaAppCheckProvider extends AttestingAppCheckProvider {
+  RecaptchaAppCheckProvider() : super();
+
   String get siteKey;
 
   factory RecaptchaAppCheckProvider.v3(String siteKey) = ReCaptchaV3Provider;
@@ -126,7 +206,7 @@ abstract class RecaptchaAppCheckProvider implements AppCheckProvider {
       ReCaptchaEnterpriseProvider;
 }
 
-class ReCaptchaV3Provider implements RecaptchaAppCheckProvider {
+class ReCaptchaV3Provider extends RecaptchaAppCheckProvider {
   ReCaptchaV3Provider(this.siteKey);
 
   @override
@@ -139,7 +219,7 @@ class ReCaptchaV3Provider implements RecaptchaAppCheckProvider {
   }
 }
 
-class ReCaptchaEnterpriseProvider implements RecaptchaAppCheckProvider {
+class ReCaptchaEnterpriseProvider extends RecaptchaAppCheckProvider {
   ReCaptchaEnterpriseProvider(this.siteKey);
 
   @override

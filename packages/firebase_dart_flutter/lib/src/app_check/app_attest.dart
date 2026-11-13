@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
 
 /// App Attest App Check provider (iOS 14+ on supported devices).
-class AppAttestAppCheckProvider extends BaseAppCheckProvider {
+class AppAttestAppCheckProvider extends BaseAppAttestAppCheckProvider {
   const AppAttestAppCheckProvider();
 
   static bool get _onApple =>

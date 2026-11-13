@@ -11,4 +11,11 @@ class FirebaseAppCheckException extends FirebaseException {
 
   /// Provider or exchange errors that led to this failure.
   final List<Object> causes;
+
+  @override
+  String toString() {
+    final summary = '[$plugin/$code] $message';
+    if (causes.isEmpty) return summary;
+    return '$summary: ${causes.join('; ')}';
+  }
 }

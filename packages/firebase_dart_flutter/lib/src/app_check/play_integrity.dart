@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:platform_info/platform_info.dart' as platform_info;
 
 /// Play Integrity App Check provider (Android).
-class PlayIntegrityAppCheckProvider extends BaseAppCheckProvider {
+class PlayIntegrityAppCheckProvider extends BasePlayIntegrityAppCheckProvider {
   const PlayIntegrityAppCheckProvider();
 
   /// Whether Google Play services are available (Play Integrity).

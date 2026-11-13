@@ -2,8 +2,8 @@ import 'dart:typed_data';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/app_check/app_attest_store.dart';
-import 'package:firebase_dart/src/app_check/app_check.dart';
 import 'package:firebase_dart/src/app_check/attestation.dart';
+import 'package:firebase_dart/src/app_check/token.dart';
 import 'package:firebase_dart/src/auth/rpc/http_util.dart';
 import 'package:googleapis/firebaseappcheck/v1.dart';
 import 'package:http/http.dart' as http;
