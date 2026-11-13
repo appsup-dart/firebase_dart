@@ -278,7 +278,7 @@ For custom backends with [replay protection](https://firebase.google.com/docs/ap
 
 ### Flutter
 
-Native attestation (Play Integrity, App Attest, Device Check) and reCAPTCHA WebView fallback are provided by [firebase_dart_flutter](https://pub.dev/packages/firebase_dart_flutter). See that package’s README for `FlutterAppCheckProviders`.
+[firebase_dart_flutter](https://pub.dev/packages/firebase_dart_flutter) adds Play Integrity, App Attest, Device Check, native reCAPTCHA Enterprise on Android and iOS, and a reCAPTCHA WebView fallback. See that package’s README for `FlutterAppCheckProviders`.
 
 
 ## Features and bugs

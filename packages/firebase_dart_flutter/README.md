@@ -11,13 +11,16 @@ See [firebase_dart](https://pub.dev/packages/firebase_dart) package for more det
 
 Import `package:firebase_dart/app_check.dart` and `package:firebase_dart_flutter/firebase_dart_flutter.dart`, then activate with `FlutterAppCheckProviders`. It builds an ordered provider list for the current platform:
 
-| Platform | Default providers (when enabled) |
-| -------- | -------------------------------- |
-| **Android** | `PlayIntegrityAppCheckProvider`, then `RecaptchaEnterpriseNativeAppCheckProvider` when `androidRecaptchaEnterpriseSiteKey` is set |
+| Platform | Providers, in the order they are tried |
+| -------- | --------------------------------------- |
+| **Android** | `PlayIntegrityAppCheckProvider` when `usePlayIntegrity` is true (the default), then `RecaptchaEnterpriseNativeAppCheckProvider` when `androidRecaptchaEnterpriseSiteKey` is set |
 | **iOS** | `AppAttestAppCheckProvider`, `DeviceCheckAppCheckProvider`, then `RecaptchaEnterpriseNativeAppCheckProvider` when `iosRecaptchaEnterpriseSiteKey` is set |
-| **macOS** | `AppAttestAppCheckProvider`, `DeviceCheckAppCheckProvider` |
-| **Web** | `ReCaptchaV3Provider` / `ReCaptchaEnterpriseProvider` from site keys |
-| **Fallback** | `RecaptchaWebViewAppCheckProvider` when `webAppId` and `getBuildContext` are set. The page origin is `authDomain`. |
+| **macOS** | `AppAttestAppCheckProvider`, `DeviceCheckAppCheckProvider`. No native reCAPTCHA Enterprise SDK |
+| **Web** | `ReCaptchaEnterpriseProvider` from `webRecaptchaEnterpriseSiteKey`, then `ReCaptchaV3Provider` from `recaptchaV3SiteKey` |
+| **Windows, Linux** | No device attestation |
+| **WebView fallback** | `RecaptchaWebViewAppCheckProvider` on non-web platforms when `webAppId`, `getBuildContext`, and a web site key are set. The page origin is `FirebaseOptions.authDomain` |
+
+Device attestation is tried before native reCAPTCHA Enterprise. Set `usePlayIntegrity`, `useAppAttest`, or `useDeviceCheck` to `false` to use the platform site key as that platform's provider. `webAppId` is the Firebase **web** app id (`1:…:web:…`); the WebView token is exchanged as that app. Set `authDomain` on the app. When it is missing, the WebView loads at `http://127.0.0.1:8080`.
 
 ```dart
 import 'package:firebase_dart/app_check.dart';
