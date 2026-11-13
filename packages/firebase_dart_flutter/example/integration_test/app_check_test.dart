@@ -140,8 +140,7 @@ void main() {
         await appCheck.activate(
           provider: FlutterAppCheckProviders(
             recaptchaV3SiteKey: app.recaptchaV3SiteKey,
-            recaptchaWebDomain: 'localhost',
-            recaptchaWebAppId: app.webAppId,
+            webAppId: app.webAppId,
           ),
         );
 
@@ -165,8 +164,7 @@ void main() {
           await appCheck.activate(
             provider: FlutterAppCheckProviders(
               recaptchaV3SiteKey: app.recaptchaV3SiteKey,
-              recaptchaWebDomain: 'localhost',
-              recaptchaWebAppId: app.webAppId,
+              webAppId: app.webAppId,
               usePlayIntegrity: false,
               useDeviceCheck: false,
               useAppAttest: false,
@@ -199,9 +197,8 @@ void main() {
 
           await appCheck.activate(
             provider: FlutterAppCheckProviders(
-              recaptchaEnterpriseSiteKey: app.recaptchaEnterpriseSiteKey,
-              recaptchaWebDomain: 'localhost',
-              recaptchaWebAppId: app.webAppId,
+              webRecaptchaEnterpriseSiteKey: app.recaptchaEnterpriseSiteKey,
+              webAppId: app.webAppId,
               usePlayIntegrity: false,
               useDeviceCheck: false,
               useAppAttest: false,

@@ -10,15 +10,21 @@ import 'package:flutter/material.dart';
 /// Builds ordered [AppCheckProvider]s for Flutter.
 ///
 /// Use [usePlayIntegrity], [useAppAttest], and [useDeviceCheck] to enable native
-/// attestation per platform. Set them all to `false` for reCAPTCHA WebView only.
-/// On web, reCAPTCHA v3 / Enterprise providers are used when site keys are set.
+/// attestation per platform. Set them all to `false` for reCAPTCHA only.
+/// [androidRecaptchaEnterpriseSiteKey] and [iosRecaptchaEnterpriseSiteKey] add
+/// the native reCAPTCHA Enterprise SDK after device attestation.
+/// [webRecaptchaEnterpriseSiteKey] is the web key, used by the web script provider
+/// and the WebView fallback. The WebView loads at [FirebaseApp.options.authDomain].
+/// [webAppId] is the web app that fallback exchanges as. macOS has no
+/// native reCAPTCHA Enterprise SDK.
 ///
 /// ```dart
 /// await FirebaseAppCheck.instance.activate(
 ///   provider: FlutterAppCheckProviders(
-///     recaptchaV3SiteKey: '...',
-///     recaptchaWebDomain: 'my-project.firebaseapp.com',
-///     recaptchaWebAppId: '1:123456789:web:abc...',
+///     androidRecaptchaEnterpriseSiteKey: '...',
+///     iosRecaptchaEnterpriseSiteKey: '...',
+///     webRecaptchaEnterpriseSiteKey: '...',
+///     webAppId: '1:123456789:web:abc...',
 ///     getBuildContext: () => navigatorKey.currentContext,
 ///   ),
 /// );
@@ -28,9 +34,10 @@ class FlutterAppCheckProviders extends FallbackAppCheckProvider {
 
   factory FlutterAppCheckProviders({
     String? recaptchaV3SiteKey,
-    String? recaptchaEnterpriseSiteKey,
-    String? recaptchaWebDomain,
-    String? recaptchaWebAppId,
+    String? webRecaptchaEnterpriseSiteKey,
+    String? androidRecaptchaEnterpriseSiteKey,
+    String? iosRecaptchaEnterpriseSiteKey,
+    String? webAppId,
     bool usePlayIntegrity = true,
     bool useDeviceCheck = true,
     bool useAppAttest = true,
@@ -38,8 +45,8 @@ class FlutterAppCheckProviders extends FallbackAppCheckProvider {
   }) {
     if (kIsWeb) {
       return FlutterAppCheckProviders._([
-        if (recaptchaEnterpriseSiteKey != null)
-          ReCaptchaEnterpriseProvider(recaptchaEnterpriseSiteKey),
+        if (webRecaptchaEnterpriseSiteKey != null)
+          ReCaptchaEnterpriseProvider(webRecaptchaEnterpriseSiteKey),
         if (recaptchaV3SiteKey != null) ReCaptchaV3Provider(recaptchaV3SiteKey),
       ]);
     }
@@ -61,25 +68,32 @@ class FlutterAppCheckProviders extends FallbackAppCheckProvider {
       }
     }
 
-    if (recaptchaWebDomain != null &&
-        recaptchaWebDomain.isNotEmpty &&
-        recaptchaWebAppId != null &&
-        recaptchaWebAppId.isNotEmpty &&
+    final nativeRecaptchaSiteKey = switch (platform) {
+      AndroidPlatform() => androidRecaptchaEnterpriseSiteKey,
+      IOsPlatform() => iosRecaptchaEnterpriseSiteKey,
+      _ => null,
+    };
+    if (nativeRecaptchaSiteKey != null && nativeRecaptchaSiteKey.isNotEmpty) {
+      providers.add(
+        RecaptchaEnterpriseNativeAppCheckProvider(nativeRecaptchaSiteKey),
+      );
+    }
+
+    if (webAppId != null &&
+        webAppId.isNotEmpty &&
         getBuildContext != null) {
       providers.addAll([
-        if (recaptchaEnterpriseSiteKey != null)
+        if (webRecaptchaEnterpriseSiteKey != null)
           RecaptchaWebViewAppCheckProvider(
-            siteKey: recaptchaEnterpriseSiteKey,
-            recaptchaWebDomain: recaptchaWebDomain,
-            recaptchaWebAppId: recaptchaWebAppId,
+            siteKey: webRecaptchaEnterpriseSiteKey,
+            webAppId: webAppId,
             getBuildContext: getBuildContext,
             useEnterprise: true,
           ),
         if (recaptchaV3SiteKey != null)
           RecaptchaWebViewAppCheckProvider(
             siteKey: recaptchaV3SiteKey,
-            recaptchaWebDomain: recaptchaWebDomain,
-            recaptchaWebAppId: recaptchaWebAppId,
+            webAppId: webAppId,
             getBuildContext: getBuildContext,
           ),
       ]);

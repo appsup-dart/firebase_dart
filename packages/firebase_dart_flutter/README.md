@@ -13,11 +13,11 @@ Import `package:firebase_dart/app_check.dart` and `package:firebase_dart_flutter
 
 | Platform | Default providers (when enabled) |
 | -------- | -------------------------------- |
-| **Android** | `PlayIntegrityAppCheckProvider` |
-| **iOS** | `AppAttestAppCheckProvider`, `DeviceCheckAppCheckProvider` |
+| **Android** | `PlayIntegrityAppCheckProvider`, then `RecaptchaEnterpriseNativeAppCheckProvider` when `androidRecaptchaEnterpriseSiteKey` is set |
+| **iOS** | `AppAttestAppCheckProvider`, `DeviceCheckAppCheckProvider`, then `RecaptchaEnterpriseNativeAppCheckProvider` when `iosRecaptchaEnterpriseSiteKey` is set |
 | **macOS** | `AppAttestAppCheckProvider`, `DeviceCheckAppCheckProvider` |
 | **Web** | `ReCaptchaV3Provider` / `ReCaptchaEnterpriseProvider` from site keys |
-| **Fallback** | `RecaptchaWebViewAppCheckProvider` when `recaptchaWebDomain`, `recaptchaWebAppId`, and `getBuildContext` are set |
+| **Fallback** | `RecaptchaWebViewAppCheckProvider` when `webAppId` and `getBuildContext` are set. The page origin is `authDomain`. |
 
 ```dart
 import 'package:firebase_dart/app_check.dart';
@@ -29,10 +29,11 @@ final navigatorKey = GlobalKey<NavigatorState>();
 // In main(), after FirebaseDartFlutter.setup() and Firebase.initializeApp():
 await FirebaseAppCheck.instance.activate(
   provider: FlutterAppCheckProviders(
-    recaptchaV3SiteKey: '6Le...', // from Firebase Console → App Check
-    recaptchaEnterpriseSiteKey: '6Le...', // optional
-    recaptchaWebDomain: 'my-project.firebaseapp.com',
-    recaptchaWebAppId: DefaultFirebaseOptions.currentPlatform.appId,
+    androidRecaptchaEnterpriseSiteKey: '6Le...', // Android App Check key
+    iosRecaptchaEnterpriseSiteKey: '6Le...', // iOS App Check key
+    recaptchaV3SiteKey: '6Le...', // web, from Firebase Console → App Check
+    webRecaptchaEnterpriseSiteKey: '6Le...', // web Enterprise key, optional
+    webAppId: '1:123456789:web:abc...', // web app, not the mobile app id
     getBuildContext: () => navigatorKey.currentContext,
     // usePlayIntegrity: true,
     // useAppAttest: true,
