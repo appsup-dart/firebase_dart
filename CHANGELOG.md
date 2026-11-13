@@ -15,6 +15,80 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`firebase_dart` - `v2.0.0-dev.9`](#firebase_dart---v200-dev9)
+ - [`firebase_dart_flutter` - `v1.4.0-dev.9`](#firebase_dart_flutter---v140-dev9)
+ - [`firebase_dart_flutter_auth_google` - `v0.1.0-dev.9`](#firebase_dart_flutter_auth_google---v010-dev9)
+ - [`firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.9`](#firebase_dart_flutter_auth_facebook---v001-dev9)
+ - [`firebase_dart_flutter_auth_apple` - `v0.0.1-dev.9`](#firebase_dart_flutter_auth_apple---v001-dev9)
+ - [`firebase_dart_plus` - `v0.1.1-dev.9`](#firebase_dart_plus---v011-dev9)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `firebase_dart_flutter_auth_google` - `v0.1.0-dev.9`
+ - `firebase_dart_flutter_auth_facebook` - `v0.0.1-dev.9`
+ - `firebase_dart_flutter_auth_apple` - `v0.0.1-dev.9`
+ - `firebase_dart_plus` - `v0.1.1-dev.9`
+
+---
+
+#### `firebase_dart` - `v2.0.0-dev.9`
+
+ - **REFACTOR**(app-check): replace AppCheckProviders with a sealed provider. ([3810c5ca](https://github.com/appsup-dart/firebase_dart/commit/3810c5ca5626d458e7fa5b5ea2a6ba23a8e5ba07))
+ - **REFACTOR**(app-check): Flutter provider, WebView reCAPTCHA, non-blocking activate. ([127019d4](https://github.com/appsup-dart/firebase_dart/commit/127019d479e57058c59c495501171a850428921d))
+ - **REFACTOR**(app-check): attestation types and centralized token exchange. ([ad7d2ecd](https://github.com/appsup-dart/firebase_dart/commit/ad7d2ecd5880ab89fba5d7b2627a6c8ff4e2642d))
+ - **REFACTOR**(app-check): provider-based activate and Flutter composite. ([cc8b7a46](https://github.com/appsup-dart/firebase_dart/commit/cc8b7a466a5bd2c98dc90eb31d52a1ac4d038b62))
+ - **REFACTOR**(app-check): use googleapis for App Check token exchange. ([f38a133a](https://github.com/appsup-dart/firebase_dart/commit/f38a133aaf9127c255081ea9a5616de1f3d4c918))
+ - **FIX**(app-check): connect Realtime Database when the App Check token fails. ([fa799537](https://github.com/appsup-dart/firebase_dart/commit/fa79953780178a3e526b67d70880addb2b8e8057))
+ - **FIX**: scope persisted data by app id and app name. ([51153cc6](https://github.com/appsup-dart/firebase_dart/commit/51153cc6af5fd97d3e8e11a0ea1cb4fe22abe977))
+ - **FIX**(app-check): reconnect Realtime Database with a fresh token after revoke. ([cc5f042d](https://github.com/appsup-dart/firebase_dart/commit/cc5f042dfe5e4d8bece907b2bd4eeb308a5eef47))
+ - **FIX**(app-check): retry Auth and Storage after a rejected token. ([fc62729b](https://github.com/appsup-dart/firebase_dart/commit/fc62729bc79211028e8e55195ac37a5d519e4e3e))
+ - **FIX**(app-check): reuse a stored token after restart. ([656dfe63](https://github.com/appsup-dart/firebase_dart/commit/656dfe63b7fffc78c15908f2f053a98bf8b67bb2))
+ - **FIX**(app-check): recover when a token fetch fails. ([ee6be5e9](https://github.com/appsup-dart/firebase_dart/commit/ee6be5e932d581baa27f958a650a8a702b791ccf))
+ - **FEAT**(app-check): send App Check token on Cloud Storage HTTP requests. ([2a0023ea](https://github.com/appsup-dart/firebase_dart/commit/2a0023eafc21dda4b93d31e4a42f6f8acf5b3f6e))
+ - **FEAT**(app-check): send App Check token on Firebase Auth HTTP requests. ([d90e284e](https://github.com/appsup-dart/firebase_dart/commit/d90e284efac0eb04fded7604d155eb7e83656ef5))
+ - **FEAT**(app-check): wire App Check through the Firebase worker isolate. ([9cec76f6](https://github.com/appsup-dart/firebase_dart/commit/9cec76f6838be0a56c920dec2871a9edbe9e9f66))
+ - **FEAT**(app-check): core debug provider and integration smoke test. ([433eba67](https://github.com/appsup-dart/firebase_dart/commit/433eba67e315eb8b26abb5479907aa5283d71572))
+ - **FEAT**(app-check): multi-provider activate with Flutter provider split. ([fd776e1f](https://github.com/appsup-dart/firebase_dart/commit/fd776e1f27e657f0bee0abd864b403ddc8a41e58))
+ - **FEAT**(app-check): App Attest on iOS. ([8a722f04](https://github.com/appsup-dart/firebase_dart/commit/8a722f045420d5349ddf2590bd4d8101d8117f98))
+ - **FEAT**(app-check): native Device Check on iOS and macOS. ([22021359](https://github.com/appsup-dart/firebase_dart/commit/22021359bb5b69e3f20fc1cf5f0f045a6e50f12a))
+ - **FEAT**(app-check): implement Android Play Integrity provider for Flutter. ([3bafb135](https://github.com/appsup-dart/firebase_dart/commit/3bafb13516c548785281a6265fec4c359544240b))
+ - **FEAT**(app-check): token refresh, onTokenChange, and RTDB token updates. ([971671b6](https://github.com/appsup-dart/firebase_dart/commit/971671b69a80a23388d1719ed649dc06973514d6))
+ - **FEAT**(database): send App Check tokens on Realtime Database connections. ([654e8b63](https://github.com/appsup-dart/firebase_dart/commit/654e8b63e0f4f4465050bb003cdef9526e74d022))
+ - **FEAT**(app-check): implementation of app-check api. ([82ae0264](https://github.com/appsup-dart/firebase_dart/commit/82ae0264e2558675e34e663b3bda49d7ec9cb1ab))
+ - **DOCS**: describe Flutter App Check providers in try order. ([094b1797](https://github.com/appsup-dart/firebase_dart/commit/094b1797753dc17b09c1bcdf349343e784b7fb31))
+ - **DOCS**: document App Check in README files. ([49aaa397](https://github.com/appsup-dart/firebase_dart/commit/49aaa3973ddd341ad59c4a969804570ca7f32a09))
+
+#### `firebase_dart_flutter` - `v1.4.0-dev.9`
+
+ - **REFACTOR**(app-check): replace AppCheckProviders with a sealed provider. ([3810c5ca](https://github.com/appsup-dart/firebase_dart/commit/3810c5ca5626d458e7fa5b5ea2a6ba23a8e5ba07))
+ - **REFACTOR**(app-check): Flutter provider, WebView reCAPTCHA, non-blocking activate. ([127019d4](https://github.com/appsup-dart/firebase_dart/commit/127019d479e57058c59c495501171a850428921d))
+ - **REFACTOR**(app-check): attestation types and centralized token exchange. ([ad7d2ecd](https://github.com/appsup-dart/firebase_dart/commit/ad7d2ecd5880ab89fba5d7b2627a6c8ff4e2642d))
+ - **REFACTOR**(app-check): provider-based activate and Flutter composite. ([cc8b7a46](https://github.com/appsup-dart/firebase_dart/commit/cc8b7a466a5bd2c98dc90eb31d52a1ac4d038b62))
+ - **FEAT**(app-check): add native reCAPTCHA Enterprise on Flutter. ([1b54fdbe](https://github.com/appsup-dart/firebase_dart/commit/1b54fdbea357b6845ca4d2bcb81dece7d51305ee))
+ - **FEAT**(app-check): offer App Attest on macOS. ([d6d0c604](https://github.com/appsup-dart/firebase_dart/commit/d6d0c604a3e4742dec82c436f2f6f3a9f6528459))
+ - **FEAT**(app-check): core debug provider and integration smoke test. ([433eba67](https://github.com/appsup-dart/firebase_dart/commit/433eba67e315eb8b26abb5479907aa5283d71572))
+ - **FEAT**(app-check): multi-provider activate with Flutter provider split. ([fd776e1f](https://github.com/appsup-dart/firebase_dart/commit/fd776e1f27e657f0bee0abd864b403ddc8a41e58))
+ - **FEAT**(app-check): App Attest on iOS. ([8a722f04](https://github.com/appsup-dart/firebase_dart/commit/8a722f045420d5349ddf2590bd4d8101d8117f98))
+ - **FEAT**(app-check): native Device Check on iOS and macOS. ([22021359](https://github.com/appsup-dart/firebase_dart/commit/22021359bb5b69e3f20fc1cf5f0f045a6e50f12a))
+ - **FEAT**(app-check): implement Android Play Integrity provider for Flutter. ([3bafb135](https://github.com/appsup-dart/firebase_dart/commit/3bafb13516c548785281a6265fec4c359544240b))
+ - **DOCS**: describe Flutter App Check providers in try order. ([094b1797](https://github.com/appsup-dart/firebase_dart/commit/094b1797753dc17b09c1bcdf349343e784b7fb31))
+ - **DOCS**: document App Check in README files. ([49aaa397](https://github.com/appsup-dart/firebase_dart/commit/49aaa3973ddd341ad59c4a969804570ca7f32a09))
+
+
+## 2026-11-13
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`firebase_dart` - `v2.0.0-dev.8`](#firebase_dart---v200-dev8)
  - [`firebase_dart_flutter` - `v1.4.0-dev.8`](#firebase_dart_flutter---v140-dev8)
  - [`firebase_dart_flutter_auth_google` - `v0.1.0-dev.8`](#firebase_dart_flutter_auth_google---v010-dev8)

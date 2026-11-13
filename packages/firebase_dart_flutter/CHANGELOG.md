@@ -1,3 +1,19 @@
+## 1.4.0-dev.9
+
+ - **REFACTOR**(app-check): replace AppCheckProviders with a sealed provider. ([3810c5ca](https://github.com/appsup-dart/firebase_dart/commit/3810c5ca5626d458e7fa5b5ea2a6ba23a8e5ba07))
+ - **REFACTOR**(app-check): Flutter provider, WebView reCAPTCHA, non-blocking activate. ([127019d4](https://github.com/appsup-dart/firebase_dart/commit/127019d479e57058c59c495501171a850428921d))
+ - **REFACTOR**(app-check): attestation types and centralized token exchange. ([ad7d2ecd](https://github.com/appsup-dart/firebase_dart/commit/ad7d2ecd5880ab89fba5d7b2627a6c8ff4e2642d))
+ - **REFACTOR**(app-check): provider-based activate and Flutter composite. ([cc8b7a46](https://github.com/appsup-dart/firebase_dart/commit/cc8b7a466a5bd2c98dc90eb31d52a1ac4d038b62))
+ - **FEAT**(app-check): add native reCAPTCHA Enterprise on Flutter. ([1b54fdbe](https://github.com/appsup-dart/firebase_dart/commit/1b54fdbea357b6845ca4d2bcb81dece7d51305ee))
+ - **FEAT**(app-check): offer App Attest on macOS. ([d6d0c604](https://github.com/appsup-dart/firebase_dart/commit/d6d0c604a3e4742dec82c436f2f6f3a9f6528459))
+ - **FEAT**(app-check): core debug provider and integration smoke test. ([433eba67](https://github.com/appsup-dart/firebase_dart/commit/433eba67e315eb8b26abb5479907aa5283d71572))
+ - **FEAT**(app-check): multi-provider activate with Flutter provider split. ([fd776e1f](https://github.com/appsup-dart/firebase_dart/commit/fd776e1f27e657f0bee0abd864b403ddc8a41e58))
+ - **FEAT**(app-check): App Attest on iOS. ([8a722f04](https://github.com/appsup-dart/firebase_dart/commit/8a722f045420d5349ddf2590bd4d8101d8117f98))
+ - **FEAT**(app-check): native Device Check on iOS and macOS. ([22021359](https://github.com/appsup-dart/firebase_dart/commit/22021359bb5b69e3f20fc1cf5f0f045a6e50f12a))
+ - **FEAT**(app-check): implement Android Play Integrity provider for Flutter. ([3bafb135](https://github.com/appsup-dart/firebase_dart/commit/3bafb13516c548785281a6265fec4c359544240b))
+ - **DOCS**: describe Flutter App Check providers in try order. ([094b1797](https://github.com/appsup-dart/firebase_dart/commit/094b1797753dc17b09c1bcdf349343e784b7fb31))
+ - **DOCS**: document App Check in README files. ([49aaa397](https://github.com/appsup-dart/firebase_dart/commit/49aaa3973ddd341ad59c4a969804570ca7f32a09))
+
 ## 1.4.0-dev.8
 
  - Update a dependency to the latest release.
