@@ -11,6 +11,7 @@ Currently supports the following firebase services:
 * Authentication
 * Realtime database
 * Cloud storage
+* App Check
 
 As this is a pure dart implementation, it supports all platforms supported by dart, e.g. command line apps, web applications and flutter apps for android, ios, web, macos, windows and linux.
 
@@ -212,6 +213,72 @@ The following methods are supported:
 | Reference.putData | ✅
 | Reference.putString | ✅
 | Reference.updateMetadata | ✅
+
+
+## App Check
+
+[Firebase App Check](https://firebase.google.com/docs/app-check) attests that requests come from your app. This package exchanges attestation for App Check JWTs and attaches them to Firebase HTTP and Realtime Database traffic when App Check is activated.
+
+Import `package:firebase_dart/app_check.dart` and activate after initializing your app:
+
+```dart
+import 'package:firebase_dart/app_check.dart';
+
+final appCheck = FirebaseAppCheck.instanceFor(app: app);
+
+await appCheck.activate(
+  provider: AppCheckProvider.recaptchaV3('your-recaptcha-v3-site-key'),
+);
+
+// Optional: listen for token updates
+appCheck.onTokenChange.listen((token) { /* ... */ });
+```
+
+Use `setTokenAutoRefreshEnabled()` to control automatic refresh (default on).
+
+
+### Built-in providers
+
+Use `AppCheckProvider` factories for one source, or `AppCheckProvider.fallback` to try several. Each provider attests and exchanges its own token. Fallback tries the next provider when either step fails, and prefers the winner on later refreshes.
+
+| Provider | Use case |
+| -------- | -------- |
+| `AppCheckProvider.debug` | Local development. Register the token in Firebase Console → App Check → Manage debug tokens. Without a fixed `debugToken`, a UUID is generated, persisted in Hive, and logged once. |
+| `AppCheckProvider.recaptchaV3` | Web and Dart (reCAPTCHA v3 site key). |
+| `AppCheckProvider.recaptchaEnterprise` | Web and Dart (reCAPTCHA Enterprise site key). |
+| `AppCheckProvider.fallback` | Ordered list. The provider that succeeds is preferred on later refreshes. |
+| Custom `AppCheckProvider` | Extend `AttestingAppCheckProvider` and implement `getAttestation`. |
+
+```dart
+await appCheck.activate(
+  provider: AppCheckProvider.fallback([
+    DebugAppCheckProvider(debugToken: '00000000-0000-0000-0000-000000000000'),
+    ReCaptchaV3Provider('fallback-site-key'),
+  ]),
+);
+```
+
+### Automatic service integration
+
+When App Check is activated for an app, tokens are sent automatically for:
+
+| Service | Mechanism |
+| ------- | --------- |
+| **Authentication** | `X-Firebase-AppCheck` on Identity Toolkit REST calls |
+| **Cloud Storage** | `X-Firebase-AppCheck` on Storage REST calls |
+| **Realtime Database** | App Check token on the WebSocket connection; refreshed when `onTokenChange` fires |
+
+No extra configuration is required for these services beyond `activate()` and enforcement in the Firebase Console.
+
+
+### Limited-use tokens
+
+For custom backends with [replay protection](https://firebase.google.com/docs/app-check/custom-resource-backend), call `getLimitedUseToken()` instead of `getToken()`.
+
+
+### Flutter
+
+[firebase_dart_flutter](https://pub.dev/packages/firebase_dart_flutter) adds Play Integrity, App Attest, Device Check, native reCAPTCHA Enterprise on Android and iOS, and a reCAPTCHA WebView fallback. See that package’s README for `FlutterAppCheckProviders`.
 
 
 ## Features and bugs

@@ -1,3 +1,4 @@
+import 'package:firebase_dart/app_check.dart';
 import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:firebase_dart/src/core.dart';
@@ -30,6 +31,8 @@ abstract class FirebaseImplementation {
   FirebaseStorage createStorage(covariant FirebaseApp app,
       {String? storageBucket});
 
+  FirebaseAppCheck createAppCheck(covariant FirebaseApp app);
+
   Future<void> updateDatabaseConfiguration(
       {Duration? keepQueriesSyncedDuration});
 }
@@ -47,6 +50,25 @@ abstract class AuthTokenProvider {
 
   factory AuthTokenProvider.fromFirebaseAuth(FirebaseAuth auth) =>
       _AuthTokenProviderFromFirebaseAuth(auth);
+
+  factory AuthTokenProvider.fromFirebaseAppCheck(FirebaseAppCheck appCheck) =>
+      _AuthTokenProviderFromAppCheck(appCheck);
+}
+
+class _AuthTokenProviderFromAppCheck implements AuthTokenProvider {
+  final FirebaseAppCheck appCheck;
+
+  _AuthTokenProviderFromAppCheck(this.appCheck);
+
+  @override
+  Future<String?> getToken([bool forceRefresh = false]) async {
+    var token = await appCheck.getToken(forceRefresh);
+    return token;
+  }
+
+  @override
+  Stream<Future<String>?> get onTokenChanged => appCheck.onTokenChange
+      .map((event) => event == null ? null : Future.value(event));
 }
 
 class _AuthTokenProviderFromFirebaseAuth implements AuthTokenProvider {

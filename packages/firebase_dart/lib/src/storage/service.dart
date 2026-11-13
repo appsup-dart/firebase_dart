@@ -1,4 +1,6 @@
+import 'package:firebase_dart/app_check.dart';
 import 'package:firebase_dart/auth.dart';
+import 'package:firebase_dart/src/auth/rpc/http_util.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/implementation.dart';
 import 'package:firebase_dart/src/storage.dart';
@@ -18,11 +20,16 @@ class FirebaseStorageImpl extends FirebaseService implements FirebaseStorage {
       {http.Client? httpClient})
       : _bucket =
             Location.fromBucketSpec(storageBucket ?? app.options.storageBucket),
-        httpClient = HttpClient(httpClient ?? http.Client(), () async {
-          return AuthTokenProvider.fromFirebaseAuth(
-                  FirebaseAuth.instanceFor(app: app))
-              .getToken();
-        });
+        httpClient = HttpClient(
+          AppCheckClient(
+            httpClient ?? http.Client(),
+            getAppCheckToken: ({bool forceRefresh = false}) =>
+                FirebaseAppCheck.instanceFor(app: app).getToken(forceRefresh),
+          ),
+          () async => AuthTokenProvider.fromFirebaseAuth(
+            FirebaseAuth.instanceFor(app: app),
+          ).getToken(),
+        );
 
   /// Returns a firebaseStorage.Reference for the given path in the default
   /// bucket.

@@ -34,6 +34,20 @@ class FirebaseProjectConfig {
   /// in Identity Toolkit project config).
   final PhoneAuthRecaptchaEnforcement phoneAuthRecaptchaEnforcement;
 
+  /// reCAPTCHA v3 key for App Check web flows.
+  ///
+  /// Filled only when both are true:
+  /// - App Check `recaptchaV3Config.siteSecretSet` is true, and
+  /// - a reCAPTCHA web key named `Firebase AppCheck` exists.
+  final String? webAppCheckRecaptchaV3SiteKey;
+
+  /// reCAPTCHA Enterprise key for App Check web flows
+  /// (`recaptchaEnterpriseConfig.siteKey`).
+  final String? webAppCheckRecaptchaEnterpriseSiteKey;
+
+  /// App Check debug secret (UUID) registered for the web app, for smoke tests.
+  final String? webAppCheckDebugToken;
+
   const FirebaseProjectConfig({
     required this.projectId,
     required this.webConfig,
@@ -41,5 +55,8 @@ class FirebaseProjectConfig {
     required this.androidConfigs,
     this.iosBundleIdsWithApnsConfigured = const [],
     this.phoneAuthRecaptchaEnforcement = PhoneAuthRecaptchaEnforcement.unknown,
+    this.webAppCheckRecaptchaV3SiteKey,
+    this.webAppCheckRecaptchaEnterpriseSiteKey,
+    this.webAppCheckDebugToken,
   });
 }

@@ -75,8 +75,11 @@ class OperationEvent {
 /// outstanding writes.
 abstract class PersistentConnection {
   factory PersistentConnection(Uri uri,
-      {required AuthTokenProvider? authTokenProvider}) {
-    return PersistentConnectionImpl(uri, authTokenProvider: authTokenProvider);
+      {required AuthTokenProvider? authTokenProvider,
+      required AuthTokenProvider? appCheckTokenProvider}) {
+    return PersistentConnectionImpl(uri,
+        authTokenProvider: authTokenProvider,
+        appCheckTokenProvider: appCheckTokenProvider);
   }
 
   PersistentConnection.base();
@@ -114,6 +117,9 @@ abstract class PersistentConnection {
 
   /// Authenticates with the token.
   Future<void> refreshAuthToken(FutureOr<String>? token);
+
+  /// Sends an updated App Check token on an established connection.
+  Future<void> refreshAppCheckToken(FutureOr<String>? token);
 
   // listens
 

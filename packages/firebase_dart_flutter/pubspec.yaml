@@ -37,3 +37,7 @@ flutter:
       android:
         package: be.appsup.firebase_dart_flutter
         pluginClass: FirebaseDartFlutterPlugin
+      ios:
+        pluginClass: FirebaseDartFlutterPlugin
+      macos:
+        pluginClass: FirebaseDartFlutterPlugin

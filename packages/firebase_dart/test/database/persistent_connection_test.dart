@@ -4,6 +4,7 @@ import 'package:firebase_dart/src/database/impl/connection.dart';
 import 'package:firebase_dart/src/database/impl/connections/protocol.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
 import 'package:firebase_dart/src/database/token.dart';
+import 'package:firebase_dart/src/implementation.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -14,6 +15,7 @@ void main() {
       connection = PersistentConnectionImpl(
         Uri.parse('mem://test'), // Use memory scheme to avoid network
         authTokenProvider: null,
+        appCheckTokenProvider: null,
       )..initialize();
     });
 
@@ -178,4 +180,87 @@ void main() {
       });
     });
   });
+
+  test('app check token failure still connects', () async {
+    final connection = PersistentConnectionImpl(
+      Uri.parse('mem://app-check-failure'),
+      authTokenProvider: null,
+      appCheckTokenProvider: _FailingAppCheck(),
+    );
+    addTearDown(() {
+      connection.close();
+    });
+
+    final states = <bool>[];
+    final subscription = connection.onConnect.listen(states.add);
+    addTearDown(subscription.cancel);
+    connection.initialize();
+
+    await _waitUntil(() => states.contains(true));
+    expect(connection.connectionState, ConnectionState.connected);
+  });
+
+  test('app check revoked reconnects with a refreshed token', () async {
+    final tokens = _AppCheckTokens();
+    final connection = PersistentConnectionImpl(
+      Uri.parse('mem://app-check-revoke'),
+      authTokenProvider: null,
+      appCheckTokenProvider: tokens,
+    );
+    addTearDown(() {
+      connection.close();
+    });
+
+    final states = <bool>[];
+    final subscription = connection.onConnect.listen(states.add);
+    addTearDown(subscription.cancel);
+    connection.initialize();
+
+    await _waitUntil(() => states.contains(true));
+    expect(tokens.calls, [false]);
+
+    connection.onDataMessage(DataMessage(
+      DataMessage.actionAppCheckRevoked,
+      MessageBody(status: 'invalid_token', data: 'App Check token rejected'),
+    ));
+
+    await _waitUntil(() => states.where((connected) => connected).length >= 2);
+    expect(tokens.calls, [false, true]);
+    expect(connection.isInterrupted('app_check_revoked'), isFalse);
+  });
+}
+
+class _FailingAppCheck implements AuthTokenProvider {
+  @override
+  Future<String?> getToken([bool forceRefresh = false]) async {
+    throw StateError('App Check: all providers failed');
+  }
+
+  @override
+  Stream<Future<String>?> get onTokenChanged => const Stream.empty();
+}
+
+class _AppCheckTokens implements AuthTokenProvider {
+  final calls = <bool>[];
+  var token = 'jwt-1';
+
+  @override
+  Future<String?> getToken([bool forceRefresh = false]) async {
+    calls.add(forceRefresh);
+    if (forceRefresh) token = 'jwt-2';
+    return token;
+  }
+
+  @override
+  Stream<Future<String>?> get onTokenChanged => const Stream.empty();
+}
+
+Future<void> _waitUntil(bool Function() condition) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 3));
+  while (!condition()) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('timed out waiting for connection');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
 }

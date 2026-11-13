@@ -5,8 +5,8 @@ import 'package:test/test.dart';
 
 void main() {
   test('cancelling a delayed registration completes waiters', () async {
-    var future = DelayedCancellableFuture<void>(
-        const Duration(seconds: 30), () {});
+    var future =
+        DelayedCancellableFuture<void>(const Duration(seconds: 30), () {});
     future.cancel();
     await future.timeout(const Duration(seconds: 1));
   });

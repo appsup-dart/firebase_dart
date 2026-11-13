@@ -13,6 +13,8 @@ PODS:
     - PromisesObjC (~> 2.4)
   - facebook_auth_desktop (0.0.3):
     - FlutterMacOS
+  - firebase_dart_flutter (1.0.0):
+    - FlutterMacOS
   - flutter_secure_storage_darwin (10.0.0):
     - Flutter
     - FlutterMacOS
@@ -62,6 +64,7 @@ PODS:
 DEPENDENCIES:
   - app_links (from `Flutter/ephemeral/.symlinks/plugins/app_links/macos`)
   - facebook_auth_desktop (from `Flutter/ephemeral/.symlinks/plugins/facebook_auth_desktop/macos`)
+  - firebase_dart_flutter (from `Flutter/ephemeral/.symlinks/plugins/firebase_dart_flutter/macos`)
   - flutter_secure_storage_darwin (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - google_sign_in_ios (from `Flutter/ephemeral/.symlinks/plugins/google_sign_in_ios/darwin`)
@@ -86,6 +89,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/app_links/macos
   facebook_auth_desktop:
     :path: Flutter/ephemeral/.symlinks/plugins/facebook_auth_desktop/macos
+  firebase_dart_flutter:
+    :path: Flutter/ephemeral/.symlinks/plugins/firebase_dart_flutter/macos
   flutter_secure_storage_darwin:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin
   FlutterMacOS:
@@ -108,6 +113,7 @@ SPEC CHECKSUMS:
   AppAuth: d4f13a8fe0baf391b2108511793e4b479691fb73
   AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
   facebook_auth_desktop: bf89ccf460c903de45e86fa0c7878b8b62db65fb
+  firebase_dart_flutter: 8c720070e5d4639dad22afd83a1b826614b1614b
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   google_sign_in_ios: b48bb9af78576358a168361173155596c845f0b9

@@ -25,13 +25,15 @@ class Transport {
   /// Connects to the [url] and initiates the [channel]
   ///
   /// Depending on the scheme of the [url], an appropriate channel will be built
-  void open() {
+  void open({required Map<String, String> headers}) {
     switch (url.scheme) {
       case 'https':
       case 'http':
         var connectionUrl = url.replace(
             path: '.ws', scheme: url.scheme == 'https' ? 'wss' : 'ws');
-        var socket = websocket.connect(connectionUrl.toString());
+
+        var socket =
+            websocket.connect(connectionUrl.toString(), headers: headers);
         socket.ready.catchError((error, stackTrace) {
           // catch errors in ready future, as otherwise it results in an uncaught
           // exception and possibly a crash

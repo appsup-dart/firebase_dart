@@ -71,6 +71,8 @@ class BackendConnection {
         case DataMessage.actionUnauth:
           await backend.auth(null);
           break;
+        case DataMessage.actionAppCheck:
+          break;
         case DataMessage.actionListen:
           var listener = _listeners
               .putIfAbsent(message.body.path, () => {})

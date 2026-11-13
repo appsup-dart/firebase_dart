@@ -4,6 +4,7 @@ import 'package:firebase_dart/src/auth/auth.dart';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/user.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
+import 'package:firebase_dart/src/core/impl/persistence_key.dart';
 import 'package:hive/hive.dart';
 
 import 'impl/user.dart';
@@ -40,6 +41,11 @@ class UserManager {
 
   Future<void> _init() async {
     var storage = await this.storage;
+    await migrateStorageValue(
+      storage,
+      key: _key,
+      legacyKey: legacyFirebaseUserStorageKey(auth.app),
+    );
 
     _subscription = storage
         .watch(key: _key)
@@ -51,7 +57,7 @@ class UserManager {
         .listen(_controller.add);
   }
 
-  String get _key => 'firebase:FirebaseUser:$appId';
+  String get _key => firebaseUserStorageKey(auth.app);
 
   /// Stores the current Auth user for the provided application ID.
   Future<void> setCurrentUser(User? currentUser) async {

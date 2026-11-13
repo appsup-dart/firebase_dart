@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:firebase_dart/implementation/pure_dart.dart';
+import 'package:logging/logging.dart';
+import 'package:firebase_dart/src/app_check/app_check.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/database.dart';
 import 'package:firebase_dart/src/core.dart';
@@ -11,6 +13,7 @@ import 'package:firebase_dart/src/storage.dart';
 import 'package:http/http.dart' as http;
 
 import '../database/impl/repo.dart';
+import 'isolate/app_check.dart';
 import 'isolate/auth.dart';
 import 'isolate/database.dart';
 import 'isolate/storage.dart';
@@ -42,7 +45,9 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
       this.httpClient});
 
   Future<IsolateCommander> _setup() async {
-    var worker = IsolateWorker()..registerFunction(#launchUrl, launchUrl);
+    var worker = IsolateWorker()
+      ..registerFunction(#launchUrl, launchUrl)
+      ..registerFunction(#log, _logFromIsolate);
     var commander =
         await IsolateWorker.startWorkerInIsolate(debugName: 'firebase');
 
@@ -100,6 +105,39 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
         },
         httpClient: httpClient);
     Repo.databaseConfiguration = databaseConfiguration;
+    Logger.root.onRecord.listen((record) {
+      unawaited(
+        commander
+            .execute(RegisteredFunctionCall(#log, [
+              record.level.name,
+              record.loggerName,
+              record.message,
+              record.error?.toString(),
+              record.stackTrace?.toString(),
+            ]))
+            .then<void>((_) {}, onError: (Object _) {}),
+      );
+    });
+  }
+
+  static void _logFromIsolate(
+    String levelName,
+    String loggerName,
+    String message,
+    String? error,
+    String? stackTrace,
+  ) {
+    final level = Level.LEVELS.firstWhere(
+      (level) => level.name == levelName,
+      orElse: () => Level.WARNING,
+    );
+    final text = error == null || error.isEmpty ? message : '$message: $error';
+    Logger(loggerName).log(
+      level,
+      text,
+      error,
+      stackTrace == null ? null : StackTrace.fromString(stackTrace),
+    );
   }
 
   @override
@@ -146,6 +184,12 @@ class IsolateFirebaseImplementation extends BaseFirebaseImplementation {
     return FirebaseService.findService<IsolateFirebaseStorage>(
             app, (s) => s.bucket == storageBucket) ??
         IsolateFirebaseStorage(app: app, storageBucket: storageBucket);
+  }
+
+  @override
+  FirebaseAppCheck createAppCheck(IsolateFirebaseApp app) {
+    return FirebaseService.findService<IsolateFirebaseAppCheck>(app) ??
+        IsolateFirebaseAppCheck(app);
   }
 }
 

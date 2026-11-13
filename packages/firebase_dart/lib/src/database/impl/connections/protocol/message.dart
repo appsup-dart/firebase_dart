@@ -65,11 +65,13 @@ class DataMessage extends _JsonObjectMessage {
   static const String actionAuth = 'auth';
   static const String actionGauth = 'gauth';
   static const String actionUnauth = 'unauth';
+  static const String actionAppCheck = 'appcheck';
 
   // receive
   static const String actionSet = 'd';
   static const String actionListenRevoked = 'c';
   static const String actionAuthRevoked = 'ac';
+  static const String actionAppCheckRevoked = 'apc';
   static const String actionSecurityDebug = 'sd';
 
   /// The action to be performed
@@ -215,6 +217,7 @@ class MessageBody {
   final String? cred;
   final String? message;
   final String? status;
+  final String? token;
 
   MessageBody(
       {this.tag,
@@ -225,7 +228,8 @@ class MessageBody {
       this.stats,
       this.cred,
       this.message,
-      this.status});
+      this.status,
+      this.token});
 
   factory MessageBody.fromJson(Map<String, dynamic> json) {
     return MessageBody(
@@ -242,7 +246,8 @@ class MessageBody {
         stats: json['c'],
         cred: json['cred'],
         message: json['msg'],
-        status: json['s']);
+        status: json['s'],
+        token: json['token']);
   }
 
   Iterable<String>? get warnings => data is Map
@@ -260,6 +265,7 @@ class MessageBody {
     if (stats != null) json['c'] = stats;
     if (message != null) json['msg'] = message;
     if (status != null) json['s'] = status;
+    if (token != null) json['token'] = token;
     return json;
   }
 

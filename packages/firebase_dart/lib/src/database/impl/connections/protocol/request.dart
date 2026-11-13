@@ -15,6 +15,11 @@ class Request {
   Request(String action, MessageBody body)
       : message = DataMessage(action, body, reqNum: nextRequestNum++);
 
+  Request.appCheck(String appCheckToken)
+      : message = DataMessage(
+            DataMessage.actionAppCheck, MessageBody(token: appCheckToken),
+            reqNum: nextRequestNum++);
+
   Request.auth(String cred)
       : message = DataMessage(
             _actionFromAuthToken(cred), MessageBody(cred: cred),

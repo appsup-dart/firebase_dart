@@ -15,7 +15,9 @@ class Connection {
   /// The underlying transport channel to send and receive messages
   final Transport transport;
 
-  Connection({required this.delegate, required Uri url})
+  final Map<String, String> headers;
+
+  Connection({required this.delegate, required Uri url, required this.headers})
       : transport = Transport(url);
 
   final Map<int?, Request> _pendingRequests = {};
@@ -33,7 +35,7 @@ class Connection {
 
     _state = ConnectionState.connecting;
 
-    transport.open();
+    transport.open(headers: headers);
     transport.channel!.stream.listen(_onMessage, onDone: () {
       close();
     }, onError: (e, tr) {
@@ -60,6 +62,7 @@ class Connection {
     if (state != ConnectionState.disconnected) {
       _logger.fine('closing realtime connection');
       _state = ConnectionState.disconnected;
+      _keepAlivePeriodicStreamSubscription.cancel();
 
       await _outputSink.close();
 
@@ -72,8 +75,6 @@ class Connection {
       }
 
       delegate.onDisconnect(reason);
-
-      await _keepAlivePeriodicStreamSubscription.cancel();
     }
   }
 

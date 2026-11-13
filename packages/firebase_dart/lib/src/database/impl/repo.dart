@@ -57,6 +57,7 @@ class Repo {
   final SparseSnapshotTree _onDisconnect = SparseSnapshotTree();
 
   late StreamSubscription _authStateChangesSubscription;
+  StreamSubscription? _appCheckTokenChangesSubscription;
 
   bool _isClosed = false;
 
@@ -68,16 +69,23 @@ class Repo {
     return _repos.putIfAbsent(db, () {
       var url = Uri.parse(db.databaseURL);
       var authTokenProvider = db.authTokenProvider;
+      var appCheckTokenProvider = db.appCheckTokenProvider;
 
-      var connection =
-          PersistentConnection(url, authTokenProvider: authTokenProvider)
-            ..initialize();
+      var connection = PersistentConnection(url,
+          authTokenProvider: authTokenProvider,
+          appCheckTokenProvider: appCheckTokenProvider)
+        ..initialize();
 
-      return Repo._(url, connection, authTokenProvider, db.persistenceManager);
+      return Repo._(url, connection, authTokenProvider, appCheckTokenProvider,
+          db.persistenceManager);
     });
   }
 
-  Repo._(this.url, this._connection, AuthTokenProvider? authTokenProvider,
+  Repo._(
+      this.url,
+      this._connection,
+      AuthTokenProvider? authTokenProvider,
+      AuthTokenProvider? appCheckTokenProvider,
       PersistenceManager persistenceManager)
       : _syncTree = SyncTree(url.toString(),
             queryRegistrar: RemoteQueryRegistrar(_connection),
@@ -107,6 +115,24 @@ class Repo {
             onError: (e, tr) {
               _logger.warning('Error in auth token changed stream', e, tr);
             });
+
+    _appCheckTokenChangesSubscription =
+        (appCheckTokenProvider?.onTokenChanged ?? Stream.empty()).listen(
+      (token) {
+        try {
+          _connection.refreshAppCheckToken(token);
+        } catch (e, tr) {
+          _logger.warning('Could not refresh App Check token.', e, tr);
+        }
+      },
+      cancelOnError: true,
+      onDone: () {
+        _logger.warning('Stopped listening to App Check token changes');
+      },
+      onError: (e, tr) {
+        _logger.warning('Error in App Check token changed stream', e, tr);
+      },
+    );
 
     _transactions = TransactionsTree(this);
     _connection.onConnect.listen((v) {
@@ -158,6 +184,7 @@ class Repo {
     _isClosed = true;
     await _transactions.close();
     await _authStateChangesSubscription.cancel();
+    await _appCheckTokenChangesSubscription?.cancel();
     await _connection.close();
     _syncTree.destroy();
     _infoSyncTree.destroy();
