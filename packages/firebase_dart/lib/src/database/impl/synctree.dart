@@ -112,7 +112,12 @@ class MasterView {
     var out = <QueryFilter, EventTarget>{};
     for (var q in observers.keys.toList()) {
       if (!contains(q)) {
-        out[q] = observers.remove(q)!;
+        var target = observers.remove(q)!;
+        // Keep-alive observers without listeners were never remotely registered
+        // while contained; do not promote them to their own query registration.
+        if (target.hasEventRegistrations) {
+          out[q] = target;
+        }
       }
     }
     return out;
@@ -270,7 +275,12 @@ class MasterView {
     var out = <QueryFilter, EventTarget>{};
     for (var q in observers.keys.toList()) {
       if (!contains(q)) {
-        out[q] = observers.remove(q)!;
+        var target = observers.remove(q)!;
+        // Keep-alive observers without listeners were never remotely registered
+        // while contained; do not promote them to their own query registration.
+        if (target.hasEventRegistrations) {
+          out[q] = target;
+        }
       }
     }
 

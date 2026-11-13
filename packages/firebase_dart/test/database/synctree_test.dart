@@ -11,20 +11,25 @@ import 'package:firebase_dart/src/database/impl/repo.dart';
 import 'package:firebase_dart/src/database/impl/synctree.dart';
 import 'package:firebase_dart/src/database/impl/tree.dart';
 import 'package:firebase_dart/src/database/impl/treestructureddata.dart';
+import 'package:sortedmap/sortedmap.dart';
 import 'package:test/test.dart';
 
 class LoggingQueryRegistrar extends QueryRegistrar {
   final StreamController<String> controller = StreamController();
+  final List<QuerySpec> registeredQueries = [];
+  final List<QuerySpec> unregisteredQueries = [];
 
   @override
   Future<bool> register(QuerySpec query,
       {String? hash, required int priority}) async {
+    registeredQueries.add(query);
     controller.add('register');
     return true;
   }
 
   @override
   Future<void> unregister(QuerySpec query) async {
+    unregisteredQueries.add(query);
     controller.add('unregister');
   }
 
@@ -479,6 +484,77 @@ void main() {
 
         expect(syncTree.obsoleteTreeStructuredDataInstanceCount, 0,
             skip: 'TODO improve reuse of instances');
+      });
+    });
+
+    group('keep-alive contained queries', () {
+      test(
+          'does not remotely register a keep-alive query that becomes uncontained',
+          () {
+        fakeAsync((async) {
+          Repo.updateDatabaseConfiguration(
+              keepQueriesSyncedDuration: Duration(seconds: 30));
+          var logger = LoggingQueryRegistrar();
+          var syncTree = SyncTree('mem:///', queryRegistrar: logger);
+
+          var path = Name.parsePath('test');
+          var o = TreeStructuredDataOrdering.byKey();
+          var empty = TreeStructuredData();
+          var container = QueryFilter(
+              ordering: o,
+              validInterval: KeyValueInterval(
+                  Name('key-001'), empty, Name('key-100'), empty),
+              limit: 3);
+          var contained = QueryFilter(
+              ordering: o,
+              validInterval: KeyValueInterval(
+                  Name('key-002'), empty, Name('key-300'), empty),
+              limit: 3);
+
+          void containerListener(event) {}
+          void containedListener(event) {}
+
+          syncTree.addEventListener(
+              'value', path, container, containerListener);
+          syncTree.addEventListener(
+              'value', path, contained, containedListener);
+
+          // Create views and queue remote registration, then seed containing
+          // data before the listen ack applies an empty complete value that
+          // would temporarily uncontain the narrower query.
+          async.elapse(Duration(milliseconds: 2));
+          syncTree.applyServerOperation(
+              TreeOperation.overwrite(
+                  path,
+                  TreeStructuredData.fromJson({
+                    'key-002': 2,
+                    'key-003': 3,
+                    'key-004': 4,
+                  })),
+              QuerySpec(path, container));
+          async.elapse(Duration(milliseconds: 100));
+          expect(logger.registeredQueries, [QuerySpec(path, container)]);
+
+          syncTree.removeEventListener(
+              'value', path, contained, containedListener);
+          async.elapse(Duration(milliseconds: 100));
+
+          syncTree.applyServerOperation(
+              TreeOperation.overwrite(
+                  path,
+                  TreeStructuredData.fromJson({
+                    'key-001': 1,
+                    'key-003': 3,
+                    'key-004': 4,
+                  })),
+              QuerySpec(path, container));
+          async.elapse(Duration(milliseconds: 100));
+
+          expect(logger.registeredQueries, [QuerySpec(path, container)],
+              reason: 'becoming uncontained must not register a keep-alive '
+                  'query that has no listeners');
+          expect(logger.unregisteredQueries, isEmpty);
+        });
       });
     });
 

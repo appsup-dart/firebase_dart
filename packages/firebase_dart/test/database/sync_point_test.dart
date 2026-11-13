@@ -321,6 +321,68 @@ void main() {
         ]);
       });
 
+      test(
+          'Should not register keep-alive query that becomes uncontained without listeners',
+          () {
+        // A limiting query can contain a narrower query. When the narrower
+        // query is unlistened (kept alive for caching) and later becomes
+        // uncontained, registering it remotely would create additional
+        // traffic — keep-alive only makes sense when it does not.
+        var p = SyncPoint('test', Path(),
+            persistenceManager: NoopPersistenceManager());
+        var container =
+            QueryFilter(ordering: o, validInterval: i, limit: 3);
+        var contained = QueryFilter(
+            ordering: o,
+            validInterval:
+                KeyValueInterval(Name('key-002'), empty, Name('key-300'), empty),
+            limit: 3);
+
+        void noop(Event event) {}
+        p.addEventListener('value', container, noop);
+        p.addEventListener('value', contained, noop);
+
+        expect(p.minimalSetOfQueries, [container]);
+
+        p.views[container]!.state = QueryRegistrationState.registered;
+        p.applyOperation(
+            TreeOperation.overwrite(
+                Path(),
+                TreeStructuredData.fromJson({
+                  'key-002': 2,
+                  'key-003': 3,
+                  'key-004': 4,
+                })),
+            container,
+            ViewOperationSource.server,
+            null);
+
+        // Contained while container still covers it.
+        expect(p.minimalSetOfQueries, [container]);
+        expect(p.views.length, 1);
+
+        // Unlisten the contained query; keep-alive leaves an empty observer.
+        p.removeEventListener('value', contained, noop);
+        expect(p.minimalSetOfQueries, [container]);
+
+        // Container data changes so the keep-alive query is no longer contained.
+        p.applyOperation(
+            TreeOperation.overwrite(
+                Path(),
+                TreeStructuredData.fromJson({
+                  'key-001': 1,
+                  'key-003': 3,
+                  'key-004': 4,
+                })),
+            container,
+            ViewOperationSource.server,
+            null);
+
+        expect(p.minimalSetOfQueries, [container],
+            reason: 'keep-alive query without listeners must not be '
+                'remotely registered when it becomes uncontained');
+      });
+
       test('Should merge queries with limit == null', () {
         var p = SyncPoint('test', Path(),
             persistenceManager: NoopPersistenceManager());
