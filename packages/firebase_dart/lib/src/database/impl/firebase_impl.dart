@@ -5,6 +5,7 @@ import 'package:firebase_dart/auth.dart';
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/core/impl/app.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
+import 'package:firebase_dart/src/core/impl/persistence_key.dart';
 import 'package:firebase_dart/src/database/impl/persistence/default_manager.dart';
 import 'package:firebase_dart/src/database/impl/persistence/hive_engine.dart';
 import 'package:firebase_dart/src/database/impl/persistence/manager.dart';
@@ -44,8 +45,15 @@ mixin BaseFirebaseDatabase implements FirebaseDatabase {
 
   bool _persistenceManagerInitialized = false;
 
-  String get _persistenceStorageName =>
-      'firebase-db-persistence-storage-${Uri.parse(databaseURL).host}';
+  /// App id and name for this database, or null for a stand-alone database.
+  String? get persistenceAppStorageKey => null;
+
+  String get _persistenceHost => Uri.parse(databaseURL).host;
+
+  String get _persistenceStorageName => databasePersistenceBoxName(
+        host: _persistenceHost,
+        appStorageKey: persistenceAppStorageKey,
+      );
 
   static final Map<String, MapEntry<PersistenceManager, int>>
       _persistenceManagers = {};
@@ -77,7 +85,7 @@ mixin BaseFirebaseDatabase implements FirebaseDatabase {
     if (_persistenceManagerInitialized) return false;
     if (_persistenceEnabled == enabled) return true;
     if (enabled) {
-      await PersistenceStorage.openBox(_persistenceStorageName);
+      await _openPersistenceBox();
       if (_persistenceManagerInitialized) {
         await Hive.box(_persistenceStorageName).close();
         return false;
@@ -87,6 +95,38 @@ mixin BaseFirebaseDatabase implements FirebaseDatabase {
     }
     _persistenceEnabled = enabled;
     return true;
+  }
+
+  Future<void> _openPersistenceBox() async {
+    final name = _persistenceStorageName;
+    final legacy = legacyDatabasePersistenceBoxName(_persistenceHost);
+    await PersistenceStorage.openBox(name);
+    if (name == legacy || Hive.isBoxOpen(legacy)) return;
+
+    final box = Hive.box(name);
+    if (box.isNotEmpty || !await _legacyBoxExists(legacy)) return;
+
+    final legacyBox = await PersistenceStorage.openBox(legacy);
+    if (legacyBox.isEmpty) {
+      await legacyBox.close();
+      return;
+    }
+    await claimLegacyBox(box, legacyBox);
+    await legacyBox.close();
+    try {
+      await Hive.deleteBoxFromDisk(legacy);
+    } catch (_) {
+      // Memory storage has no file to delete.
+    }
+  }
+
+  Future<bool> _legacyBoxExists(String name) async {
+    try {
+      return await Hive.boxExists(name);
+    } on ArgumentError {
+      // Hive has no directory in memory storage, so there is no legacy file.
+      return false;
+    }
   }
 
   static String normalizeUrl(String? url) {
@@ -143,6 +183,9 @@ class FirebaseDatabaseImpl extends FirebaseService
       : databaseURL = BaseFirebaseDatabase.normalizeUrl(
             databaseURL ?? app.options.databaseURL),
         super(app);
+
+  @override
+  String? get persistenceAppStorageKey => firebaseAppStorageKey(app);
 
   @override
   Future<void> delete() async {

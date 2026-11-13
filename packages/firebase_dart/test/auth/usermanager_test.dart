@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/auth/usermanager.dart';
+import 'package:firebase_dart/src/core/impl/persistence_key.dart';
 import 'package:hive/hive.dart';
 import 'package:test/test.dart';
 
@@ -13,7 +14,6 @@ void main() async {
   var tester = await Tester.create();
 
   var apiKey = tester.app.options.apiKey;
-  var appId = tester.app.options.appId;
 
   group('UserManager', () {
     var auth = tester.auth as FirebaseAuthImpl;
@@ -85,7 +85,7 @@ void main() async {
 
       var user = await userManager.getCurrentUser();
       expect(user!.toJson(), expectedUser);
-      expect(await storage.get('firebase:FirebaseUser:$appId'), expectedUser);
+      expect(await storage.get(firebaseUserStorageKey(auth.app)), expectedUser);
 
       // Get user with authDomain.
       user = await userManager.getCurrentUser('project.firebaseapp.com');
@@ -93,17 +93,31 @@ void main() async {
 
       await userManager.removeCurrentUser();
 
-      expect(await storage.get('firebase:FirebaseUser:$appId'), isNull);
+      expect(await storage.get(firebaseUserStorageKey(auth.app)), isNull);
 
       user = await userManager.getCurrentUser();
       expect(user, isNull);
     });
 
+    test('migrates a user stored under the app id only', () async {
+      await storage.put(legacyFirebaseUserStorageKey(auth.app), expectedUser);
+
+      var userManager = UserManager(auth, storage);
+      var user = await userManager.getCurrentUser();
+
+      expect(user!.toJson(), expectedUser);
+      expect(await storage.get(firebaseUserStorageKey(auth.app)), expectedUser);
+      expect(
+        await storage.get(legacyFirebaseUserStorageKey(auth.app)),
+        isNull,
+      );
+    });
+
     test('add/remove current user change listener', () async {
       var userManager = UserManager(auth, storage);
 
-      var key1 = 'firebase:FirebaseUser:$appId';
-      var key2 = 'firebase:FirebaseUser:other_app_id';
+      var key1 = firebaseUserStorageKey(auth.app);
+      var key2 = 'firebase:FirebaseUser:other_app_id:[DEFAULT]';
 
       // Save existing Auth users for appId1 and appId2.
       await storage.put(key1, expectedUser);

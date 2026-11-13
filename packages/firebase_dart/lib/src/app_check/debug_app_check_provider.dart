@@ -1,6 +1,7 @@
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/app_check/app_check.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
+import 'package:firebase_dart/src/core/impl/persistence_key.dart';
 import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
 import 'package:uuid/uuid.dart';
@@ -8,7 +9,7 @@ import 'package:uuid/uuid.dart';
 /// App Check debug provider for development.
 ///
 /// Uses [debugToken] when set in code; otherwise loads or generates a UUID v4
-/// stored in Hive per [FirebaseApp.appId] and logs it for Firebase Console
+/// stored in Hive per Firebase app and logs it for Firebase Console
 /// registration.
 class DebugAppCheckProvider extends AttestingAppCheckProvider {
   DebugAppCheckProvider({this.debugToken});
@@ -29,12 +30,11 @@ class DebugAppCheckProvider extends AttestingAppCheckProvider {
     final explicit = debugToken;
     if (explicit != null && explicit.isNotEmpty) return explicit;
 
-    final appId = app.options.appId;
-    final stored = await _loadDebugToken(appId);
+    final stored = await _loadDebugToken(app);
     if (stored != null) return stored;
 
     final generated = _uuid.v4();
-    await _saveDebugToken(appId, generated);
+    await _saveDebugToken(app, generated);
     _logger.warning(
       "App Check debug token: '$generated'. Register it in the Firebase "
       'Console for this app (Security → App Check → Manage debug tokens).',
@@ -49,13 +49,13 @@ Future<Box>? _boxFuture;
 
 Future<Box> _box() => _boxFuture ??= PersistenceStorage.openBox(_boxName);
 
-Future<String?> _loadDebugToken(String firebaseAppId) async {
-  final token = await _box().then((b) => b.get(firebaseAppId));
+Future<String?> _loadDebugToken(FirebaseApp app) async {
+  final token = await _box().then((box) => box.get(firebaseAppStorageKey(app)));
   if (token is! String || token.isEmpty) return null;
   return token;
 }
 
-Future<void> _saveDebugToken(String firebaseAppId, String token) async {
+Future<void> _saveDebugToken(FirebaseApp app, String token) async {
   final box = await _box();
-  await box.put(firebaseAppId, token);
+  await box.put(firebaseAppStorageKey(app), token);
 }

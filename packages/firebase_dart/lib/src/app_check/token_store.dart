@@ -1,5 +1,7 @@
+import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/app_check/app_check.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
+import 'package:firebase_dart/src/core/impl/persistence_key.dart';
 import 'package:hive/hive.dart';
 
 const _boxName = 'firebase_app_check_token';
@@ -11,8 +13,8 @@ Future<Box> _box() {
   return _boxFuture ??= PersistenceStorage.openBox(_boxName);
 }
 
-Future<AppCheckToken?> loadAppCheckToken(String firebaseAppId) async {
-  final raw = await _box().then((box) => box.get(firebaseAppId));
+Future<AppCheckToken?> loadAppCheckToken(FirebaseApp app) async {
+  final raw = await _box().then((box) => box.get(firebaseAppStorageKey(app)));
   if (raw is! Map) return null;
   final token = raw['token'];
   final expireTime = raw['expireTime'];
@@ -22,16 +24,15 @@ Future<AppCheckToken?> loadAppCheckToken(String firebaseAppId) async {
   return AppCheckToken(token, parsed);
 }
 
-Future<void> saveAppCheckToken(
-    String firebaseAppId, AppCheckToken token) async {
+Future<void> saveAppCheckToken(FirebaseApp app, AppCheckToken token) async {
   final box = await _box();
-  await box.put(firebaseAppId, {
+  await box.put(firebaseAppStorageKey(app), {
     'token': token.token,
     'expireTime': token.expireTime.toUtc().toIso8601String(),
   });
 }
 
-Future<void> deleteAppCheckToken(String firebaseAppId) async {
+Future<void> deleteAppCheckToken(FirebaseApp app) async {
   final box = await _box();
-  await box.delete(firebaseAppId);
+  await box.delete(firebaseAppStorageKey(app));
 }

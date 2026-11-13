@@ -100,7 +100,7 @@ class FirebaseAppCheckImpl extends FirebaseService
     if (challenge == null || challenge.isEmpty) {
       throw StateError('App Check: empty App Attest challenge');
     }
-    final stored = await app_attest_store.loadAppAttestState(app.options.appId);
+    final stored = await app_attest_store.loadAppAttestState(app);
     if (stored == null) {
       return AppAttestChallenge(challenge: challenge);
     }
@@ -126,7 +126,7 @@ class FirebaseAppCheckImpl extends FirebaseService
   Future<void> _hydrateCachedToken() async {
     if (_hydrated || _cachedToken != null) return;
     _hydrated = true;
-    final stored = await loadAppCheckToken(app.options.appId);
+    final stored = await loadAppCheckToken(app);
     if (_cachedToken != null || !_isTokenValid(stored)) return;
     _cachedToken = stored;
     if (!_tokenChanges.isClosed) {
@@ -144,7 +144,7 @@ class FirebaseAppCheckImpl extends FirebaseService
   Future<void> _replaceToken() async {
     final token = await _obtainToken(limitedUse: false);
     _cachedToken = token;
-    await saveAppCheckToken(app.options.appId, token);
+    await saveAppCheckToken(app, token);
     if (!_tokenChanges.isClosed) {
       _tokenChanges.add(token.token);
     }

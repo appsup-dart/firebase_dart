@@ -9,6 +9,7 @@ import 'package:firebase_dart/src/auth/backend/backend.dart' as auth_lib;
 import 'package:firebase_dart/src/auth/impl/auth.dart';
 import 'package:firebase_dart/src/auth/impl/user.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
+import 'package:firebase_dart/src/core/impl/persistence_key.dart';
 import 'package:firebase_dart/src/database/impl/memory_backend.dart'
     as database;
 import 'package:firebase_dart/src/implementation.dart';
@@ -773,7 +774,7 @@ class Tester {
 
   String get appId => auth.app.options.appId;
 
-  String get _key => 'firebase:FirebaseUser:$appId';
+  String get _key => firebaseUserStorageKey(auth.app);
 
   static Future<Tester> create({bool isolated = false}) async {
     PersistenceStorage.setupMemoryStorage();

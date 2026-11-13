@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
+import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/src/core/impl/persistence.dart';
+import 'package:firebase_dart/src/core/impl/persistence_key.dart';
 import 'package:hive/hive.dart';
 
 const _boxName = 'firebase_app_attest';
@@ -16,8 +18,8 @@ class AppAttestStoredState {
   final Uint8List artifact;
 }
 
-Future<AppAttestStoredState?> loadAppAttestState(String firebaseAppId) async {
-  final raw = await _box().then((b) => b.get(firebaseAppId));
+Future<AppAttestStoredState?> loadAppAttestState(FirebaseApp app) async {
+  final raw = await _box().then((box) => box.get(firebaseAppStorageKey(app)));
   if (raw is! Map) return null;
   final keyId = raw['keyId'];
   final artifact = raw['artifact'];
@@ -34,12 +36,12 @@ Future<AppAttestStoredState?> loadAppAttestState(String firebaseAppId) async {
 }
 
 Future<void> saveAppAttestState(
-  String firebaseAppId,
+  FirebaseApp app,
   String keyId,
   Uint8List artifact,
 ) async {
   final box = await _box();
-  await box.put(firebaseAppId, {
+  await box.put(firebaseAppStorageKey(app), {
     'keyId': keyId,
     'artifact': artifact,
   });

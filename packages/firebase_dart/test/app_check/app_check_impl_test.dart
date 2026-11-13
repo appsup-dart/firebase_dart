@@ -88,7 +88,7 @@ void main() {
         options: getOptions(appId: '1:2:web:abc'),
         name: 'app-check-${DateTime.now().microsecondsSinceEpoch}',
       );
-      await deleteAppCheckToken(app.options.appId);
+      await deleteAppCheckToken(app);
     });
 
     tearDown(() async {

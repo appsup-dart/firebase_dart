@@ -184,7 +184,7 @@ Future<AppCheckToken> exchangeAppAttestAttestation(
   final artifact = response.artifact;
   if (artifact != null && artifact.isNotEmpty) {
     await saveAppAttestState(
-      app.options.appId,
+      app,
       keyId,
       Uint8List.fromList(response.artifactAsBytes),
     );
