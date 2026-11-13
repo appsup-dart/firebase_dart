@@ -1,3 +1,7 @@
+## 2.0.0-dev.8
+
+ - **FIX**: avoid remote registration for uncontained keep-alive queries. ([68b26787](https://github.com/appsup-dart/firebase_dart/commit/68b26787e244d0334d8a7a3f063aaeb8b981f6c3))
+
 ## 2.0.0-dev.7
 
  - **PERF**: use the query index when updating the server cache. ([5f101544](https://github.com/appsup-dart/firebase_dart/commit/5f1015441aea1dddf33c59857c1af7a8d7576f2f))
