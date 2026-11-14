@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1794574393768,
+  "lastUpdate": 1794651984822,
   "repoUrl": "https://github.com/appsup-dart/firebase_dart",
   "entries": {
     "Benchmark": [
@@ -14588,6 +14588,1850 @@ window.BENCHMARK_DATA = {
             "range": "±0.28%",
             "unit": "ops/sec",
             "extra": "compile: wasm\nsamples: 16014\nmean latency: 125 microseconds"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rik.bellens@appsup.be",
+            "name": "rikbellens",
+            "username": "rbellens"
+          },
+          "committer": {
+            "email": "rik.bellens@appsup.be",
+            "name": "rikbellens",
+            "username": "rbellens"
+          },
+          "distinct": true,
+          "id": "912beb14cc91f828e2f6824fc2147a0058149588",
+          "message": "chore(release): publish packages\n\n - firebase_dart@2.0.0-dev.9\n - firebase_dart_flutter@1.4.0-dev.9\n - firebase_dart_flutter_auth_google@0.1.0-dev.9\n - firebase_dart_flutter_auth_facebook@0.0.1-dev.9\n - firebase_dart_flutter_auth_apple@0.0.1-dev.9\n - firebase_dart_plus@0.1.1-dev.9",
+          "timestamp": "2026-11-13T21:28:33+01:00",
+          "tree_id": "a16a029183f070aef987357360cca5ec18ae6943",
+          "url": "https://github.com/appsup-dart/firebase_dart/commit/912beb14cc91f828e2f6824fc2147a0058149588"
+        },
+        "date": 1794651984355,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "Calendar queries density: 5 events/day listen acks + first server snapshots [jit]",
+            "value": 2814.2509387919167,
+            "range": "±0.99%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 5629\nmean latency: 355 microseconds"
+          },
+          {
+            "name": "Calendar queries density: 1 event/day listen acks + first server snapshots [jit]",
+            "value": 654.928285352754,
+            "range": "±1.39%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 1310\nmean latency: 1527 microseconds"
+          },
+          {
+            "name": "Calendar queries density: 1 event / 10 days listen acks + first server snapshots [jit]",
+            "value": 739.3561952200298,
+            "range": "±0.76%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 1479\nmean latency: 1353 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete root merge) [jit]",
+            "value": 3344.4648831187274,
+            "range": "±0.36%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 6689\nmean latency: 299 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete identity merge) [jit]",
+            "value": 34191.5,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 68383\nmean latency: 29 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse merge) [jit]",
+            "value": 5183.6786119260605,
+            "range": "±0.36%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 10368\nmean latency: 193 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse identity merge) [jit]",
+            "value": 15614.499999999998,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 31229\nmean latency: 64 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter (same ordering) [jit]",
+            "value": 89312.27671930821,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 178625\nmean latency: 11 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter + value (same ordering) [jit]",
+            "value": 89041.27739680652,
+            "range": "±0.22%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 178083\nmean latency: 11 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter + value (orderBy child) [jit]",
+            "value": 77136.92286307714,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 154274\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete applyOperation (one child) [jit]",
+            "value": 166562.33343766656,
+            "range": "±0.19%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 333125\nmean latency: 6 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter (same ordering) [jit]",
+            "value": 6311796,
+            "range": "±0.21%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 12623592\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter + value (same ordering) [jit]",
+            "value": 94942.71517185448,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 189886\nmean latency: 11 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter + value (orderBy child) [jit]",
+            "value": 82079.41792058207,
+            "range": "±0.21%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 164159\nmean latency: 12 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial applyOperation (one child) [jit]",
+            "value": 161666.5958335104,
+            "range": "±0.37%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 323334\nmean latency: 6 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial removeWrite (one child) [jit]",
+            "value": 251407.12288931565,
+            "range": "±0.17%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 502815\nmean latency: 4 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter (same ordering) [jit]",
+            "value": 89478.36578245134,
+            "range": "±0.34%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 178957\nmean latency: 11 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter + value (same ordering) [jit]",
+            "value": 90635.04682476587,
+            "range": "±0.34%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 181271\nmean latency: 11 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter + value (orderBy child) [jit]",
+            "value": 75209.73676592132,
+            "range": "±0.47%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 150420\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete applyOperation (one child) [jit]",
+            "value": 132525.1686870783,
+            "range": "±0.43%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 265051\nmean latency: 8 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter (same ordering) [jit]",
+            "value": 6188348.000000001,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 12376696\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter + value (same ordering) [jit]",
+            "value": 91442.54278728606,
+            "range": "±0.28%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 182886\nmean latency: 11 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter + value (orderBy child) [jit]",
+            "value": 78547.76435670693,
+            "range": "±0.42%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 157096\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial applyOperation (one child) [jit]",
+            "value": 116468.38353161646,
+            "range": "±0.54%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 232937\nmean latency: 9 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial removeWrite (one child) [jit]",
+            "value": 185313.3146866853,
+            "range": "±0.43%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 370627\nmean latency: 5 microseconds"
+          },
+          {
+            "name": "MasterView 100 children valueForFilter (limited page) [jit]",
+            "value": 90533.09260108329,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 181067\nmean latency: 11 microseconds"
+          },
+          {
+            "name": "MasterView 100 children valueForFilter (limited page, orderBy child) [jit]",
+            "value": 78963.64466359901,
+            "range": "±0.21%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 157928\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "MasterView 100 children server update (one child, orderBy observer) [jit]",
+            "value": 36636.65195180646,
+            "range": "±0.22%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 73274\nmean latency: 27 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children valueForFilter (limited page) [jit]",
+            "value": 89556.8656647015,
+            "range": "±0.29%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 179114\nmean latency: 11 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children valueForFilter (limited page, orderBy child) [jit]",
+            "value": 78777.88183317725,
+            "range": "±0.25%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 157556\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children server update (one child, orderBy observer) [jit]",
+            "value": 34969.1852773325,
+            "range": "±0.30%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 69939\nmean latency: 29 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (limited page) [jit]",
+            "value": 80354.39734201993,
+            "range": "±0.50%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 160710\nmean latency: 12 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (limited page, orderBy child) [jit]",
+            "value": 70924.07445555327,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 141849\nmean latency: 14 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (whole node, cached value) [jit]",
+            "value": 1038560.9228781543,
+            "range": "±0.21%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 2077126\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited, one child) [jit]",
+            "value": 23479.600846785605,
+            "range": "±0.43%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 46960\nmean latency: 43 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited orderBy, one child) [jit]",
+            "value": 22128.767647939694,
+            "range": "±0.27%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 44258\nmean latency: 45 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (whole node, one child) [jit]",
+            "value": 16800.12199725506,
+            "range": "±0.17%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 33601\nmean latency: 60 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited page overwrite) replaces the stored page [jit]",
+            "value": 10164.852609637159,
+            "range": "±0.25%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 20330\nmean latency: 98 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children saveUserOperation + removeUserOperation [jit]",
+            "value": 3408750.0000000005,
+            "range": "±0.24%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 6817500\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children setQueryActive + setQueryInactive [jit]",
+            "value": 473818,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 947636\nmean latency: 2 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children setQueryComplete [jit]",
+            "value": 1715441.4999999998,
+            "range": "±0.22%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 3430883\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (limited page) [jit]",
+            "value": 83762.79059302351,
+            "range": "±0.27%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 167526\nmean latency: 12 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (limited page, orderBy child) [jit]",
+            "value": 73493.77951866144,
+            "range": "±0.22%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 146988\nmean latency: 14 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (whole node, cached value) [jit]",
+            "value": 1063677.5,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 2127355\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited, one child) [jit]",
+            "value": 23805.28575242823,
+            "range": "±0.38%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 47611\nmean latency: 42 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited orderBy, one child) [jit]",
+            "value": 21592.66531368764,
+            "range": "±0.33%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 43186\nmean latency: 46 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (whole node, one child) [jit]",
+            "value": 1672.7808657065923,
+            "range": "±0.27%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 3346\nmean latency: 598 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited page overwrite) replaces the stored page [jit]",
+            "value": 9540.485689271465,
+            "range": "±0.38%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 19081\nmean latency: 105 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children saveUserOperation + removeUserOperation [jit]",
+            "value": 3394506.5000000005,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 6789013\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children setQueryActive + setQueryInactive [jit]",
+            "value": 474222.49999999994,
+            "range": "±0.24%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 948445\nmean latency: 2 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children setQueryComplete [jit]",
+            "value": 1694846,
+            "range": "±0.27%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 3389692\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "SyncTree merge write path fullWriteCycle (merge + server + ack) [jit]",
+            "value": 1899.8546611184247,
+            "range": "±0.83%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 3800\nmean latency: 526 microseconds"
+          },
+          {
+            "name": "SyncTree merge write path userMerge only [jit]",
+            "value": 5098.630349299676,
+            "range": "±0.24%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 10198\nmean latency: 196 microseconds"
+          },
+          {
+            "name": "SyncTree merge serverMerge only (after user merge) serverMerge [jit]",
+            "value": 4296.317406510223,
+            "range": "±0.55%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 8593\nmean latency: 233 microseconds"
+          },
+          {
+            "name": "SyncTree merge ack only (after user merge + server merge) ack [jit]",
+            "value": 8774.785017767064,
+            "range": "±0.42%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 17550\nmean latency: 114 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withFilter (same ordering) [jit]",
+            "value": 87078.8258423483,
+            "range": "±0.39%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 174158\nmean latency: 11 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withFilter (orderBy child) [jit]",
+            "value": 79944.34011131978,
+            "range": "±0.29%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 159889\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node view (same ordering) [jit]",
+            "value": 5370900,
+            "range": "±0.22%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 10741800\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withChild [jit]",
+            "value": 184288.5,
+            "range": "±0.19%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 368577\nmean latency: 5 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withoutChild [jit]",
+            "value": 314887.6851123149,
+            "range": "±0.14%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 629776\nmean latency: 3 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withFilter (same ordering) [jit]",
+            "value": 91414.72575582273,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 182830\nmean latency: 11 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withFilter (orderBy child) [jit]",
+            "value": 81932.5,
+            "range": "±0.25%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 163865\nmean latency: 12 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node view (same ordering) [jit]",
+            "value": 5559349.5,
+            "range": "±0.26%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 11118699\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withChild [jit]",
+            "value": 150812.0475638573,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 301625\nmean latency: 7 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withoutChild [jit]",
+            "value": 227744.77225522776,
+            "range": "±0.29%",
+            "unit": "ops/sec",
+            "extra": "compile: jit\nsamples: 455490\nmean latency: 4 microseconds"
+          },
+          {
+            "name": "Calendar queries density: 5 events/day listen acks + first server snapshots [aot]",
+            "value": 3102.806074620336,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 6206\nmean latency: 322 microseconds"
+          },
+          {
+            "name": "Calendar queries density: 1 event/day listen acks + first server snapshots [aot]",
+            "value": 699.2395332738555,
+            "range": "±0.28%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 1399\nmean latency: 1430 microseconds"
+          },
+          {
+            "name": "Calendar queries density: 1 event / 10 days listen acks + first server snapshots [aot]",
+            "value": 803.9352832097015,
+            "range": "±0.22%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 1608\nmean latency: 1244 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete root merge) [aot]",
+            "value": 3227.55459746555,
+            "range": "±0.22%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 6456\nmean latency: 310 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete identity merge) [aot]",
+            "value": 28197.31671744134,
+            "range": "±0.15%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 56395\nmean latency: 35 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse merge) [aot]",
+            "value": 5168.798416861742,
+            "range": "±0.18%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 10338\nmean latency: 193 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse identity merge) [aot]",
+            "value": 13785.403502175484,
+            "range": "±0.14%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 27571\nmean latency: 73 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter (same ordering) [aot]",
+            "value": 76718.84656230688,
+            "range": "±0.14%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 153438\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter + value (same ordering) [aot]",
+            "value": 77118.84576230847,
+            "range": "±0.17%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 154238\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter + value (orderBy child) [aot]",
+            "value": 67607,
+            "range": "±0.15%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 135214\nmean latency: 15 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete applyOperation (one child) [aot]",
+            "value": 144885.5,
+            "range": "±0.13%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 289771\nmean latency: 7 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter (same ordering) [aot]",
+            "value": 7382741.5,
+            "range": "±0.16%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 14765483\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter + value (same ordering) [aot]",
+            "value": 76241.84751630497,
+            "range": "±0.15%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 152484\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter + value (orderBy child) [aot]",
+            "value": 63300.968349515824,
+            "range": "±0.41%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 126602\nmean latency: 16 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial applyOperation (one child) [aot]",
+            "value": 131513.23697352604,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 263027\nmean latency: 8 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial removeWrite (one child) [aot]",
+            "value": 200531.5,
+            "range": "±0.19%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 401063\nmean latency: 5 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter (same ordering) [aot]",
+            "value": 74147.20341118636,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 148295\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter + value (same ordering) [aot]",
+            "value": 73530.38970441544,
+            "range": "±0.32%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 147061\nmean latency: 14 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter + value (orderBy child) [aot]",
+            "value": 65105.544261190174,
+            "range": "±0.27%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 130212\nmean latency: 15 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete applyOperation (one child) [aot]",
+            "value": 108516.72870817823,
+            "range": "±0.15%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 217034\nmean latency: 9 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter (same ordering) [aot]",
+            "value": 7052237.5,
+            "range": "±0.37%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 14104475\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter + value (same ordering) [aot]",
+            "value": 75242.34951530097,
+            "range": "±0.16%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 150485\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter + value (orderBy child) [aot]",
+            "value": 64971.785310361585,
+            "range": "±0.17%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 129945\nmean latency: 15 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial applyOperation (one child) [aot]",
+            "value": 98270.5,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 196541\nmean latency: 10 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial removeWrite (one child) [aot]",
+            "value": 156751.02974691076,
+            "range": "±0.12%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 313503\nmean latency: 6 microseconds"
+          },
+          {
+            "name": "MasterView 100 children valueForFilter (limited page) [aot]",
+            "value": 76178.0429317424,
+            "range": "±0.13%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 152357\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "MasterView 100 children valueForFilter (limited page, orderBy child) [aot]",
+            "value": 65909.90113514829,
+            "range": "±0.13%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 131820\nmean latency: 15 microseconds"
+          },
+          {
+            "name": "MasterView 100 children server update (one child, orderBy observer) [aot]",
+            "value": 31600.826195455924,
+            "range": "±0.34%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 63202\nmean latency: 32 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children valueForFilter (limited page) [aot]",
+            "value": 76039.15782378979,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 152079\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children valueForFilter (limited page, orderBy child) [aot]",
+            "value": 65106.64191346948,
+            "range": "±0.18%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 130214\nmean latency: 15 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children server update (one child, orderBy observer) [aot]",
+            "value": 30467.0277610697,
+            "range": "±0.25%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 60935\nmean latency: 33 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (limited page) [aot]",
+            "value": 72800.45399659502,
+            "range": "±0.12%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 145602\nmean latency: 14 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (limited page, orderBy child) [aot]",
+            "value": 63741.840645398384,
+            "range": "±0.13%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 127484\nmean latency: 16 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (whole node, cached value) [aot]",
+            "value": 1227083,
+            "range": "±0.18%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 2454166\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited, one child) [aot]",
+            "value": 20509,
+            "range": "±0.45%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 41018\nmean latency: 49 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited orderBy, one child) [aot]",
+            "value": 19436.373663571187,
+            "range": "±0.32%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 38873\nmean latency: 51 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (whole node, one child) [aot]",
+            "value": 14724.528815077918,
+            "range": "±0.18%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 29450\nmean latency: 68 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited page overwrite) replaces the stored page [aot]",
+            "value": 9342.467301364444,
+            "range": "±0.38%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 18685\nmean latency: 107 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children saveUserOperation + removeUserOperation [aot]",
+            "value": 4105017.5,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 8210035\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children setQueryActive + setQueryInactive [aot]",
+            "value": 536540.5,
+            "range": "±0.18%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 1073081\nmean latency: 2 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children setQueryComplete [aot]",
+            "value": 2099982.5,
+            "range": "±0.22%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 4199965\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (limited page) [aot]",
+            "value": 69065.22373910504,
+            "range": "±0.26%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 138131\nmean latency: 14 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (limited page, orderBy child) [aot]",
+            "value": 61429.815710552866,
+            "range": "±0.28%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 122860\nmean latency: 16 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (whole node, cached value) [aot]",
+            "value": 1221156,
+            "range": "±0.26%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 2442312\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited, one child) [aot]",
+            "value": 19965.34027727778,
+            "range": "±0.29%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 39931\nmean latency: 50 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited orderBy, one child) [aot]",
+            "value": 18396.632067358652,
+            "range": "±0.27%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 36794\nmean latency: 54 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (whole node, one child) [aot]",
+            "value": 1361.5711051018927,
+            "range": "±0.45%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 2724\nmean latency: 734 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited page overwrite) replaces the stored page [aot]",
+            "value": 8866.849263562519,
+            "range": "±0.33%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 17734\nmean latency: 113 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children saveUserOperation + removeUserOperation [aot]",
+            "value": 4229489.5,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 8458979\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children setQueryActive + setQueryInactive [aot]",
+            "value": 558418.7207906396,
+            "range": "±0.21%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 1116838\nmean latency: 2 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children setQueryComplete [aot]",
+            "value": 2146460.5,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 4292921\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "SyncTree merge write path fullWriteCycle (merge + server + ack) [aot]",
+            "value": 1977.5886615583959,
+            "range": "±0.83%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 3956\nmean latency: 506 microseconds"
+          },
+          {
+            "name": "SyncTree merge write path userMerge only [aot]",
+            "value": 5188.308032602794,
+            "range": "±0.29%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 10377\nmean latency: 193 microseconds"
+          },
+          {
+            "name": "SyncTree merge serverMerge only (after user merge) serverMerge [aot]",
+            "value": 4422.289941227792,
+            "range": "±0.28%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 8845\nmean latency: 226 microseconds"
+          },
+          {
+            "name": "SyncTree merge ack only (after user merge + server merge) ack [aot]",
+            "value": 9623.995188002405,
+            "range": "±0.46%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 19248\nmean latency: 104 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withFilter (same ordering) [aot]",
+            "value": 75562.38665642001,
+            "range": "±0.32%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 151125\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withFilter (orderBy child) [aot]",
+            "value": 66952.43304756696,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 133905\nmean latency: 15 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node view (same ordering) [aot]",
+            "value": 6414113,
+            "range": "±0.18%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 12828226\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withChild [aot]",
+            "value": 158430.76235385647,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 316862\nmean latency: 6 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withoutChild [aot]",
+            "value": 246594.63010805481,
+            "range": "±0.29%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 493190\nmean latency: 4 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withFilter (same ordering) [aot]",
+            "value": 74939.27518217445,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 149879\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withFilter (orderBy child) [aot]",
+            "value": 63767.55362712462,
+            "range": "±0.33%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 127536\nmean latency: 16 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node view (same ordering) [aot]",
+            "value": 6148150,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 12296300\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withChild [aot]",
+            "value": 121791.57372949194,
+            "range": "±0.29%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 243584\nmean latency: 8 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withoutChild [aot]",
+            "value": 177198.5,
+            "range": "±0.30%",
+            "unit": "ops/sec",
+            "extra": "compile: aot\nsamples: 354397\nmean latency: 6 microseconds"
+          },
+          {
+            "name": "Calendar queries density: 5 events/day listen acks + first server snapshots [js]",
+            "value": 491.75412293853077,
+            "range": "±1.82%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 984\nmean latency: 2034 microseconds"
+          },
+          {
+            "name": "Calendar queries density: 1 event/day listen acks + first server snapshots [js]",
+            "value": 157.68463073852294,
+            "range": "±0.88%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 316\nmean latency: 6342 microseconds"
+          },
+          {
+            "name": "Calendar queries density: 1 event / 10 days listen acks + first server snapshots [js]",
+            "value": 191.8081918081918,
+            "range": "±1.04%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 384\nmean latency: 5214 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete root merge) [js]",
+            "value": 231.50000000000003,
+            "range": "±1.11%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 463\nmean latency: 4320 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete identity merge) [js]",
+            "value": 4290.5,
+            "range": "±3.84%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 8581\nmean latency: 233 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse merge) [js]",
+            "value": 641,
+            "range": "±2.10%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 1282\nmean latency: 1560 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse identity merge) [js]",
+            "value": 1932.5000000000002,
+            "range": "±3.07%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 3865\nmean latency: 517 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter (same ordering) [js]",
+            "value": 10116,
+            "range": "±4.16%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 20232\nmean latency: 99 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter + value (same ordering) [js]",
+            "value": 9997.5,
+            "range": "±4.16%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 19995\nmean latency: 100 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter + value (orderBy child) [js]",
+            "value": 8738.5,
+            "range": "±4.12%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 17477\nmean latency: 114 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete applyOperation (one child) [js]",
+            "value": 13999.500000000002,
+            "range": "±4.22%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 27999\nmean latency: 71 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter (same ordering) [js]",
+            "value": 1167155.5,
+            "range": "±4.38%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 2334311\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter + value (same ordering) [js]",
+            "value": 10024.5,
+            "range": "±4.16%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 20049\nmean latency: 100 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter + value (orderBy child) [js]",
+            "value": 8381.5,
+            "range": "±4.11%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 16763\nmean latency: 119 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial applyOperation (one child) [js]",
+            "value": 19475.5,
+            "range": "±4.27%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 38951\nmean latency: 51 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial removeWrite (one child) [js]",
+            "value": 32140.5,
+            "range": "±4.31%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 64281\nmean latency: 31 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter (same ordering) [js]",
+            "value": 10748.5,
+            "range": "±4.18%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 21497\nmean latency: 93 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter + value (same ordering) [js]",
+            "value": 10709.5,
+            "range": "±4.18%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 21419\nmean latency: 93 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter + value (orderBy child) [js]",
+            "value": 9201.5,
+            "range": "±4.14%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 18403\nmean latency: 109 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete applyOperation (one child) [js]",
+            "value": 3753,
+            "range": "±3.76%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 7506\nmean latency: 266 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter (same ordering) [js]",
+            "value": 1229205,
+            "range": "±4.38%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 2458410\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter + value (same ordering) [js]",
+            "value": 10492,
+            "range": "±4.17%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 20984\nmean latency: 95 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter + value (orderBy child) [js]",
+            "value": 9126.5,
+            "range": "±4.14%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 18253\nmean latency: 110 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial applyOperation (one child) [js]",
+            "value": 15473.5,
+            "range": "±4.25%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 30947\nmean latency: 65 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial removeWrite (one child) [js]",
+            "value": 24815,
+            "range": "±4.30%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 49630\nmean latency: 40 microseconds"
+          },
+          {
+            "name": "MasterView 100 children valueForFilter (limited page) [js]",
+            "value": 10784.5,
+            "range": "±4.17%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 21569\nmean latency: 93 microseconds"
+          },
+          {
+            "name": "MasterView 100 children valueForFilter (limited page, orderBy child) [js]",
+            "value": 9133.5,
+            "range": "±4.14%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 18267\nmean latency: 109 microseconds"
+          },
+          {
+            "name": "MasterView 100 children server update (one child, orderBy observer) [js]",
+            "value": 4188.5,
+            "range": "±3.82%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 8377\nmean latency: 239 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children valueForFilter (limited page) [js]",
+            "value": 10477,
+            "range": "±4.17%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 20954\nmean latency: 95 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children valueForFilter (limited page, orderBy child) [js]",
+            "value": 9208,
+            "range": "±4.15%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 18416\nmean latency: 109 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children server update (one child, orderBy observer) [js]",
+            "value": 2132.5,
+            "range": "±3.23%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 4265\nmean latency: 469 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (limited page) [js]",
+            "value": 10010,
+            "range": "±4.16%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 20020\nmean latency: 100 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (limited page, orderBy child) [js]",
+            "value": 8654,
+            "range": "±4.12%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 17308\nmean latency: 116 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (whole node, cached value) [js]",
+            "value": 223152,
+            "range": "±4.37%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 446304\nmean latency: 4 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited, one child) [js]",
+            "value": 2723,
+            "range": "±3.49%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 5446\nmean latency: 367 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited orderBy, one child) [js]",
+            "value": 2475.5,
+            "range": "±3.43%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 4951\nmean latency: 404 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (whole node, one child) [js]",
+            "value": 1907,
+            "range": "±3.07%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 3814\nmean latency: 524 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited page overwrite) replaces the stored page [js]",
+            "value": 1235,
+            "range": "±1.96%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 2470\nmean latency: 810 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children saveUserOperation + removeUserOperation [js]",
+            "value": 382821.5,
+            "range": "±4.40%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 765643\nmean latency: 3 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children setQueryActive + setQueryInactive [js]",
+            "value": 81504,
+            "range": "±4.36%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 163008\nmean latency: 12 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children setQueryComplete [js]",
+            "value": 255039,
+            "range": "±4.37%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 510078\nmean latency: 4 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (limited page) [js]",
+            "value": 9762.5,
+            "range": "±4.15%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 19525\nmean latency: 102 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (limited page, orderBy child) [js]",
+            "value": 8637,
+            "range": "±4.12%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 17274\nmean latency: 116 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (whole node, cached value) [js]",
+            "value": 221660.5,
+            "range": "±4.37%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 443321\nmean latency: 5 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited, one child) [js]",
+            "value": 1641,
+            "range": "±2.74%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 3282\nmean latency: 609 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited orderBy, one child) [js]",
+            "value": 1634.5,
+            "range": "±2.73%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 3269\nmean latency: 612 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (whole node, one child) [js]",
+            "value": 189,
+            "range": "±1.05%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 378\nmean latency: 5291 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited page overwrite) replaces the stored page [js]",
+            "value": 1107.5,
+            "range": "±1.58%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 2215\nmean latency: 903 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children saveUserOperation + removeUserOperation [js]",
+            "value": 390502,
+            "range": "±4.38%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 781004\nmean latency: 3 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children setQueryActive + setQueryInactive [js]",
+            "value": 82570.5,
+            "range": "±4.36%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 165141\nmean latency: 12 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children setQueryComplete [js]",
+            "value": 264416.5,
+            "range": "±4.37%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 528833\nmean latency: 4 microseconds"
+          },
+          {
+            "name": "SyncTree merge write path fullWriteCycle (merge + server + ack) [js]",
+            "value": 254.618072890664,
+            "range": "±3.14%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 510\nmean latency: 3927 microseconds"
+          },
+          {
+            "name": "SyncTree merge write path userMerge only [js]",
+            "value": 705.6471764117941,
+            "range": "±1.93%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 1412\nmean latency: 1417 microseconds"
+          },
+          {
+            "name": "SyncTree merge serverMerge only (after user merge) serverMerge [js]",
+            "value": 608.5,
+            "range": "±1.67%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 1217\nmean latency: 1643 microseconds"
+          },
+          {
+            "name": "SyncTree merge ack only (after user merge + server merge) ack [js]",
+            "value": 1324,
+            "range": "±2.19%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 2648\nmean latency: 755 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withFilter (same ordering) [js]",
+            "value": 10030.5,
+            "range": "±4.16%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 20061\nmean latency: 100 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withFilter (orderBy child) [js]",
+            "value": 8593,
+            "range": "±4.12%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 17186\nmean latency: 116 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node view (same ordering) [js]",
+            "value": 136027.5,
+            "range": "±4.37%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 272055\nmean latency: 7 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withChild [js]",
+            "value": 14576.000000000002,
+            "range": "±4.23%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 29152\nmean latency: 69 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withoutChild [js]",
+            "value": 20980,
+            "range": "±4.28%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 41960\nmean latency: 48 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withFilter (same ordering) [js]",
+            "value": 10152,
+            "range": "±4.17%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 20304\nmean latency: 99 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withFilter (orderBy child) [js]",
+            "value": 8849.5,
+            "range": "±4.13%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 17699\nmean latency: 113 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node view (same ordering) [js]",
+            "value": 139651,
+            "range": "±4.39%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 279302\nmean latency: 7 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withChild [js]",
+            "value": 3270.0000000000005,
+            "range": "±3.66%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 6540\nmean latency: 306 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withoutChild [js]",
+            "value": 3631.5000000000005,
+            "range": "±3.73%",
+            "unit": "ops/sec",
+            "extra": "compile: js\nsamples: 7263\nmean latency: 275 microseconds"
+          },
+          {
+            "name": "Calendar queries density: 5 events/day listen acks + first server snapshots [wasm]",
+            "value": 1554.7776667936485,
+            "range": "±0.93%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 3110\nmean latency: 643 microseconds"
+          },
+          {
+            "name": "Calendar queries density: 1 event/day listen acks + first server snapshots [wasm]",
+            "value": 341.5636524340155,
+            "range": "±1.00%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 684\nmean latency: 2928 microseconds"
+          },
+          {
+            "name": "Calendar queries density: 1 event / 10 days listen acks + first server snapshots [wasm]",
+            "value": 425.0677061428527,
+            "range": "±0.70%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 851\nmean latency: 2353 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete root merge) [wasm]",
+            "value": 917.2294173218901,
+            "range": "±0.33%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 1835\nmean latency: 1090 microseconds"
+          },
+          {
+            "name": "IncompleteData merge applyOperation (complete identity merge) [wasm]",
+            "value": 18292.762194091476,
+            "range": "±0.17%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 36586\nmean latency: 55 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse merge) [wasm]",
+            "value": 2990.4925237686907,
+            "range": "±0.33%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 5981\nmean latency: 334 microseconds"
+          },
+          {
+            "name": "IncompleteData merge non-complete (per-overwrite loop) applyOperation (sparse identity merge) [wasm]",
+            "value": 8930.67403039789,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 17862\nmean latency: 112 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter (same ordering) [wasm]",
+            "value": 44289.86713039861,
+            "range": "±0.22%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 88580\nmean latency: 23 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter + value (same ordering) [wasm]",
+            "value": 43768.95623104377,
+            "range": "±0.24%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 87538\nmean latency: 23 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete withFilter + value (orderBy child) [wasm]",
+            "value": 30208.288541980208,
+            "range": "±0.22%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 60417\nmean latency: 33 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children complete applyOperation (one child) [wasm]",
+            "value": 58400.82479752561,
+            "range": "±0.37%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 116802\nmean latency: 17 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter (same ordering) [wasm]",
+            "value": 8353327.5,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 16706655\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter + value (same ordering) [wasm]",
+            "value": 43922.47803876098,
+            "range": "±0.24%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 87845\nmean latency: 23 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial withFilter + value (orderBy child) [wasm]",
+            "value": 29841.05238421424,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 59683\nmean latency: 34 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial applyOperation (one child) [wasm]",
+            "value": 79129.88130517805,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 158260\nmean latency: 13 microseconds"
+          },
+          {
+            "name": "IncompleteData 100 children partial removeWrite (one child) [wasm]",
+            "value": 136050.65987335032,
+            "range": "±0.21%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 272102\nmean latency: 7 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter (same ordering) [wasm]",
+            "value": 43597.65121879025,
+            "range": "±0.36%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 87196\nmean latency: 23 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter + value (same ordering) [wasm]",
+            "value": 41783.16573467412,
+            "range": "±0.50%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 83567\nmean latency: 24 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete withFilter + value (orderBy child) [wasm]",
+            "value": 29305.692290230956,
+            "range": "±1.57%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 58612\nmean latency: 34 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children complete applyOperation (one child) [wasm]",
+            "value": 13518.493240753382,
+            "range": "±0.33%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 27037\nmean latency: 74 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter (same ordering) [wasm]",
+            "value": 8546167.5,
+            "range": "±0.27%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 17092335\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter + value (same ordering) [wasm]",
+            "value": 43612.43458134813,
+            "range": "±0.40%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 87225\nmean latency: 23 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial withFilter + value (orderBy child) [wasm]",
+            "value": 29154.237611861492,
+            "range": "±1.24%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 58309\nmean latency: 34 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial applyOperation (one child) [wasm]",
+            "value": 61028.5727999904,
+            "range": "±0.39%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 122058\nmean latency: 16 microseconds"
+          },
+          {
+            "name": "IncompleteData 1000 children partial removeWrite (one child) [wasm]",
+            "value": 102222.09111163554,
+            "range": "±0.27%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 204445\nmean latency: 10 microseconds"
+          },
+          {
+            "name": "MasterView 100 children valueForFilter (limited page) [wasm]",
+            "value": 42867.17849616128,
+            "range": "±0.25%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 85735\nmean latency: 23 microseconds"
+          },
+          {
+            "name": "MasterView 100 children valueForFilter (limited page, orderBy child) [wasm]",
+            "value": 29928.5,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 59857\nmean latency: 33 microseconds"
+          },
+          {
+            "name": "MasterView 100 children server update (one child, orderBy observer) [wasm]",
+            "value": 16394.04096685293,
+            "range": "±0.25%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 32789\nmean latency: 61 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children valueForFilter (limited page) [wasm]",
+            "value": 43122.762824804464,
+            "range": "±0.26%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 86246\nmean latency: 23 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children valueForFilter (limited page, orderBy child) [wasm]",
+            "value": 28661.313701460942,
+            "range": "±1.70%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 57323\nmean latency: 35 microseconds"
+          },
+          {
+            "name": "MasterView 1000 children server update (one child, orderBy observer) [wasm]",
+            "value": 7504.274871753847,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 15009\nmean latency: 133 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (limited page) [wasm]",
+            "value": 42474.138969818756,
+            "range": "±0.25%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 84949\nmean latency: 24 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (limited page, orderBy child) [wasm]",
+            "value": 29935.895224366715,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 59872\nmean latency: 33 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children serverCache (whole node, cached value) [wasm]",
+            "value": 915733.5,
+            "range": "±0.19%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 1831467\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited, one child) [wasm]",
+            "value": 11944.940275298624,
+            "range": "±0.29%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 23890\nmean latency: 84 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited orderBy, one child) [wasm]",
+            "value": 9256.814863702726,
+            "range": "±0.26%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 18514\nmean latency: 108 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (whole node, one child) [wasm]",
+            "value": 10240.610856787442,
+            "range": "±0.12%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 20482\nmean latency: 98 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children updateServerCache (limited page overwrite) replaces the stored page [wasm]",
+            "value": 5461.303393077849,
+            "range": "±0.28%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 10923\nmean latency: 183 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children saveUserOperation + removeUserOperation [wasm]",
+            "value": 2983918.5,
+            "range": "±0.25%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 5967837\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children setQueryActive + setQueryInactive [wasm]",
+            "value": 321418.67858132144,
+            "range": "±0.20%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 642838\nmean latency: 3 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 100 children setQueryComplete [wasm]",
+            "value": 1321175.5,
+            "range": "±0.23%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 2642351\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (limited page) [wasm]",
+            "value": 41027.85640250259,
+            "range": "±0.34%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 82056\nmean latency: 24 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (limited page, orderBy child) [wasm]",
+            "value": 28620.414138757587,
+            "range": "±0.33%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 57241\nmean latency: 35 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children serverCache (whole node, cached value) [wasm]",
+            "value": 866219,
+            "range": "±0.84%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 1732438\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited, one child) [wasm]",
+            "value": 5820.659491419752,
+            "range": "±0.36%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 11642\nmean latency: 172 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited orderBy, one child) [wasm]",
+            "value": 5192.522287949509,
+            "range": "±0.32%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 10386\nmean latency: 193 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (whole node, one child) [wasm]",
+            "value": 984.4906473388503,
+            "range": "±0.36%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 1969\nmean latency: 1016 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children updateServerCache (limited page overwrite) replaces the stored page [wasm]",
+            "value": 5115.061386235626,
+            "range": "±0.48%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 10232\nmean latency: 196 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children saveUserOperation + removeUserOperation [wasm]",
+            "value": 2894755.5,
+            "range": "±1.93%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 5789511\nmean latency: 0 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children setQueryActive + setQueryInactive [wasm]",
+            "value": 318602,
+            "range": "±0.33%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 637204\nmean latency: 3 microseconds"
+          },
+          {
+            "name": "DefaultPersistenceManager 1000 children setQueryComplete [wasm]",
+            "value": 1280647,
+            "range": "±0.39%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 2561294\nmean latency: 1 microseconds"
+          },
+          {
+            "name": "SyncTree merge write path fullWriteCycle (merge + server + ack) [wasm]",
+            "value": 1066.8101078008115,
+            "range": "±0.47%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 2134\nmean latency: 937 microseconds"
+          },
+          {
+            "name": "SyncTree merge write path userMerge only [wasm]",
+            "value": 2781.7663316281432,
+            "range": "±0.39%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 5564\nmean latency: 359 microseconds"
+          },
+          {
+            "name": "SyncTree merge serverMerge only (after user merge) serverMerge [wasm]",
+            "value": 2487.453982101331,
+            "range": "±0.37%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 4975\nmean latency: 402 microseconds"
+          },
+          {
+            "name": "SyncTree merge ack only (after user merge + server merge) ack [wasm]",
+            "value": 4625.379740126757,
+            "range": "±0.43%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 9251\nmean latency: 216 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withFilter (same ordering) [wasm]",
+            "value": 43088.11220699013,
+            "range": "±0.33%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 86177\nmean latency: 23 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withFilter (orderBy child) [wasm]",
+            "value": 28272.957590563612,
+            "range": "±0.45%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 56546\nmean latency: 35 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node view (same ordering) [wasm]",
+            "value": 471576.26421186794,
+            "range": "±0.30%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 943153\nmean latency: 2 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withChild [wasm]",
+            "value": 60110.66939131834,
+            "range": "±0.43%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 120222\nmean latency: 17 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 100 children node withoutChild [wasm]",
+            "value": 89566.05216973915,
+            "range": "±0.31%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 179133\nmean latency: 11 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withFilter (same ordering) [wasm]",
+            "value": 42531.39367151582,
+            "range": "±0.41%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 85063\nmean latency: 24 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withFilter (orderBy child) [wasm]",
+            "value": 28981.95652706521,
+            "range": "±0.39%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 57964\nmean latency: 35 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node view (same ordering) [wasm]",
+            "value": 476605.76169711916,
+            "range": "±0.39%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 953212\nmean latency: 2 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withChild [wasm]",
+            "value": 12203.341356562365,
+            "range": "±0.35%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 24407\nmean latency: 82 microseconds"
+          },
+          {
+            "name": "TreeStructuredData 1000 children node withoutChild [wasm]",
+            "value": 16963.71161690251,
+            "range": "±1.32%",
+            "unit": "ops/sec",
+            "extra": "compile: wasm\nsamples: 33928\nmean latency: 59 microseconds"
           }
         ]
       }
